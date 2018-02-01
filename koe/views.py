@@ -1,5 +1,6 @@
 import json
 import os
+import numpy as np
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -10,6 +11,10 @@ from koe.utils import array_to_base64
 
 
 __all__ = ['get_segment_audio']
+
+# Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
+# reached this level, and vise verse
+normalised_max = 2.0
 
 
 def get_segment_audio(request):
@@ -29,5 +34,9 @@ def get_segment_audio(request):
 
     file_url = os.path.join(settings.BASE_DIR, audio_file.raw_file)
     segment_audio = wf.read_segment(file_url, start, end, mono=True)
+
+    max_volume = np.max(segment_audio)
+    gain = normalised_max / max_volume
+    segment_audio *= gain
 
     return HttpResponse(json.dumps(dict(fs=audio_file.fs, data=array_to_base64(segment_audio))))
