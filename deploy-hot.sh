@@ -28,22 +28,23 @@ RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Connect to the server and kill the current instance of the website${Color_Off}"
     echo -e "${Yellow}${On_Purple}(we use gunicorn to run)${Color_Off}"
-    echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"pkill -f gunicorn\"${Color_Off}"
-    ssh fzy@174.138.16.121 "pkill -f gunicorn"
+    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"pkill -f gunicorn\"${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "pkill -f gunicorn"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
 fi
 
 echo -e "${Yellow}${On_Purple}Make sure the server's code is up-to-date${Color_Off}"
-echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"cd /home/fzy/workplace/koe; git pull\"${Color_Off}"
-ssh fzy@174.138.16.121 "cd /home/fzy/workplace/koe; git pull"
+echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"cd /home/ubuntu/workspace/koe; git pull\"${Color_Off}"
+ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "cd /home/ubuntu/workspace/koe; git pull"
+
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now, run gunicorn remotely ${Color_Off}"
-    echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"/home/fzy/workplace/koe/post-deploy.sh\"${Color_Off}"
-    ssh fzy@174.138.16.121 "/home/fzy/workplace/koe/post-deploy-hot.sh"
+    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"/home/ubuntu/workspace/koe/post-deploy-hot.sh\"${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "/home/ubuntu/workspace/koe/post-deploy-hot.sh"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit

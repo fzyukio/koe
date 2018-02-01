@@ -37,27 +37,27 @@ RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Connect to the server and kill the current instance of the website${Color_Off}"
     echo -e "${Yellow}${On_Purple}(we use gunicorn to run)${Color_Off}"
-    echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"pkill -f gunicorn\"${Color_Off}"
-    ssh fzy@174.138.16.121 "pkill -f gunicorn"
+    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"pkill -f gunicorn\"${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "pkill -f gunicorn"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
 fi
 
 echo -e "${Yellow}${On_Purple}Also remove all old assets from the remote site${Color_Off}"
-echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"rm -rf /home/fzy/workplace/koe/assets/bundles /home/fzy/workplace/mossop/static\"${Color_Off}"
-ssh fzy@174.138.16.121 "rm -rf /home/fzy/workplace/koe/assets/bundles /home/fzy/workplace/mossop/static"
+echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"rm -rf /home/ubuntu/workspace/koe/assets/bundles /home/ubuntu/workspace/koe/static\"${Color_Off}"
+ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "rm -rf /home/ubuntu/workspace/koe/assets/bundles /home/ubuntu/workspace/koe/static"
 
 echo -e "${Yellow}${On_Purple}Make sure the server's code is up-to-date${Color_Off}"
-echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"cd /home/fzy/workplace/koe; git pull\"${Color_Off}"
-ssh fzy@174.138.16.121 "cd /home/fzy/workplace/koe; git pull"
+echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"cd /home/ubuntu/workspace/koe; git pull\"${Color_Off}"
+ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "cd /home/ubuntu/workspace/koe; git pull"
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now copy the compile bundles over${Color_Off}"
     echo -e "${Yellow}${On_Purple} (We can compile them on the server, but it will be slow)${Color_Off}"
-    echo -e "${Green}${On_Black}scp -r assets/bundles fzy@174.138.16.121:/home/fzy/workplace/koe/assets/${Color_Off}"
-    scp -r assets/bundles fzy@174.138.16.121:/home/fzy/workplace/koe/assets/
+    echo -e "${Green}${On_Black}scp -r assets/bundles -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/assets/${Color_Off}"
+    scp -i ~/stack/koe.pem -r assets/bundles ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/assets/
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
@@ -65,8 +65,8 @@ fi
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-    echo -e "${Green}${On_Black}scp -r jquery-webpack-stats.json fzy@174.138.16.121:/home/fzy/workplace/koe/${Color_Off}"
-    scp -r jquery-webpack-stats.json fzy@174.138.16.121:/home/fzy/workplace/koe/
+    echo -e "${Green}${On_Black}scp -r jquery-webpack-stats.json -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/${Color_Off}"
+    scp -i ~/stack/koe.pem -r jquery-webpack-stats.json ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
@@ -74,8 +74,8 @@ fi
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-    echo -e "${Green}${On_Black}scp -r webpack-stats.json fzy@174.138.16.121:/home/fzy/workplace/koe/${Color_Off}"
-    scp -r webpack-stats.json fzy@174.138.16.121:/home/fzy/workplace/koe/
+    echo -e "${Green}${On_Black}scp -r webpack-stats.json -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/${Color_Off}"
+    scp -i ~/stack/koe.pem -r webpack-stats.json ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
@@ -84,8 +84,8 @@ fi
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now, run gunicorn remotely ${Color_Off}"
-    echo -e "${Green}${On_Black}ssh fzy@174.138.16.121 \"/home/fzy/workplace/koe/post-deploy.sh\"${Color_Off}"
-    ssh fzy@174.138.16.121 "/home/fzy/workplace/koe/post-deploy.sh"
+    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"/home/ubuntu/workspace/koe/post-deploy.sh\"${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "/home/ubuntu/workspace/koe/post-deploy.sh"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
