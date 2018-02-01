@@ -1,0 +1,61 @@
+{
+  "segment-info": {
+    "class": "Segment",
+    "getter": "bulk_get_segment_info",
+    "columns": [
+      {
+        "name": "ID",
+        "slug": "id",
+        "type": "SHORT_TEXT",
+        "is_attribute": true
+      },
+      {
+        "name": "Start",
+        "slug": "start_time_ms",
+        "type": "INTEGER",
+        "is_attribute": true
+      },
+      {
+        "name": "End",
+        "slug": "end_time_ms",
+        "type": "INTEGER",
+        "is_attribute": true
+      },
+      {
+        "name": "Duration",
+        "slug": "duration",
+        "type": "INTEGER"
+      },
+      {
+        "name": "Song",
+        "slug": "song",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Spectrogram",
+        "slug": "spectrogram",
+        "type": "IMAGE",
+        "css_class": "has-image"
+      },
+      {
+        "name": "Family",
+        "slug": "label_family",
+        "type": "SHORT_TEXT",
+        "editable": true,
+        "is_extra_attr": true
+      },
+      {
+        "name": "Subfamily",
+        "slug": "label_subfamily",
+        "type": "SHORT_TEXT",
+        "editable": true,
+        "is_extra_attr": true
+      },
+      {
+        "name": "DTW distance",
+        "slug": "distance",
+        "type": "FLOAT"
+      }
+    ]
+  }
+}

@@ -1,0 +1,144 @@
+@import "../variables";
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  font-family: 'Oxygen', sans-serif;
+  display: flex;
+  font-weight: 500;
+}
+
+a {
+  color: #ff5555;
+}
+
+.btn-primary {
+  color: white;
+}
+
+.input-group-addon .fa {
+  color: #e72510;
+}
+
+#max-vh {
+  max-height: $max-screen-height;
+}
+
+#navbar {
+  height: $navbar-height;
+  width: 100%;
+  color: black;
+  border-bottom: 2px solid #a91b0c;
+
+  .navbar-brand {
+    font-variant: small-caps;
+  }
+}
+
+#content-wrapper {
+  margin: auto;
+  width: 100%;
+  max-height: $max-screen-height;
+
+  //background: #009edf;
+  background-color: whitesmoke;
+  -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+}
+
+#content-wrapper-offset-holder {
+  height: 100000px;
+}
+
+.main-content {
+  padding: $main-content-padding;
+  display: flex;
+  margin: auto;
+  width: 100%;
+  height: calc(100% - #{$navbar-height});
+
+  .content-center {
+    color: black;
+    margin: auto;
+    width: 100%;
+  }
+}
+
+
+h1.title {
+  font-size: 50px;
+  font-family: 'Passion One', cursive;
+  font-weight: 400;
+}
+
+hr {
+  width: 10%;
+  color: black;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  margin-bottom: 10px;
+}
+
+input,
+input::-webkit-input-placeholder {
+  font-size: 11px;
+  padding-top: 3px;
+}
+
+.form-control {
+  height: auto !important;
+  padding: 8px 12px !important;
+  color: black;
+}
+
+.login-button {
+  margin-top: 5px;
+}
+
+.login-register {
+  font-size: 11px;
+  text-align: center;
+}
+
+.form-control, .dropdown-menu {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.navbar-right-most {
+  padding-right: 5px;
+}
+
+.navbar-text {
+  line-height: 20px;
+}
+
+.navbar-brand {
+  width: 50%;
+  color: white;
+  font-size: 17px;
+  line-height: 18px;
+  height: $navbar-height;
+  padding: 5px 15px;
+
+  background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFE72510', endColorstr='#FFCB210E', GradientType=0);
+}
+
+.navbar-text {
+  padding: 5px 15px;
+  margin: 0;
+  float: left;
+}
+
+.has-grid {
+  overflow-y: auto;
+  overflow-x: auto;
+}

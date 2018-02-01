@@ -1,0 +1,19 @@
+// Main Style
+// Don't forget to change line 36 in .bootstraprc
+@import "../../node_modules/bootswatch/simplex/bootswatch";
+
+// Vendor
+@import "vendor/custom-bootstrap";
+@import "../../node_modules/animate.css/animate.css";
+@import "../../node_modules/font-awesome/scss/font-awesome";
+@import "../../node_modules/jquery-ui-dist/jquery-ui.css";
+@import "../../node_modules/bootstrap-datepicker/dist/css/bootstrap-datepicker3.css";
+//@import "../../node_modules/jquery-treetable/css/jquery.treetable.css";
+
+
+// General
+@import "variables";
+@import "helpers/all";
+@import "global";
+@import "components/all";
+@import "pages/all";

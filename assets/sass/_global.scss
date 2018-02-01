@@ -1,0 +1,19 @@
+.form-control input.has-error,
+.form-control select.has-error,
+.form-control textarea.has-error,
+.form-control.has-error {
+  border: 1px solid #cf0000;
+}
+span.error-label,
+div.has-error span.error-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #cf0000;
+  margin: 0 8px;
+  display: block;
+  margin-top: 6px;
+}
+
+ul.errorlist {
+  list-style-type: none
+}

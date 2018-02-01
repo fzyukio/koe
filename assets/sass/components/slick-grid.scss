@@ -1,0 +1,63 @@
+.slick-cell {
+  font-weight: 500;
+
+  input.editor-text {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    margin: 0;
+    background: transparent;
+    outline: 0;
+    padding: 0;
+  }
+
+  input.editor-checkbox {
+    margin: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+  }
+}
+
+.slick-row.highlight {
+  background-color: #ffff00;
+}
+
+.slick-row.totals .slick-cell {
+  font-weight: bold;
+  background-color: black;
+  color: white;
+}
+
+.slick-row.active {
+  border: 1px solid #9954BB;
+}
+
+.slick-cell.has-image {
+  padding: 0;
+  border-top: 0;
+  border-left: 0;
+}
+
+.slick-cell {
+  padding-top: 0;
+  padding-bottom: 0;
+  .btn {
+    line-height: 1;
+  }
+}
+
+.popover-title {
+  font-weight: bolder;
+  padding: 5px;
+}
+
+.popover-content {
+  line-height: 15px;
+  padding: 5px;
+  text-align: center;
+}
+
+.popover {
+  width: 150px;
+}

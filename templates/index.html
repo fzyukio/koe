@@ -1,0 +1,28 @@
+{% extends 'base-with-grid.html' %}
+
+{% block content-grid %}
+
+    <div id="control-buttons" class="input-group">
+        <input disabled type="text" class="form-control" aria-label="Text input with radio button"
+               value="Select the distance matrix here">
+        <div class="input-group-btn">
+            <button id="distance-matrix-combo" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false" dm="{{ dms.0.0 }}">
+                {{ dms.0.1 }}
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu">
+                {% for dm in dms %}
+                    <li><a href="#" class="select-dm" dm="{{ dm.0 }}">
+                        {{ dm.1 }}
+                    </a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="vh-offset has-grid" id="segment-info"></div>
+    <div class="offset-holder" id="segment-info-offset-holder" attr="height"></div>
+
+{% endblock %}
