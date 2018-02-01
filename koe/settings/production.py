@@ -84,7 +84,7 @@ LOG_REQUESTS = True
 INSTALLED_APPS += ['opbeat.contrib.django']
 OPBEAT = {
     'ORGANIZATION_ID': '07d57ec41f4442539ceaf70270d1b3a5',
-    'APP_ID': 'a6e0d3f1d7',
+    'APP_ID': '145395c333',
     'SECRET_TOKEN': '227d2d8537b77d3e50f452578efcf18eeafa387e',
 }
 MIDDLEWARE.insert(  # insert OpbeatAPMMiddleware on the top
