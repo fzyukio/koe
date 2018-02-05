@@ -100,7 +100,7 @@ export const run = function () {
             $("#contextMenu").hide();
         });
     });
-  
+
     $("#contextMenu").click(function (e, args) {
         if (!$(e.target).is("li")) {
             return;
@@ -144,3 +144,17 @@ const actionHandlers = {
 export const getData = function () {
     return grid.mainGrid.getData().getItems();
 };
+
+let body = $("body");
+
+/**
+ * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
+ */
+$(document).on({
+    ajaxStart: function () {
+        body.addClass("loading");
+    },
+    ajaxStop: function () {
+        body.removeClass("loading");
+    }
+});

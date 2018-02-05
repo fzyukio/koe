@@ -230,7 +230,8 @@ export class FlexibleGrid {
             {
                 'grid-type': self.gridType,
                 'property': JSON.stringify(itemSimplified)
-            }
+            },
+            callback
         );
     }
 
@@ -313,6 +314,7 @@ export class FlexibleGrid {
         self.defaultArgs = defaultArgs || {};
         let args = utils.deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
+
         $.post(utils.getUrl('fetch-data', 'get-grid-content'), args, function (rows) {
             rows = JSON.parse(rows);
             utils.updateSlickGridData(self.mainGrid, rows);
