@@ -42,8 +42,10 @@ class SegmentGrid extends fg.FlexibleGrid {
 
 const grid = new SegmentGrid();
 const contextMenu = $("#contextMenu");
-const filterLi = contextMenu.find('a[action=filter]').parent();
-const setLabelLi = contextMenu.find('a[action=set-label]').parent();
+const filterLiA = contextMenu.find('a[action=filter]');
+const filterLi = filterLiA.parent();
+const setLabelLiA = contextMenu.find('a[action=set-label]');
+const setLabelLi = setLabelLiA.parent();
 
 const setLabelModal = $("#set-label-modal");
 const setLabelLabel = setLabelModal.find("#set-label-label");
@@ -99,7 +101,7 @@ export const run = function () {
         let cell = grid_.getCellFromEvent(e);
         let colDef = grid_.getColumns()[cell.cell];
 
-        contextHandlerDecorator(colDef);
+        contextHandlerDecorator(colDef, grid_);
 
         contextMenu
             .data("row", cell.row)
@@ -159,7 +161,7 @@ const setLabel = function (row, colDef, grid_) {
     if (numRows > 0) {
         setLabelLabel.html(colName);
         setLabelCount.html(numRows);
-        setLabelModal.show();
+        setLabelModal.modal('show');
 
         let ids = [];
         let items = grid_.getData().getItems();
@@ -199,18 +201,29 @@ const actionHandlers = {
     "set-label": setLabel
 };
 
-const contextHandlerDecorator = function (colDef) {
+const contextHandlerDecorator = function (colDef, grid_) {
     // if the column is not sortable, disable filter
     filterLi.removeClass('disabled');
-    if (!colDef.sortable) filterLi.addClass('disabled');
-
-    // If the column is not editable, disable set-label
-    setLabelLi.removeClass('disabled');
-    if (!colDef.editable) {
-        setLabelLi.addClass('disabled');
+    filterLiA.html(`Filter ${colDef.field}.`);
+    if (!colDef.sortable) {
+        filterLi.addClass('disabled');
+        filterLiA.html('No filter applicable to this column.')
     }
 
-    setLabelLi.find('#label-name').html(colDef.name)
+    // If the column is not editable, disable set-label
+    let numRows = grid_.getSelectedRows().length;
+
+    setLabelLi.removeClass('disabled');
+    setLabelLiA.html(`Bulk set ${colDef.name}.`);
+
+    if (!colDef.editable) {
+        setLabelLi.addClass('disabled');
+        setLabelLiA.html('Bulk set: This column is not editable.')
+    }
+    if (numRows == 0) {
+        setLabelLi.addClass('disabled');
+        setLabelLiA.html('Bulk set: you need to select some rows first.')
+    }
 };
 
 export const getData = function () {
