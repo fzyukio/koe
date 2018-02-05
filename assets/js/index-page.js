@@ -41,7 +41,15 @@ class SegmentGrid extends fg.FlexibleGrid {
 }
 
 const grid = new SegmentGrid();
+const contextMenu = $("#contextMenu");
+const filterLi = contextMenu.find('a[action=filter]').parent();
+const setLabelLi = contextMenu.find('a[action=set-label]').parent();
 
+const setLabelModal = $("#set-label-modal");
+const setLabelLabel = setLabelModal.find("#set-label-label");
+const setLabelCount = setLabelModal.find("#set-label-count");
+const setLabelInput = setLabelModal.find("#set-label-input");
+const setLabelBtn = setLabelModal.find("#set-label-btn");
 
 const playAudio = function (e, args) {
     if (args.rowElement.hasClass('has-image')) {
@@ -89,20 +97,24 @@ export const run = function () {
         let grid_ = args.grid;
         e.preventDefault();
         let cell = grid_.getCellFromEvent(e);
-        let columnField = grid_.getColumns()[cell.cell].field;
-        $("#contextMenu")
+        let colDef = grid_.getColumns()[cell.cell];
+
+        contextHandlerDecorator(colDef);
+
+        contextMenu
             .data("row", cell.row)
-            .data("columnField", columnField)
+            .data("colDef", colDef)
+            .data("grid", grid_)
             .css("top", e.pageY)
             .css("left", e.pageX)
             .show();
         $("body").one("click", function () {
-            $("#contextMenu").hide();
+            contextMenu.hide();
         });
     });
 
-    $("#contextMenu").click(function (e, args) {
-        if (!$(e.target).is("li")) {
+    contextMenu.click(function (e, args) {
+        if (!$(e.target).is("a")) {
             return;
         }
         if (!grid.mainGrid.getEditorLock().commitCurrentEdit()) {
@@ -110,13 +122,15 @@ export const run = function () {
         }
         let action = e.target.getAttribute("action");
         let row = $(this).data("row");
-        let columnField = $(this).data("columnField");
+        let colDef = $(this).data("colDef");
+        let grid_ = $(this).data("grid");
         let actionHandler = actionHandlers[action];
-        actionHandler(row, columnField);
+        actionHandler(row, colDef, grid_);
     });
 };
 
-const addFilter = function (row, field) {
+const addFilter = function (row, colDef, grid_) {
+    let field = colDef.field;
     let filterInput = $(grid.filterSelector);
     let currentFilterValue = filterInput.val();
     let fieldValueIndex = currentFilterValue.indexOf(field);
@@ -137,24 +151,68 @@ const addFilter = function (row, field) {
     filterInput[0].focus();
 };
 
+const setLabel = function (row, colDef, grid_) {
+    let selectedRows = grid_.getSelectedRows();
+    let colName = colDef.name;
+    let numRows = selectedRows.length;
+    let field = colDef.field;
+    if (numRows > 0) {
+        setLabelLabel.html(colName);
+        setLabelCount.html(numRows);
+        setLabelModal.show();
+
+        let ids = [];
+        let items = grid_.getData().getItems();
+        for (let i=0; i<selectedRows.length; i++) {
+            let item = items[selectedRows[i]];
+            ids.push(item.id);
+        }
+
+        setLabelBtn.one('click', function (e) {
+            let value = setLabelInput.val();
+            $.post(utils.getUrl('fetch-data', 'change-property-bulk'),
+                {
+                    ids: JSON.stringify(ids),
+                    field: field,
+                    value: value,
+                    'grid-type': grid.gridType
+                },
+                function (msg) {
+                    console.log(msg);
+                    for (let i=0; i<selectedRows.length; i++) {
+                        let row = selectedRows[i];
+                        let item = items[row];
+                        item[field] = value;
+                        grid_.invalidateRow(row);
+                    }
+                    grid_.render();
+                    setLabelModal.modal("hide");
+                }
+            );
+
+        })
+    }
+};
+
 const actionHandlers = {
-    filter: addFilter
+    filter: addFilter,
+    "set-label": setLabel
+};
+
+const contextHandlerDecorator = function (colDef) {
+    // if the column is not sortable, disable filter
+    filterLi.removeClass('disabled');
+    if (!colDef.sortable) filterLi.addClass('disabled');
+
+    // If the column is not editable, disable set-label
+    setLabelLi.removeClass('disabled');
+    if (!colDef.editable) {
+        setLabelLi.addClass('disabled');
+    }
+
+    setLabelLi.find('#label-name').html(colDef.name)
 };
 
 export const getData = function () {
     return grid.mainGrid.getData().getItems();
 };
-
-let body = $("body");
-
-/**
- * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
- */
-$(document).on({
-    ajaxStart: function () {
-        body.addClass("loading");
-    },
-    ajaxStop: function () {
-        body.removeClass("loading");
-    }
-});

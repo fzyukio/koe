@@ -54,6 +54,19 @@ const adjustFullHeightOffset = function () {
  */
 const _preRun = function () {
     adjustFullHeightOffset();
+    let body = $("body");
+
+    /**
+     * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
+     */
+    $(document).on({
+        ajaxStart: function () {
+            body.addClass("loading");
+        },
+        ajaxStop: function () {
+            body.removeClass("loading");
+        }
+    });
 };
 
 
@@ -95,43 +108,6 @@ const _postRun = function () {
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
         window.location = this.getAttribute('url');
-    });
-
-    $('.save-btn').on('click', function (e) {
-        e.preventDefault();
-        let data = $(this).data();
-        let tableData = page.getData();
-
-        let modifiedRows = [];
-        for (let i = 0; i < tableData.length; i++) {
-            let row = tableData[i];
-            if (row._changedUnsaved) {
-                modifiedRows.push(row);
-            }
-        }
-
-        data['_table'] = JSON.stringify(modifiedRows);
-        let successMsg = this.getAttribute('success');
-        let failureMsg = this.getAttribute('failure');
-        let dataType = this.getAttribute('data-type');
-
-        $.post(
-            getUrl('send-data', dataType),
-            data,
-            function (message, status) {
-                console.log(message);
-                if (status == 'success') {
-                    let message = $('.alert-success').html(successMsg);
-                    message.fadeIn().delay(1000).fadeOut(400, function () {
-                        location.reload();
-                    });
-                }
-                else {
-                    let message = $('.alert-failure').html(failureMsg);
-                    message.fadeIn().delay(1000).fadeOut(400);
-                }
-            }
-        );
     });
 
     countDown();

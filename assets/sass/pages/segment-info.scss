@@ -39,23 +39,6 @@ $control-buttons-padding-bottom: 10px;
   }
 }
 
-#contextMenu {
-  background: #e1efc7;
-  border: 1px solid gray;
-  padding: 2px;
-  display: inline-block;
-  min-width: 100px;
-  -moz-box-shadow: 2px 2px 2px silver;
-  -webkit-box-shadow: 2px 2px 2px silver;
-  z-index: 99999;
-}
-
-#contextMenu li {
-  padding: 4px 4px 4px 14px;
-  list-style: none;
-  cursor: pointer;
-}
-
-#contextMenu li:hover {
-  background-color: white;
+.modal-dialog {
+  margin: 30vh auto;
 }

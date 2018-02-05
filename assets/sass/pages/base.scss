@@ -147,7 +147,7 @@ input::-webkit-input-placeholder {
    with position:fixed. Width, height, top and left speak
    speak for themselves. Background we set to 80% white with
    our animation centered, and no-repeating */
-.modal {
+#loading-spinner-modal {
   display: none;
   position: fixed;
   z-index: 1000;
@@ -165,6 +165,18 @@ body.loading {
 
 /* Anytime the body has the loading class, our
    modal element will be visible */
-body.loading .modal {
+body.loading #loading-spinner-modal {
   display: block;
+}
+
+.modal-footer {
+  padding: 0;
+
+  .btn-group > .btn:first-child {
+    border-top-left-radius: 0;
+  }
+
+  .btn-group > .btn:last-child {
+    border-top-right-radius: 0;
+  }
 }

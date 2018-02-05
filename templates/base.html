@@ -14,7 +14,7 @@
     <!-- Webpack rendered CSS -->
     {% render_bundle 'main' 'css' %}
     <style>
-        .modal {
+        #loading-spinner-modal {
             background: rgba(255, 255, 255, .8) url('{% static "images/loading-fading-squares.gif" %}') 50% 50% no-repeat;
         }
     </style>
@@ -46,7 +46,7 @@
 <div class="offset-holder" id="content-wrapper-offset-holder" attr="height"></div>
 <div id="max-vh"></div>
 
-<div class="modal"></div>
+<div class="modal" id="loading-spinner-modal"></div>
 
 {% render_bundle 'main' 'js' 'JQUERY' %}
 <!-- django-js-reverse -->

@@ -210,6 +210,26 @@ def get_grid_content(request):
     return HttpResponse(json.dumps(rows))
 
 
+def change_property_bulk(request):
+    grid_type = request.POST['grid-type']
+    value = request.POST['value']
+    field = request.POST['field']
+
+    table = tables[grid_type]
+    columns = table['columns']
+    klass = table['class']
+    ids = json.loads(request.POST.get('ids', '[]'))
+    objs = klass.objects.filter(pk__in=ids)
+    print(objs)
+
+    for column in columns:
+        attr = column['slug']
+        if attr == field:
+            setter = column['setter']
+            setter(objs, value, {})
+
+    return HttpResponse('ok')
+
 def change_properties(request):
     """
     When the user changes a row on the table, we will save the new value to the database, then return the updated row
@@ -232,7 +252,7 @@ def change_properties(request):
             val = grid_row[attr]
             if 'setter' in column:
                 setter = column['setter']
-                setter(obj, val, {}, commit=True)
+                setter([obj], val, {})
 
     return HttpResponse('ok')
 
@@ -305,7 +325,7 @@ values_grid_action_handlers = {
 }
 
 
-def _save_table(klass, table, columns, commit=False):
+def _save_table(klass, table, columns):
     for row in table:
         # Ignore row id #total, because this row is not an actual object
         if row['id'] == 'total': continue
@@ -316,12 +336,11 @@ def _save_table(klass, table, columns, commit=False):
             editable = column['editable']
             if attr in row and editable:
                 setter = column['setter']
-                setter(obj, row[attr], {}, commit)
+                setter([obj], row[attr], {})
 
-        if commit:
-            if hasattr(obj, 'complete'):
-                obj.complete = True
-                obj.save()
+        if hasattr(obj, 'complete'):
+            obj.complete = True
+            obj.save()
 
 
 @csrf_exempt

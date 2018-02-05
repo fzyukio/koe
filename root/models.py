@@ -7,6 +7,7 @@ import six
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db import utils
+from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 
 
@@ -210,14 +211,14 @@ class AutoSetterGetterMixin:
         return get_bulk_attrs(objs, attr)
 
     @classmethod
-    def _set_(cls, obj, attr, value, commit):
-        setattr(obj, attr, value)
-        if commit:
+    def _set_(cls, objs, attr, value):
+        for obj in objs:
+            setattr(obj, attr, value)
             obj.save()
 
     @classmethod
     def _get_extra_(cls, objs, attr):
-        retval = {obj.id: getattr(obj, attr, None) for obj in objs}
+        retval = {obj.id: None for obj in objs}
         objids = list(retval.keys())
 
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
@@ -229,14 +230,25 @@ class AutoSetterGetterMixin:
         return retval
 
     @classmethod
-    def _set_extra_(cls, obj, attr, value, commit):
-        setattr(obj, attr, value)
-        if commit:
-            extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
-            val2str = value_setter[extra_attr.type]
-            obj, _ = ExtraAttrValue.objects.get_or_create(owner_id=obj.id, attr=extra_attr)
-            obj.value=val2str(value)
-            obj.save()
+    def _set_extra_(cls, objs, attr, value):
+        if isinstance(objs, QuerySet):
+            ids = objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True)
+        else:
+            ids = [str(obj.id) for obj in objs]
+
+        extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
+        val2str = value_setter[extra_attr.type]
+        value = val2str(value)
+
+        existings = ExtraAttrValue.objects.filter(owner_id__in=ids, attr=extra_attr)
+        existings_owner_ids = existings.values_list('owner_id', flat=True)
+        nonexistings_owner_ids = [x for x in ids if x not in existings_owner_ids]
+
+        existings.update(value=value)
+        newly_created = [ExtraAttrValue(owner_id=id, attr=extra_attr, value=value) for id in nonexistings_owner_ids]
+
+        ExtraAttrValue.objects.bulk_create(newly_created)
+
 
 
     @classmethod
@@ -245,7 +257,7 @@ class AutoSetterGetterMixin:
 
     @classmethod
     def set_FIELD(cls, attr):
-        return lambda obj, value, extras, commit=False: cls._set_(obj, attr, value, commit)
+        return lambda objs, value, extras: cls._set_(objs, attr, value)
 
     @classmethod
     def get_EXTRA_FIELD(cls, attr):
@@ -253,7 +265,7 @@ class AutoSetterGetterMixin:
 
     @classmethod
     def set_EXTRA_FIELD(cls, attr):
-        return lambda obj, value, extras, commit=False: cls._set_extra_(obj, attr, value, commit)
+        return lambda objs, value, extras: cls._set_extra_(objs, attr, value)
 
 
 def id_generator(klass):

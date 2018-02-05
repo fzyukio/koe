@@ -18,7 +18,6 @@
                             {{ dm.1 }}
                         </a></li>
                     {% endfor %}
-
                 </ul>
             </div>
         </span>
@@ -27,8 +26,39 @@
     <div class="vh-offset has-grid" id="segment-info"></div>
     <div class="offset-holder" id="segment-info-offset-holder" attr="height"></div>
 
-    <ul id="contextMenu" style="display:none;position:absolute">
-        <li action="filter">Filter</li>
+    <ul id="contextMenu" class="dropdown-menu" style="display:none;position:absolute">
+        <li class=""><a action="filter">Filter</a></li>
+        <li><a action="set-label" href="#set-label-modal" data-toggle="modal">Bulk set <span id="label-name"></span></a></li>
     </ul>
+
+    <div class="modal fade in" id="set-label-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+         aria-hidden="true" style="display: none;">
+        <div class="modal-dialog" style="">
+            <div class="modal-content" style="">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span
+                            class="sr-only">Close</span>
+                    </button>
+                    <h3 class="modal-title">Set <span id="set-label-label"></span> for <span id="set-label-count"></span> rows</h3>
+                </div>
+                <div class="modal-body" style="">
+                    <input type="text" class="form-control" id="set-label-input">
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group btn-group-justified" role="group" aria-label="group button">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" role="button">Cancel
+                            </button>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" id="set-label-btn" class="btn btn-primary btn-hover-green"
+                                    data-action="save" role="button">Set
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 {% endblock %}
