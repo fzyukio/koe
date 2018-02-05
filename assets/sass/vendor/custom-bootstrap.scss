@@ -54,3 +54,12 @@ $white: #fff;
 .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus {
   background-color: #9954BB;
 }
+
+.panel-heading {
+  padding: 10px 0;
+}
+
+.input-group-addon {
+  background-color: inherit;
+  border: none;
+}

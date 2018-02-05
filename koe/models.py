@@ -124,11 +124,6 @@ def upgma_dist(segments_ids, dm):
     distmat = triu2mat(triu)
     distmat = distmat[:, mat_idx][mat_idx, :]
     distmat[np.isnan(distmat)] = 0
-
-    # distmat = np.array([17, 21, 32, 23, 30, 34, 21, 28, 39, 43], dtype=np.int32)
-    # dist = triu2mat(distmat)
-    # distmat = mat2triu(dist)
-
     triu = mat2triu(distmat)
 
     tree = linkage(triu, method='average')
@@ -176,7 +171,7 @@ class Segment(models.Model, AutoSetterGetterMixin):
             duration = end-start
             row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, spectrogram=spect_img,
                        distance=dist)
-            attr_dict = extra_attr_values_lookup.get(id, {})
+            attr_dict = extra_attr_values_lookup.get(str(id), {})
             for attr in attr_dict:
                 row[attr] = attr_dict[attr]
             rows.append(row)

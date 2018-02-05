@@ -18,3 +18,44 @@ $control-buttons-padding-bottom: 10px;
   display: none;
   height: calc(100000px - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding});
 }
+
+#segment-info-filter {
+  border: 0;
+  padding: 0 !important;
+  box-shadow: none;
+  background-color: inherit;
+  border-bottom: 1px solid;
+  border-bottom-color: red;
+  border-radius: 0;
+}
+
+#segment-info-controller {
+  padding-bottom: 10px;
+  .left {
+    padding: 0 10px 0 0;
+  }
+  .right {
+    padding: 0 0 0 10px;
+  }
+}
+
+#contextMenu {
+  background: #e1efc7;
+  border: 1px solid gray;
+  padding: 2px;
+  display: inline-block;
+  min-width: 100px;
+  -moz-box-shadow: 2px 2px 2px silver;
+  -webkit-box-shadow: 2px 2px 2px silver;
+  z-index: 99999;
+}
+
+#contextMenu li {
+  padding: 4px 4px 4px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+#contextMenu li:hover {
+  background-color: white;
+}

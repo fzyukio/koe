@@ -302,7 +302,6 @@ const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
 };
 
 
-
 /**
  * For embedded URL we're using Markdown's pattern, e.g. [http://www.example.com](example.com)
  * e.g. file_duration:(<3.5) (meaning that filter out any file that has duration > 3.5 sec)
@@ -601,6 +600,221 @@ const DateEditor__rewritten = function (args) {
     this.init();
 };
 
+/**
+ * Each filter has this pattern : param:(value),
+ * e.g. file_duration:(<3.5) (meaning that filter out any file that has duration > 3.5 sec)
+ * @type {RegExp}
+ */
+const filterRegex = /([^()]+)\s*:\s*\(([^()]+)\)/;
+
+/**
+ * The overall filter can be multiple of individual filter,
+ * e.g. category:(A) file_duration:(>2)
+ * @type {RegExp}
+ */
+const filtersRegex = /(\s*[^()]+\s*:\s*\([^()]+\)\s*)+/;
+
+/**
+ * Accept anything that contain the substring
+ * @param {string} string the whole string
+ * @returns {boolean}
+ *
+ * @bind ({filterValue}) the substring to be contained
+ */
+const stringFilter = function (string) {
+    if (this.filterValue === null) {
+        return true;
+    }
+    return this.filterValue.exec(string);
+};
+
+/**
+ * Match against a predefined regex pattern
+ * @param {string} string the whole string
+ * @returns {boolean}
+ *
+ * @bind ({filterValue}) the regex pattern to be match against
+ */
+const regexFilter = function (string) {
+    try {
+        return string.match(this.filterValue);
+    }
+    catch (e) {
+        return false;
+    }
+};
+
+/**
+ * Evaluate a numerical expression
+ * @param number lvalue of the expression, e.g. 50
+ * @returns {boolean}
+ *
+ * @bind ({filterValue}) rvalue of the expression, e.g. ">5", "<= 3.5", etc.
+ */
+const numberFilter = function (number) {
+    try {
+        //noinspection JSValidateTypes
+        return eval(number + ' ' + this.filterValue);
+    }
+    catch (e) {
+        // If syntax error, then ignore the filter - the user might not have finished typing
+        return true;
+    }
+};
+
+/**
+ * Check if value is the same as the bounded value
+ * @param {boolean} value
+ * @returns {boolean}
+ *
+ * @bind ({filterValue}) boolean
+ */
+const booleanFilter = function (value) {
+    return value === this.filterValue;
+};
+
+
+const filterFunctions = {
+    'String': stringFilter,
+    'Number': numberFilter,
+    'Boolean': booleanFilter,
+    'Regex': regexFilter
+};
+
+
+/**
+ * Utility to return an appropriate filter
+ * @param paramName name of the param
+ * @param type
+ * @param filterContent
+ */
+const filterGenerator = function (paramName, type, filterContent) {
+    filterContent = filterContent.replace("%%quoteb%%", "\\(").replace("%%quotee%%", "\\)");
+    if (filterContent === '') {
+        filterContent = null;
+    }
+    else if (type === 'String') {
+        try {
+            filterContent = new RegExp(filterContent, 'i');
+        }
+        catch (e) {
+            filterContent = null;
+        }
+    }
+    setCache('regex-filter:' + paramName, filterContent);
+    return filterFunctions[type].bind({filterValue: filterContent});
+};
+
+export const regexMatchMultiple = function(regex, value) {
+    let matches = filtersRegex.exec(value);
+    if (! matches) {
+        return null;
+    }
+    let retval = [matches[0]];
+    while (matches) {
+        let match = matches[1];
+        retval.push(match);
+        let matchedIndexBeg = value.indexOf(match);
+        let matchedIndexEnd = matchedIndexBeg + match.length - 1;
+        value = value.substr(0, matchedIndexBeg) + value.substr(matchedIndexEnd);
+        matches = filtersRegex.exec(value);
+    }
+    return retval;
+};
+
+/**
+ * Filter the file browser table when user types anything in the filter field.
+ * Break down user's input into individual filters.
+ * If the input doesn't match the pattern then default to a filename filter
+ *
+ * @param grid
+ * @param inputSelector
+ * @param cols
+ * @param defaultField
+ */
+export const initFilter = function (inputSelector, grid, cols, defaultField) {
+    let dataView = grid.getData();
+    let availableFilters = [], filterTypes = {};
+    for (let i = 0; i < cols.length; i++) {
+        availableFilters.push(cols[i].field);
+        filterTypes[cols[i].field] = cols[i].filter;
+    }
+
+    $(inputSelector).on("input", function () {
+        let filterContent = this.value.replace("\\(", "%%quoteb%%").replace("\\)", "%%quotee%%").trim();
+        let matches = regexMatchMultiple(filtersRegex, filterContent);
+        let filterArgs = {};
+        let filterIsCompleted = true;
+
+        /* The default case */
+        if (isNull(matches) && !isNull(defaultField)) {
+            if (availableFilters.indexOf(defaultField) >= 0) {
+                filterArgs[defaultField] = filterGenerator(defaultField, 'String', filterContent);
+            }
+        }
+
+        else {
+            let allMatchesCombined = matches[0].trim();
+            if (allMatchesCombined != filterContent) {
+                filterIsCompleted = false;
+            }
+            else {
+                for (let i = 1; i < matches.length; i++) {
+                    let filter = filterRegex.exec(matches[i]);
+                    let param = filter[1].trim();
+                    let value = filter[2].trim();
+                    let filterType = filterTypes[param];
+
+                    /* A filter must match a slug of one of the column, e.g. filename, file_duration, ... */
+                    if (availableFilters.indexOf(param) >= 0 && filterType !== undefined) {
+
+                        /* Value of this dict is a function handle with bounded filter value */
+                        filterArgs[param] = filterGenerator(param, filterType, value);
+                    }
+                }
+            }
+        }
+        if (filterIsCompleted) {
+            dataView.setFilterArgs(filterArgs);
+
+            /*
+             * Call this to remove the rows that are filtered out
+             */
+            dataView.refresh();
+
+            /*
+             * Call this to force rerendering the rows. Helpful if the row is rendered differently after applying the filter
+             */
+            grid.invalidate();
+            grid.render();
+        }
+    });
+};
+
+
+/**
+ * Apply the filters
+ *
+ * @param item the underlying row's item
+ * @param filters ({})
+ * @returns {boolean}
+ */
+export const gridFilter = function (item, filters) {
+    if (filters) {
+        for (let field in filters) {
+            if (filters.hasOwnProperty(field)) {
+                let filter = filters[field];
+                let val = item[field] || '';
+                if (!filter(val)) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+};
+
+
 /*
  * Make a copy of Slick.Editor and then add new editors
  */
@@ -747,6 +961,8 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     if (multiSelect && radioSelect) {
         throw new Error('Arguments multiSelect and radioSelect can\'t both be true')
     }
+
+    let filter = args.filter;
 
     /*
      * Avoid repeat initialising the grid if only the data needs to be updated.
@@ -985,6 +1201,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 
     dataView.beginUpdate();
     dataView.setItems(rows);
+    if (filter) {
+        dataView.setFilter(filter);
+    }
     dataView.endUpdate();
 
     /*

@@ -31,10 +31,13 @@ export class FlexibleGrid {
     init(args) {
         this.gridName = args['grid-name'];
         this.gridType = args['grid-type'];
+        this.defaultFilterField = args['default-field'];
+
         this.mainGridSelector = '#' + this.gridName;
         this.gridOptions = args['gridOptions'] || defaultGridOptions;
         this.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
         this.mainGrid.registerPlugin(new Slick.AutoTooltips());
+        this.filterSelector = '#' + this.gridName + '-filter';
 
         /**
          * All events of the file browser will be broadcast via this mock element
@@ -51,6 +54,18 @@ export class FlexibleGrid {
      */
     on(eventType, callback) {
         this.eventNotifier.on(eventType, callback);
+    }
+
+    /**
+     *
+     * @param eventType
+     * @param callback
+     */
+    subscribe(eventType, callback) {
+        let event = this.mainGrid[eventType];
+        if (!utils.isNull(event)) {
+            event.subscribe(callback);
+        }
     }
 
     /**
@@ -206,26 +221,15 @@ export class FlexibleGrid {
             }
         }
 
+        let postArgs = utils.deepCopy(self.defaultArgs);
+        postArgs['grid-type'] = self.gridType;
+        postArgs['property'] = JSON.stringify(itemSimplified);
+
         $.post(
             utils.getUrl('send-data', 'change-properties'),
             {
                 'grid-type': self.gridType,
                 'property': JSON.stringify(itemSimplified)
-            }, function (row, status) {
-                if (status == 'success') {
-                    row = JSON.parse(row);
-                    let rowId = row.id;
-                    let currentRow = dataView.getItemById(rowId);
-                    for (let attr in row) {
-                        if (row.hasOwnProperty(attr)) {
-                            let oldAttr = '_old_' + attr;
-                            if (row.hasOwnProperty(oldAttr)) {
-                                currentRow[oldAttr] = undefined;
-                            }
-                        }
-                    }
-                    dataView.updateItem(rowId, currentRow);
-                }
             }
         );
     }
@@ -277,7 +281,8 @@ export class FlexibleGrid {
 
             utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], columns, {
                 multiSelect: args.multiSelect, radioSelect: args.radioSelect,
-                rowMoveable: args.rowMoveable, gridType: self.gridType
+                rowMoveable: args.rowMoveable, gridType: self.gridType,
+                filter: args.filter || utils.gridFilter
             });
 
             self.mainGrid.onCellChange.subscribe(function (e, args) {
@@ -296,15 +301,17 @@ export class FlexibleGrid {
                 self.mouseHandler(e, args);
             });
 
+            utils.initFilter(self.filterSelector, self.mainGrid, columns, self.defaultFilterField);
             if (typeof callback == 'function') {
                 callback();
             }
         });
     }
 
-    initMainGridContent(args) {
+    initMainGridContent(defaultArgs) {
         let self = this;
-        args = args || {}
+        self.defaultArgs = defaultArgs || {};
+        let args = utils.deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
         $.post(utils.getUrl('fetch-data', 'get-grid-content'), args, function (rows) {
             rows = JSON.parse(rows);

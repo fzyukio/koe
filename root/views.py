@@ -234,10 +234,7 @@ def change_properties(request):
                 setter = column['setter']
                 setter(obj, val, {}, commit=True)
 
-    new_row = get_attrs([obj], table)[0]
-    new_row['rowClass'] = 'edited'
-    # new_row['_changedUnsaved'] = True
-    return HttpResponse(json.dumps(new_row))
+    return HttpResponse('ok')
 
 
 def change_action_values(request):
