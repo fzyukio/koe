@@ -52,6 +52,13 @@
         "is_extra_attr": true
       },
       {
+        "name": "Label",
+        "slug": "label",
+        "type": "SHORT_TEXT",
+        "editable": true,
+        "is_extra_attr": true
+      },
+      {
         "name": "DTW distance",
         "slug": "distance",
         "type": "FLOAT"
