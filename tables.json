@@ -68,6 +68,13 @@
         "name": "DTW distance",
         "slug": "distance",
         "type": "FLOAT"
+      },
+      {
+        "name": "Note",
+        "slug": "note",
+        "type": "SHORT_TEXT",
+        "editable": true,
+        "is_extra_attr": true
       }
     ]
   }
