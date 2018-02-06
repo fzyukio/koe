@@ -44,6 +44,7 @@
     "jquery-ui-dist": "^1.12.1",
     "jquery.browser": "^0.1.0",
     "jquery.event.drag": "^2.2.2",
+    "keyboardjs": "^2.4.1",
     "less": "^2.7.2",
     "lodash": "^4.16.6",
     "marked": "^0.3.6",

@@ -2,6 +2,7 @@ import * as fg from "flexible-grid";
 import * as utils from "./utils";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
+const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
 
 const gridOptions = utils.deepCopy(defaultGridOptions);
@@ -156,13 +157,12 @@ export const run = function () {
         e.preventDefault();
         let cell = grid_.getCellFromEvent(e);
         let colDef = grid_.getColumns()[cell.cell];
+        let field = colDef.field;
 
-        contextHandlerDecorator(colDef, grid_);
+        contextHandlerDecorator(colDef);
 
         contextMenu
-            .data("row", cell.row)
-            .data("colDef", colDef)
-            .data("grid", grid_)
+            .data("field", field)
             .css("top", e.pageY)
             .css("left", e.pageX)
             .show();
@@ -179,16 +179,23 @@ export const run = function () {
             return;
         }
         let action = e.target.getAttribute("action");
-        let row = $(this).data("row");
-        let colDef = $(this).data("colDef");
-        let grid_ = $(this).data("grid");
+        let field = $(this).data("field");
         let actionHandler = actionHandlers[action];
-        actionHandler(row, colDef, grid_);
+        actionHandler(field);
+    });
+
+    keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function(){
+        setLabel('label');
+    });
+    keyboardJS.bind(['mod+shift+f', 'ctrl+shift+f'], function(){
+        setLabel('label_family');
+    });
+    keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function(){
+        setLabel('label_subfamily');
     });
 };
 
-const addFilter = function (row, colDef, grid_) {
-    let field = colDef.field;
+const addFilter = function (field) {
     let filterInput = $(grid.filterSelector);
     let currentFilterValue = filterInput.val();
     let fieldValueIndex = currentFilterValue.indexOf(field);
@@ -209,13 +216,12 @@ const addFilter = function (row, colDef, grid_) {
     filterInput[0].focus();
 };
 
-const setLabel = function (row, colDef, grid_) {
+const setLabel = function (field) {
+    let grid_ = grid.mainGrid;
     let selectedRows = grid_.getSelectedRows();
-    let colName = colDef.name;
     let numRows = selectedRows.length;
-    let field = colDef.field;
     if (numRows > 0) {
-        setLabelLabel.html(colName);
+        setLabelLabel.html(field);
         setLabelCount.html(numRows);
         setLabelModal.modal('show');
 
@@ -257,7 +263,7 @@ const actionHandlers = {
     "set-label": setLabel
 };
 
-const contextHandlerDecorator = function (colDef, grid_) {
+const contextHandlerDecorator = function (colDef) {
     // if the column is not sortable, disable filter
     filterLi.removeClass('disabled');
     filterLiA.html(`Filter ${colDef.field}.`);
@@ -267,7 +273,7 @@ const contextHandlerDecorator = function (colDef, grid_) {
     }
 
     // If the column is not editable, disable set-label
-    let numRows = grid_.getSelectedRows().length;
+    let numRows = grid.mainGrid.getSelectedRows().length;
 
     setLabelLi.removeClass('disabled');
     setLabelLiA.html(`Bulk set ${colDef.name}.`);
