@@ -140,7 +140,7 @@
     function getColumnDefinition() {
       return {
         id: _options.columnId,
-        name: "<input type='checkbox'>",
+        name: `<input type='checkbox'/>`,
         toolTip: _options.toolTip,
         field: "sel",
         width: _options.width,

@@ -57,6 +57,7 @@ const setLabelBtn = setLabelModal.find("#set-label-btn");
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
 
+
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
     let hasImage = cellElement.closest(".has-image");
@@ -69,8 +70,20 @@ const playAudio = function (e, args) {
 };
 
 
+const toggleCheckBox = function (e, args) {
+    let hasCheckBox = args.rowElement.find('input[type=checkbox]').closest("input[type=checkbox]");
+    if (hasCheckBox.length == 1) {
+        hasCheckBox.click();
+    }
+};
+
+
 const subscribeEvents = function () {
-    grid.on('click', playAudio);
+    grid.on('click', function () {
+        playAudio.apply(null, arguments);
+        toggleCheckBox.apply(null, arguments);
+    });
+
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', function (e, args) {
         let cellElement = $(args.e.target);
