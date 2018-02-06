@@ -131,7 +131,7 @@ classes should alter those!
 .slick-row:not(.non-editable),
 .slick-row.edited {
   .slick-inner-cell.editable {
-    z-index: 11;
+    z-index: 2;
     overflow: visible;
 
     &::after {
@@ -185,7 +185,7 @@ classes should alter those!
 }
 
 .slick-selection {
-  z-index: 10;
+  z-index: 2;
   position: absolute;
   border: 2px dashed black;
 }

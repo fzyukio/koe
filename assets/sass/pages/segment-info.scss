@@ -50,7 +50,7 @@ $control-buttons-padding-bottom: 10px;
   border-radius: 10px;
   box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
   pointer-events: none;
-  z-index: 999;
+  z-index: 3;
   display: block;
 
   &.hidden {

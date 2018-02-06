@@ -1,3 +1,4 @@
+@import "../../node_modules/selectize/dist/css/selectize.bootstrap3.css";
 @import "../variables";
 
 html, body {
@@ -150,7 +151,7 @@ input::-webkit-input-placeholder {
 #loading-spinner-modal {
   display: none;
   position: fixed;
-  z-index: 100;
+  z-index: 3;
   top: 0;
   left: 0;
   height: 100%;
@@ -179,4 +180,26 @@ body.loading #loading-spinner-modal {
   .btn-group > .btn:last-child {
     border-top-right-radius: 0;
   }
+}
+
+.selectize-control {
+  width: 100% !important;
+}
+
+.selectize-control .selectize-input > div {
+  cursor: pointer;
+  margin: auto;
+  padding: 0 6px;
+  color: #ffffff;
+}
+
+.selectize-control .selectize-input [data-value] {
+  text-shadow: 0 1px 0 rgba(0, 51, 83, 0.3);
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  background: #D9230F linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff1da7ee', endColorstr='#ff178ee9', GradientType=0);
+  -webkit-box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
 }

@@ -48,7 +48,7 @@ $.fn.bootstrapDP = datepicker;
 
 
 export const editabilityAwareFormatter = function DefaultFormatter(row, cell, value, columnDef, item) {
-    if (value == null) {
+    if (!value) {
         value = "";
     } else {
         value = (value + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -331,20 +331,41 @@ const SelectionComboBoxEditor = function (args) {
 
     this.init = function () {
         let option_str = "", value;
-        let options = args.column.options;
-        let swappable = (args.item.swappables || {})[args.column.field];
 
+        let selectableColumns = getCache('selectableOptions');
+        let selectableOptions = selectableColumns[args.column.field];
+        let options = {};
+
+
+        selectableOptions.forEach(function (option) {
+            options[option] = option;
+        });
+
+        let swappable = (args.item.swappables || {})[args.column.field];
+        let defaultValue = args.item[args.column.field];
         for (let key in options) {
             if (options.hasOwnProperty(key)) {
                 value = options[key];
-                if (swappable === undefined || swappable.indexOf(value) > -1) {
-                    option_str += "<OPTION value=" + value + ">" + capsToTitleCase(key) + "</OPTION>";
+                if (value) {
+                    let selectedClass = '';
+                    if (value == defaultValue) {
+                        selectedClass = ' selected';
+                    }
+                    if (swappable === undefined || swappable.indexOf(value) > -1) {
+                        option_str += `<OPTION value="${value}" ${selectedClass}>${key}</OPTION>`;
+                    }
                 }
             }
         }
-        $select = $("<SELECT tabIndex='0' class='editor-select'>" + option_str + "</SELECT>");
+
+        $(args.container).find('select').remove();
+        $select = $("<SELECT tabIndex='0' class='selectize'>" + option_str + "</SELECT>");
         $select.appendTo(args.container);
         $select.focus();
+
+        $select.selectize({
+            create: true,
+        });
     };
 
     this.destroy = function () {
@@ -361,11 +382,10 @@ const SelectionComboBoxEditor = function (args) {
     };
 
     this.serializeValue = function () {
-        if (args.column.options) {
-            return $select.val();
-        } else {
+        if (args.column._formatter == 'Checkmark') {
             return ($select.val() === "yes");
         }
+        return $select.val();
     };
 
     this.applyValue = function (item, state) {
@@ -373,7 +393,10 @@ const SelectionComboBoxEditor = function (args) {
     };
 
     this.isValueChanged = function () {
-        return ($select.val() !== defaultValue);
+        let val = $select.val();
+        if (val || defaultValue)
+            return (val !== defaultValue);
+        return false;
     };
 
     this.validate = function () {
@@ -981,21 +1004,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     let swappableFields = [], swappableClasses = [], idxOfActionColumn;
     for (let i = 0; i < columns.length; i++) {
         let c = columns[i];
-        if (c.editor === 'Select') {
-            c.formatter = 'Select';
-        }
-        else if (c.editor === 'Checkbox') {
-            c.formatter = 'Checkmark';
-        }
-        else if (c.editor === 'Date') {
+
+        if (c.editor === 'Date') {
             c.validator = 'IsoDate';
-            c.formatter = 'Date';
-        }
-        else if (c.editor === 'Float') {
-            c.formatter = 'DecimalPoint';
-        }
-        else if (c.editor === 'Image') {
-            c.formatter = 'Image';
         }
 
         if (c.field === 'actions') {
@@ -1019,6 +1030,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         if (c.typeClass && getCache('literals', c.typeClass)) {
             c.options = getCache('literals', c.typeClass);
         }
+        c._validator = c.validator;
+        c._editor = c.editor;
+        c._formatter = c.formatter;
 
         c.validator = SLickValidator[c.validator];
         c.editor = SlickEditors[c.editor];

@@ -208,6 +208,7 @@ export class FlexibleGrid {
         const self = this;
         let dataView = args.grid.getData();
         let item = dataView.getItem(args.row);
+        let selectableColumns = utils.getCache('selectableOptions');
 
         /* Strip off all irrelevant information */
         let itemSimplified = {id: item.id};
@@ -215,8 +216,16 @@ export class FlexibleGrid {
             if (item.hasOwnProperty(attr)) {
                 let oldAttr = '_old_' + attr;
                 if (item.hasOwnProperty(oldAttr)) {
-                    itemSimplified[attr] = item[attr];
+                    let newValue = item[attr];
+                    itemSimplified[attr] = newValue;
                     itemSimplified[oldAttr] = item[oldAttr] || null;
+
+                    let selectableOptions = selectableColumns[attr];
+                    if (selectableOptions) {
+                        if (!selectableOptions.has(newValue)) {
+                            selectableOptions.add(newValue);
+                        }
+                    }
                 }
             }
         }
@@ -309,6 +318,35 @@ export class FlexibleGrid {
         });
     }
 
+    cacheSelectableOptions() {
+        let self = this;
+        let grid = self.mainGrid;
+        let columns = grid.getColumns();
+        let items = grid.getData().getItems();
+
+        let selectableColumns = {};
+        for (let i = 0; i < columns.length; i++) {
+            let column = columns[i];
+            if (column._editor === 'Select') {
+                selectableColumns[column.field] = new Set();
+            }
+        }
+
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i];
+            for (let field in selectableColumns) {
+                if (selectableColumns.hasOwnProperty(field)) {
+                    let set = selectableColumns[field];
+                    let val = item[field];
+                    val = val && val.trim();
+                    if (val)
+                        set.add(val);
+                }
+            }
+        }
+        utils.setCache('selectableOptions', selectableColumns)
+    }
+
     initMainGridContent(defaultArgs) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
@@ -318,6 +356,7 @@ export class FlexibleGrid {
         $.post(utils.getUrl('fetch-data', 'get-grid-content'), args, function (rows) {
             rows = JSON.parse(rows);
             utils.updateSlickGridData(self.mainGrid, rows);
+            self.cacheSelectableOptions();
         });
     }
 

@@ -85,7 +85,8 @@ with open('tables.json', 'r', encoding='utf-8') as f:
             _type = column['type']
             _type = ValueTypes.get_key_val_pairs()[_type]
             column['type'] = _type
-            column['editor'] = ValueTypes.get_associated_value(_type, 'editor')
+            column['editor'] = column.get('editor', ValueTypes.get_associated_value(_type, 'editor'))
+            column['formatter'] = column.get('formatter', ValueTypes.get_associated_value(_type, 'formatter'))
             column['filter'] = ValueTypes.get_associated_value(_type, 'filter_type')
             column['sortable'] = ValueTypes.get_associated_value(_type, 'sortable')
             column['cssClass'] = column.get('css_class', '')
@@ -152,6 +153,7 @@ def get_grid_column_definition(request):
         editable = column['editable']
         total_label = column['total_label']
         editor = column['editor']
+        formatter = column['formatter']
         has_total = column['has_total']
         sortable = column['sortable']
         filter = column['filter']
@@ -161,10 +163,11 @@ def get_grid_column_definition(request):
             editable = 'True'
 
         column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
-                           sortable=sortable, hasTotal=has_total, totalLabel=total_label, cssClass=css_class)
+                      formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
+                      cssClass=css_class)
 
         if editable:
-            column['cssClass'] += 'editable'
+            column['cssClass'] += ' editable'
 
         columns.append(column)
 

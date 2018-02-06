@@ -42,21 +42,27 @@
         "slug": "label_family",
         "type": "SHORT_TEXT",
         "editable": true,
-        "is_extra_attr": true
+        "is_extra_attr": true,
+        "editor": "Select",
+        "css_class": "overflow"
       },
       {
         "name": "Subfamily",
         "slug": "label_subfamily",
         "type": "SHORT_TEXT",
         "editable": true,
-        "is_extra_attr": true
+        "is_extra_attr": true,
+        "editor": "Select",
+        "css_class": "overflow"
       },
       {
         "name": "Label",
         "slug": "label",
         "type": "SHORT_TEXT",
         "editable": true,
-        "is_extra_attr": true
+        "is_extra_attr": true,
+        "editor": "Select",
+        "css_class": "overflow"
       },
       {
         "name": "DTW distance",

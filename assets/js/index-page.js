@@ -3,7 +3,7 @@ import * as utils from "./utils";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
-
+require('selectize/dist/js/standalone/selectize.js');
 
 const gridOptions = utils.deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -184,13 +184,13 @@ export const run = function () {
         actionHandler(field);
     });
 
-    keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function(){
+    keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function () {
         setLabel('label');
     });
-    keyboardJS.bind(['mod+shift+f', 'ctrl+shift+f'], function(){
+    keyboardJS.bind(['mod+shift+f', 'ctrl+shift+f'], function () {
         setLabel('label_family');
     });
-    keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function(){
+    keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         setLabel('label_subfamily');
     });
 };
@@ -232,8 +232,32 @@ const setLabel = function (field) {
             ids.push(item.id);
         }
 
+        let selectableColumns = utils.getCache('selectableOptions');
+        let selectableOptions = selectableColumns[field];
+        let options = [];
+
+        selectableOptions.forEach(function (option) {
+            options.push({text: option, value: option})
+        });
+
+        let control = setLabelInput[0].selectize;
+        if (control) control.clear();
+        $(setLabelInput[0].parentElement).find('.selectize-control').remove();
+        setLabelInput[0].selectize = undefined;
+
+        setLabelInput.selectize({
+            create: true,
+            options: options
+        });
+
         setLabelBtn.one('click', function (e) {
             let value = setLabelInput.val();
+            if (selectableOptions) {
+                if (!selectableOptions.has(value)) {
+                    selectableOptions.add(value);
+                }
+            }
+
             $.post(utils.getUrl('fetch-data', 'change-property-bulk'),
                 {
                     ids: JSON.stringify(ids),

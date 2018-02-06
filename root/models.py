@@ -107,6 +107,17 @@ class ValueTypes(MagicChoices):
         IMAGE: 'Image',
     }
 
+    _FORMATTER = {
+        SHORT_TEXT: 'Text',
+        LONG_TEXT: 'Text',
+        DATE: 'Date',
+        INTEGER: 'Integer',
+        FLOAT: 'DecimalPoint',
+        BOOLEAN: 'Checkmark',
+        BASE64_PNG: 'Base64PNG',
+        IMAGE: 'Image',
+    }
+
     _FILTER_TYPE = {
         SHORT_TEXT: 'String',
         LONG_TEXT: 'String',

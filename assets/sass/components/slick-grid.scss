@@ -19,6 +19,11 @@
   }
 }
 
+.slick-cell.overflow.active{
+  overflow: visible !important;
+  z-index: 999;
+}
+
 .slick-row.highlight {
   background-color: #ffff00;
 }
