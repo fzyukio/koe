@@ -69,11 +69,35 @@ const playAudio = function (e, args) {
 };
 
 
-const initTable = function () {
-    grid.init();
-    grid.initMainGridHeader({rowMoveable: true, multiSelect: true}, function () {
-        let dm = $('#distance-matrix-combo').attr('dm');
-        grid.initMainGridContent({__extra__dm: dm});
+const subscribeEvents = function () {
+    grid.on('click', playAudio);
+    grid.on('mouseenter', showBigSpectrogram);
+    grid.on('mouseleave', function (e, args) {
+        let cellElement = $(args.e.target);
+        let hasImage = cellElement.closest(".has-image");
+        if (hasImage.length == 1) {
+            tooltip.addClass('hidden');
+            hasImage.find('img').removeClass('highlight');
+        }
+    });
+
+    grid.subscribe('onContextMenu', function (e, args) {
+        let grid_ = args.grid;
+        e.preventDefault();
+        let cell = grid_.getCellFromEvent(e);
+        let colDef = grid_.getColumns()[cell.cell];
+        let field = colDef.field;
+
+        contextHandlerDecorator(colDef);
+
+        contextMenu
+            .data("field", field)
+            .css("top", e.pageY)
+            .css("left", e.pageX)
+            .show();
+        $("body").one("click", function () {
+            contextMenu.hide();
+        });
     });
 };
 
@@ -82,8 +106,10 @@ const initTable = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    initTable();
+    grid.redrawMainGrid({rowMoveable: true, multiSelect: true});
+    subscribeEvents();
 };
+
 
 const showBigSpectrogram = function (e, args) {
     let cellElement = $(args.e.target);
@@ -130,17 +156,14 @@ const showBigSpectrogram = function (e, args) {
 export const run = function () {
     console.log("Index page is now running.");
     ah.initAudioContext();
-    initTable();
-    grid.on('click', playAudio);
-    grid.on('mouseenter', showBigSpectrogram);
-    grid.on('mouseleave', function (e, args) {
-        let cellElement = $(args.e.target);
-        let hasImage = cellElement.closest(".has-image");
-        if (hasImage.length == 1) {
-            tooltip.addClass('hidden');
-            hasImage.find('img').removeClass('highlight');
-        }
+
+    grid.init();
+    grid.initMainGridHeader({rowMoveable: true, multiSelect: true}, function () {
+        let dm = $('#distance-matrix-combo').attr('dm');
+        grid.initMainGridContent({__extra__dm: dm});
     });
+
+    subscribeEvents();
 
     $('.select-dm').on('click', function (e) {
         e.preventDefault();
@@ -150,25 +173,6 @@ export const run = function () {
 
         /* Update the button */
         $('#distance-matrix-combo').attr('dm', dm).html(dmName + `<span class="caret"></span>`);
-    });
-
-    grid.subscribe('onContextMenu', function (e, args) {
-        let grid_ = args.grid;
-        e.preventDefault();
-        let cell = grid_.getCellFromEvent(e);
-        let colDef = grid_.getColumns()[cell.cell];
-        let field = colDef.field;
-
-        contextHandlerDecorator(colDef);
-
-        contextMenu
-            .data("field", field)
-            .css("top", e.pageY)
-            .css("left", e.pageX)
-            .show();
-        $("body").one("click", function () {
-            contextMenu.hide();
-        });
     });
 
     contextMenu.click(function (e, args) {
@@ -266,7 +270,6 @@ const setLabel = function (field) {
                     'grid-type': grid.gridType
                 },
                 function (msg) {
-                    console.log(msg);
                     for (let i = 0; i < selectedRows.length; i++) {
                         let row = selectedRows[i];
                         let item = items[row];

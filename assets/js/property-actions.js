@@ -87,7 +87,6 @@ const deleteRow = function (row, grid) {
  * @param grid
  */
 const setActionValue = function (row, grid) {
-  console.log(this.action);
   let items = grid.getData().getItems();
   let itemToAct = items[row];
   itemToAct._isActionValueChanged = true;

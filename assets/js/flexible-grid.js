@@ -280,42 +280,62 @@ export class FlexibleGrid {
         utils.setCache(this.previousRowCacheName, undefined);
     }
 
+    postMainGridHeader() {
+        let self = this;
+        self.mainGrid.onCellChange.subscribe(function (e, args) {
+            self.rowChangeHandler(e, args);
+        });
+        self.mainGrid.onMouseEnter.subscribe(function (e, args) {
+            self.mouseHandler(e, args);
+        });
+        self.mainGrid.onMouseLeave.subscribe(function (e, args) {
+            self.mouseHandler(e, args);
+        });
+        self.mainGrid.onSelectedRowsChanged.subscribe(function (e, args) {
+            self.rowSelectedHandler(e, args);
+        });
+        self.mainGrid.onClick.subscribe(function (e, args) {
+            self.mouseHandler(e, args);
+        });
+    }
+
     initMainGridHeader(args, callback) {
         let self = this;
         let data = args.data || {};
         data['grid-type'] = self.gridType;
 
         $.post(utils.getUrl('fetch-data', 'get-grid-column-definition'), data, function (columns) {
-            columns = JSON.parse(columns);
-            //let rows = data.rows;
+            self.columns = JSON.parse(columns);
 
-            utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], columns, {
+            utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
                 multiSelect: args.multiSelect, radioSelect: args.radioSelect,
                 rowMoveable: args.rowMoveable, gridType: self.gridType,
                 filter: args.filter || utils.gridFilter
             });
 
-            self.mainGrid.onCellChange.subscribe(function (e, args) {
-                self.rowChangeHandler(e, args);
-            });
-            self.mainGrid.onMouseEnter.subscribe(function (e, args) {
-                self.mouseHandler(e, args);
-            });
-            self.mainGrid.onMouseLeave.subscribe(function (e, args) {
-                self.mouseHandler(e, args);
-            });
-            self.mainGrid.onSelectedRowsChanged.subscribe(function (e, args) {
-                self.rowSelectedHandler(e, args);
-            });
-            self.mainGrid.onClick.subscribe(function (e, args) {
-                self.mouseHandler(e, args);
-            });
+            self.postMainGridHeader();
+            utils.initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
 
-            utils.initFilter(self.filterSelector, self.mainGrid, columns, self.defaultFilterField);
             if (typeof callback == 'function') {
                 callback();
             }
         });
+    }
+
+    redrawMainGrid(args) {
+        let self = this;
+
+        self.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
+        self.mainGrid.registerPlugin(new Slick.AutoTooltips());
+
+        utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
+            multiSelect: args.multiSelect, radioSelect: args.radioSelect,
+            rowMoveable: args.rowMoveable, gridType: self.gridType,
+            filter: args.filter || utils.gridFilter
+        });
+        self.postMainGridHeader();
+        utils.initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
+        utils.updateSlickGridData(self.mainGrid, self.rows);
     }
 
     cacheSelectableOptions() {
@@ -355,7 +375,8 @@ export class FlexibleGrid {
 
         $.post(utils.getUrl('fetch-data', 'get-grid-content'), args, function (rows) {
             rows = JSON.parse(rows);
-            utils.updateSlickGridData(self.mainGrid, rows);
+            self.rows = rows;
+            utils.updateSlickGridData(self.mainGrid, self.rows);
             self.cacheSelectableOptions();
         });
     }

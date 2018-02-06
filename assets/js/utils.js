@@ -173,8 +173,10 @@ export const getUrl = function (name, arg) {
  * @param object
  */
 export const deepCopy = function (object) {
-    let clone = $.extend(true, {}, object);
-    return clone;
+    if (Array.isArray(object)) {
+        return $.extend(true, [], object);
+    }
+    return $.extend(true, {}, object);
 };
 
 /**

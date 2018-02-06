@@ -12,7 +12,7 @@ let page;
  * See: https://stackoverflow.com/questions/12452349/mobile-viewport-height-after-orientation-change
  * Wait until innerheight changes, for max 120 frames
  */
-function orientationChanged() {
+function viewPortChangeHandler() {
     const timeout = 120;
     return new window.Promise(function (resolve) {
         const go = (i, height0) => {
@@ -95,15 +95,18 @@ const countDown = function () {
  * @private
  */
 const _postRun = function () {
-    window.addEventListener('orientationchange', function () {
-        orientationChanged().then(function () {
+    const viewPortChangeCallback = function () {
+        viewPortChangeHandler().then(function () {
             adjustFullHeightOffset();
 
             if (!isNull(page) && typeof page.orientationChange == 'function') {
                 page.orientationChange();
             }
         });
-    });
+    };
+
+    window.addEventListener('orientationchange', viewPortChangeCallback);
+    window.addEventListener('resize', viewPortChangeCallback);
 
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
