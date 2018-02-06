@@ -363,11 +363,12 @@ const SelectionComboBoxEditor = function (args) {
         $(args.container).find('select').remove();
         $select = $("<SELECT tabIndex='0' class='selectize'>" + option_str + "</SELECT>");
         $select.appendTo(args.container);
-        $select.focus();
 
         $select.selectize({
             create: true,
         });
+
+        $select[0].selectize.focus()
     };
 
     this.destroy = function () {

@@ -240,7 +240,6 @@ const setLabel = function (field) {
     if (numRows > 0) {
         setLabelLabel.html(field);
         setLabelCount.html(numRows);
-        setLabelModal.modal('show');
 
         let ids = [];
         let items = grid_.getData().getItems();
@@ -264,8 +263,15 @@ const setLabel = function (field) {
 
         setLabelInput.selectize({
             create: true,
-            options: options
+            options: options,
+            onInitialize: function () {/*console.log('Finish initialised 1');*/}
         });
+
+        setLabelModal.on('shown.bs.modal', function (e) {
+            setLabelInput[0].selectize.focus();
+        });
+
+        setLabelModal.modal('show');
 
         setLabelBtn.one('click', function (e) {
             let value = setLabelInput.val();
