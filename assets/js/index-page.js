@@ -41,7 +41,7 @@ class SegmentGrid extends fg.FlexibleGrid {
 }
 
 const grid = new SegmentGrid();
-const contextMenu = $("#contextMenu");
+const contextMenu = $("#context-menu");
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
 const setLabelLiA = contextMenu.find('a[action=set-label]');
@@ -53,9 +53,13 @@ const setLabelCount = setLabelModal.find("#set-label-count");
 const setLabelInput = setLabelModal.find("#set-label-input");
 const setLabelBtn = setLabelModal.find("#set-label-btn");
 
+const tooltip = $("#spectrogram-details-tooltip");
+const tooltipImg = tooltip.find('img');
+
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
-    if (cellElement.hasClass('has-image') || args.rowElement.hasClass('has-image')) {
+    let hasImage = cellElement.closest(".has-image");
+    if (hasImage.length == 1) {
         let segId = args.songId;
         $.post(utils.getUrl('fetch-data', 'koe/get-segment-audio'), {'segment-id': segId}, function (encoded) {
             ah.playRawAudio(encoded);
@@ -80,11 +84,62 @@ export const orientationChange = function () {
     initTable();
 };
 
+const showBigSpectrogram = function (e, args) {
+    let cellElement = $(args.e.target);
+    let hasImage = cellElement.closest(".has-image");
+    if (hasImage.length == 1) {
+        const originalImage = hasImage.find('img');
+
+        tooltipImg.attr('src', originalImage.attr('src'));
+        tooltip.removeClass('hidden');
+
+        originalImage.addClass('highlight');
+
+        const panelHeight = $('#segment-info').height();
+        const imgWidth = tooltipImg.width();
+        const imgHeight = tooltipImg.height();
+
+        const pos = hasImage.offset();
+        const cellTop = pos.top;
+        const cellLeft = pos.left;
+
+        let cellBottom = cellTop + originalImage.height();
+        let cellCentreX = cellLeft + originalImage.width() / 2;
+        let imgLeft = cellCentreX - imgWidth / 2;
+
+        let top, left;
+
+        if (cellBottom < panelHeight / 2) {
+            top = cellBottom + 20 + 'px';
+        }
+        else {
+            top = cellTop - 40 - imgHeight + 'px';
+        }
+
+        if (imgLeft > 0) {
+            left = imgLeft + 'px';
+        }
+        else {
+            left = '';
+        }
+        tooltip.css('left', left).css('top', top);
+    }
+};
+
 export const run = function () {
     console.log("Index page is now running.");
     ah.initAudioContext();
     initTable();
     grid.on('click', playAudio);
+    grid.on('mouseenter', showBigSpectrogram);
+    grid.on('mouseleave', function (e, args) {
+        let cellElement = $(args.e.target);
+        let hasImage = cellElement.closest(".has-image");
+        if (hasImage.length == 1) {
+            tooltip.addClass('hidden');
+            hasImage.find('img').removeClass('highlight');
+        }
+    });
 
     $('.select-dm').on('click', function (e) {
         e.preventDefault();
@@ -166,7 +221,7 @@ const setLabel = function (row, colDef, grid_) {
 
         let ids = [];
         let items = grid_.getData().getItems();
-        for (let i=0; i<selectedRows.length; i++) {
+        for (let i = 0; i < selectedRows.length; i++) {
             let item = items[selectedRows[i]];
             ids.push(item.id);
         }
@@ -182,7 +237,7 @@ const setLabel = function (row, colDef, grid_) {
                 },
                 function (msg) {
                     console.log(msg);
-                    for (let i=0; i<selectedRows.length; i++) {
+                    for (let i = 0; i < selectedRows.length; i++) {
                         let row = selectedRows[i];
                         let item = items[row];
                         item[field] = value;

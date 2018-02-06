@@ -26,10 +26,14 @@
     <div class="vh-offset has-grid" id="segment-info"></div>
     <div class="offset-holder" id="segment-info-offset-holder" attr="height"></div>
 
-    <ul id="contextMenu" class="dropdown-menu" style="display:none;position:absolute">
+    <ul id="context-menu" class="dropdown-menu" style="display:none;position:absolute;z-index: 999">
         <li class=""><a action="filter">Filter</a></li>
         <li><a action="set-label">Bulk set property</a></li>
     </ul>
+
+    <div id="spectrogram-details-tooltip" class="hidden">
+        <img src=""/>
+    </div>
 
     <div class="modal fade in" id="set-label-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
          aria-hidden="true" style="display: none;">
@@ -39,7 +43,8 @@
                     <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span
                             class="sr-only">Close</span>
                     </button>
-                    <h3 class="modal-title">Set <span id="set-label-label"></span> for <span id="set-label-count"></span> rows</h3>
+                    <h3 class="modal-title">Set <span id="set-label-label"></span> for <span
+                            id="set-label-count"></span> rows</h3>
                 </div>
                 <div class="modal-body" style="">
                     <input type="text" class="form-control" id="set-label-input">

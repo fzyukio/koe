@@ -42,3 +42,18 @@ $control-buttons-padding-bottom: 10px;
 .modal-dialog {
   margin: 30vh auto;
 }
+
+#spectrogram-details-tooltip {
+  position: absolute;
+  padding: 10px;
+  background-color: #efefef;
+  border-radius: 10px;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
+  pointer-events: none;
+  z-index: 999;
+  display: block;
+
+  &.hidden {
+    display: none;
+  }
+}
