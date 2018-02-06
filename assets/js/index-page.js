@@ -34,7 +34,7 @@ class SegmentGrid extends fg.FlexibleGrid {
         let row = cell.row;
         let rowElement = $(e.target.parentElement);
         let songId = dataView.getItem(row).id;
-        self.eventNotifier.trigger(eventType, {songId: songId, rowElement: rowElement});
+        self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement});
     }
 
 
@@ -54,7 +54,8 @@ const setLabelInput = setLabelModal.find("#set-label-input");
 const setLabelBtn = setLabelModal.find("#set-label-btn");
 
 const playAudio = function (e, args) {
-    if (args.rowElement.hasClass('has-image')) {
+    let cellElement = $(args.e.target);
+    if (cellElement.hasClass('has-image') || args.rowElement.hasClass('has-image')) {
         let segId = args.songId;
         $.post(utils.getUrl('fetch-data', 'koe/get-segment-audio'), {'segment-id': segId}, function (encoded) {
             ah.playRawAudio(encoded);
