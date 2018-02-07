@@ -330,8 +330,8 @@ class Command(BaseCommand):
             conns = utils.get_dbconf(dbs)
             for pop in conns:
                 conn = conns[pop]
-                # import_songs(conn)
-                # import_syllables(conn)
+                import_songs(conn)
+                import_syllables(conn)
                 import_spectrograms(conn)
 
         finally:
