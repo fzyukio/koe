@@ -273,17 +273,18 @@ const setLabel = function (field) {
                 create: true,
                 options: options,
                 selectOnTab: true,
-                onInitialize: function () {/*console.log('Finish initialised 1');*/
-                },
-                onBlur: function () {
-                    setLabelBtn.html('Blah');
-                }
+                onInitialize: function () {/*console.log('Finish initialised 1');*/}
             });
 
             setLabelModal.on('shown.bs.modal', function (e) {
                 inputEl[0].selectize.focus();
             });
 
+        }
+        else {
+            setLabelModal.on('shown.bs.modal', function (e) {
+                inputEl.focus();
+            });
         }
 
         setLabelModal.modal('show');

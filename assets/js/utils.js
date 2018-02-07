@@ -366,6 +366,7 @@ const SelectionComboBoxEditor = function (args) {
 
         $select.selectize({
             create: true,
+            selectOnTab: true
         });
 
         $select[0].selectize.focus()
