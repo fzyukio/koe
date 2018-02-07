@@ -71,7 +71,8 @@ const playAudio = function (e, args) {
 
 
 const toggleCheckBox = function (e, args) {
-    let hasCheckBox = args.rowElement.find('input[type=checkbox]').closest("input[type=checkbox]");
+    let cellElement = $(args.e.target);
+    let hasCheckBox = cellElement.find('input[type=checkbox]').closest("input[type=checkbox]");
     if (hasCheckBox.length == 1) {
         hasCheckBox.click();
     }
