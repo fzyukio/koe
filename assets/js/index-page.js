@@ -32,13 +32,13 @@ class SegmentGrid extends fg.FlexibleGrid {
         let grid = args.grid;
         let dataView = grid.getData();
         let cell = grid.getCellFromEvent(e);
-        let row = cell.row;
-        let rowElement = $(e.target.parentElement);
-        let songId = dataView.getItem(row).id;
-        self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement});
+        if (cell) {
+            let row = cell.row;
+            let rowElement = $(e.target.parentElement);
+            let songId = dataView.getItem(row).id;
+            self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement});
+        }
     }
-
-
 }
 
 const grid = new SegmentGrid();
@@ -51,7 +51,6 @@ const setLabelLi = setLabelLiA.parent();
 const setLabelModal = $("#set-label-modal");
 const setLabelLabel = setLabelModal.find("#set-label-label");
 const setLabelCount = setLabelModal.find("#set-label-count");
-const setLabelInput = setLabelModal.find("#set-label-input");
 const setLabelBtn = setLabelModal.find("#set-label-btn");
 
 const tooltip = $("#spectrogram-details-tooltip");

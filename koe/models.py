@@ -93,18 +93,21 @@ def add_node(node, idx_2_seg_id, parent, root_dist):
 
 def dist_from_root(tree):
     last_idx = tree.shape[0]
-    retval = np.ndarray((last_idx+1, ), dtype=np.float32)
+    indices = np.ndarray((last_idx+1, ), dtype=np.uint32)
+    distances = np.ndarray((last_idx + 1,), dtype=np.float32)
     for i in range(last_idx):
         branch = tree[i, :]
         l1 = int(branch[0])
         l2 = int(branch[1])
         dist = branch[2]
         if l1 <= last_idx:
-            retval[l1] = dist / 2
+            indices[l1] = i
+            distances[l1] = dist / 2
         if l2 <= last_idx:
-            retval[l2] = dist / 2
-    root_dist = tree[-1, 2] / 2
-    return retval, root_dist
+            indices[l2] = i
+            distances[l2] = dist / 2
+    # root_dist = tree[-1, 2] / 2
+    return indices, distances
 
 
 def upgma_dist(segments_ids, dm):
@@ -112,8 +115,6 @@ def upgma_dist(segments_ids, dm):
 
     ids_str = ''.join(map(str, all_segments_ids))
     chksum = hashlib.md5(ids_str.encode('ascii')).hexdigest()
-
-    # dm = DistanceMatrix.objects.filter(chksum=chksum).first()
 
     if dm is None:
         return [0] * len(segments_ids)
@@ -127,9 +128,9 @@ def upgma_dist(segments_ids, dm):
     triu = mat2triu(distmat)
 
     tree = linkage(triu, method='average')
-    retval, root_dist = dist_from_root(tree)
+    indices, distances = dist_from_root(tree)
 
-    return retval.tolist()
+    return indices.tolist(), distances.tolist()
 
 
 class Segment(models.Model, AutoSetterGetterMixin):
@@ -162,15 +163,16 @@ class Segment(models.Model, AutoSetterGetterMixin):
         dm = extras['dm']
         dm = DistanceMatrix.objects.get(id=dm)
 
-        dists = upgma_dist(ids, dm)
+        indices, distances = upgma_dist(ids, dm)
 
         for i in range(len(attr_values_list)):
             id, start, end, song = attr_values_list[i]
-            dist = dists[i]
+            dist = distances[i]
+            index = indices[i]
             spect_img, _ = spect_path(str(id))
             duration = end-start
             row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, spectrogram=spect_img,
-                       distance=dist)
+                       distance=dist, dtw_index=index)
             attr_dict = extra_attr_values_lookup.get(str(id), {})
             for attr in attr_dict:
                 row[attr] = attr_dict[attr]

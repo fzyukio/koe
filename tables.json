@@ -70,6 +70,11 @@
         "type": "FLOAT"
       },
       {
+        "name": "DTW Index",
+        "slug": "dtw_index",
+        "type": "INTEGER"
+      },
+      {
         "name": "Note",
         "slug": "note",
         "type": "SHORT_TEXT",
