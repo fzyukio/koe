@@ -234,6 +234,9 @@ const addFilter = function (field) {
     filterInput[0].focus();
 };
 
+const inputText = $(`<input type="text" class="form-control" id="set-label-input">`);
+const inputSelect = $(`<select class="selectize" id="set-label-input"></select>`);
+
 const setLabel = function (field) {
     let grid_ = grid.mainGrid;
     let selectedRows = grid_.getSelectedRows();
@@ -253,29 +256,40 @@ const setLabel = function (field) {
         let selectableOptions = selectableColumns[field];
         let options = [];
 
-        selectableOptions.forEach(function (option) {
-            options.push({text: option, value: option})
-        });
+        const isSelectize = !!selectableOptions;
+        let inputEl = isSelectize ? inputSelect : inputText;
+        $('#input-wrapper').children().remove();
+        $('#input-wrapper').append(inputEl);
 
-        let control = setLabelInput[0].selectize;
-        if (control) control.clear();
-        $(setLabelInput[0].parentElement).find('.selectize-control').remove();
-        setLabelInput[0].selectize = undefined;
+        if (isSelectize) {
+            selectableOptions.forEach(function (option) {
+                options.push({text: option, value: option})
+            });
 
-        setLabelInput.selectize({
-            create: true,
-            options: options,
-            onInitialize: function () {/*console.log('Finish initialised 1');*/}
-        });
+            let control = inputEl[0].selectize;
+            if (control) control.destroy();
 
-        setLabelModal.on('shown.bs.modal', function (e) {
-            setLabelInput[0].selectize.focus();
-        });
+            inputEl.selectize({
+                create: true,
+                options: options,
+                selectOnTab: true,
+                onInitialize: function () {/*console.log('Finish initialised 1');*/
+                },
+                onBlur: function () {
+                    setLabelBtn.html('Blah');
+                }
+            });
+
+            setLabelModal.on('shown.bs.modal', function (e) {
+                inputEl[0].selectize.focus();
+            });
+
+        }
 
         setLabelModal.modal('show');
 
         setLabelBtn.one('click', function (e) {
-            let value = setLabelInput.val();
+            let value = inputEl.val();
             if (selectableOptions) {
                 if (!selectableOptions.has(value)) {
                     selectableOptions.add(value);
