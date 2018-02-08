@@ -11,17 +11,6 @@ DEBUG = False
 
 SECRET_KEY = config('SECRET_KEY')
 
-# DATABASES = {
-#     'default': config('DATABASE_URL', cast=db_url),
-# }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'koe.db'),
-    }
-}
-
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())

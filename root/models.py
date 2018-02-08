@@ -178,10 +178,9 @@ value_setter = {
 }
 
 
-
 class ExtraAttr(models.Model):
-    klass = models.CharField(max_length=1024)
-    name = models.CharField(max_length=1024)
+    klass = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
     type = models.IntegerField(choices=ValueTypes.as_choices())
 
     class Meta:
@@ -192,7 +191,7 @@ class ExtraAttr(models.Model):
 
 
 class ExtraAttrValue(models.Model):
-    owner_id = models.CharField(max_length=1024)
+    owner_id = models.CharField(max_length=255)
     attr = models.ForeignKey(ExtraAttr, on_delete=models.CASCADE)
     value = models.TextField()
 
@@ -290,7 +289,7 @@ def id_generator(klass):
 
 
 class IdSafeModel(models.Model):
-    id = models.CharField(primary_key=True, editable=False, auto_created=False, max_length=1024)
+    id = models.CharField(primary_key=True, editable=False, auto_created=False, max_length=255)
 
     class Meta:
         abstract = True

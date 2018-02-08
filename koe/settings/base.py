@@ -24,7 +24,7 @@ AUTH_USER_MODEL = 'root.User'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -162,6 +162,22 @@ else:  # assume we have fully-specified smtp configuration
     EMAIL_PORT = email_port
     EMAIL_USE_TLS = True
     FROM_EMAIL = os.getenv('FROM_EMAIL')
+
+
+DB_CONFIG_ENV = {
+    'ENGINE': os.environ['DB_ENGINE'],
+    'NAME': os.environ['DB_NAME'],
+    'PASSWORD': os.environ['DB_PASSWORD'],
+    'USER': os.environ['DB_USER'],
+    'HOST': os.environ['DB_HOST'],
+    'PORT': os.environ['DB_PORT']
+}
+
+DB_CONFIG = {x:y for x, y in DB_CONFIG_ENV.items() if y is not None}
+
+DATABASES = {
+    'default': DB_CONFIG
+}
 
 
 SIGN_UP_SECRET = '66e712a'

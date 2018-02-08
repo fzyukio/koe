@@ -1,0 +1,38 @@
+[
+{
+  "model": "root.extraattr",
+  "pk": 1,
+  "fields": {
+    "klass": "Segment",
+    "name": "label_family",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 2,
+  "fields": {
+    "klass": "Segment",
+    "name": "label_subfamily",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 3,
+  "fields": {
+    "klass": "Segment",
+    "name": "label",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 4,
+  "fields": {
+    "klass": "Segment",
+    "name": "note",
+    "type": 0
+  }
+}
+]

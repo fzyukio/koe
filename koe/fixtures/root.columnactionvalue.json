@@ -1,0 +1,106 @@
+[
+{
+  "model": "root.columnactionvalue",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song",
+    "action": "set-column-width",
+    "value": "258.328"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "spectrogram",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 3,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label_family",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 4,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label_subfamily",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 5,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 6,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "distance",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 7,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "dtw_index",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 8,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "note",
+    "action": "set-column-width",
+    "value": "158.33333333333334"
+  }
+}
+]

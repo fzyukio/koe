@@ -2,7 +2,7 @@ import importlib
 import json
 from collections import OrderedDict
 
-from django.db.utils import OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from django.shortcuts import render
@@ -121,7 +121,7 @@ with open('tables.json', 'r', encoding='utf-8') as f:
             if is_extra_attr:
                 try:
                     ExtraAttr.objects.get_or_create(klass=klass.__name__, type=_type, name=slug)
-                except OperationalError as e:
+                except (OperationalError, ProgrammingError) as e:
                     pass
 
             if 'total_label' not in column:

@@ -86,3 +86,4 @@ scipy
 git+https://github.com/fzyukio/python_speech_features
 matplotlib
 openpyxl
+mysqlclient

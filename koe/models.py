@@ -58,8 +58,8 @@ class AudioTrack(StandardModel):
 
 
 class AudioFile(StandardModel):
-    raw_file = models.CharField(max_length=1024, unique=True)
-    mp3_file = models.CharField(max_length=1024, unique=True)
+    raw_file = models.CharField(max_length=1024)
+    mp3_file = models.CharField(max_length=1024)
     track = models.ForeignKey(AudioTrack, default=None, null=True, blank=True, on_delete=models.CASCADE)
     fs = models.IntegerField()
     length = models.IntegerField()
@@ -147,8 +147,10 @@ class Segment(models.Model, AutoSetterGetterMixin):
                                                      'segmentation__audio_file__name'))
         else:
             attr_values_list = [(x.id, x.start_time_ms, x.end_time_ms, x.segmentation.audio_file.name) for x in segs]
+
+        segids = [str(x[0]) for x in attr_values_list]
         extra_attrs = ExtraAttr.objects.filter(klass=cls.__name__)
-        extra_attr_values_list = ExtraAttrValue.objects.filter(attr__in=extra_attrs, owner_id__in=segs)\
+        extra_attr_values_list = ExtraAttrValue.objects.filter(attr__in=extra_attrs, owner_id__in=segids)\
             .values_list('owner_id', 'attr__name', 'value')
 
         extra_attr_values_lookup = {}
@@ -161,11 +163,15 @@ class Segment(models.Model, AutoSetterGetterMixin):
         ids = [x[0] for x in attr_values_list]
 
         dm = extras['dm']
-        dm = DistanceMatrix.objects.get(id=dm)
+        dm = DistanceMatrix.objects.filter(id=dm).first()
 
-        indices, distances = upgma_dist(ids, dm)
+        nrows = len(attr_values_list)
+        if dm is None:
+            indices, distances = [0] * nrows, [0] * nrows
+        else:
+            indices, distances = upgma_dist(ids, dm)
 
-        for i in range(len(attr_values_list)):
+        for i in range(nrows):
             id, start, end, song = attr_values_list[i]
             dist = distances[i]
             index = indices[i]
