@@ -31,7 +31,7 @@ COLUMN_NAMES = ['Individual Name', 'Song Id', 'Song Name', 'Koe ID', 'Syllable N
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-name_regex = re.compile('(\w+)_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(EX|VG|G)?(\.[^.]+)?(\..*)?\.wav')
+name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
 gender_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='gender', type=ValueTypes.BOOLEAN)
 quality_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='quality', type=ValueTypes.SHORT_TEXT)
 individual_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='individual',
@@ -199,7 +199,7 @@ def import_songs(conn):
         if audio_file is None:
             audio_file = import_pcm(song, cur, song_name)
 
-        import_song_info(audio_file)
+        # import_song_info(audio_file)
 
 
 def import_spectrograms(conn):
