@@ -1,17 +1,13 @@
 import io
-import json
 import os
+
 import numpy as np
 import pydub
-import array
-
 from django.conf import settings
 from django.http import HttpResponse
 
-from koe.models import AudioFile, Segment
 from koe import wavfile as wf
-from koe.utils import array_to_base64
-
+from koe.models import AudioFile, Segment
 
 __all__ = ['get_segment_audio']
 
@@ -43,7 +39,6 @@ def get_segment_audio(request):
     gain = int(normalised_max / max_volume)
     segment_audio *= gain
 
-
     audio_segment = pydub.AudioSegment(
         segment_audio.tobytes(),
         frame_rate=audio_file.fs,
@@ -52,33 +47,11 @@ def get_segment_audio(request):
     )
 
     out = io.BytesIO()
+    audio_segment.export(out, format='mp3')
+    binary_content = out.getvalue()
 
-    audio_segment.export('/tmp/blah1.mp3', format='mp3')
-    # audio_segment_original = pydub.AudioSegment.from_wav(file_url)
-    # audio_segment_original.export('/tmp/blah2.mp3', format='mp3')
-    #
-    # sound = pydub.AudioSegment.from_file(file_url)
-    # samples = sound.get_array_of_samples()
-    #
-    # shifted_samples = np.right_shift(samples, 1)
-    #
-    # # now you have to convert back to an array.array
-    # shifted_samples_array = array.array(sound.array_type, shifted_samples)
-    #
-    # new_sound = sound._spawn(shifted_samples_array)
-    # new_sound.export('/tmp/blah3.mp3', format='mp3')
-
-    # return HttpResponse(out.getvalue(), content_type='audio/mpeg')
-
-    f = open('/tmp/blah1.mp3', "rb")
     response = HttpResponse()
-    response.write(f.read())
+    response.write(binary_content)
     response['Content-Type'] = 'audio/mp3'
-    response['Content-Length'] = os.path.getsize('/tmp/blah1.mp3')
+    response['Content-Length'] = len(binary_content)
     return response
-
-    # response = HttpResponse(fsock, content_type="audio/mpeg")
-    # # response['Content-Disposition'] = 'attachment; filename=filename.mp3'
-    # return response
-
-    # return HttpResponse(json.dumps(dict(fs=audio_file.fs, data=array_to_base64(segment_audio))))
