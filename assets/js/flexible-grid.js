@@ -221,10 +221,8 @@ export class FlexibleGrid {
                     itemSimplified[oldAttr] = item[oldAttr] || null;
 
                     let selectableOptions = selectableColumns[attr];
-                    if (selectableOptions) {
-                        if (!selectableOptions.has(newValue)) {
-                            selectableOptions.add(newValue);
-                        }
+                    if (newValue && selectableOptions) {
+                        selectableOptions[newValue] = (selectableOptions[newValue] || 0) + 1;
                     }
                 }
             }
@@ -348,7 +346,7 @@ export class FlexibleGrid {
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
             if (column._editor === 'Select') {
-                selectableColumns[column.field] = new Set();
+                selectableColumns[column.field] = {};
             }
         }
 
@@ -356,11 +354,11 @@ export class FlexibleGrid {
             let item = items[i];
             for (let field in selectableColumns) {
                 if (selectableColumns.hasOwnProperty(field)) {
-                    let set = selectableColumns[field];
+                    let count = selectableColumns[field];
                     let val = item[field];
                     val = val && val.trim();
                     if (val)
-                        set.add(val);
+                        count[val] = (count[val] || 0) + 1;
                 }
             }
         }

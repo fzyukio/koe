@@ -3,7 +3,8 @@ export {
     Urls,
 };
 
-import {isNull, getUrl} from "./utils";
+import {isNull, SlickEditors} from "./utils";
+import {SelectizeEditor} from "./selectize-formatter";
 
 let page;
 
@@ -53,6 +54,9 @@ const adjustFullHeightOffset = function () {
  * @private
  */
 const _preRun = function () {
+
+    SlickEditors['Select'] = SelectizeEditor;
+
     adjustFullHeightOffset();
     let body = $("body");
 

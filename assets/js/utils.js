@@ -322,97 +322,6 @@ SlickFormatters['Checkmark'] = CheckmarkFormatter;
 SlickFormatters['Image'] = ImageFormatter;
 
 
-/**
- * This class helps render magic choice options as a combo box in the grid.
- * Same signature as other editors, as found in Slick.Editors
- * @param args expects one attributes `options` which is a map from one type to its aliases
- * @constructor will break the options into separate key-value pairs and create a HTML element accordingly
- */
-const SelectionComboBoxEditor = function (args) {
-    let $select, defaultValue;
-
-    this.init = function () {
-        let option_str = "", value;
-
-        let selectableColumns = getCache('selectableOptions');
-        let selectableOptions = selectableColumns[args.column.field];
-        let options = {};
-
-
-        selectableOptions.forEach(function (option) {
-            options[option] = option;
-        });
-
-        let swappable = (args.item.swappables || {})[args.column.field];
-        let defaultValue = args.item[args.column.field];
-        for (let key in options) {
-            if (options.hasOwnProperty(key)) {
-                value = options[key];
-                if (value) {
-                    let selectedClass = '';
-                    if (value == defaultValue) {
-                        selectedClass = ' selected';
-                    }
-                    if (swappable === undefined || swappable.indexOf(value) > -1) {
-                        option_str += `<OPTION value="${value}" ${selectedClass}>${key}</OPTION>`;
-                    }
-                }
-            }
-        }
-
-        $(args.container).find('select').remove();
-        $select = $("<SELECT tabIndex='0' class='selectize'>" + option_str + "</SELECT>");
-        $select.appendTo(args.container);
-
-        $select.selectize({
-            create: true,
-            selectOnTab: true
-        });
-
-        $select[0].selectize.focus()
-    };
-
-    this.destroy = function () {
-        $select.remove();
-    };
-
-    this.focus = function () {
-        $select.focus();
-    };
-
-    this.loadValue = function (item) {
-        defaultValue = item[args.column.field];
-        $select.val(defaultValue);
-    };
-
-    this.serializeValue = function () {
-        if (args.column._formatter == 'Checkmark') {
-            return ($select.val() === "yes");
-        }
-        return $select.val();
-    };
-
-    this.applyValue = function (item, state) {
-        item[args.column.field] = state;
-    };
-
-    this.isValueChanged = function () {
-        let val = $select.val();
-        if (val || defaultValue)
-            return (val !== defaultValue);
-        return false;
-    };
-
-    this.validate = function () {
-        return {
-            valid: true,
-            msg: null
-        };
-    };
-
-    this.init();
-};
-
 const FloatEditor__rewritten = function (args) {
     let $input;
     let defaultValue;
@@ -845,8 +754,7 @@ export const gridFilter = function (item, filters) {
 /*
  * Make a copy of Slick.Editor and then add new editors
  */
-const SlickEditors = $.extend({}, Slick.Editors);
-SlickEditors['Select'] = SelectionComboBoxEditor;
+export const SlickEditors = $.extend({}, Slick.Editors);
 SlickEditors['Date'] = DateEditor__rewritten;
 SlickEditors['Float'] = FloatEditor__rewritten;
 

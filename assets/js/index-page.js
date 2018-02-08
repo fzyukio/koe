@@ -2,8 +2,8 @@ import * as fg from "flexible-grid";
 import * as utils from "./utils";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
+import {initSelectize} from "./selectize-formatter";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
-require('selectize/dist/js/standalone/selectize.js');
 
 const gridOptions = utils.deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -253,32 +253,22 @@ const setLabel = function (field) {
 
         let selectableColumns = utils.getCache('selectableOptions');
         let selectableOptions = selectableColumns[field];
-        let options = [];
 
         const isSelectize = !!selectableOptions;
         let inputEl = isSelectize ? inputSelect : inputText;
         $('#input-wrapper').children().remove();
         $('#input-wrapper').append(inputEl);
+        let defaultValue = inputEl.val();
 
         if (isSelectize) {
-            selectableOptions.forEach(function (option) {
-                options.push({text: option, value: option})
-            });
-
             let control = inputEl[0].selectize;
             if (control) control.destroy();
 
-            inputEl.selectize({
-                create: true,
-                options: options,
-                selectOnTab: true,
-                onInitialize: function () {/*console.log('Finish initialised 1');*/}
-            });
+            initSelectize(inputEl, field, defaultValue);
 
             setLabelModal.on('shown.bs.modal', function (e) {
                 inputEl[0].selectize.focus();
             });
-
         }
         else {
             setLabelModal.on('shown.bs.modal', function (e) {
@@ -291,9 +281,7 @@ const setLabel = function (field) {
         setLabelBtn.one('click', function (e) {
             let value = inputEl.val();
             if (selectableOptions) {
-                if (!selectableOptions.has(value)) {
-                    selectableOptions.add(value);
-                }
+                selectableOptions[value] = (selectableOptions[value] || 0) + 1;
             }
 
             $.post(utils.getUrl('fetch-data', 'change-property-bulk'),
