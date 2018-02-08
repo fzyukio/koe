@@ -157,7 +157,7 @@ export const setCache = function (cache, value) {
  * Return django static urls by their names.
  * @param name named url
  * @param arg parameter, if required
- * @returns the (relative) actual url string
+ * @return {string}
  */
 export const getUrl = function (name, arg) {
     let url = window.appCache.urls[name];

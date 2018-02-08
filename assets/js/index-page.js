@@ -62,9 +62,9 @@ const playAudio = function (e, args) {
     let hasImage = cellElement.closest(".has-image");
     if (hasImage.length == 1) {
         let segId = args.songId;
-        $.post(utils.getUrl('fetch-data', 'koe/get-segment-audio'), {'segment-id': segId}, function (encoded) {
-            ah.playRawAudio(encoded);
-        })
+        let data = new FormData();
+        data.append('segment-id', segId);
+        ah.queryAndPlayAudio(utils.getUrl('fetch-data', 'koe/get-segment-audio'), data, segId)
     }
 };
 

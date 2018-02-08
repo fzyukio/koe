@@ -180,6 +180,8 @@ def read_segment(file, beg, end, mono=False, normalised=True):
             if normalised:
                 normfactor = 1.0 / (2 ** (bits - 1))
                 data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
+            else:
+                data = numpy.ascontiguousarray(data, dtype=data.dtype)
 
             return data
     return numpy.empty((0,))
