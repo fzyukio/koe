@@ -198,7 +198,7 @@ def get_grid_content(request):
     """
     today = datetime.date.today()
     now = datetime.datetime.now()
-    extras = dict(today=today, now=now)
+    extras = dict(today=today, now=now, user=request.user)
     grid_type = request.POST['grid-type']
     for key in request.POST:
         if key.startswith('__extra__'):
@@ -223,13 +223,12 @@ def change_property_bulk(request):
     klass = table['class']
     ids = json.loads(request.POST.get('ids', '[]'))
     objs = klass.objects.filter(pk__in=ids)
-    print(objs)
 
     for column in columns:
         attr = column['slug']
         if attr == field:
             setter = column['setter']
-            setter(objs, value, {})
+            setter(objs, value, {'user': request.user})
 
     return HttpResponse('ok')
 
@@ -255,7 +254,7 @@ def change_properties(request):
             val = grid_row[attr]
             if 'setter' in column:
                 setter = column['setter']
-                setter([obj], val, {})
+                setter([obj], val, {'user': request.user})
 
     return HttpResponse('ok')
 
@@ -326,25 +325,6 @@ values_grid_action_handlers = {
     'reorder-columns': reorder_columns_handler,
     'set-column-width': set_column_width_handler
 }
-
-
-def _save_table(klass, table, columns):
-    for row in table:
-        # Ignore row id #total, because this row is not an actual object
-        if row['id'] == 'total': continue
-
-        obj = klass.objects.get(pk=row['id'])
-        for column in columns:
-            attr = column['slug']
-            editable = column['editable']
-            if attr in row and editable:
-                setter = column['setter']
-                setter([obj], row[attr], {})
-
-        if hasattr(obj, 'complete'):
-            obj.complete = True
-            obj.save()
-
 
 @csrf_exempt
 def fetch_data(request, *args, **kwargs):

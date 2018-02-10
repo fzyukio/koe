@@ -12,7 +12,7 @@ elif test "$DB_ENGINE" = "django.db.backends.postgresql"; then
 elif test "$DB_ENGINE" = "django.db.backends.mysql"; then
     echo "MYSQL"
     QUERY_TO_RUN=`echo "SELECT concat('DROP TABLE IF EXISTS ', table_name, ';') FROM information_schema.tables WHERE table_schema = 'koe'" | python manage.py dbshell`
-    DELETE_QUERY=`echo "$DELETE_QUERY" |  sed -n '1!p'`
+    DELETE_QUERY=`echo "$QUERY_TO_RUN" |  sed -n '1!p'`
     echo "SET FOREIGN_KEY_CHECKS = 0;${DELETE_QUERY}SET FOREIGN_KEY_CHECKS = 1;ALTER DATABASE koe CHARACTER SET utf8; " | python manage.py dbshell
 fi
 

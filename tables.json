@@ -80,6 +80,36 @@
         "type": "SHORT_TEXT",
         "editable": true,
         "is_extra_attr": true
+      },
+      {
+        "name": "Song note",
+        "slug": "song_note",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Date",
+        "slug": "song_date",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Gender",
+        "slug": "song_gender",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Quality",
+        "slug": "song_quality",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Individual",
+        "slug": "song_individual",
+        "type": "SHORT_TEXT"
+      },
+      {
+        "name": "Track",
+        "slug": "song_track",
+        "type": "SHORT_TEXT"
       }
     ]
   }

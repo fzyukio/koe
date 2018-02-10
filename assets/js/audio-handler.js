@@ -118,7 +118,9 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
             if (this.status == 200) {
                 reader.readAsArrayBuffer(new Blob([this.response]));
             }
+            $.event.trigger("ajaxStop");
         };
+        $.event.trigger("ajaxStart");
         xhr.send(postData)
     }
 };

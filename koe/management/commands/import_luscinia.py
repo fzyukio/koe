@@ -11,6 +11,7 @@ from logging import warning
 
 import numpy as np
 import psycopg2
+import pydub
 from PIL import Image
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
@@ -80,6 +81,12 @@ def import_pcm(song, cur, song_name):
         wf._write(wav_file_path, fs, array2, bitrate=bitrate)
     else:
         fs, length = get_wav_info(wav_file_path)
+
+    mp3_url = audio_path(song_name, 'mp3')
+    if not os.path.isfile(mp3_url):
+        ensure_parent_folder_exists(mp3_url)
+        sound = pydub.AudioSegment.from_wav(wav_file_path)
+        sound.export(mp3_url, format='mp3')
 
     audio_file = AudioFile.objects.create(name=song_name, length=length, fs=fs)
     return audio_file

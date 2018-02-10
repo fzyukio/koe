@@ -34,5 +34,14 @@
     "name": "note",
     "type": 0
   }
+},
+{
+  "model": "root.extraattr",
+  "pk": 5,
+  "fields": {
+    "klass": "AudioFile",
+    "name": "note",
+    "type": 1
+  }
 }
 ]

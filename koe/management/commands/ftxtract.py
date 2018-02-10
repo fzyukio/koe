@@ -7,6 +7,8 @@ from progress.bar import Bar
 from python_speech_features import xfcc, delta, xfc
 from scipy import interpolate
 
+from root.utils import audio_path
+
 window_size_relative = 0.2  # Of the largest window
 
 
@@ -18,7 +20,6 @@ def resize_arr(arr, length):
     return f(t1)
 
 
-@profile
 def extract_xfcc(segments_ids, config, method_name='mfcc'):
     from koe.models import Segment
     from koe import wavfile
@@ -35,6 +36,8 @@ def extract_xfcc(segments_ids, config, method_name='mfcc'):
     segments = Segment.objects.filter(id__in=segments_ids).order_by(preserved)
 
     nsegs = len(segments_ids)
+    assert len(segments) == nsegs
+
     mfccs = []
     bar = Bar('Extracting {} Range={}~{}, nCoefs={}, delta={}'.format(method_name, lower, upper, nmfcc, ndelta),
               max=nsegs)
@@ -62,16 +65,18 @@ def extract_xfcc(segments_ids, config, method_name='mfcc'):
     else:
         raise Exception('No such method: {}'.format(method_name))
 
-    segments_info = segments.values_list('segmentation__audio_file__raw_file',
+    segments_info = segments.values_list('segmentation__audio_file__name',
                                          'segmentation__audio_file__length',
                                          'segmentation__audio_file__fs',
                                          'start_time_ms',
                                          'end_time_ms')
 
-    for file_url, length, fs, start, end in segments_info:
+    for file_name, length, fs, start, end in segments_info:
         duration_ms = length * 1000 / fs
         start /= duration_ms
         end /= duration_ms
+
+        file_url = audio_path(file_name, 'wav')
 
         sig = wavfile.read_segment(file_url, start, end, mono=True)
 
@@ -93,6 +98,11 @@ def extract_xfcc(segments_ids, config, method_name='mfcc'):
     return mfccs
 
 
+def dummy(segments_ids, configs):
+    nsegs = len(segments_ids)
+    return np.ndarray((nsegs, 1), dtype=np.float32)
+
+
 extract_funcs = {
     'mfcc': lambda x, y: extract_xfcc(x, y, 'mfcc'),
     'bfcc': lambda x, y: extract_xfcc(x, y, 'bfcc'),
@@ -102,4 +112,5 @@ extract_funcs = {
     'bfc': lambda x, y: extract_xfcc(x, y, 'bfc'),
     'gfc': lambda x, y: extract_xfcc(x, y, 'gfc'),
     'lfc': lambda x, y: extract_xfcc(x, y, 'lfc'),
+    'dummy': dummy
 }
