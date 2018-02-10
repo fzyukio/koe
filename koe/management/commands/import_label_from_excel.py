@@ -26,6 +26,7 @@ label_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='la
 family_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label_family', type=ValueTypes.SHORT_TEXT)
 subfamily_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label_subfamily',
                                                     type=ValueTypes.SHORT_TEXT)
+user = User.objects.get(username='wesley')
 
 
 def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
@@ -55,7 +56,7 @@ def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
 
     ids_2_values = {x: y for x, y in zip(ids, values)}
 
-    existings = ExtraAttrValue.objects.filter(owner_id__in=ids, attr=extra_attr)
+    existings = ExtraAttrValue.objects.filter(user=user, owner_id__in=ids, attr=extra_attr)
     existings_owner_ids = existings.values_list('owner_id', flat=True)
     nonexistings_owner_ids = [x for x in ids if x not in existings_owner_ids]
 
@@ -69,7 +70,7 @@ def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
 
     for objid in nonexistings_owner_ids:
         value = ids_2_values[objid]
-        newly_created.append(ExtraAttrValue(owner_id=objid, attr=extra_attr, value=value))
+        newly_created.append(ExtraAttrValue(user=user, owner_id=objid, attr=extra_attr, value=value))
 
     ExtraAttrValue.objects.bulk_create(newly_created)
 
@@ -104,8 +105,6 @@ class Command(BaseCommand):
                 continue
             row = rows[idx]
             pop = row[col_idx[ColumnName.POPULATION]].value
-            if pop not in ['LBI', 'PKI']:
-                continue
             excel_row_idx = idx + 1
 
             label = row[col_idx[ColumnName.LABEL]].value
@@ -160,9 +159,9 @@ class Command(BaseCommand):
             warning('The following songs are found in Excel but not in database: \n{}'
                     .format('\n'.join(songs_in_excel_not_db)))
 
-        if songs_in_db_not_excel:
-            warning('The following songs are found in database but not in Excel: \n{}'
-                    .format('\n'.join(songs_in_db_not_excel)))
+        # if songs_in_db_not_excel:
+        #     warning('The following songs are found in database but not in Excel: \n{}'
+        #             .format('\n'.join(songs_in_db_not_excel)))
 
         segment_values_list = Segment.objects.filter(segmentation__audio_file__name__in=song_names) \
             .annotate(strid=Cast('id', models.CharField())) \

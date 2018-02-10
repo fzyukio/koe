@@ -40,6 +40,18 @@ def calc_sigma(feature_arrays, ratio=0.25):
     return sigmas
 
 
+class DummyDistance:
+    def get_dist(self):
+        return np.random.randn()
+
+
+d_ = DummyDistance()
+
+
+def dummy(seg_one_f0, seg_two_f0, *args, **kwargs):
+    return d_
+
+
 def calc_gap(feature_arrays):
     feature_array_shape = np.shape(feature_arrays[0])
     if len(feature_array_shape) == 1:
@@ -83,9 +95,10 @@ class Command(BaseCommand):
             help='List of normalisation algorithm [none, min, avg, max]',
         )
 
+    @profile
     def handle(self, features, dists, metrics, norms, *args, **options):
         from koe.models import Segment, DistanceMatrix
-        # DistanceMatrix.objects.all().delete()
+        DistanceMatrix.objects.all().delete()
         segments_ids = np.array(list(Segment.objects.all().order_by('id').values_list('id', flat=True)))
 
         nsegs = len(segments_ids)
@@ -117,53 +130,56 @@ class Command(BaseCommand):
                             extract_func = extract_funcs[feature_name]
                             feature_array = extract_func(segments_ids, config)
 
-                        triu = np.empty((ndistances,), dtype=np.float32)
+                        # triu = np.empty((ndistances,), dtype=np.float32)
                         distance_count = 0
 
                         bar = Bar('Calc distance ({})'.format(test_name), max=nsegs)
 
-                        for i in range(nsegs):
-                            seg_one_f0 = feature_array[i]
-                            for j in range(i + 1, nsegs):
-                                seg_two_f0 = feature_array[j]
+                        if metric_name == 'dummy':
+                            metric_func = dummy
+                            args = {}
+                        elif metric_name == 'edr':
+                            sigmas = calc_sigma(feature_array)
+                            metric_func = pyed.Edr
+                            args = {'sigmas': sigmas}
+                        elif metric_name == 'erp':
+                            gap = calc_gap(feature_array)
+                            metric_func = pyed.Erp
+                            args = {'gap': gap}
+                        elif metric_name == 'lcss':
+                            sigmas = calc_sigma(feature_array)
+                            metric_func = pyed.Lcss
+                            args = {'sigmas': sigmas}
+                        else:
+                            metric_func = pyed.Dtw
+                            args = {}
 
-                                window_size = min(len(seg_one_f0), len(seg_two_f0), max(len(seg_one_f0), len(seg_two_f0)) *
-                                                  window_size_relative)
+                        triu = np.random.rand(ndistances).astype(np.float16)
 
-                                if metric_name == 'edr':
-                                    sigmas = calc_sigma(feature_array)
-                                    metric_func = pyed.Edr
-                                    args = {'sigmas': sigmas}
-                                elif metric_name == 'erp':
-                                    gap = calc_gap(feature_array)
-                                    metric_func = pyed.Erp
-                                    args = {'gap': gap}
-                                elif metric_name == 'lcss':
-                                    sigmas = calc_sigma(feature_array)
-                                    metric_func = pyed.Lcss
-                                    args = {'sigmas': sigmas}
-                                else:
-                                    metric_func = pyed.Dtw
-                                    args = {}
-                                distance = metric_func(seg_one_f0, seg_two_f0, args, pyed.Settings(
-                                    dist=dist_name,
-                                    window='palival',
-                                    param=window_size,
-                                    norm=norm,
-                                    compute_path=False
-                                ))
+                        # for i in range(nsegs):
+                        #     seg_one_f0 = feature_array[i]
+                        #     for j in range(i + 1, nsegs):
+                        #         seg_two_f0 = feature_array[j]
 
-                                triu[distance_count] = distance.get_dist()
-                                distance_count += 1
-                            bar.next()
+                                # window_size = min(len(seg_one_f0), len(seg_two_f0), max(len(seg_one_f0), len(seg_two_f0)) * window_size_relative)
+
+                                # distance = metric_func(seg_one_f0, seg_two_f0, args, pyed.Settings(dist=dist_name, window='palival', norm=norm, compute_path=False))
+                                #
+                                # triu[distance_count] = distance.get_dist()
+                                # distance_count += 1
+                            # bar.next()
                         bar.finish()
 
                         triu[np.isinf(triu)] = np.nan
                         max_value = np.nanmax(triu) * 2
                         triu[np.isnan(triu)] = max_value
 
-                        dm = DistanceMatrix()
-                        dm.ids = segments_ids
+                        chksum = DistanceMatrix.calc_chksum(segments_ids)
+                        dm = DistanceMatrix.objects.filter(chksum=chksum).first()
+                        if dm is None:
+                            dm = DistanceMatrix()
+                            dm.chksum = chksum
+                            dm.ids = segments_ids
                         dm.triu = triu
                         dm.algorithm = test_name
                         dm.save()

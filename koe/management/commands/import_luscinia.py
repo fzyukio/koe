@@ -1,41 +1,40 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
-import io
+import contextlib
+import datetime
 import os
 import re
 import sys
+import wave
 from logging import warning
 
 import numpy as np
 import psycopg2
-import pydub
 from PIL import Image
 from django.core.management.base import BaseCommand
+from progress.bar import Bar
 
 from koe import wavfile as wf
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time
-from koe.models import AudioFile, Segmentation, Segment, AudioTrack
-from root.models import ExtraAttr, ExtraAttrValue, ValueTypes
+from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual
+from root.models import ExtraAttr, ExtraAttrValue, ValueTypes, User
 from root.utils import audio_path, ensure_parent_folder_exists, spect_path
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
 AXIS_COLOUR = [127, 127, 127]
 
-COLUMN_NAMES = ['Individual Name', 'Song Id', 'Song Name', 'Koe ID', 'Syllable Number', 'Syllable Start', 'Syllable End',
-                'Syllable Length', 'Element Count', 'Spectrogram', 'Original Label', 'Label', 'Note', 'Context', 'Min FF', 'Max FF', 'Min Octave',
-                'Max Octave', 'Gap Before', 'Gap After', 'Overall instantaneous peak freq', 'Overall peak frequency',
-                'Overall Min Freq', 'Overall Max Freq']
+name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
+# gender_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='gender', type=ValueTypes.SHORT_TEXT)
+# quality_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='quality', type=ValueTypes.SHORT_TEXT)
+# date_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='date', type=ValueTypes.DATE)
+note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
 
-LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
-gender_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='gender', type=ValueTypes.BOOLEAN)
-quality_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='quality', type=ValueTypes.SHORT_TEXT)
-individual_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='individual',
-                                                     type=ValueTypes.SHORT_TEXT)
+user = User.objects.get(username='wesley')
+
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -44,79 +43,102 @@ else:
     str_to_bytes = lambda x: x
 
 
+def get_wav_info(audio_file):
+    """
+    Retuen fs and length of an audio without readng the entire file
+    :param audio_file:
+    :return:
+    """
+    with contextlib.closing(wave.open(audio_file, 'r')) as f:
+        nframes = f.getnframes()
+        rate = f.getframerate()
+    return rate, nframes
+
+
 def import_pcm(song, cur, song_name):
-    song_id = song['songid']
-    # Must use cur, not dict_cur otherwise wav will return truncated - for some reason
-    cur.execute('select wav from wavs where songid={};'.format(song_id))
-
-    data = cur.fetchone()
-    raw_pcm = str_to_bytes(data[0])
-
-    nchannels = song['stereo']
-    bitrate = int(song['ssizeinbits'])
-    fs = int(song['samplerate'])
-
-    byte_per_frame = int(bitrate / 8)
-    nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
-    nframes_per_channel = int(nframes_all_channel / nchannels)
-
-    wav_url, wav_file_path = audio_path(song_name, 'wav')
+    wav_file_path = audio_path(song_name, 'wav')
     if not os.path.isfile(wav_file_path):
+        song_id = song['songid']
+        cur.execute('select wav from wavs where songid={};'.format(song_id))
+
+        data = cur.fetchone()
+        raw_pcm = str_to_bytes(data[0])
+
+        nchannels = song['stereo']
+        bitrate = int(song['ssizeinbits'])
+        fs = int(song['samplerate'])
+
+        byte_per_frame = int(bitrate / 8)
+        nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
+        nframes_per_channel = int(nframes_all_channel / nchannels)
+        length = nframes_per_channel
+
         array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
         array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
 
         ensure_parent_folder_exists(wav_file_path)
         wf._write(wav_file_path, fs, array2, bitrate=bitrate)
+    else:
+        fs, length = get_wav_info(wav_file_path)
 
-    mp3_url, mp3_file_path = audio_path(song_name, 'mp3')
-    if not os.path.isfile(mp3_file_path):
-        ensure_parent_folder_exists(mp3_file_path)
-        sound = pydub.AudioSegment.from_wav(wav_file_path)
-        sound.export(mp3_file_path, format='mp3')
-
-    audio_file = AudioFile.objects.create(raw_file=wav_url, mp3_file=mp3_url, name=song_name,
-                                          length=nframes_per_channel, fs=fs)
-    print('Created song {}'.format(song_name))
+    audio_file = AudioFile.objects.create(name=song_name, length=length, fs=fs)
     return audio_file
 
 
-def import_song_info(audio_file):
-    song_name = audio_file.name
+def import_song_info(conn):
+    song_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Populate info such as individuals, location, ...
-    matches = name_regex.match(song_name)
-    if matches is None:
-        warning('File {} doesn\'t conform to the name pattern'.format(song_name))
-    else:
-        location = matches.group(1)
-        year = matches.group(2)
-        month = matches.group(3)
-        date = matches.group(4)
-        track_id = matches.group(5)
+    song_cur.execute('select i.name as iname, s.call_context, s.name as sname from songdata s join individual i on s.individualid=i.id')
+    songs = song_cur.fetchall()
 
-        track_name = '{}_{}_{}_{}'.format(location, year, month, date, track_id)
-        track, _ = AudioTrack.objects.get_or_create(name=track_name)
-        audio_file.track = track
-        audio_file.save()
+    audio_files = AudioFile.objects.all()
+    db_song_name_to_obj = {x.name : x for x in audio_files}
 
-        gender = matches.group(7) == 'M'
-        quality = matches.group(8)
-        individual = matches.group(9)
-        if individual:
-            individual = individual[1:]
-        if gender:
-            ExtraAttrValue.objects.get_or_create(attr=gender_attr, owner_id=audio_file.id, value=gender)
-        if quality:
-            ExtraAttrValue.objects.get_or_create(attr=quality_attr, owner_id=audio_file.id,
-                                                 value=quality)
-        if individual:
-            ExtraAttrValue.objects.get_or_create(attr=individual_attr, owner_id=audio_file.id,
-                                                 value=individual)
+    bar = Bar('Importing song info ...', max=len(songs))
+
+    for song in songs:
+        song_name = song['sname']
+        audio_file = db_song_name_to_obj.get(song_name, None)
+
+        if audio_file:
+            audio_file_id = audio_file.id
+            # Populate info such as individuals, location, ...
+            matches = name_regex.match(song_name)
+            if matches is None:
+                warning('File {} doesn\'t conform to the name pattern'.format(song_name))
+            else:
+                location = matches.group(1)
+                bar.next()
+
+                day = int(matches.group(4))
+                year = int(matches.group(2))
+                month = int(matches.group(3))
+
+                date = datetime.date(year, month, day)
+                track_id = matches.group(5)
+                gender = matches.group(7)
+                quality = matches.group(8)
+                song_note = song['call_context']
+                individual_name = song['iname']
+
+                track_name = '{}_{}_{}'.format(location, date.strftime('%Y-%m-%d'), track_id)
+
+                track, _ = AudioTrack.objects.get_or_create(name=track_name, date=date)
+
+                individual, _ = Individual.objects.get_or_create(name=individual_name, gender=gender)
+                audio_file.track = track
+                audio_file.individual = individual
+                audio_file.quality = quality
+                audio_file.save()
+
+                if song_note and song_note.strip() != 'null':
+                    ExtraAttrValue.objects.get_or_create(user=user, attr=note_attr, owner_id=audio_file_id, value=song_note)
+
+    bar.finish()
 
 
 def import_syllables(conn):
     """
-    :param pop: 3-char abbr of the population, e.g. 'PKI', 'LBI', etc
     :param conn: the database connection
     :return:
     """
@@ -134,7 +156,7 @@ def import_syllables(conn):
     # Db Syllable #2924
 
     for row in song_syllable_rows:
-        song_name = row[0].replace(' ', '').replace('$', '')
+        song_name = row[0]
         syl_starttime = row[1]
         syl_endtime = row[2]
         song_id = row[3]
@@ -161,6 +183,8 @@ def import_syllables(conn):
 
     # delete all existing manual segmentation:
     Segmentation.objects.filter(audio_file__name__in=songs_2_syllables.keys(), source='user').delete()
+
+    bar = Bar('Importing syllables ...', max=len(songs_2_syllables))
     for song in songs_2_syllables:
         syllables = songs_2_syllables[song]
         audio_file = AudioFile.objects.filter(name=song).first()
@@ -181,7 +205,9 @@ def import_syllables(conn):
             segment.segmentation = segmentation
             segment.save()
 
-        print('Processed song {}'.format(song))
+        # print('Processed song {}'.format(song))
+        bar.next()
+    bar.finish()
 
 
 def import_songs(conn):
@@ -191,15 +217,17 @@ def import_songs(conn):
     song_cur.execute('select w.framesize, w.stereo, w.samplerate, w.ssizeinbits, w.songid, s.name '
                      'from wavs w join songdata s on w.songid=s.id')
     songs = song_cur.fetchall()
+    bar = Bar('Importing song PCM ...', max=len(songs))
     for song in songs:
-        song_name = song['name'].replace(' ', '').replace('$', '')
+        song_name = song['name']
         audio_file = AudioFile.objects.filter(name=song_name).first()
 
         # Import WAV data and save as WAV and MP3 files
         if audio_file is None:
+            bar.song_name = song_name
             audio_file = import_pcm(song, cur, song_name)
-
-        # import_song_info(audio_file)
+            bar.next()
+    bar.finish()
 
 
 def import_spectrograms(conn):
@@ -216,13 +244,18 @@ def import_spectrograms(conn):
 
     for song in songs_data:
         song_name = song['name']
-        song_info[song_name.replace(' ', '').replace('$', '')] = (song['id'], song['maxfreq'], song['dy'])
+        song_info[song_name] = (song['id'], song['maxfreq'], song['dy'])
 
     segments_info = Segment.objects\
         .filter(segmentation__audio_file__name__in=song_info.keys())\
         .values_list('id', 'segmentation__audio_file__name', 'start_time_ms', 'end_time_ms')
 
+    n = len(segments_info)
+    bar = Bar('Importing segments ...', max=n)
+
     for seg_id, song_name, start, end in segments_info:
+        if song_name not in song_info:
+            continue
         song_id, nyquist, fbin = song_info[song_name]
 
         cur.execute('select starttime, endtime, songid from syllable where songid={} and starttime<={} and endtime>={}'
@@ -304,12 +337,14 @@ def import_spectrograms(conn):
 
             if syl_idx > 0:
                 warning('Syl_idx > 0')
-                _, file_path = spect_path('{}_{}'.format(seg_id, syl_idx))
+                file_path = spect_path('{}_{}'.format(seg_id, syl_idx))
             else:
-                _, file_path = spect_path('{}'.format(seg_id))
+                file_path = spect_path('{}'.format(seg_id))
             ensure_parent_folder_exists(file_path)
 
             img.save(file_path, format='PNG')
+        bar.next()
+    bar.finish()
 
 
 class Command(BaseCommand):
@@ -333,6 +368,7 @@ class Command(BaseCommand):
                 import_songs(conn)
                 import_syllables(conn)
                 import_spectrograms(conn)
+                import_song_info(conn)
 
         finally:
             for dbconf in conns:
