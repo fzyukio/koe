@@ -21,7 +21,7 @@ urlpatterns = [
     url(r'^reset', userviews.UserResetPasswordView.as_view(), name='reset-password'),
     url(r'^forget', userviews.UserForgetPasswordView.as_view(), name='forget-password'),
     url(r'^logout$', userviews.sign_out, name='logout'),
-    url(r'^some-view', views.get_view('some-view'), name='some-view'),
+    url(r'^history', views.get_view('history'), name='history'),
     url(r'^$', login_required(views.IndexView.as_view()), name='index'),
 ]
 

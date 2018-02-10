@@ -9,7 +9,7 @@ from django.db.models.query import QuerySet
 from scipy.cluster.hierarchy import linkage
 
 from koe.utils import base64_to_array, array_to_base64, triu2mat, mat2triu
-from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, AutoSetterGetterMixin
+from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, AutoSetterGetterMixin, User
 from root.utils import spect_path, data_path, audio_path, ensure_parent_folder_exists
 
 PY3 = sys.version_info[0] == 3
@@ -327,3 +327,13 @@ class ValueForSorting(StandardModel):
 
     class Meta:
         unique_together = ('segment', 'algorithm')
+
+
+class HistoryEntry(StandardModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    time = models.DateTimeField()
+    filename = models.CharField(max_length=255)
+
+    def save(self, *args, **kwargs):
+        self.filename = '{}-{}.zip'.format(self.user.id, self.time.strftime('%Y-%m-%d_%H:%M:%S'))
+        super(HistoryEntry, self).save(*args, **kwargs)

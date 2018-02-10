@@ -68,6 +68,7 @@ def data_path(prefix, fullname, ext=None):
         ext = _ext
     url = os.path.join(settings.MEDIA_URL, prefix, ext, '{}.{}'.format(filename, ext))[1:]
     # absolute_path = os.path.join(settings.BASE_DIR, url)
+
     return url
 
 

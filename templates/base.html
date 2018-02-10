@@ -23,6 +23,7 @@
 <body>
 
 <div class="vh-offset" id="content-wrapper">
+    <iframe id="my_iframe" style="display:none;"></iframe>
 
     {# The navbar is supposed to be always on top#}
     <div id="navbar">
@@ -31,6 +32,7 @@
             {% if user.is_authenticated %}
                 <p class="navbar-text">Hi {{ user.username }}
                     <a href="{% url 'logout' %}" class="navbar-link">Log out</a>
+                    <a href="#" id="download-data-btn" class="navbar-link">Download data</a>
                 </p>
             {% endif %}
         {% endblock %}

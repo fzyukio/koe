@@ -24,6 +24,17 @@ except AttributeError:
     builtins.profile = lambda x: x
 
 
+def serialize_alternative(obj):
+    """Default JSON serializer."""
+    import calendar, datetime
+
+    if isinstance(obj, datetime.datetime):
+        if obj.utcoffset() is not None:
+            obj = obj - obj.utcoffset()
+        return obj.strftime('%Y-%m-%d %H:%M:%S')
+    raise TypeError('Not sure how to serialize %s' % (obj,))
+
+
 def get_attrs(objs, table, extras={}):
     """
     Returns values of the attributes of the objects according to the table config
@@ -210,7 +221,7 @@ def get_grid_content(request):
     klass = table['class']
     objs = klass.objects.all()
     rows = get_attrs(objs, table, extras)
-    return HttpResponse(json.dumps(rows))
+    return HttpResponse(json.dumps(rows, default=serialize_alternative))
 
 
 def change_property_bulk(request):

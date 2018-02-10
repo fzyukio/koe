@@ -89,7 +89,7 @@
       {
         "name": "Date",
         "slug": "song_date",
-        "type": "SHORT_TEXT"
+        "type": "DATE"
       },
       {
         "name": "Gender",
@@ -110,6 +110,42 @@
         "name": "Track",
         "slug": "song_track",
         "type": "SHORT_TEXT"
+      }
+    ]
+  },
+  "history-grid": {
+    "class": "HistoryEntry",
+    "columns": [
+      {
+        "name": "ID",
+        "slug": "id",
+        "type": "SHORT_TEXT",
+        "is_attribute": true
+      },
+      {
+        "name": "User",
+        "slug": "user",
+        "type": "SHORT_TEXT",
+        "is_attribute": true
+      },
+      {
+        "name": "Time",
+        "slug": "time",
+        "type": "SHORT_TEXT",
+        "is_attribute": true
+      },
+      {
+        "name": "Filename",
+        "slug": "filename",
+        "type": "SHORT_TEXT",
+        "is_attribute": true
+      },
+      {
+        "name": "Note",
+        "slug": "note",
+        "type": "SHORT_TEXT",
+        "editable": true,
+        "is_extra_attr": true
       }
     ]
   }

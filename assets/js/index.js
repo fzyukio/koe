@@ -5,6 +5,7 @@ export {
 
 import {isNull, SlickEditors} from "./utils";
 import {SelectizeEditor} from "./selectize-formatter";
+import * as utils from "./utils";
 
 let page;
 
@@ -118,6 +119,11 @@ const _postRun = function () {
     });
 
     countDown();
+
+    $('#download-data-btn').click(function (e) {
+        let url = utils.getUrl('fetch-data', 'koe/download-data');
+        document.getElementById('my_iframe').src = url;
+    })
 };
 
 /**
@@ -129,6 +135,9 @@ $(document).ready(function () {
 
     if (pageName === '/') {
         page = require('index-page');
+    }
+    else if (pageName === '/history') {
+        page = require('history-page');
     }
 
     _preRun();

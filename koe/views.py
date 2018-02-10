@@ -1,15 +1,20 @@
+import datetime
 import io
 import os
+import zipfile
 
 import numpy as np
 import pydub
 from django.conf import settings
+from django.core import serializers
 from django.http import HttpResponse
 
 from koe import wavfile as wf
-from koe.models import AudioFile, Segment
+from koe.models import AudioFile, Segment, HistoryEntry
+from root.models import ExtraAttrValue
+from root.utils import data_path, ensure_parent_folder_exists
 
-__all__ = ['get_segment_audio']
+__all__ = ['get_segment_audio', 'download_data']
 
 # Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
 # reached this level, and vise verse
@@ -19,6 +24,32 @@ normalised_max = pow(2, 31)
 def match_target_amplitude(sound, target_dBFS):
     change_in_dBFS = target_dBFS - sound.dBFS
     return sound.apply_gain(change_in_dBFS)
+
+
+def download_data(request):
+    extra_attr_values = ExtraAttrValue.objects.filter(user=request.user)
+    retval = serializers.serialize('json', extra_attr_values)
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        zip_file.writestr('root.extraattrvalue.json', retval)
+    binary_content = zip_buffer.getvalue()
+
+    he = HistoryEntry.objects.create(user=request.user, time=datetime.datetime.now())
+
+    filename = he.filename
+    filepath = data_path('history', filename, 'zip')
+    ensure_parent_folder_exists(filepath)
+
+    with open(filepath, 'wb') as f:
+        f.write(binary_content)
+
+    response = HttpResponse()
+    response.write(binary_content)
+    response['Content-Type'] = 'application/zip'
+    response['Content-Length'] = len(binary_content)
+    response['Content-Disposition'] = 'attachment; filename={}'.format(he.filename)
+    return response
 
 
 def get_segment_audio(request):
