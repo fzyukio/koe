@@ -46,7 +46,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 CSRF_COOKIE_HTTPONLY = True
-CSRF_TRUSTED_ORIGINS = ['fa.io.ac.nz', 'farmassistant.co.nz', 'www.farmassistant.co.nz']
+CSRF_TRUSTED_ORIGINS = ['127.0.0.1', 'localhost']
 
 # Webpack
 WEBPACK_LOADER['DEFAULT']['CACHE'] = True

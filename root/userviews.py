@@ -10,6 +10,7 @@ from root.models import User
 from root.utils import forget_password_handler
 
 
+
 def handle_redirect(request):
     """
     Redirect the user to the "next" address, e.g. localhost:8000/login?next=/ will redirect to localhost:8000/
@@ -60,7 +61,7 @@ class UserSignInView(FormView, RedirectIfAuthenticated):
             context['form'] = form
             return self.render_to_response(context)
 
-        authenticated_user = auth.authenticate(username=user.username, password=form_data['password'])
+        authenticated_user = auth.authenticate(self.request, username=user.username, password=form_data['password'])
         if authenticated_user is not None:
             auth.login(self.request, authenticated_user)
             return handle_redirect(self.request)
