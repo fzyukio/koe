@@ -57,7 +57,7 @@ const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
 
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
-const bootstrapSlider = $("#bootstrap-slider");
+const bootstrapSlider = $("#volume-slider");
 
 
 const initSlider = function () {

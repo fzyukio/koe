@@ -37,6 +37,10 @@ $control-buttons-padding-bottom: 10px;
 
   #volume-controller {
     width: 300px;
+
+    #volume-slider-handler .slider-selection {
+      background: #d9230f7a;
+    }
   }
 
   #segment-info-controller {
