@@ -121,8 +121,10 @@ const _postRun = function () {
     countDown();
 
     $('#download-data-btn').click(function (e) {
-        let url = utils.getUrl('fetch-data', 'koe/download-data');
-        document.getElementById('my_iframe').src = url;
+        let url = utils.getUrl('fetch-data', 'koe/download-history');
+        $.post(url, {}, function (fileUrl) {
+            document.getElementById('my_iframe').src = fileUrl;
+        });
     })
 };
 
@@ -136,8 +138,8 @@ $(document).ready(function () {
     if (pageName === '/') {
         page = require('index-page');
     }
-    else if (pageName === '/history') {
-        page = require('history-page');
+    else if (pageName === '/version') {
+        page = require('version-page');
     }
 
     _preRun();

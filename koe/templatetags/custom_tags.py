@@ -73,3 +73,11 @@ def get_server_constants():
         urls[name] = url
 
     return json.dumps({'literals': literals, 'aliases': aliases, 'urls': urls})
+
+
+@register.simple_tag
+def get_navbar_urls():
+    return {
+        'index': 'Home Page',
+        'version': 'Version Control'
+    }

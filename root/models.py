@@ -1,4 +1,3 @@
-import abc
 import datetime
 import string
 import uuid
@@ -105,6 +104,7 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Checkbox',
         BASE64_PNG: 'Base64PNG',
         IMAGE: 'Image',
+        URL: 'Url'
     }
 
     _FORMATTER = {
@@ -116,6 +116,7 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Checkmark',
         BASE64_PNG: 'Base64PNG',
         IMAGE: 'Image',
+        URL: 'Url'
     }
 
     _FILTER_TYPE = {
@@ -127,6 +128,7 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Boolean',
         BASE64_PNG: None,
         IMAGE: None,
+        URL: 'String'
     }
 
     _SORTABLE = {
@@ -137,7 +139,8 @@ class ValueTypes(MagicChoices):
         FLOAT: True,
         BOOLEAN: True,
         BASE64_PNG: False,
-        IMAGE: False
+        IMAGE: False,
+        URL: True
     }
 
     # This is a dictionary of transformable types, e.g. user is allowed to change property type from
@@ -197,7 +200,7 @@ class ExtraAttrValue(models.Model):
     value = models.TextField()
 
     class Meta:
-        unique_together = ('owner_id', 'attr')
+        unique_together = ('user', 'owner_id', 'attr')
 
     def __str__(self):
         return '{}\'s {} = {}'.format(self.owner_id, self.attr.name, self.value)

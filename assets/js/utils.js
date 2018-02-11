@@ -305,6 +305,43 @@ const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
 
 
 /**
+ * Display text as clickable URL. The url is embedded in the cell value
+ * @param row
+ * @param cell
+ * @param value
+ * @param columnDef
+ * @param dataContext
+ * @returns {string}
+ * @constructor
+ */
+const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
+
+  /*
+   * Render the URL and reset the value field for searching purpose.
+   * Store the url on an inner variable to be reused later, e.g if the field is 'filename' then
+   *  the variable is _url_filename which will takes the value of the URL, and the variable filename is set to the
+   *  actual string value
+   * Ideally we should keep it intact and the filter should be able to apply to the string part only
+   */
+
+  let fieldName = columnDef.field;
+  let fieldUrl = '_url_' + fieldName;
+
+  if (dataContext[fieldUrl]) {
+    return `<a href="${dataContext[fieldUrl]}" target="_blank">${value}</a>`
+  }
+
+  let matches = urlRegex.exec(value);
+  if (matches) {
+    let url = dataContext[fieldUrl] = matches[1];
+    let value = dataContext[fieldName] = matches[2];
+    return `<a href="${url}" target="_blank">${matches[2]}</a>`
+  }
+  return value
+};
+
+
+/**
  * For embedded URL we're using Markdown's pattern, e.g. [http://www.example.com](example.com)
  * e.g. file_duration:(<3.5) (meaning that filter out any file that has duration > 3.5 sec)
  * @type {RegExp}
@@ -320,6 +357,7 @@ SlickFormatters['Select'] = SelectionFormatter;
 SlickFormatters['Action'] = ActionButtonFormatter;
 SlickFormatters['Checkmark'] = CheckmarkFormatter;
 SlickFormatters['Image'] = ImageFormatter;
+SlickFormatters['Url'] = UrlFormatter;
 
 
 const FloatEditor__rewritten = function (args) {

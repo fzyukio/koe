@@ -1,16 +1,21 @@
 import hashlib
 import sys
+from logging import warning
+
 import numpy as np
 import pickle
+import os
 
 from django.db import models
 from django.db.models.query import QuerySet
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 from scipy.cluster.hierarchy import linkage
 
 from koe.utils import base64_to_array, array_to_base64, triu2mat, mat2triu
 from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, AutoSetterGetterMixin, User
-from root.utils import spect_path, data_path, audio_path, ensure_parent_folder_exists
+from root.utils import spect_path, audio_path, history_path, ensure_parent_folder_exists, data_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -335,5 +340,51 @@ class HistoryEntry(StandardModel):
     filename = models.CharField(max_length=255)
 
     def save(self, *args, **kwargs):
-        self.filename = '{}-{}.zip'.format(self.user.id, self.time.strftime('%Y-%m-%d_%H:%M:%S'))
+        self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S'))
         super(HistoryEntry, self).save(*args, **kwargs)
+
+    @classmethod
+    def get_url(cls, objs, extras):
+        """
+        :return: a dict with key=id and value=the Markdown-styled url
+        """
+        if isinstance(objs, QuerySet):
+            values_list = objs.values_list('id', 'filename')
+        else:
+            values_list = [(x.id, x.filename) for x in objs]
+
+        retval = {}
+
+        for id, filename in values_list:
+            url = '{}'.format(history_path(filename))
+            retval[id] = '[{}]({})'.format(url, filename)
+
+        return retval
+
+    @classmethod
+    def get_creator(cls, objs, extras):
+        """
+        :return: a dict with key=id and value=the Markdown-styled url
+        """
+        if isinstance(objs, QuerySet):
+            values_list = objs.values_list('id', 'user__username')
+        else:
+            values_list = [(x.id, x.user.username) for x in objs]
+
+        retval = {}
+
+        for id, username in values_list:
+            retval[id] = username
+
+        return retval
+
+
+@receiver(post_delete, sender=HistoryEntry)
+def _mymodel_delete(sender, instance, **kwargs):
+    filepath = history_path(instance.filename)
+    print('Delete {}'.format(filepath))
+    if os.path.isfile(filepath):
+        os.remove(filepath)
+    else:
+        warning('File {} doesnot exist.'.format(filepath))
+

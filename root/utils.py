@@ -64,16 +64,20 @@ def forget_password_handler(user):
 
 def data_path(prefix, fullname, ext=None):
     filename, _ext = os.path.splitext(fullname)
+    _ext = _ext[1:]
     if ext is None:
         ext = _ext
     url = os.path.join(settings.MEDIA_URL, prefix, ext, '{}.{}'.format(filename, ext))[1:]
-    # absolute_path = os.path.join(settings.BASE_DIR, url)
 
     return url
 
 
 def audio_path(fullname, ext):
     return data_path('audio', fullname, ext)
+
+
+def history_path(fullname):
+    return data_path('history', fullname, 'zip')
 
 
 def spect_path(fullname):

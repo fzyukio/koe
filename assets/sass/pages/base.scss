@@ -34,6 +34,15 @@ a {
 
   .navbar-brand {
     font-variant: small-caps;
+    a, span {
+      color: white;
+      font-variant: normal;
+      font-size: 0.8em;
+    }
+  }
+
+  .navbar-link.active {
+    font-weight: bolder;
   }
 }
 
@@ -46,7 +55,7 @@ a {
   background-color: whitesmoke;
   -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
   -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 3);
 }
 
 #content-wrapper-offset-holder {
@@ -66,6 +75,16 @@ a {
     width: 100%;
   }
 }
+
+.alert {
+  z-index: 999;
+  position: fixed;
+  width: 100%;
+  bottom: calc(#{$bottom-height} + 20px);
+  display: none;
+  margin-bottom: 10px;
+}
+
 
 h1.title {
   font-size: 50px;

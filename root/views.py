@@ -173,9 +173,8 @@ def get_grid_column_definition(request):
         if callable(editable):
             editable = 'True'
 
-        column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
-                      formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                      cssClass=css_class)
+        column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter, formatter=formatter,
+                      sortable=sortable, hasTotal=has_total, totalLabel=total_label, cssClass=css_class)
 
         if editable:
             column['cssClass'] += ' editable'
@@ -384,20 +383,10 @@ def get_view(name):
 
         def get_context_data(self, **kwargs):
             context = super(View, self).get_context_data(**kwargs)
+            context['page'] = name
             return context
 
     return View.as_view()
-
-
-class IndexView(TemplateView):
-    template_name = 'index.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(IndexView, self).get_context_data(**kwargs)
-        dms = DistanceMatrix.objects.all().values_list('id', 'algorithm')
-        dms = list(dms)
-        context['dms'] = dms
-        return context
 
 
 def register_view(package, module):

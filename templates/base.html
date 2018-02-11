@@ -27,12 +27,24 @@
 
     {# The navbar is supposed to be always on top#}
     <div id="navbar">
-        <span class="navbar-brand" href="#">鳥声 KOE</span>
+        <span class="navbar-brand" href="#">
+            鳥声 KOE |
+            {% get_navbar_urls as urls %}
+            {% for url, text in urls.items %}
+                {% if page == url %}
+                    <span href="{% url url %}" class="navbar-link active">{{ text }}</span>
+                {% else %}
+                    <a href="{% url url %}" class="navbar-link">{{ text }}</a>
+                {% endif %}
+            {% endfor %}
+
+        </span>
+
         {% block navbar-right %}
             {% if user.is_authenticated %}
                 <p class="navbar-text">Hi {{ user.username }}
                     <a href="{% url 'logout' %}" class="navbar-link">Log out</a>
-                    <a href="#" id="download-data-btn" class="navbar-link">Download data</a>
+                    <a href="#" id="download-data-btn" class="navbar-link">Backup this version</a>
                 </p>
             {% endif %}
         {% endblock %}
@@ -43,6 +55,10 @@
             {% block content-center %}{% endblock %}
         </div>
     </div>
+
+    <div class="alert alert-success">a</div>
+    <div class="alert alert-danger">b</div>
+    <div class="alert alert-warning">c</div>
 
 </div>
 <div class="offset-holder" id="content-wrapper-offset-holder" attr="height"></div>

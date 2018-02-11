@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'root.urls'
+ROOT_URLCONF = 'koe.urls'
 
 TEMPLATES = [
     {
@@ -180,4 +180,4 @@ DATABASES = {
 }
 
 
-SIGN_UP_SECRET = '66e712a'
+SIGN_UP_SECRET = '123456'

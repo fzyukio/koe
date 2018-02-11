@@ -234,11 +234,11 @@ classes should alter those!
     box-shadow: 0 0 6px red; }
   to {
     box-shadow: none; } }
-#history-grid {
-  max-height: calc(100vh - 2 * 10px); }
+#version-grid {
+  max-height: calc(100vh - 30px - 2 * 10px); }
 
-#history-grid-offset-holder {
+#version-grid-offset-holder {
   display: none;
-  height: calc(100000px - 2 * 10px); }
+  height: calc(100000px - 30px - 2 * 10px); }
 
-/*# sourceMappingURL=history.css.map */
+/*# sourceMappingURL=version.css.map */

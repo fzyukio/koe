@@ -113,20 +113,13 @@
       }
     ]
   },
-  "history-grid": {
+  "version-grid": {
     "class": "HistoryEntry",
     "columns": [
       {
-        "name": "ID",
-        "slug": "id",
-        "type": "SHORT_TEXT",
-        "is_attribute": true
-      },
-      {
-        "name": "User",
-        "slug": "user",
-        "type": "SHORT_TEXT",
-        "is_attribute": true
+        "name": "Created by",
+        "slug": "creator",
+        "type": "SHORT_TEXT"
       },
       {
         "name": "Time",
@@ -135,10 +128,9 @@
         "is_attribute": true
       },
       {
-        "name": "Filename",
-        "slug": "filename",
-        "type": "SHORT_TEXT",
-        "is_attribute": true
+        "name": "Downloadable Link",
+        "slug": "url",
+        "type": "URL"
       },
       {
         "name": "Note",
