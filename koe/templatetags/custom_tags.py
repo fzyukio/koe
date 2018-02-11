@@ -1,8 +1,11 @@
+import io
 import json
+import tokenize
 from os.path import splitext
 
 from django import template
 from django.conf import settings
+from django.template.loader_tags import do_extends
 from django.urls import NoReverseMatch
 from django.urls import reverse
 

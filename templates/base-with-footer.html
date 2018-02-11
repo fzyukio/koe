@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load custom_tags %}
+
+
+{% block main-content %}
+    <div class="main-content has-footer">
+        <div class="content-center">
+            {% block content-center %}{% endblock %}
+        </div>
+    </div>
+
+    {# This is where we put the buttons #}
+    <div id="bottom">
+        <div class="alert alert-success">a</div>
+        <div class="alert alert-danger">b</div>
+        <div class="alert alert-warning">c</div>
+
+        {% block bottom %}{% endblock %}
+    </div>
+{% endblock %}

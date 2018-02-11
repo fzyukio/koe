@@ -2,21 +2,16 @@
 @import "../vendor/slick-default-theme";
 @import "../variables";
 
-$control-buttons-height: 36px;
+$control-buttons-height: 22px;
 $control-buttons-padding-bottom: 10px;
 
-#control-buttons {
-  height: $control-buttons-height;
-  padding-bottom: $control-buttons-padding-bottom;
-}
-
 #segment-info {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding});
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding} - #{$bottom-height});
 }
 
 #segment-info-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding});
+  height: calc(100000px - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding} - #{$bottom-height});
 }
 
 #segment-info-filter {
@@ -30,7 +25,8 @@ $control-buttons-padding-bottom: 10px;
 }
 
 #segment-info-controller {
-  padding-bottom: 10px;
+  padding-bottom: $control-buttons-padding-bottom;
+  height: $control-buttons-height;
   .left {
     padding: 0 10px 0 0;
   }

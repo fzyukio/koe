@@ -25,7 +25,7 @@
 <div class="vh-offset" id="content-wrapper">
     <iframe id="my_iframe" style="display:none;"></iframe>
 
-    {# The navbar is supposed to be always on top#}
+    {# The nav`bar is supposed to be always on top#}
     <div id="navbar">
         <span class="navbar-brand" href="#">
             鳥声 KOE |
@@ -42,29 +42,54 @@
 
         {% block navbar-right %}
             {% if user.is_authenticated %}
-                <p class="navbar-text">Hi {{ user.username }}
+                <span class="navbar-text">Hi {{ user.username }}
                     <a href="{% url 'logout' %}" class="navbar-link">Log out</a>
-                    <a href="#" id="download-data-btn" class="navbar-link">Backup this version</a>
-                </p>
+                </span>
             {% endif %}
         {% endblock %}
     </div>
 
-    <div class="main-content">
-        <div class="content-center">
-            {% block content-center %}{% endblock %}
+    {% block main-content %}
+        <div class="main-content">
+            <div class="content-center">
+                {% block content-center %}{% endblock %}
+            </div>
         </div>
-    </div>
-
-    <div class="alert alert-success">a</div>
-    <div class="alert alert-danger">b</div>
-    <div class="alert alert-warning">c</div>
+    {% endblock %}
 
 </div>
 <div class="offset-holder" id="content-wrapper-offset-holder" attr="height"></div>
 <div id="max-vh"></div>
 
 <div class="modal" id="loading-spinner-modal"></div>
+<div class="modal fade in" id="dialog-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+     aria-hidden="true" style="display: none;">
+    <div class="modal-dialog" style="">
+        <div class="modal-content" style="">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span
+                        class="sr-only">Close</span>
+                </button>
+                <h3 class="modal-title"></h3>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <div class="btn-group btn-group-justified" role="group" aria-label="group button">
+                    {% block modal-button %}
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" role="button">No</button>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" id="dialog-modal-yes-button" class="btn btn-primary btn-hover-green"
+                                    role="button"> Yes
+                            </button>
+                        </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% render_bundle 'main' 'js' 'JQUERY' %}
 <!-- django-js-reverse -->

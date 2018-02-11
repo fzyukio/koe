@@ -10,17 +10,3 @@
   display: none;
   height: calc(100000px - #{$navbar-height} - 2 * #{$main-content-padding} - #{$bottom-height});
 }
-
-#bottom {
-  height: $bottom-height;
-  min-height: unset;
-  width: 100%;
-  color: black;
-  margin: 0;
-
-  .btn {
-    border-radius: 0;
-    padding-left: 2px;
-    padding-right: 2px;
-  }
-}

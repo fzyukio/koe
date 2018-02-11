@@ -30,7 +30,7 @@ a {
   height: $navbar-height;
   width: 100%;
   color: black;
-  border-bottom: 2px solid #a91b0c;
+  background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
 
   .navbar-brand {
     font-variant: small-caps;
@@ -74,6 +74,23 @@ a {
     margin: auto;
     width: 100%;
   }
+  &.has-footer {
+    height: calc(100% - #{$navbar-height} - #{$bottom-height});
+  }
+}
+
+#bottom {
+  height: $bottom-height;
+  min-height: unset;
+  width: 100%;
+  color: black;
+  margin: 0;
+
+  .btn {
+    border-radius: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
 }
 
 .alert {
@@ -84,7 +101,6 @@ a {
   display: none;
   margin-bottom: 10px;
 }
-
 
 h1.title {
   font-size: 50px;
@@ -135,12 +151,7 @@ input::-webkit-input-placeholder {
   padding-right: 5px;
 }
 
-.navbar-text {
-  line-height: 20px;
-}
-
 .navbar-brand {
-  width: 50%;
   color: white;
   font-size: 17px;
   line-height: 18px;
@@ -154,7 +165,11 @@ input::-webkit-input-placeholder {
 .navbar-text {
   padding: 5px 15px;
   margin: 0;
-  float: left;
+  float: right;
+  line-height: 20px;
+  height: 30px;
+  border-bottom: 2px solid #a91b0c;
+  background-color: white;
 }
 
 .has-grid {

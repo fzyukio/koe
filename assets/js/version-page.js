@@ -19,9 +19,10 @@ class SegmentGrid extends fg.FlexibleGrid {
 const grid = new SegmentGrid();
 const applyVersionBtn = $('#apply-version-btn');
 const deleteVersionBtn = $('#delete-version-btn');
-const versionModal = $('#version-modal');
-const versionModalTitle = versionModal.find('.modal-title');
-const versionModalBody = versionModal.find('.modal-body');
+const dialogModal = $('#dialog-modal');
+const dialogModalTitle = dialogModal.find('.modal-title');
+const dialogModalBody = dialogModal.find('.modal-body');
+const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
@@ -37,7 +38,7 @@ const subscribeEvents = function () {
         let versionId = args.item.id;
         let versionName = args.item.url;
 
-        versionModal
+        dialogModal
             .data("versionId", versionId)
             .data("versionName", versionName);
 
@@ -62,18 +63,18 @@ export const run = function () {
     });
 
     applyVersionBtn.click(function () {
-        let versionId = versionModal.data("versionId");
-        let versionName = versionModal.data("versionName");
+        let versionId = dialogModal.data("versionId");
+        let versionName = dialogModal.data("versionName");
 
-        versionModalTitle.html("Confirm import history");
-        versionModalBody.html(
+        dialogModalTitle.html("Confirm import history");
+        dialogModalBody.html(
             `Importing history from will erase your current data.
              Make sure you have saved the current version before doing this.
              Are you sure you want to import ${versionName}?`);
 
-        versionModal.modal('show');
+        dialogModal.modal('show');
 
-        versionModal.one('click', function (e) {
+        dialogModalOkBtn.one('click', function (e) {
             let url = utils.getUrl('fetch-data', 'koe/import-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully imported`;
@@ -86,21 +87,21 @@ export const run = function () {
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400);
             });
-            versionModal.modal("hide");
+            dialogModal.modal("hide");
         })
     });
 
     deleteVersionBtn.click(function () {
-        let versionId = versionModal.data("versionId");
-        let versionName = versionModal.data("versionName");
+        let versionId = dialogModal.data("versionId");
+        let versionName = dialogModal.data("versionName");
 
-        versionModalTitle.html("Confirm delete history");
-        versionModalBody.html(
+        dialogModalTitle.html("Confirm delete history");
+        dialogModalBody.html(
             `Are you sure you want to delete ${versionName}?`);
 
-        versionModal.modal('show');
+        dialogModal.modal('show');
 
-        versionModal.one('click', function (e) {
+        dialogModalOkBtn.one('click', function (e) {
             let url = utils.getUrl('fetch-data', 'koe/delete-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully deleted. This page will reload`;
@@ -114,7 +115,7 @@ export const run = function () {
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400, callback);
             });
-            versionModal.modal("hide");
+            dialogModal.modal("hide");
         })
     });
 };

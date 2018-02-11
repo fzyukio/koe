@@ -48,10 +48,10 @@ const filterLi = filterLiA.parent();
 const setLabelLiA = contextMenu.find('a[action=set-label]');
 const setLabelLi = setLabelLiA.parent();
 
-const setLabelModal = $("#set-label-modal");
-const setLabelLabel = setLabelModal.find("#set-label-label");
-const setLabelCount = setLabelModal.find("#set-label-count");
-const setLabelBtn = setLabelModal.find("#set-label-btn");
+const dialogModal = $('#dialog-modal');
+const dialogModalTitle = dialogModal.find('.modal-title');
+const dialogModalBody = dialogModal.find('.modal-body');
+const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
 
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
@@ -241,8 +241,7 @@ const setLabel = function (field) {
     let selectedRows = grid_.getSelectedRows();
     let numRows = selectedRows.length;
     if (numRows > 0) {
-        setLabelLabel.html(field);
-        setLabelCount.html(numRows);
+        dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
 
         let ids = [];
         let items = grid_.getData().getItems();
@@ -256,8 +255,8 @@ const setLabel = function (field) {
 
         const isSelectize = !!selectableOptions;
         let inputEl = isSelectize ? inputSelect : inputText;
-        $('#input-wrapper').children().remove();
-        $('#input-wrapper').append(inputEl);
+        dialogModalBody.children().remove();
+        dialogModalBody.append(inputEl);
         let defaultValue = inputEl.val();
 
         if (isSelectize) {
@@ -266,19 +265,19 @@ const setLabel = function (field) {
 
             initSelectize(inputEl, field, defaultValue);
 
-            setLabelModal.on('shown.bs.modal', function (e) {
+            dialogModal.on('shown.bs.modal', function (e) {
                 inputEl[0].selectize.focus();
             });
         }
         else {
-            setLabelModal.on('shown.bs.modal', function (e) {
+            dialogModal.on('shown.bs.modal', function (e) {
                 inputEl.focus();
             });
         }
 
-        setLabelModal.modal('show');
+        dialogModal.modal('show');
 
-        setLabelBtn.one('click', function (e) {
+        dialogModalOkBtn.one('click', function (e) {
             let value = inputEl.val();
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
@@ -299,7 +298,7 @@ const setLabel = function (field) {
                         grid_.invalidateRow(row);
                     }
                     grid_.render();
-                    setLabelModal.modal("hide");
+                    dialogModal.modal("hide");
                 }
             );
 
