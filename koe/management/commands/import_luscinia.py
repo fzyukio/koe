@@ -1,9 +1,11 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
+import array
 import contextlib
 import datetime
 import os
+import pickle
 import re
 import sys
 import wave
@@ -59,6 +61,7 @@ def get_wav_info(audio_file):
 def import_pcm(song, cur, song_name):
     wav_file_path = audio_path(song_name, 'wav')
     if not os.path.isfile(wav_file_path):
+        # print('Importing {}'.format(song_name))
         song_id = song['songid']
         cur.execute('select wav from wavs where songid={};'.format(song_id))
 
@@ -73,12 +76,16 @@ def import_pcm(song, cur, song_name):
         nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
         nframes_per_channel = int(nframes_all_channel / nchannels)
         length = nframes_per_channel
-
-        array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
-        array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
-
         ensure_parent_folder_exists(wav_file_path)
-        wf._write(wav_file_path, fs, array2, bitrate=bitrate)
+
+        if bitrate == 24:
+            array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
+            array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
+            wf.write_24b(wav_file_path, fs, array2)
+        else:
+            data = array.array('i', raw_pcm)
+            sound = pydub.AudioSegment(data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
+            sound.export(wav_file_path, 'wav')
     else:
         fs, length = get_wav_info(wav_file_path)
 
@@ -88,8 +95,7 @@ def import_pcm(song, cur, song_name):
         sound = pydub.AudioSegment.from_wav(wav_file_path)
         sound.export(mp3_url, format='mp3')
 
-    audio_file = AudioFile.objects.create(name=song_name, length=length, fs=fs)
-    return audio_file
+    return fs, length
 
 
 def import_song_info(conn):
@@ -230,10 +236,11 @@ def import_songs(conn):
         audio_file = AudioFile.objects.filter(name=song_name).first()
 
         # Import WAV data and save as WAV and MP3 files
+        length, fs = import_pcm(song, cur, song_name)
+        bar.song_name = song_name
+        bar.next()
         if audio_file is None:
-            bar.song_name = song_name
-            audio_file = import_pcm(song, cur, song_name)
-            bar.next()
+            AudioFile.objects.create(name=song_name, length=length, fs=fs)
     bar.finish()
 
 
@@ -373,9 +380,9 @@ class Command(BaseCommand):
             for pop in conns:
                 conn = conns[pop]
                 import_songs(conn)
-                import_syllables(conn)
-                import_spectrograms(conn)
-                import_song_info(conn)
+                # import_syllables(conn)
+                # import_spectrograms(conn)
+                # import_song_info(conn)
 
         finally:
             for dbconf in conns:
