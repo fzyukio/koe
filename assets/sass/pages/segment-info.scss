@@ -4,19 +4,17 @@
 @import "../variables";
 
 $control-buttons-height: 36px;
-$control-buttons-padding-bottom: 10px;
 
 #segment-info {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding} - #{$bottom-height});
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$control-buttons-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
 
 #segment-info-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding} - #{$bottom-height});
+  height: calc(100000px - #{$navbar-height} - #{$control-buttons-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
 
 #controller-wrapper {
-  padding-bottom: $control-buttons-padding-bottom;
   height: $control-buttons-height;
 
   & > div {

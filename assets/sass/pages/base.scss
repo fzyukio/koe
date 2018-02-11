@@ -63,7 +63,7 @@ a {
 }
 
 .main-content {
-  padding: $main-content-padding;
+  padding: $main-content-padding-top $main-content-padding $main-content-padding-bottom;
   display: flex;
   margin: auto;
   width: 100%;

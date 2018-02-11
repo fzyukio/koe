@@ -4,7 +4,6 @@ import {defaultGridOptions} from "./flexible-grid";
 
 const gridOptions = utils.deepCopy(defaultGridOptions);
 
-
 class SegmentGrid extends fg.FlexibleGrid {
     init() {
         super.init({
@@ -19,13 +18,7 @@ class SegmentGrid extends fg.FlexibleGrid {
 const grid = new SegmentGrid();
 const applyVersionBtn = $('#apply-version-btn');
 const deleteVersionBtn = $('#delete-version-btn');
-const dialogModal = $('#dialog-modal');
-const dialogModalTitle = dialogModal.find('.modal-title');
-const dialogModalBody = dialogModal.find('.modal-body');
-const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
-const alertSuccess = $('.alert-success');
-const alertFailure = $('.alert-danger');
-
+let ce;
 
 /**
  *
@@ -38,7 +31,7 @@ const subscribeEvents = function () {
         let versionId = args.item.id;
         let versionName = args.item.url;
 
-        dialogModal
+        ce.dialogModal
             .data("versionId", versionId)
             .data("versionName", versionName);
 
@@ -54,8 +47,9 @@ export const orientationChange = function () {
 };
 
 
-export const run = function () {
+export const run = function (commonElements) {
     console.log("History page is now running.");
+    ce = commonElements;
 
     grid.init();
     grid.initMainGridHeader({rowMoveable: false, radioSelect: true}, function () {
@@ -63,59 +57,59 @@ export const run = function () {
     });
 
     applyVersionBtn.click(function () {
-        let versionId = dialogModal.data("versionId");
-        let versionName = dialogModal.data("versionName");
+        let versionId = ce.dialogModal.data("versionId");
+        let versionName = ce.dialogModal.data("versionName");
 
-        dialogModalTitle.html("Confirm import history");
-        dialogModalBody.html(
+        ce.dialogModalTitle.html("Confirm import history");
+        ce.dialogModalBody.html(
             `Importing history from will erase your current data.
              Make sure you have saved the current version before doing this.
              Are you sure you want to import ${versionName}?`);
 
-        dialogModal.modal('show');
+        ce.dialogModal.modal('show');
 
-        dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function (e) {
             let url = utils.getUrl('fetch-data', 'koe/import-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully imported`;
-                let alertEl = alertSuccess;
+                let alertEl = ce.alertSuccess;
                 if (response != 'ok') {
                     message = `Something's wrong. The server says ${response}. Version not imported.
                      But good news is your current data is still intact.`
-                    alertEl = alertFailure
+                    alertEl = ce.alertFailure
                 }
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400);
             });
-            dialogModal.modal("hide");
+            ce.dialogModal.modal("hide");
         })
     });
 
     deleteVersionBtn.click(function () {
-        let versionId = dialogModal.data("versionId");
-        let versionName = dialogModal.data("versionName");
+        let versionId = ce.dialogModal.data("versionId");
+        let versionName = ce.dialogModal.data("versionName");
 
-        dialogModalTitle.html("Confirm delete history");
-        dialogModalBody.html(
+        ce.dialogModalTitle.html("Confirm delete history");
+        ce.dialogModalBody.html(
             `Are you sure you want to delete ${versionName}?`);
 
-        dialogModal.modal('show');
+        ce.dialogModal.modal('show');
 
-        dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function (e) {
             let url = utils.getUrl('fetch-data', 'koe/delete-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully deleted. This page will reload`;
-                let alertEl = alertSuccess;
+                let alertEl = ce.alertSuccess;
                 let callback = function () {location.reload();};
                 if (response != 'ok') {
                     message = `Something's wrong. The server says ${response}. Version might have been deleted.`;
-                    alertEl = alertFailure;
+                    alertEl = ce.alertFailure;
                     callback = undefined;
                 }
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400, callback);
             });
-            dialogModal.modal("hide");
+            ce.dialogModal.modal("hide");
         })
     });
 };

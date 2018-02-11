@@ -50,28 +50,24 @@ const filterLi = filterLiA.parent();
 const setLabelLiA = contextMenu.find('a[action=set-label]');
 const setLabelLi = setLabelLiA.parent();
 
-const dialogModal = $('#dialog-modal');
-const dialogModalTitle = dialogModal.find('.modal-title');
-const dialogModalBody = dialogModal.find('.modal-body');
-const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
-
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
 const speedSlider = $("#speed-slider");
 
+let ce;
+
 
 const initSlider = function () {
-  speedSlider.slider();
+    speedSlider.slider();
 
-  speedSlider.on("slide", function (slideEvt) {
-    //$("#sliderValue").text(slideEvt.value);
-    ah.changePlaybackSpeed(slideEvt.value);
-  });
+    speedSlider.on("slide", function (slideEvt) {
+        ah.changePlaybackSpeed(slideEvt.value);
+    });
 
-  $('.slider').on("click", function () {
-    let newvalue = $('.tooltip-inner').text();
-    ah.changePlaybackSpeed(parseInt(newvalue));
-  });
+    $('.slider').on("click", function () {
+        let newvalue = $('.tooltip-inner').text();
+        ah.changePlaybackSpeed(parseInt(newvalue));
+    });
 };
 
 const playAudio = function (e, args) {
@@ -183,8 +179,10 @@ const showBigSpectrogram = function (e, args) {
     }
 };
 
-export const run = function () {
+export const run = function (commonElements) {
     console.log("Index page is now running.");
+    ce = commonElements;
+    
     ah.initAudioContext();
 
     grid.init();
@@ -252,15 +250,15 @@ const addFilter = function (field) {
     filterInput[0].focus();
 };
 
-const inputText = $(`<input type="text" class="form-control" id="set-label-input">`);
-const inputSelect = $(`<select class="selectize" id="set-label-input"></select>`);
+const inputText = $(`<input type="text" class="form-control">`);
+const inputSelect = $(`<select class="selectize" ></select>`);
 
 const setLabel = function (field) {
     let grid_ = grid.mainGrid;
     let selectedRows = grid_.getSelectedRows();
     let numRows = selectedRows.length;
     if (numRows > 0) {
-        dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
+        ce.dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
 
         let ids = [];
         let items = grid_.getData().getItems();
@@ -274,8 +272,8 @@ const setLabel = function (field) {
 
         const isSelectize = !!selectableOptions;
         let inputEl = isSelectize ? inputSelect : inputText;
-        dialogModalBody.children().remove();
-        dialogModalBody.append(inputEl);
+        ce.dialogModalBody.children().remove();
+        ce.dialogModalBody.append(inputEl);
         let defaultValue = inputEl.val();
 
         if (isSelectize) {
@@ -284,19 +282,19 @@ const setLabel = function (field) {
 
             initSelectize(inputEl, field, defaultValue);
 
-            dialogModal.on('shown.bs.modal', function (e) {
+            ce.dialogModal.on('shown.bs.modal', function (e) {
                 inputEl[0].selectize.focus();
             });
         }
         else {
-            dialogModal.on('shown.bs.modal', function (e) {
+            ce.dialogModal.on('shown.bs.modal', function (e) {
                 inputEl.focus();
             });
         }
 
-        dialogModal.modal('show');
+        ce.dialogModal.modal('show');
 
-        dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function (e) {
             let value = inputEl.val();
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
@@ -317,7 +315,7 @@ const setLabel = function (field) {
                         grid_.invalidateRow(row);
                     }
                     grid_.render();
-                    dialogModal.modal("hide");
+                    ce.dialogModal.modal("hide");
                 }
             );
 
@@ -357,4 +355,35 @@ const contextHandlerDecorator = function (colDef) {
 
 export const getData = function () {
     return grid.mainGrid.getData().getItems();
+};
+
+export const postRun = function () {
+    $('#download-data-btn').click(function (e) {
+        inputText.val('');
+
+        ce.dialogModalTitle.html("Backing up your data...");
+        ce.dialogModalBody.html(`<label>Give it a comment (optionl)</label>`);
+
+        ce.dialogModalBody.append(inputText);
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.one('click', function (e) {
+            let url = utils.getUrl('fetch-data', 'koe/download-history');
+            let value = inputText.val();
+            inputText.val('');
+
+            console.log(url);
+            console.log(value);
+
+            ce.dialogModal.modal('hide');
+
+            $.post(url, {comment: value}, function (filename) {
+                ce.dialogModal.modal("hide");
+                let message = `History saved to ${filename}. You can download it from the version control page`;
+                ce.alertSuccess.html(message);
+                ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
+            });
+        });
+    })
 };

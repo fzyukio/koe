@@ -5,9 +5,25 @@ export {
 
 import {isNull, SlickEditors} from "./utils";
 import {SelectizeEditor} from "./selectize-formatter";
-import * as utils from "./utils";
 
 let page;
+
+const dialogModal = $('#dialog-modal');
+const dialogModalTitle = dialogModal.find('.modal-title');
+const dialogModalBody = dialogModal.find('.modal-body');
+const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
+const alertSuccess = $('.alert-success');
+const alertFailure = $('.alert-danger');
+
+const commonElements = {
+    dialogModal: dialogModal,
+    dialogModalTitle: dialogModalTitle,
+    dialogModalBody: dialogModalBody,
+    dialogModalOkBtn: dialogModalOkBtn,
+    alertSuccess: alertSuccess,
+    alertFailure: alertFailure
+};
+
 
 /**
  * Mobile viewport height after orientation change
@@ -119,13 +135,6 @@ const _postRun = function () {
     });
 
     countDown();
-
-    $('#download-data-btn').click(function (e) {
-        let url = utils.getUrl('fetch-data', 'koe/download-history');
-        $.post(url, {}, function (fileUrl) {
-            document.getElementById('my_iframe').src = fileUrl;
-        });
-    })
 };
 
 /**
@@ -150,7 +159,7 @@ $(document).ready(function () {
             page.preRun();
         }
 
-        page.run();
+        page.run(commonElements);
 
         if (typeof page.postRun == 'function') {
             page.postRun();

@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.views.generic import TemplateView
 
 from koe.models import AudioFile, Segment, HistoryEntry, DistanceMatrix
-from root.models import ExtraAttrValue
+from root.models import ExtraAttrValue, ExtraAttr
 from root.utils import history_path, ensure_parent_folder_exists
 
 __all__ = ['get_segment_audio', 'download_history', 'import_history', 'delete_history']
@@ -31,6 +31,9 @@ def match_target_amplitude(sound, target_dBFS):
 
 
 def download_history(request):
+    comment = request.POST['comment']
+    comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
+
     extra_attr_values = ExtraAttrValue.objects.filter(user=request.user)
     retval = serializers.serialize('json', extra_attr_values)
 
@@ -40,6 +43,7 @@ def download_history(request):
     binary_content = zip_buffer.getvalue()
 
     he = HistoryEntry.objects.create(user=request.user, time=datetime.datetime.now())
+    ExtraAttrValue.objects.create(owner_id=he.id, user=request.user, value=comment, attr=comment_attr)
 
     filename = he.filename
     filepath = history_path(filename)
@@ -48,7 +52,7 @@ def download_history(request):
     with open(filepath, 'wb') as f:
         f.write(binary_content)
 
-    return HttpResponse(filepath)
+    return HttpResponse(filename)
 
 
 def delete_history(request):
