@@ -4,6 +4,8 @@ import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 import {initSelectize} from "./selectize-formatter";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
+require('bootstrap-slider/dist/bootstrap-slider.js');
+
 
 const gridOptions = utils.deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -55,7 +57,22 @@ const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
 
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
+const bootstrapSlider = $("#bootstrap-slider");
 
+
+const initSlider = function () {
+  bootstrapSlider.slider();
+
+  bootstrapSlider.on("slide", function (slideEvt) {
+    //$("#sliderValue").text(slideEvt.value);
+    ah.changePlaybackSpeed(slideEvt.value);
+  });
+
+  $('.slider').on("click", function () {
+    let newvalue = $('.tooltip-inner').text();
+    ah.changePlaybackSpeed(parseInt(newvalue));
+  });
+};
 
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
@@ -210,6 +227,8 @@ export const run = function () {
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         setLabel('label_subfamily');
     });
+
+    initSlider();
 };
 
 const addFilter = function (field) {

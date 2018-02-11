@@ -1,8 +1,9 @@
+@import "../../../node_modules/bootstrap-slider/src/sass/bootstrap-slider";
 @import "../vendor/slick-grid";
 @import "../vendor/slick-default-theme";
 @import "../variables";
 
-$control-buttons-height: 22px;
+$control-buttons-height: 36px;
 $control-buttons-padding-bottom: 10px;
 
 #segment-info {
@@ -14,6 +15,35 @@ $control-buttons-padding-bottom: 10px;
   height: calc(100000px - #{$navbar-height} - #{$control-buttons-padding-bottom} - #{$control-buttons-height} - 2 * #{$main-content-padding} - #{$bottom-height});
 }
 
+#controller-wrapper {
+  padding-bottom: $control-buttons-padding-bottom;
+  height: $control-buttons-height;
+
+  & > div {
+    display: inline-block;
+    margin-left: -4px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+
+  .left {
+    padding: 0 10px 0 0;
+  }
+  .right {
+    padding: 0 0 0 10px;
+  }
+
+  #volume-controller {
+    width: 300px;
+  }
+
+  #segment-info-controller {
+    width: calc(100% - 300px);
+  }
+}
+
 #segment-info-filter {
   border: 0;
   padding: 0 !important;
@@ -22,17 +52,6 @@ $control-buttons-padding-bottom: 10px;
   border-bottom: 1px solid;
   border-bottom-color: red;
   border-radius: 0;
-}
-
-#segment-info-controller {
-  padding-bottom: $control-buttons-padding-bottom;
-  height: $control-buttons-height;
-  .left {
-    padding: 0 10px 0 0;
-  }
-  .right {
-    padding: 0 0 0 10px;
-  }
 }
 
 .modal-dialog {

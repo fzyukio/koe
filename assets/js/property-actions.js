@@ -12,7 +12,7 @@ export const actionTitles = {
 
 export const actionButtonStyles = {
   'delete-property': {'_default': 'btn-danger'},
-  'hide-property': {'_default': 'btn-warning', false: 'btn-warning', true: 'btn-info'},
+  'hide-property': {'_default': 'btn-warning', false: 'btn-warning', true: 'btn-primary'},
 };
 
 export const actionRequirements = {

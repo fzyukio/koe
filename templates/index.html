@@ -2,25 +2,36 @@
 
 {% block content-grid %}
 
-    <div class="input-group" id="segment-info-controller">
-        <span class="input-group-addon left">Filter</span>
-        <input id="segment-info-filter" type="text" class="form-control middle"
-               aria-label="Text input with radio button">
-        <span class="input-group-addon right">
-            <div class="dropdown pull-right">
-                <button class="btn btn-info btn-xs dropdown-toggle" type="button" id="distance-matrix-combo"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" dm="{{ dms.0.0 }}">
-                    {{ dms.0.1 }}&nbsp;<span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="segmentation-btn">
-                    {% for dm in dms %}
-                        <li><a href="#" class="select-dm" dm="{{ dm.0 }}">
-                            {{ dm.1 }}
-                        </a></li>
-                    {% endfor %}
-                </ul>
+    <div id="controller-wrapper">
+        <div id="volume-controller">
+            <div class="input-group">
+                <span class="input-group-addon left">Volume</span>
+                <input id="bootstrap-slider" type="text" data-slider-min="10" data-slider-max="100"
+                       data-slider-step="10" data-slider-value="100"/>
             </div>
-        </span>
+        </div>
+
+        <div id="segment-info-controller">
+            <div class="input-group">
+                <span class="input-group-addon left">Volume</span>
+                <input id="segment-info-filter" type="text" class="form-control middle">
+                <span class="input-group-addon right">
+                <div class="dropdown pull-right">
+                    <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="distance-matrix-combo"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" dm="{{ dms.0.0 }}">
+                        {{ dms.0.1 }}&nbsp;<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="segmentation-btn">
+                        {% for dm in dms %}
+                            <li><a href="#" class="select-dm" dm="{{ dm.0 }}">
+                                {{ dm.1 }}
+                            </a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </span>
+            </div>
+        </div>
     </div>
 
     <div class="vh-offset has-grid" id="segment-info"></div>
