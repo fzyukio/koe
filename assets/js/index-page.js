@@ -57,13 +57,13 @@ const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
 
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
-const bootstrapSlider = $("#volume-slider");
+const speedSlider = $("#speed-slider");
 
 
 const initSlider = function () {
-  bootstrapSlider.slider();
+  speedSlider.slider();
 
-  bootstrapSlider.on("slide", function (slideEvt) {
+  speedSlider.on("slide", function (slideEvt) {
     //$("#sliderValue").text(slideEvt.value);
     ah.changePlaybackSpeed(slideEvt.value);
   });
