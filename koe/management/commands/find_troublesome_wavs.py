@@ -1,51 +1,75 @@
 import array
+import sys
 
+import numpy as np
+import psycopg2
 import pydub
-from django.core.management import BaseCommand
-from django.test import RequestFactory
+from django.core.management.base import BaseCommand
 
-from koe.models import *
 from koe import wavfile
+from koe.management.commands import utils
+from koe.management.commands.import_luscinia import import_pcm, get_wav_info
+from koe.models import AudioFile
+from root.utils import audio_path
 
-request_factory = RequestFactory()
+PY3 = sys.version_info[0] == 3
+if PY3:
+    str_to_bytes = lambda x: str.encode(x, encoding='LATIN-1')
+else:
+    str_to_bytes = lambda x: x
 
 
 class Command(BaseCommand):
-    def handle(self, wf=None, *args, **options):
-        # target_dBFS = -10
-        # afs = AudioFile.objects.all().values_list('name', flat=True)
-        # for af in afs:
-        #     file_url = audio_path(af, 'wav')
-        #     song = pydub.AudioSegment.from_mp3(file_url)
-        #     change_in_dBFS = target_dBFS - song.dBFS
-        #
-        #     if change_in_dBFS < 0:
-        #         song.apply_gain(change_in_dBFS)
-        #         print('{:.2f}: {}'.format(song.dBFS, af))
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dbs',
+            action='store',
+            dest='dbs',
+            required=True,
+            type=str,
+            help='List of databases, e.g. TMI:TMI_MMR:6666,PKI:PKI_WHW_MMR:6667',
+        )
 
-        pkls = ['/tmp/TMI_2015_10_06_CHJ023_01_F.G.HBr-WM.(A).wav.pkl', '/tmp/TMI_2015_10_13_CHJ025_03_M.G.RBr-lBM.(A).wav.pkl', '/tmp/TMI_2015_10_23_CHJ029_01_M.G.lBdG-YM.(A).wav.pkl', '/tmp/TMI_2015_10_23_CHJ029_02_M.G.lBdG-YM.(A).wav.pkl', '/tmp/TMI_2015_10_23_CHJ030_01_M.VG.lBdG-YM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ036_01_M.G.lBBk-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ036_02_M.G.lBBk-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_01_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_02_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_03_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_04_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_05_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_06_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_07_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_08_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_10_31_CHJ037_09_M.G.RdB-OM.(A).wav.pkl', '/tmp/TMI_2015_11_08_CHJ042_01_F.G.HY-WM.(A).wav.pkl', '/tmp/TMI_2015_11_25_CHJ050_01_F.G.HY-WM.(A).wav.pkl', '/tmp/TMI_2015_11_26_CHJ052_01_F.G.HR-RM.(A).wav.pkl', '/tmp/TMI_2015_12_01_CHJ054_01_M.G.RW-M.(A).wav.pkl', '/tmp/TMI_2015_12_12_CHJ065_01_F.G.lBO-BM.(A).wav.pkl', '/tmp/TMI_2015_12_12_CHJ066_01_F.G.lBO-BM.(A).wav.pkl', '/tmp/TMI_2015_12_31_CHJ070_01_F.G.lBO-BM.(A).wav.pkl']
-        for pkl in pkls:
-            with open(pkl, 'rb') as f:
-                loaded = pickle.load(f)
-            raw_pcm = loaded['raw_pcm']
-            nchannels = loaded['nchannels']
-            bitrate = loaded['bitrate']
-            fs = loaded['fs']
-            song_name = loaded['name']
+    def handle(self, dbs, *args, **options):
+        # Correct false wav info
+        for af in AudioFile.objects.all():
+            wav_file_path = audio_path(af.name, 'wav')
+            fs, length = get_wav_info(wav_file_path)
+            if fs != af.fs or length != af.length:
+                print('Correct file {}, originally length={} fs={}, now length={}, fs={}'.format(af.name, af.length, af.fs, length, fs))
+                af.fs = fs
+                af.length = length
+                af.save()
 
-            byte_per_frame = int(bitrate / 8)
-            nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
-            nframes_per_channel = int(nframes_all_channel / nchannels)
-            length = nframes_per_channel
+        conns = None
+        try:
+            conns = utils.get_dbconf(dbs)
+            for pop in conns:
+                conn = conns[pop]
+                cur = conn.cursor()
+                bitrate = 16
+                song_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-            array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
-            array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
+                song_cur.execute('select w.framesize, w.stereo, w.samplerate, w.ssizeinbits, w.songid, s.name '
+                                 'from wavs w join songdata s on w.songid=s.id where w.ssizeinbits={}'.format(bitrate))
 
-            data = array.array('i', raw_pcm)
+                songs = song_cur.fetchall()
+                for song in songs:
+                    song_name = song['name']
+                    # Import WAV data and save as WAV and MP3 files
+                    wav_file_path = '/tmp/{}'.format(song_name)
+                    mp3_file_path = '/tmp/{}.mp3'.format(song_name)
+                    fs, length = import_pcm(song, cur, song_name, wav_file_path, mp3_file_path)
 
-            sound = pydub.AudioSegment(data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
-            samples = sound.get_array_of_samples()
+                    fs1, length1 = get_wav_info(wav_file_path)
 
+                    if fs != fs1 or length != length1:
+                        print('-------SHIT--------')
 
-            sound.export('/tmp/fix-{}'.format(song_name), 'wav')
-            wavfile.write('/tmp/bad-{}'.format(song_name), fs, array2, bitrate=bitrate)
+                    print('Song {} length = {} fs = {} time = {}, length1 = {} fs1 = {} time1 = {}'
+                          .format(song_name, length, fs, length / fs, length1, fs1, length1 / fs1))
+        finally:
+            for dbconf in conns:
+                conn = conns[dbconf]
+                if conn is not None:
+                    conn.close()

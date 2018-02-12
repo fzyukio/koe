@@ -58,8 +58,12 @@ def get_wav_info(audio_file):
     return rate, nframes
 
 
-def import_pcm(song, cur, song_name):
-    wav_file_path = audio_path(song_name, 'wav')
+def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
+    if wav_file_path is None:
+        wav_file_path = audio_path(song_name, 'wav')
+    if mp3_url is None:
+        mp3_url = audio_path(song_name, 'mp3')
+
     if not os.path.isfile(wav_file_path):
         # print('Importing {}'.format(song_name))
         song_id = song['songid']
@@ -89,7 +93,6 @@ def import_pcm(song, cur, song_name):
     else:
         fs, length = get_wav_info(wav_file_path)
 
-    mp3_url = audio_path(song_name, 'mp3')
     if not os.path.isfile(mp3_url):
         ensure_parent_folder_exists(mp3_url)
         sound = pydub.AudioSegment.from_wav(wav_file_path)
@@ -236,7 +239,7 @@ def import_songs(conn):
         audio_file = AudioFile.objects.filter(name=song_name).first()
 
         # Import WAV data and save as WAV and MP3 files
-        length, fs = import_pcm(song, cur, song_name)
+        fs, length = import_pcm(song, cur, song_name)
         bar.song_name = song_name
         bar.next()
         if audio_file is None:
