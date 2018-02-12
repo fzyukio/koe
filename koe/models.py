@@ -101,7 +101,7 @@ class AudioFile(StandardModel):
         return self.name
 
 
-class Segment(models.Model, AutoSetterGetterMixin):
+class Segment(SimpleModel):
     """
     A segment of a song
     """

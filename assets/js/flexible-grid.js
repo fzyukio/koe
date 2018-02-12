@@ -13,7 +13,7 @@ export const defaultGridOptions = {
     multiColumnSort: true,
     editable: true,
     enableAddRow: false,
-    asyncEditorLoading: false,
+    asyncEditorLoading: true,
     autoEdit: true,
     enableTextSelectionOnCells: true,
     rowHeight: 25,

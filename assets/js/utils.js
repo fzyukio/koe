@@ -49,6 +49,24 @@ export const debug = function (str) {
     }
 };
 
+jQuery.fn.selectText = function(){
+    let doc = document;
+    let element = this[0];
+    let range, selection;
+
+    if (doc.body.createTextRange) {
+        range = document.body.createTextRange();
+        range.moveToElementText(element);
+        range.select();
+    } else if (window.getSelection) {
+        selection = window.getSelection();
+        range = document.createRange();
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+};
+
 /*
  * Prevent datepicker to conflick with jqueryui's datepicker
  * return $.fn.datepicker to previously assigned value and give it a new name
@@ -326,28 +344,28 @@ const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
  */
 const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
 
-  /*
-   * Render the URL and reset the value field for searching purpose.
-   * Store the url on an inner variable to be reused later, e.g if the field is 'filename' then
-   *  the variable is _url_filename which will takes the value of the URL, and the variable filename is set to the
-   *  actual string value
-   * Ideally we should keep it intact and the filter should be able to apply to the string part only
-   */
+    /*
+     * Render the URL and reset the value field for searching purpose.
+     * Store the url on an inner variable to be reused later, e.g if the field is 'filename' then
+     *  the variable is _url_filename which will takes the value of the URL, and the variable filename is set to the
+     *  actual string value
+     * Ideally we should keep it intact and the filter should be able to apply to the string part only
+     */
 
-  let fieldName = columnDef.field;
-  let fieldUrl = '_url_' + fieldName;
+    let fieldName = columnDef.field;
+    let fieldUrl = '_url_' + fieldName;
 
-  if (dataContext[fieldUrl]) {
-    return `<a href="${dataContext[fieldUrl]}" target="_blank">${value}</a>`
-  }
+    if (dataContext[fieldUrl]) {
+        return `<a href="${dataContext[fieldUrl]}" target="_blank">${value}</a>`
+    }
 
-  let matches = urlRegex.exec(value);
-  if (matches) {
-    let url = dataContext[fieldUrl] = matches[1];
-    let value = dataContext[fieldName] = matches[2];
-    return `<a href="${url}" target="_blank">${matches[2]}</a>`
-  }
-  return value
+    let matches = urlRegex.exec(value);
+    if (matches) {
+        let url = dataContext[fieldUrl] = matches[1];
+        let value = dataContext[fieldName] = matches[2];
+        return `<a href="${url}" target="_blank">${matches[2]}</a>`
+    }
+    return value
 };
 
 
@@ -689,9 +707,9 @@ const filterGenerator = function (paramName, type, filterContent) {
     return filterFunctions[type].bind({filterValue: filterContent});
 };
 
-export const regexMatchMultiple = function(regex, value) {
+export const regexMatchMultiple = function (regex, value) {
     let matches = filtersRegex.exec(value);
-    if (! matches) {
+    if (!matches) {
         return null;
     }
     let retval = [matches[0]];
@@ -759,6 +777,9 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
             }
         }
         if (filterIsCompleted) {
+            setCache('filterArgs', filterArgs);
+
+
             dataView.setFilterArgs(filterArgs);
 
             /*
@@ -1085,9 +1106,12 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             for (let i = 0; i < rows.length; i++)
                 selectedRows.push(left.length + i);
             grid.resetActiveCell();
+            // let filterArgs = getCache('filterArgs');
+            // dataView.setFilterArgs(null);
             dataView.setItems(data);
             grid.setSelectedRows(selectedRows);
             grid.render();
+            // dataView.setFilterArgs(filterArgs);
         });
         grid.registerPlugin(moveRowsPlugin);
     }

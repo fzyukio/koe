@@ -148,6 +148,18 @@ class ValueTypes(MagicChoices):
         URL: True
     }
 
+    _COPYABLE = {
+        SHORT_TEXT: True,
+        LONG_TEXT: True,
+        DATE: True,
+        INTEGER: True,
+        FLOAT: True,
+        BOOLEAN: False,
+        BASE64_PNG: False,
+        IMAGE: False,
+        URL: True
+    }
+
     # This is a dictionary of transformable types, e.g. user is allowed to change property type from
     # SHORT_TEXT to LONG_TEXT (or to itself - SHORT_TEXT) but not any other type.
     # BOOL can become FLOAT or INTEGER because boolean is just 1 or 0, but nothing can go to boolean because that
