@@ -1010,37 +1010,6 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     }
 
     /*
-     * Resize column width to fit the area.
-     * If the total width of all cols is still less than the available with, we're adjust them to fit the screen
-     */
-    let availableWidth = $(selector).width();
-    let minimumWidth = 50; // Pixels
-    let columnWidth = Math.max(minimumWidth, availableWidth / columns.length);
-
-    let undersizedCols = [];
-    let totalUsedWidth = 0;
-
-    for (let i = 0; i < columns.length; i++) {
-        let column = columns[i];
-        if (isNull(column.width)) {
-            column.width = columnWidth;
-        } else if (column.width < columnWidth) {
-            undersizedCols.push(column);
-        }
-        totalUsedWidth += column.width;
-    }
-
-    let remainingWidth = availableWidth - totalUsedWidth;
-
-    if (remainingWidth > 0) {
-        let shareWidth = remainingWidth / undersizedCols.length;
-
-        for (let i = 0; i < undersizedCols.length; i++) {
-            undersizedCols[i].width += shareWidth;
-        }
-    }
-
-    /*
      * Row selection model, if required:
      */
     let selectorPlugin = null;
