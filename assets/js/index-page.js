@@ -261,10 +261,12 @@ const setLabel = function (field) {
         ce.dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
 
         let ids = [];
-        let items = grid_.getData().getItems();
-        for (let i = 0; i < selectedRows.length; i++) {
-            let item = items[selectedRows[i]];
+        let selectedItems = [];
+        let dataView = grid_.getData();
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
             ids.push(item.id);
+            selectedItems.push(item);
         }
 
         let selectableColumns = utils.getCache('selectableOptions');
@@ -308,9 +310,9 @@ const setLabel = function (field) {
                     'grid-type': grid.gridType
                 },
                 function (msg) {
-                    for (let i = 0; i < selectedRows.length; i++) {
+                    for (let i = 0; i < numRows; i++) {
                         let row = selectedRows[i];
-                        let item = items[row];
+                        let item = selectedItems[i];
                         item[field] = value;
                         grid_.invalidateRow(row);
                     }

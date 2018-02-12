@@ -11,7 +11,7 @@ tables_str = """
       {
         "name": "ID",
         "slug": "id",
-        "type": "SHORT_TEXT",
+        "type": "INTEGER",
         "is_attribute": true
       },
       {
