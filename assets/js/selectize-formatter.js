@@ -20,6 +20,7 @@ export const initSelectize = function ($select, field, defaultValue) {
         searchField: 'option',
         create: true,
         selectOnTab: true,
+        openOnFocus: false,
         options: options,
         render: {
             option: function (item, escape) {
