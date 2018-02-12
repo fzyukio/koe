@@ -79,7 +79,7 @@ const playAudio = function (e, args) {
         let segId = args.songId;
         let data = new FormData();
         data.append('segment-id', segId);
-        ah.queryAndPlayAudio(getUrl('fetch-data', 'koe/get-segment-audio'), data, segId)
+        ah.queryAndPlayAudio(getUrl('send-request', 'koe/get-segment-audio'), data, segId)
     }
 };
 
@@ -331,7 +331,7 @@ const setLabel = function (field) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
             }
 
-            $.post(getUrl('fetch-data', 'set-property-bulk'),
+            $.post(getUrl('send-request', 'set-property-bulk'),
                 {
                     ids: JSON.stringify(ids),
                     field: field,
@@ -395,7 +395,7 @@ export const postRun = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function (e) {
-            let url = getUrl('fetch-data', 'koe/save-history');
+            let url = getUrl('send-request', 'koe/save-history');
             let value = inputText.val();
             inputText.val('');
 

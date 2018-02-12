@@ -396,7 +396,7 @@ values_grid_action_handlers = {
 }
 
 @csrf_exempt
-def fetch_data(request, *args, **kwargs):
+def send_request(request, *args, **kwargs):
     """
     All fetch requests end up here and then delegated to the appropriate function, based on the POST key `type`
     :param request: must specify a valid `type` in POST data, otherwise 404. The type must be in form of
@@ -417,27 +417,6 @@ def fetch_data(request, *args, **kwargs):
             except Exception as e:
                 return HttpResponse(e)
     return HttpResponseNotFound()
-
-
-@csrf_exempt
-def send_request(request, *args, **kwargs):
-    """
-    All get requests end up here and then delegated to the appropriate function, based on the POST key `type`
-    :param request: must specify a valid `type` in POST data, otherwise 404. The type must be in form of
-                    set_xxx_yyy and a function named set-xxx-yyy(request) must be available and registered
-                    using register_app_modules
-    :return: AJAX content
-    """
-    data_type = kwargs['type']
-    func_name = data_type.replace('-', '_')
-    if isinstance(data_type, str):
-        function = globals().get(func_name, None)
-        if function:
-            retval = function(request)
-            if retval:
-                return retval
-    retval = render(request, "errors/404.html")
-    return HttpResponseNotFound(retval)
 
 
 def get_view(name):

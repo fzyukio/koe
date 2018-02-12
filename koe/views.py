@@ -74,11 +74,7 @@ def delete_history(request):
     :return:
     """
     version_id = request.POST['version-id']
-    try:
-        HistoryEntry.objects.get(id=version_id).delete()
-        return HttpResponse('ok')
-    except Exception as e:
-        return HttpResponse(e)
+    HistoryEntry.objects.get(id=version_id).delete()
 
 
 def get_segment_audio(request):
@@ -127,14 +123,15 @@ def import_history(request):
     """
     Import a HistoryEntry from any user to this user.
     If this operation fails, the database is intact.
-    :param request: must specify version-id, which is the id of the HistoryEntry object to be imported to
+    :param request: must specify either : version-id, which is the id of the HistoryEntry object to be imported to
+                                          or FILES['zipfile'] which should be created somewhere by Koe for someone
     :return: 'ok' if everything goes well. Otherwise the error message.
     """
     version_id = request.POST.get('version-id', None)
     zip_file = request.FILES.get('zipfile', None)
 
     if not (version_id or zip_file):
-        raise Exception('No ID or file provided. Abort.')
+        raise ValueError('No ID or file provided. Abort.')
 
     if version_id:
         he = HistoryEntry.objects.get(id=version_id)
@@ -143,8 +140,14 @@ def import_history(request):
         file = File(file=zip_file)
 
     with zipfile.ZipFile(file, "r") as zip_file:
-        content = zip_file.read('root.extraattrvalue.json')
-        new_entries = json.loads(content)
+        try:
+            content = zip_file.read('root.extraattrvalue.json')
+        except KeyError as e:
+            raise ValueError('This is not a Koe history file')
+        try:
+            new_entries = json.loads(content)
+        except Exception as e:
+            raise ValueError('The history content is malformed and cannot be parsed.')
     file.close()
 
     extra_attr_values = []

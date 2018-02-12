@@ -218,7 +218,7 @@ const fetchFft = function (retval) {
  *
  */
 export const fetchSegments = function(fileId, segType, idPrefix, callback) {
-  $.post(utils.getUrl('fetch-data', 'get-segments'),
+  $.post(utils.getUrl('send-request', 'get-segments'),
     {'file-id': fileId, 'seg-type': segType, 'id-prefix': idPrefix},
     function (data) {
     if (data) {
@@ -250,7 +250,7 @@ export const fetchDataGetArgs = {
 };
 
 /**
- * Lookup dictionary for the fetch-data functions
+ * Lookup dictionary for the send-request functions
  * @type {*}
  */
 export const handleSpectralDataFunctions = {

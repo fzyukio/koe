@@ -65,7 +65,7 @@ const initApplyVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function (e) {
-            let url = getUrl('fetch-data', 'koe/import-history');
+            let url = getUrl('send-request', 'koe/import-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully imported`;
                 let alertEl = ce.alertSuccess;
@@ -95,7 +95,7 @@ const initDeleteVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function (e) {
-            let url = getUrl('fetch-data', 'koe/delete-history');
+            let url = getUrl('send-request', 'koe/delete-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully deleted. This page will reload`;
                 let alertEl = ce.alertSuccess;
@@ -120,7 +120,7 @@ const initDeleteVersionBtn = function () {
  * On click the user can chose a file that contains the history to upload and replace the current workspace
  */
 const initImportZipBtn = function () {
-    let url = getUrl('fetch-data', 'koe/import-history');
+    let url = getUrl('send-request', 'koe/import-history');
     importZipBtn.click(function (e) {
         fileUploadInput.click();
     });

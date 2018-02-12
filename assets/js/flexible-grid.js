@@ -244,7 +244,7 @@ export class FlexibleGrid {
         let data = args.data || {};
         data['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('fetch-data', 'get-grid-column-definition'), data, function (columns) {
+        $.post(utils.getUrl('send-request', 'get-grid-column-definition'), data, function (columns) {
             self.columns = JSON.parse(columns);
 
             utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
@@ -313,7 +313,7 @@ export class FlexibleGrid {
         let args = utils.deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('fetch-data', 'get-grid-content'), args, function (rows) {
+        $.post(utils.getUrl('send-request', 'get-grid-content'), args, function (rows) {
             rows = JSON.parse(rows);
             self.rows = rows;
             utils.updateSlickGridData(self.mainGrid, self.rows);
