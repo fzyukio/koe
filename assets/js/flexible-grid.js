@@ -175,7 +175,7 @@ export class FlexibleGrid {
         postArgs['property'] = JSON.stringify(itemSimplified);
 
         $.post(
-            utils.getUrl('send-data', 'change-properties'),
+            utils.getUrl('send-request', 'change-properties'),
             {
                 'grid-type': self.gridType,
                 'property': JSON.stringify(itemSimplified)

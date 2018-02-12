@@ -412,15 +412,15 @@ def fetch_data(request, *args, **kwargs):
             func_name = module + '.' + func_name
         function = globals().get(func_name, None)
         if function:
-            retval = function(request)
-            if retval:
-                return retval
-    retval = render(request, "errors/404.html")
-    return HttpResponseNotFound(retval)
+            try:
+                return function(request)
+            except Exception as e:
+                return HttpResponse(e)
+    return HttpResponseNotFound()
 
 
 @csrf_exempt
-def send_data(request, *args, **kwargs):
+def send_request(request, *args, **kwargs):
     """
     All get requests end up here and then delegated to the appropriate function, based on the POST key `type`
     :param request: must specify a valid `type` in POST data, otherwise 404. The type must be in form of

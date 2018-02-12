@@ -66,7 +66,7 @@ def get_server_constants():
                 alias_dict[key] = cl_aliases[key]
             aliases[cl.__name__] = alias_dict
 
-    url_names = ['fetch-data', 'send-data']
+    url_names = ['fetch-data', 'send-request']
     urls = {}
     for name in url_names:
         try:

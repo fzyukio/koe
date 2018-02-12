@@ -8,6 +8,7 @@ import numpy as np
 import pydub
 from django.conf import settings
 from django.core import serializers
+from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
@@ -129,13 +130,22 @@ def import_history(request):
     :param request: must specify version-id, which is the id of the HistoryEntry object to be imported to
     :return: 'ok' if everything goes well. Otherwise the error message.
     """
-    version_id = request.POST['version-id']
-    he = HistoryEntry.objects.get(id=version_id)
-    filepath = history_path(he.filename)
+    version_id = request.POST.get('version-id', None)
+    zip_file = request.FILES.get('zipfile', None)
 
-    with zipfile.ZipFile(filepath, "r") as zip_file:
+    if not (version_id or zip_file):
+        raise Exception('No ID or file provided. Abort.')
+
+    if version_id:
+        he = HistoryEntry.objects.get(id=version_id)
+        file = open(history_path(he.filename), 'rb')
+    else:
+        file = File(file=zip_file)
+
+    with zipfile.ZipFile(file, "r") as zip_file:
         content = zip_file.read('root.extraattrvalue.json')
         new_entries = json.loads(content)
+    file.close()
 
     extra_attr_values = []
     for entry in new_entries:
@@ -148,12 +158,9 @@ def import_history(request):
 
     # Wrap all DB modification in one transaction to utilise the roll-back ability when things go wrong
     with transaction.atomic():
-        try:
-            ExtraAttrValue.objects.filter(user=request.user).delete()
-            ExtraAttrValue.objects.bulk_create(extra_attr_values)
-            return HttpResponse('ok')
-        except Exception as e:
-            return HttpResponse(e)
+        ExtraAttrValue.objects.filter(user=request.user).delete()
+        ExtraAttrValue.objects.bulk_create(extra_attr_values)
+        return HttpResponse('ok')
 
 
 class IndexView(TemplateView):

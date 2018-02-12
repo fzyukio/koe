@@ -1386,7 +1386,7 @@ export const createCsv = function (grid, downloadType) {
         rows.push(row);
     }
 
-    let lineArray = ["#," + columnHeadings.join(",")];
+    let lineArray = [columnHeadings.join(",")];
     rows.forEach(function (rowArray) {
         let line = rowArray.join(",");
         lineArray.push(line);
