@@ -112,7 +112,7 @@ const setColumnWidth = function (e, grid, gridType) {
     }
   }
 
-  $.post(utils.getUrl('send-data', 'change-action-values'),
+  $.post(utils.getUrl('send-data', 'set-action-values'),
     {'column-ids-action-values': JSON.stringify(colIdsWidths), 'grid-type': gridType}
   );
 };
@@ -131,7 +131,7 @@ const reorderColumn = function (e, grid, gridType) {
     colIdToIdx[column.id][this.action] = i;
   }
 
-  $.post(utils.getUrl('send-data', 'change-action-values'),
+  $.post(utils.getUrl('send-data', 'set-action-values'),
     {'column-ids-action-values': JSON.stringify(colIdToIdx), 'grid-type': gridType}
   );
 };

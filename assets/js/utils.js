@@ -39,6 +39,16 @@ if ($.ui.keyCode === undefined) {
     };
 }
 
+export const log = function (str) {
+    console.log(str)
+};
+
+export const debug = function (str) {
+    if (window.APP_DEBUG) {
+        console.log(str);
+    }
+};
+
 /*
  * Prevent datepicker to conflick with jqueryui's datepicker
  * return $.fn.datepicker to previously assigned value and give it a new name
@@ -1330,60 +1340,6 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     });
 
     return grid;
-};
-
-
-/**
- * Handle changes to the property settings (i.e. user clicking on the 'Save' button in the modal)
- * @param grid
- * @param servingType either PropertyOf.SONG or PropertyOf.SEGMENT (enum)
- * @param callback to handle server returned value
- */
-export const propertiesSettingsChangeHandler = function (grid, servingType, callback) {
-    let rows = grid.getData().getItems();
-    let newOrChangedRows = [];
-    let actionValueChangedRows = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        if (row._isNew || row._isChanged) {
-            newOrChangedRows.push(row);
-        }
-        if (row._isActionValueChanged) {
-            actionValueChangedRows.push(row);
-        }
-    }
-
-    if (newOrChangedRows.length) {
-        $.post(
-            getUrl('send-data', 'change-metadata'),
-            {
-                'for': servingType,
-                'prototypes': JSON.stringify(newOrChangedRows)
-            },
-            callback
-        );
-    }
-    if (actionValueChangedRows.length) {
-        let columnIdsActionValues = {};
-        for (let i = 0; i < actionValueChangedRows.length; i++) {
-            let row = actionValueChangedRows[i];
-            columnIdsActionValues[row.slug] = row.actions;
-        }
-
-        $.post(
-            getUrl('send-data', 'change-action-values'),
-            {
-                'grid-type': self.gridType,
-                'column-ids-action-values': JSON.stringify(columnIdsActionValues)
-            },
-            callback
-        );
-    }
-    if ((newOrChangedRows.length + actionValueChangedRows.length) === 0) {
-        callback('nochange');
-    }
-
 };
 
 export const isNull = function (val) {

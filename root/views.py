@@ -1,7 +1,11 @@
+import datetime
 import importlib
 import json
 from collections import OrderedDict
+from json import JSONEncoder
+import sys
 
+from django.db.models.base import ModelBase
 from django.db.utils import OperationalError, ProgrammingError
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
@@ -9,7 +13,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
-from koe.models import *
+from koe import jsons
 from root.models import *
 
 PY3 = sys.version_info[0] == 3
@@ -24,24 +28,38 @@ except AttributeError:
     builtins.profile = lambda x: x
 
 
-def serialize_alternative(obj):
-    """Default JSON serializer."""
-    import calendar, datetime
+JSONEncoder_olddefault = JSONEncoder.default
 
+
+def JSONEncoder_newdefault(self, obj):
+    """
+    The original JSONEncoder doesn't handle datetime object.
+    Replace it with this
+    :param self:
+    :param obj:
+    :return: the JSONified string
+    """
     if isinstance(obj, datetime.datetime):
         if obj.utcoffset() is not None:
             obj = obj - obj.utcoffset()
         return obj.strftime('%Y-%m-%d %H:%M:%S')
-    raise TypeError('Not sure how to serialize %s' % (obj,))
+    return JSONEncoder_olddefault(self, obj)
 
 
-def get_attrs(objs, table, extras={}):
+JSONEncoder.default = JSONEncoder_newdefault
+
+
+tables = None
+actions = None
+
+
+def get_attrs(objs, table, extras):
     """
     Returns values of the attributes of the objects according to the table config
-    :param objs:
-    :param table:
-    :param extras:
-    :return:
+    :param objs: a list of ModelBase objects
+    :param table: the table to display
+    :param extras: some getters need extra information
+    :return: all the rows to be displayed.
     """
     ids = get_bulk_id(objs)
     if 'getter' in table:
@@ -79,18 +97,24 @@ def get_attrs(objs, table, extras={}):
     return rows
 
 
-with open('tables.json', 'r', encoding='utf-8') as f:
-    tables = json.loads(''.join(f.readlines()))
+def init_tables():
+    """
+    Modify the raw table config in jsons to make the items (getters/setters) directly usable as Python object
+    :return: None
+    """
+    global tables, actions
+    global_namespace = globals()
 
+    tables = jsons.tables
     for table in tables.values():
-        klass = globals()[table['class']]
+        klass = global_namespace[table['class']]
         table['class'] = klass
 
         has_bulk_getter = 'getter' in table
         has_bulk_setter = 'setter' in table
 
         if has_bulk_getter:
-            table['getter'] = getattr(klass, table['getter'])
+            table['getter'] = global_namespace[table['getter']]
         for column in table['columns']:
             slug = column['slug']
             _type = column['type']
@@ -138,8 +162,7 @@ with open('tables.json', 'r', encoding='utf-8') as f:
             if 'total_label' not in column:
                 column['total_label'] = '-/-'
 
-with open('actions.json', 'r', encoding='utf-8') as f:
-    actions = json.loads(''.join(f.readlines()))
+    actions = jsons.actions
     for slug in actions:
         action = actions[slug]
         _type = action['type']
@@ -151,10 +174,14 @@ with open('actions.json', 'r', encoding='utf-8') as f:
 
 
 def get_grid_column_definition(request):
+    """
+    Return slickgrid's array of column definitions
+    :param request: must specify grid-type
+    :return:
+    """
     user = request.user
-    grid_type = request.POST['grid-type']
-    coldefs = tables[grid_type]['columns']
-    table = tables[grid_type]
+    table_name = request.POST['grid-type']
+    table = tables[table_name]
 
     columns = []
 
@@ -181,20 +208,18 @@ def get_grid_column_definition(request):
 
         columns.append(column)
 
-
-    value_actions = {k:v for k,v in actions.items()}
-
     name_to_column = {x['id']: x for x in columns}
+    action_names = list(actions.keys())
 
-    for apk, action in value_actions.items():
-        handler = values_grid_action_handlers[apk]
-        name_to_column = handler(apk, action, grid_type, coldefs, user, name_to_column)
+    for action_name in action_names:
+        handler = values_grid_action_handlers[action_name]
+        name_to_column = handler(action_name, table_name, user, name_to_column)
 
     columns = list(name_to_column.values())
 
     # Final column is for the actions
-    action_pks = [x for x in value_actions]
-    columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_pks, 'formatter': 'Action'})
+    columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_names,
+                    'formatter': 'Action'})
 
     return HttpResponse(json.dumps(columns))
 
@@ -220,10 +245,15 @@ def get_grid_content(request):
     klass = table['class']
     objs = klass.objects.all()
     rows = get_attrs(objs, table, extras)
-    return HttpResponse(json.dumps(rows, default=serialize_alternative))
+    return HttpResponse(json.dumps(rows))
 
 
-def change_property_bulk(request):
+def set_property_bulk(request):
+    """
+    Change properties of multiple items at once
+    :param request: must specify grid-type, value to be set, the field and ids of the objects to be modified
+    :return:
+    """
     grid_type = request.POST['grid-type']
     value = request.POST['value']
     field = request.POST['field']
@@ -241,6 +271,7 @@ def change_property_bulk(request):
             setter(objs, value, {'user': request.user})
 
     return HttpResponse('ok')
+
 
 def change_properties(request):
     """
@@ -269,14 +300,18 @@ def change_properties(request):
     return HttpResponse('ok')
 
 
-def change_action_values(request):
+def set_action_values(request):
+    """
+    Change the value of ColumnActionValue whenever the user changes the orders/widths of the columns
+    :param request:
+    :return:
+    """
     column_ids_actions_values = json.loads(request.POST.get('column-ids-action-values', None))
     grid_type = request.POST['grid-type']
     user = request.user
 
     for column in column_ids_actions_values.keys():
         actions_values = column_ids_actions_values[column]
-        # column_prefixed = '{}__{}'.format(grid_type, column)
 
         for action in actions_values:
             value = actions_values[action]
@@ -298,37 +333,56 @@ def change_action_values(request):
     return HttpResponse('ok')
 
 
-def reorder_columns_handler(apk, action, grid_type, coldefs, user, name_to_column):
-    column_values = ColumnActionValue.objects\
-        .filter(user=user, action=apk, table=grid_type, column__in=[x['slug'] for x in coldefs])\
+def reorder_columns_handler(action_name, table_name, user, modified_columns):
+    """
+    Change the order of the column according to the index stored in ColumnActionValue
+    :param action_name: name of the action as stored in ColumnActionValue
+    :param table_name: name of the grid
+    :param user: the logged in user
+    :param modified_columns: a dict mapping name->column definition. It is originated from the column in tables.json
+                             and might have been modified earlier by other values_grid_action_handlers function
+    :return: modified_columns, after reordered
+    """
+    columns = tables[table_name]['columns']
+    column_names = [x['slug'] for x in columns]
+    column_values = ColumnActionValue.objects \
+        .filter(user=user, action=action_name, table=table_name, column__in=column_names) \
         .values_list('column', 'value')
 
+    action = actions[action_name]
     str2val = action['str2val']
     column_values = {k: str2val(v) for k,v in column_values}
 
-    column_names = name_to_column.keys()
+    column_names = modified_columns.keys()
+    column_names = sorted(column_names, key=lambda pk: str2val(column_values.get(pk, '-999999')))
+
+    modified_columns = OrderedDict((k, modified_columns[k]) for k in column_names)
+
+    return modified_columns
 
 
-    def sort_(pk):
-        return str2val(column_values.get(pk, '-999999'))
-
-    column_names = sorted(column_names, key=sort_)
-
-    name_to_column = OrderedDict((k, name_to_column[k]) for k in column_names)
-
-    return name_to_column
-
-
-def set_column_width_handler(apk, action, grid_type, coldefs, user, name_to_column):
+def set_column_width_handler(action_name, table_name, user, modified_columns):
+    """
+    Change widths of the columns according to the values stored in ColumnActionValue
+    :param action_name: name of the action as stored in ColumnActionValue
+    :param table_name: name of the grid
+    :param user: the logged in user
+    :param modified_columns: a dict mapping name->column definition. It is originated from the column in tables.json
+                             and might have been modified earlier by other values_grid_action_handlers function
+    :return: modified_columns, after changing width
+    """
+    columns = tables[table_name]['columns']
+    column_names = [x['slug'] for x in columns]
     column_values = ColumnActionValue.objects \
-        .filter(user=user, action=apk, table=grid_type, column__in=[x['slug'] for x in coldefs]) \
+        .filter(user=user, action=action_name, table=table_name, column__in=column_names) \
         .values_list('column', 'value')
 
+    action = actions[action_name]
     str2val = action['str2val']
 
     for column, value in column_values:
-        name_to_column[column]['width'] = str2val(value)
-    return name_to_column
+        modified_columns[column]['width'] = str2val(value)
+    return modified_columns
 
 
 values_grid_action_handlers = {
@@ -339,8 +393,10 @@ values_grid_action_handlers = {
 @csrf_exempt
 def fetch_data(request, *args, **kwargs):
     """
-    All fetch requests end up here and then delegated to the appropriate function, based on the POST key `fetch-type`
-    :param request: must specify a valid `fetch-type` in POST data, otherwise 404
+    All fetch requests end up here and then delegated to the appropriate function, based on the POST key `type`
+    :param request: must specify a valid `type` in POST data, otherwise 404. The type must be in form of
+                    get_xxx_yyy and a function named set-xxx-yyy(request) must be available and registered
+                    using register_app_modules
     :return: AJAX content
     """
     fetch_type = kwargs['type']
@@ -349,9 +405,9 @@ def fetch_data(request, *args, **kwargs):
     if isinstance(fetch_type, str):
         if module is not None:
             func_name = module + '.' + func_name
-        fetch_func = globals().get(func_name, None)
-        if fetch_func:
-            retval = fetch_func(request)
+        function = globals().get(func_name, None)
+        if function:
+            retval = function(request)
             if retval:
                 return retval
     retval = render(request, "errors/404.html")
@@ -361,16 +417,18 @@ def fetch_data(request, *args, **kwargs):
 @csrf_exempt
 def send_data(request, *args, **kwargs):
     """
-    All fetch requests end up here and then delegated to the appropriate function, based on the POST key `fetch-type`
-    :param request: must specify a valid `fetch-type` in POST data, otherwise 404
+    All get requests end up here and then delegated to the appropriate function, based on the POST key `type`
+    :param request: must specify a valid `type` in POST data, otherwise 404. The type must be in form of
+                    set_xxx_yyy and a function named set-xxx-yyy(request) must be available and registered
+                    using register_app_modules
     :return: AJAX content
     """
     data_type = kwargs['type']
     func_name = data_type.replace('-', '_')
     if isinstance(data_type, str):
-        fetch_func = globals().get(func_name, None)
-        if fetch_func:
-            retval = fetch_func(request)
+        function = globals().get(func_name, None)
+        if function:
+            retval = function(request)
             if retval:
                 return retval
     retval = render(request, "errors/404.html")
@@ -378,6 +436,11 @@ def send_data(request, *args, **kwargs):
 
 
 def get_view(name):
+    """
+    Get a generic TemplateBased view that uses only common context
+    :param name: name of the view. A `name`.html must exist in the template folder
+    :return:
+    """
     class View(TemplateView):
         template_name = name + '.html'
 
@@ -389,14 +452,24 @@ def get_view(name):
     return View.as_view()
 
 
-def register_view(package, module):
-    # module = __import__(name, globals(), locals())
-    # globals()[name] = module
-    imported_modules = importlib.import_module('{}.{}'.format(package, module)).__dict__
-    importable_names = imported_modules['__all__']
+def register_app_modules(package, filename):
+    """
+    Make views and modules known to this workspace
+    :param package: name of the package (app)
+    :param filename: e.g. koe.views, koe.models, ...
+    :return: None
+    """
+    package_modules = importlib.import_module('{}.{}'.format(package, filename)).__dict__
     globals_dict = globals()
 
-    for importable_name in importable_names:
-        new_name = '{}.{}'.format(package, importable_name)
-        imported_module = imported_modules[importable_name]
-        globals_dict[new_name] = imported_module
+    # First import all the modules made available in __all__
+    exposed_modules = package_modules.get('__all__', [])
+    for old_name in exposed_modules:
+        new_name = '{}.{}'.format(package, old_name)
+        globals_dict[new_name] = package_modules[old_name]
+
+    # Then import all Models
+    for old_name, module in package_modules.items():
+        if not old_name in exposed_modules and isinstance(module, ModelBase):
+            new_name = '{}.{}'.format(package, old_name)
+            globals_dict[new_name] = module

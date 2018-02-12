@@ -300,7 +300,7 @@ const setLabel = function (field) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
             }
 
-            $.post(utils.getUrl('fetch-data', 'change-property-bulk'),
+            $.post(utils.getUrl('fetch-data', 'set-property-bulk'),
                 {
                     ids: JSON.stringify(ids),
                     field: field,
@@ -369,7 +369,7 @@ export const postRun = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function (e) {
-            let url = utils.getUrl('fetch-data', 'koe/download-history');
+            let url = utils.getUrl('fetch-data', 'koe/save-history');
             let value = inputText.val();
             inputText.val('');
 

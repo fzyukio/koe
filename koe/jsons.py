@@ -1,7 +1,12 @@
+import json
+
+__all__ = ['tables', 'actions']
+
+tables_str = """
 {
   "segment-info": {
-    "class": "Segment",
-    "getter": "bulk_get_segment_info",
+    "class": "koe.Segment",
+    "getter": "koe.bulk_get_segment_info",
     "columns": [
       {
         "name": "ID",
@@ -114,7 +119,7 @@
     ]
   },
   "version-grid": {
-    "class": "HistoryEntry",
+    "class": "koe.HistoryEntry",
     "columns": [
       {
         "name": "Created by",
@@ -142,3 +147,24 @@
     ]
   }
 }
+
+"""
+tables = json.loads(tables_str)
+
+
+actions_str = """
+{
+  "reorder-columns": {
+    "name": "Arrange row",
+    "type": "INTEGER",
+    "target": "VALUES_GRID"
+  },
+  "set-column-width": {
+    "name": "Set Column Width",
+    "type": "FLOAT",
+    "target": "VALUES_GRID"
+  }
+}
+"""
+
+actions = json.loads(actions_str)

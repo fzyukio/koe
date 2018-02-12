@@ -10,6 +10,11 @@ from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 
 
+__all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
+           'ColumnActionValue', 'User', 'SimpleModel', 'StandardModel', 'IdSafeModel',
+           'value_setter', 'value_getter', 'get_bulk_id']
+
+
 def enum(*sequential, **named):
     original_enums = dict(zip(sequential, range(len(sequential))), **named)
     enums = dict((key, value) for key, value in original_enums.items())
@@ -182,11 +187,18 @@ value_setter = {
 
 
 class ExtraAttr(models.Model):
+    """
+    These are the user editable fields that usually can be direct properties of an object model
+    However to support multi-user and custom fields, fields like this is detached from the object
+    """
     klass = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     type = models.IntegerField(choices=ValueTypes.as_choices())
 
     class Meta:
+        """
+        One class can't have two properties with the same name
+        """
         unique_together = ('klass', 'name')
 
     def __str__(self):
@@ -194,12 +206,18 @@ class ExtraAttr(models.Model):
 
 
 class ExtraAttrValue(models.Model):
+    """
+    This model stores the value of the aforementioned ExtraAttr model.
+    """
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     owner_id = models.CharField(max_length=255)
     attr = models.ForeignKey(ExtraAttr, on_delete=models.CASCADE)
     value = models.TextField()
 
     class Meta:
+        """
+        One user can't set two different value to the same attribute of the same object
+        """
         unique_together = ('user', 'owner_id', 'attr')
 
     def __str__(self):
@@ -207,6 +225,12 @@ class ExtraAttrValue(models.Model):
 
 
 def get_bulk_attrs(objs, attr):
+    """
+    Return values of an attribute for all objects
+    :param objs: an array or QuerySet of objects
+    :param attr: name of the attr
+    :return: A dict of format {id -> value}
+    """
     if isinstance(objs, QuerySet):
         id_2_attr = objs.values_list('id', attr)
         return {x: y for x, y in id_2_attr}
@@ -214,6 +238,11 @@ def get_bulk_attrs(objs, attr):
 
 
 def get_bulk_id(objs):
+    """
+    Similar to get_bulk_attrs but faster for ID
+    :param objs: an array or QuerySet of objects
+    :return: an array of IDs in the same order
+    """
     if isinstance(objs, QuerySet):
         return objs.values_list('id', flat=True)
     return [obj.id for obj in objs]
@@ -222,16 +251,39 @@ def get_bulk_id(objs):
 class AutoSetterGetterMixin:
     @classmethod
     def _get_(cls, objs, attr):
+        """
+        A shortcut to get_bulk_attrs that can be called on any Model that inherit AutoSetterGetterMixin
+        :param objs: an array or QuerySet of objects
+        :param attr: name of the attr
+        :return: A dict of format {id -> value}
+        """
         return get_bulk_attrs(objs, attr)
 
     @classmethod
     def _set_(cls, objs, attr, value):
-        for obj in objs:
-            setattr(obj, attr, value)
-            obj.save()
+        """
+        A shortcut to set multiple value to an attribute of multiple objects
+        :param objs: an array or QuerySet of objects
+        :param attr: name of the attr
+        :param value: value to set
+        :return:
+        """
+        if isinstance(objs, QuerySet):
+            objs.update({attr: value})
+        else:
+            for obj in objs:
+                setattr(obj, attr, value)
+                obj.save()
 
     @classmethod
     def _get_extra_(cls, objs, attr, extras):
+        """
+        A generic getter for any ExtraAttr value, applied on multiple objects at once
+        :param objs: an array or QuerySet of objects
+        :param attr: name of the extra_attr
+        :param extras: must contain the user that is associated with these ExtraAttr
+        :return: A dict of format {id -> value}
+        """
         user = extras['user']
 
         retval = {obj.id: None for obj in objs}
@@ -248,6 +300,13 @@ class AutoSetterGetterMixin:
 
     @classmethod
     def _set_extra_(cls, objs, attr, value, extras):
+        """
+        A generic setter for any ExtraAttr value, applied on multiple objects at once
+        :param objs: an array or QuerySet of objects
+        :param attr: name of the attr
+        :param extras: must contain the user that is associated with these ExtraAttr
+        :return: None
+        """
         user = extras['user']
 
         if isinstance(objs, QuerySet):
@@ -271,22 +330,50 @@ class AutoSetterGetterMixin:
 
     @classmethod
     def get_FIELD(cls, attr):
+        """
+        Generate a lambda to call _get_ for one particular attr
+        :param attr: name of the attr
+        :return: a lambda function that return same results as _get_
+        """
         return lambda objs, extras: cls._get_(objs, attr)
 
     @classmethod
     def set_FIELD(cls, attr):
+        """
+        Generate a lambda to call _set_ for one particular attr
+        :param attr: name of the attr
+        :return: a lambda function that return same results as _set_
+        """
         return lambda objs, value, extras: cls._set_(objs, attr, value)
 
     @classmethod
     def get_EXTRA_FIELD(cls, attr):
+        """
+        Generate a lambda to call _get_extra_ for one particular attr
+        :param attr: name of the attr
+        :return: a lambda function that return same results as _get_extra_
+        """
         return lambda objs, extras: cls._get_extra_(objs, attr, extras)
 
     @classmethod
     def set_EXTRA_FIELD(cls, attr):
+        """
+        Generate a lambda to call _set_extra_ for one particular attr
+        :param attr: name of the attr
+        :return: a lambda function that return same results as _set_extra_
+        """
         return lambda objs, value, extras: cls._set_extra_(objs, attr, value, extras)
 
 
 def id_generator(klass):
+    """
+    Generate the ID for the next object to be stored in the database
+    :param klass: a class object
+    :return: an ID with the format 'WWDDDDD' with WW being two random ASCII character and DDDDD being the integer
+             that would be used as ID otherwise if normal ID generating process is involved.
+             Usually that means the next integer. E.g. if the last object in the database is ab172637, then the next
+             ID will be ??172638
+    """
     uuid_prefix = uuid.uuid4().hex[:2]
     last_obj = klass.objects.all().extra(select={'idint': "CAST(SUBSTR(id, 3) AS UNSIGNED)"}).order_by('idint').last()
     if not last_obj:
@@ -297,6 +384,10 @@ def id_generator(klass):
 
 
 class IdSafeModel(models.Model):
+    """
+    An ID Safe Model has ID that cannot be guessed. The ID is small enough to be efficient to send in bulk over the
+    wire, but safe enough to prevent injection of any kind.
+    """
     id = models.CharField(primary_key=True, editable=False, auto_created=False, max_length=255)
 
     class Meta:
@@ -309,16 +400,25 @@ class IdSafeModel(models.Model):
 
 
 class StandardModel(IdSafeModel, AutoSetterGetterMixin):
+    """
+    A shortcut for any Model that requires safe ID and all the benefit of auto getter-setter
+    """
     class Meta:
         abstract = True
 
 
 class SimpleModel(models.Model, AutoSetterGetterMixin):
+    """
+    A shortcut for any Model that requires all the benefit of auto getter-setter but doesn't need a safe ID
+    """
     class Meta:
         abstract = True
 
 
 class User(AbstractUser, StandardModel):
+    """
+    A simple User model that uses safe ID
+    """
     def get_avatar(self):
         return "https://api.adorable.io/avatars/200/" + self.email
 
@@ -328,12 +428,17 @@ class User(AbstractUser, StandardModel):
 
 
 class ColumnActionValue(SimpleModel):
+    """
+    To store values of the columns such as width, position, ...
+    So that each user after logging in will see the same grid setting they made before
+    Each value is user specific
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    table = models.CharField(max_length=1024)
-    column = models.CharField(max_length=1024)
-    action = models.CharField(max_length=1024)
+    table = models.CharField(max_length=255)
+    column = models.CharField(max_length=255)
+    action = models.CharField(max_length=255)
     value = models.TextField()
 
     def __str__(self):
-        return '{} {} of column "{}" on table "{}" to {}'.format(self.user, self.action, self.column, self.table,
-                                                                 self.value)
+        return '{} {} of column "{}" on table "{}" to {}'\
+            .format(self.user, self.action, self.column, self.table, self.value)

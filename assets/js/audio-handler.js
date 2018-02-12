@@ -1,6 +1,5 @@
 const base64 = require('base64-arraybuffer/lib/base64-arraybuffer.js');
-import * as utils from "utils";
-import * as fd from "./fetch-data";
+import {isNull, debug, log} from "./utils";
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -15,7 +14,6 @@ let audioContext = null;
  */
 let audioBuffer = null;
 let cachedArrays = {};
-let fullAudioDataArray = null;
 
 /**
  * Playback speed, global
@@ -53,20 +51,25 @@ export const initAudioContext = function () {
  * @param end and begin : both normalised to the duration of the audio, to be in range [0-1]
  */
 export const playAudio = function (begin, end, callback) {
-    if (utils.isNull(audioContext) || audioContext.state === 'closed') {
+    if (isNull(audioContext) || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
     /*
      * Prevent multiple audio playing at the same time: stop any instance if audioContext that is currently running
      */
-    else if (!utils.isNull(audioContext) && audioContext.state === 'running') {
-        audioContext.close();
-        audioContext = new AudioContext();
+    else if (!isNull(audioContext) && audioContext.state === 'running') {
+        try {
+            audioContext.close();
+            audioContext = new AudioContext();
+        }
+        catch (e) {
+            console.log(`Catch error: ${e}`);
+        }
     }
     let source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
 
-    source.playbackRate.value = playbackSpeed / 100.0;
+    source.playbackRate.setValueAtTime(playbackSpeed / 100.0, 0);
     source.connect(audioContext.destination);
 
     // Convert to seconds then play
@@ -106,6 +109,7 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
                 if (cacheKey) {
                     cachedArrays[cacheKey] = [fullAudioDataArray, sampleRate];
                 }
+                debug(`Playing at sampleRate: ${sampleRate}`);
                 playAudioDataArray(fullAudioDataArray, sampleRate);
             });
         };

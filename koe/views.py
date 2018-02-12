@@ -16,21 +16,32 @@ from koe.models import AudioFile, Segment, HistoryEntry, DistanceMatrix
 from root.models import ExtraAttrValue, ExtraAttr
 from root.utils import history_path, ensure_parent_folder_exists
 
-__all__ = ['get_segment_audio', 'download_history', 'import_history', 'delete_history']
+__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history']
 
 # Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
 # reached this level, and vise verse
 normalised_max = pow(2, 31)
 
 
-def match_target_amplitude(sound, target_dBFS):
-    change_in_dBFS = target_dBFS - sound.dBFS
+def match_target_amplitude(sound, loudness):
+    """
+    Set the volume of an AudioSegment object to be a certain loudness
+    :param sound: an AudioSegment object
+    :param loudness: usually -10db is a good number
+    :return: the modified sound
+    """
+    change_in_dBFS = loudness - sound.dBFS
     if change_in_dBFS > 0:
         return sound.apply_gain(change_in_dBFS)
     return sound
 
 
-def download_history(request):
+def save_history(request):
+    """
+    Save a copy of all ExtraAttrValue (labels, notes, ...) in a HistoryEntry
+    :param request: must specify a comment to store with this copy
+    :return: name of the zip file created
+    """
     comment = request.POST['comment']
     comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
 
@@ -56,6 +67,11 @@ def download_history(request):
 
 
 def delete_history(request):
+    """
+    Delete a HistoryEntry given its id
+    :param request: must specify version-id
+    :return:
+    """
     version_id = request.POST['version-id']
     try:
         HistoryEntry.objects.get(id=version_id).delete()
@@ -65,6 +81,12 @@ def delete_history(request):
 
 
 def get_segment_audio(request):
+    """
+    Return a playable audio segment given the file name and the endpoints (in range [0.0 -> 1.0]) where the segment
+    begins and ends
+    :param request: must specify segment-id, this is the ID of a Segment object to be played
+    :return: a binary blob specified as audio/mp3, playable and volume set to -10dB
+    """
     segment_id = request.POST.get('segment-id', None)
 
     if segment_id is None:
@@ -87,7 +109,7 @@ def get_segment_audio(request):
     end = int(np.ceil(song_length * end))
     audio_segment = song[start:end]
 
-    # audio_segment = match_target_amplitude(audio_segment, -10)
+    audio_segment = match_target_amplitude(audio_segment, -10)
 
     out = io.BytesIO()
     audio_segment.export(out, format='mp3')
@@ -101,6 +123,12 @@ def get_segment_audio(request):
 
 
 def import_history(request):
+    """
+    Import a HistoryEntry from any user to this user.
+    If this operation fails, the database is intact.
+    :param request: must specify version-id, which is the id of the HistoryEntry object to be imported to
+    :return: 'ok' if everything goes well. Otherwise the error message.
+    """
     version_id = request.POST['version-id']
     he = HistoryEntry.objects.get(id=version_id)
     filepath = history_path(he.filename)
@@ -118,6 +146,7 @@ def import_history(request):
         extra_attr_value.attr_id = attr_id
         extra_attr_values.append(extra_attr_value)
 
+    # Wrap all DB modification in one transaction to utilise the roll-back ability when things go wrong
     with transaction.atomic():
         try:
             ExtraAttrValue.objects.filter(user=request.user).delete()
@@ -128,6 +157,9 @@ def import_history(request):
 
 
 class IndexView(TemplateView):
+    """
+    The view to index page
+    """
     template_name = 'index.html'
 
     def get_context_data(self, **kwargs):

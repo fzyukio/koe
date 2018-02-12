@@ -145,64 +145,6 @@ export class FlexibleGrid {
         utils.setCache(self.previousRowCacheName, previousRows);
     };
 
-    /**
-     * Submitting property settings to the server
-     */
-    saveMeta(e) {
-        let self = this;
-        let rows = self.metaGrid.getData().getItems();
-
-        let newOrChangedRows = [];
-        let actionValueChangedRows = [];
-
-        for (let i = 0; i < rows.length; i++) {
-            let row = rows[i];
-            if (row._isNew || row._isChanged) {
-                newOrChangedRows.push(row);
-            }
-            if (row._isActionValueChanged) {
-                actionValueChangedRows.push(row);
-            }
-        }
-
-        if (newOrChangedRows.length) {
-            $.post(
-                utils.getUrl('send-data', 'change-metadata'),
-                {
-                    'grid-type': self.gridType,
-                    'prototypes': JSON.stringify(newOrChangedRows)
-                },
-                function (retval) {
-                    if (retval === 'ok') {
-                        location.reload();
-                    }
-                }
-            );
-        }
-        if (actionValueChangedRows.length) {
-            let columnIdsActionValues = {};
-            for (let i = 0; i < actionValueChangedRows.length; i++) {
-                let row = actionValueChangedRows[i];
-                columnIdsActionValues[row.slug] = row.actions;
-            }
-
-            $.post(
-                utils.getUrl('send-data', 'change-action-values'),
-                {
-                    'grid-type': self.gridType,
-                    'column-ids-action-values': JSON.stringify(columnIdsActionValues)
-                },
-                function (retval) {
-                    if (retval === 'ok') {
-                        location.reload();
-                    }
-                }
-            );
-        }
-        if ((newOrChangedRows.length + actionValueChangedRows.length) === 0) {
-            console.log('nochange')
-        }
-    }
 
     rowChangeHandler(e, args, callback) {
         const self = this;
@@ -376,27 +318,6 @@ export class FlexibleGrid {
             self.rows = rows;
             utils.updateSlickGridData(self.mainGrid, self.rows);
             self.cacheSelectableOptions();
-        });
-    }
-
-    initGridMeta(args) {
-        let self = this;
-        $(self.metaModalSelector).on('shown.bs.modal', function (e) {
-            if (self.metaGrid.getColumns().length === 0) {
-                $.post(utils.getUrl('fetch-data', 'get-grid-meta'), {'grid-type': self.gridType},
-                    function (retval) {
-                        let data = JSON.parse(retval);
-                        let rows = data.rows;
-                        let columns = data.columns;
-                        utils.renderSlickGrid(self.metaGridSelector, self.metaGrid, rows, columns);
-                    }
-                );
-            }
-        });
-
-
-        $(self.saveMetaBtnSelector).on("click", function () {
-            self.saveMeta();
         });
     }
 
