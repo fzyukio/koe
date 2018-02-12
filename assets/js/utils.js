@@ -49,7 +49,7 @@ export const debug = function (str) {
     }
 };
 
-jQuery.fn.selectText = function(){
+jQuery.fn.selectText = function () {
     let doc = document;
     let element = this[0];
     let range, selection;
@@ -1335,6 +1335,86 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     return grid;
 };
 
+
+/**
+ * A more consistent way to check for being null
+ * @param val
+ * @returns {boolean} true if is either undefined or null
+ */
 export const isNull = function (val) {
     return val === undefined || val === null;
+};
+
+
+/**
+ * Convert grid data to a CSV string
+ * @param grid a SlickGrid
+ * @param downloadType if `all` will download everything,
+ *                     otherwise download the visible data (after pagination & filter)
+ * @returns {string} a comma separated CSV body of text, each line is one row.
+ */
+export const createCsv = function (grid, downloadType) {
+    let dataView = grid.getData();
+    let pagingInfo = dataView.getPagingInfo();
+    let pageSize = pagingInfo.pageSize;
+    let start = pageSize * (pagingInfo.pageNum);
+    let end = start + (pageSize == 0 ? pagingInfo.totalRows : pageSize);
+    let itemsForDownload = downloadType == 'all' ? dataView.getItems() : dataView.getFilteredItems().slice(start, end);
+
+    let columns = grid.getColumns();
+    let columnHeadings = [];
+    for (let i = 0; i < columns.length; i++) {
+        let column = columns[i];
+        let exportable = column.exportable;
+        if (exportable) {
+            columnHeadings.push(column.name)
+        }
+    }
+
+    let rows = [];
+    for (let i = 0; i < itemsForDownload.length; i++) {
+        let row = [];
+        let item = itemsForDownload[i];
+        for (let j = 0; j < columns.length; j++) {
+            let column = columns[j];
+            let columnField = column.field;
+            let exportable = column.exportable;
+            if (exportable) {
+                row.push(item[columnField]);
+            }
+        }
+        rows.push(row);
+    }
+
+    let lineArray = ["#," + columnHeadings.join(",")];
+    rows.forEach(function (rowArray) {
+        let line = rowArray.join(",");
+        lineArray.push(line);
+    });
+
+    return lineArray.join("\n");
+};
+
+
+/**
+ * Facilitate downloading a blob as file
+ * @param blob an instance of Blob
+ * @param filename name with extension
+ */
+export const downloadBlob = function(blob, filename) {
+    if (navigator.msSaveBlob) { // IE 10+
+        navigator.msSaveBlob(blob, filename);
+    } else {
+        let link = document.createElement("a");
+        if (link.download !== undefined) { // feature detection
+            // Browsers that support HTML5 download attribute
+            let url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
 };

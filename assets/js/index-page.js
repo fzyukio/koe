@@ -1,14 +1,13 @@
 import * as fg from "flexible-grid";
-import * as utils from "./utils";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 import {initSelectize} from "./selectize-formatter";
-import {log, debug} from "utils";
+import {log, debug, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
-const gridOptions = utils.deepCopy(defaultGridOptions);
+const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
 
 
@@ -80,7 +79,7 @@ const playAudio = function (e, args) {
         let segId = args.songId;
         let data = new FormData();
         data.append('segment-id', segId);
-        ah.queryAndPlayAudio(utils.getUrl('fetch-data', 'koe/get-segment-audio'), data, segId)
+        ah.queryAndPlayAudio(getUrl('fetch-data', 'koe/get-segment-audio'), data, segId)
     }
 };
 
@@ -110,7 +109,7 @@ const toggleCheckBox = function (e, args) {
  */
 const selectTextForCopy = function (e, args) {
     let coldef = args.coldef;
-    let editable =coldef.editable;
+    let editable = coldef.editable;
     let copyable = coldef.copyable;
 
     if (!editable && copyable) {
@@ -212,7 +211,7 @@ const showBigSpectrogram = function (e, args) {
 export const run = function (commonElements) {
     console.log("Index page is now running.");
     ce = commonElements;
-    
+
     ah.initAudioContext();
 
     grid.init();
@@ -299,7 +298,7 @@ const setLabel = function (field) {
             selectedItems.push(item);
         }
 
-        let selectableColumns = utils.getCache('selectableOptions');
+        let selectableColumns = getCache('selectableOptions');
         let selectableOptions = selectableColumns[field];
 
         const isSelectize = !!selectableOptions;
@@ -332,7 +331,7 @@ const setLabel = function (field) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
             }
 
-            $.post(utils.getUrl('fetch-data', 'set-property-bulk'),
+            $.post(getUrl('fetch-data', 'set-property-bulk'),
                 {
                     ids: JSON.stringify(ids),
                     field: field,
@@ -385,23 +384,18 @@ const contextHandlerDecorator = function (colDef) {
     }
 };
 
-export const getData = function () {
-    return grid.mainGrid.getData().getItems();
-};
-
 export const postRun = function () {
-    $('#download-data-btn').click(function (e) {
+    $('#save-data-btn').click(function (e) {
         inputText.val('');
 
         ce.dialogModalTitle.html("Backing up your data...");
         ce.dialogModalBody.html(`<label>Give it a comment (optionl)</label>`);
-
         ce.dialogModalBody.append(inputText);
 
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function (e) {
-            let url = utils.getUrl('fetch-data', 'koe/save-history');
+            let url = getUrl('fetch-data', 'koe/save-history');
             let value = inputText.val();
             inputText.val('');
 
@@ -417,5 +411,15 @@ export const postRun = function () {
                 ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
             });
         });
-    })
+    });
+
+    $('.download-xls').click(function (e) {
+        let downloadType = $(this).data('download-type');
+        let csvContent = createCsv(grid.mainGrid, downloadType);
+
+        let d = new Date();
+        let filename = `koe-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
+        let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        downloadBlob(blob, filename);
+    });
 };

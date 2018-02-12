@@ -7,7 +7,7 @@
             <div class="input-group">
                 <span class="input-group-addon left">Speed</span>
                 <input id="speed-slider" type="text" data-slider-id='speed-slider-handler'
-                       data-slider-min="10" data-slider-max="100"  data-slider-step="10" data-slider-value="100"/>
+                       data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
             </div>
         </div>
 
@@ -63,7 +63,16 @@
 {% block bottom %}
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
         <div class="btn-group" role="group">
-            <button id="download-data-btn" type="button" class="btn btn-primary">Back up this version
+            <button id="save-data-btn" type="button" class="btn btn-primary">Back up this version</button>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-primary download-xls" data-download-type="all">Save entire table as
+                xls
+            </button>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-primary download-xls" data-download-type="visible-rows-only">Save
+                visible rows as xls
             </button>
         </div>
     </div>

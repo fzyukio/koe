@@ -125,6 +125,7 @@ def init_tables():
             column['filter'] = ValueTypes.get_associated_value(_type, 'filter_type')
             column['sortable'] = ValueTypes.get_associated_value(_type, 'sortable')
             column['copyable'] = ValueTypes.get_associated_value(_type, 'copyable')
+            column['exportable'] = ValueTypes.get_associated_value(_type, 'exportable')
             column['cssClass'] = column.get('css_class', '')
 
             if 'has_total' not in column:
@@ -198,13 +199,14 @@ def get_grid_column_definition(request):
         filter = column['filter']
         css_class = column['cssClass']
         copyable = column['copyable']
+        exportable = column['exportable']
 
         if callable(editable):
             editable = 'True'
 
         column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
                       formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                      cssClass=css_class, copyable=copyable)
+                      cssClass=css_class, copyable=copyable, exportable=exportable)
 
         if editable:
             column['cssClass'] += ' editable'
