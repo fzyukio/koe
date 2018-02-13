@@ -55,6 +55,10 @@ const setLabelLi = setLabelLiA.parent();
 const tooltip = $("#spectrogram-details-tooltip");
 const tooltipImg = tooltip.find('img');
 const speedSlider = $("#speed-slider");
+const gridStatus = $('#grid-status');
+const gridStatusNSelceted = gridStatus.find('#nselected');
+const gridStatusNTotal = gridStatus.find('#ntotal');
+
 
 let ce;
 
@@ -119,6 +123,22 @@ const selectTextForCopy = function (e, args) {
 };
 
 
+const resetStatus = function (e, args) {
+    let nRowChanged = 0;
+    if (e.type == "row-added") {
+        nRowChanged = 1;
+    } else if (e.type == "rows-added") {
+        nRowChanged = args.rows.length;
+    } else if (e.type == "row-removed") {
+        nRowChanged = -1;
+    } else if (e.type == "rows-removed") {
+        nRowChanged = -args.rows.length;
+    }
+    let nSelectedRows = parseInt(gridStatusNSelceted.html());
+    gridStatusNSelceted.html(nSelectedRows + nRowChanged);
+};
+
+
 const subscribeEvents = function () {
     grid.on('click', function () {
         playAudio.apply(null, arguments);
@@ -154,6 +174,16 @@ const subscribeEvents = function () {
             contextMenu.hide();
         });
     });
+
+    grid.on('row-added', resetStatus)
+        .on('rows-added', resetStatus)
+        .on('row-removed', resetStatus)
+        .on('rows-removed', resetStatus);
+
+    grid.subscribeDv('onRowCountChanged', function (e, args) {
+        let currentRowCount = args.current;
+        gridStatusNTotal.html(currentRowCount);
+    })
 };
 
 
@@ -161,8 +191,9 @@ const subscribeEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true, multiSelect: true});
-    subscribeEvents();
+    grid.redrawMainGrid({rowMoveable: true, multiSelect: true}, function () {
+        subscribeEvents();
+    });
 };
 
 
@@ -218,9 +249,8 @@ export const run = function (commonElements) {
     grid.initMainGridHeader({rowMoveable: true, multiSelect: true}, function () {
         let dm = $('#distance-matrix-combo').attr('dm');
         grid.initMainGridContent({__extra__dm: dm});
+        subscribeEvents();
     });
-
-    subscribeEvents();
 
     $('.select-dm').on('click', function (e) {
         e.preventDefault();
@@ -398,9 +428,6 @@ export const postRun = function () {
             let url = getUrl('send-request', 'koe/save-history');
             let value = inputText.val();
             inputText.val('');
-
-            console.log(url);
-            console.log(value);
 
             ce.dialogModal.modal('hide');
 

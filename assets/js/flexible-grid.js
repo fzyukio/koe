@@ -54,15 +54,30 @@ export class FlexibleGrid {
      */
     on(eventType, callback) {
         this.eventNotifier.on(eventType, callback);
+        return this;
     }
 
     /**
+     * Allow ousider to subscribe to any event on the grid.
      *
-     * @param eventType
+     * @param eventType must be one of those listed at https://github.com/mleibman/SlickGrid/wiki/Grid-Events
      * @param callback
      */
     subscribe(eventType, callback) {
         let event = this.mainGrid[eventType];
+        if (!utils.isNull(event)) {
+            event.subscribe(callback);
+        }
+    }
+
+    /**
+     * Allow ousider to subscribe to any event on the dataview.
+     *
+     * @param eventType must be one of those listed at https://github.com/mleibman/SlickGrid/wiki/Dataview-Events
+     * @param callback
+     */
+    subscribeDv(eventType, callback) {
+        let event = this.mainGrid.getData()[eventType];
         if (!utils.isNull(event)) {
             event.subscribe(callback);
         }
@@ -262,7 +277,7 @@ export class FlexibleGrid {
         });
     }
 
-    redrawMainGrid(args) {
+    redrawMainGrid(args, callback) {
         let self = this;
 
         self.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
@@ -275,6 +290,11 @@ export class FlexibleGrid {
         });
         self.postMainGridHeader();
         utils.initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
+
+        if (typeof callback == 'function') {
+            callback();
+        }
+
         utils.updateSlickGridData(self.mainGrid, self.rows);
     }
 
