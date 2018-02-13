@@ -43,6 +43,8 @@ def JSONEncoder_newdefault(self, obj):
         if obj.utcoffset() is not None:
             obj = obj - obj.utcoffset()
         return obj.strftime('%Y-%m-%d %H:%M:%S')
+    elif isinstance(obj, datetime.date):
+        return obj.strftime('%Y-%m-%d')
     return JSONEncoder_olddefault(self, obj)
 
 

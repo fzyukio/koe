@@ -77,7 +77,7 @@ def bulk_get_segment_info(segs, extras):
         duration = end - start
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, spectrogram=spect_img,
                    distance=dist, dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality)
+                   song_quality=quality, song_date=date)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(str(song_id), {})
 
