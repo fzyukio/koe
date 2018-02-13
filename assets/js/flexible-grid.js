@@ -32,6 +32,7 @@ export class FlexibleGrid {
         this.gridName = args['grid-name'];
         this.gridType = args['grid-type'];
         this.defaultFilterField = args['default-field'];
+        this.currentMouseEvent = null;
 
         this.mainGridSelector = '#' + this.gridName;
         this.gridOptions = args['gridOptions'] || defaultGridOptions;
@@ -91,6 +92,8 @@ export class FlexibleGrid {
     mouseHandler(e, args) {
         let eventType = e.type;
         let rowElement = $(e.target.parentElement);
+        let cell = args.grid.getCellFromEvent(e);
+        this.currentMouseEvent = cell;
 
         if (eventType === 'mouseenter') {
             rowElement.parent().find('.slick-row').removeClass('highlight');

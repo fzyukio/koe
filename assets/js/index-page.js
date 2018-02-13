@@ -284,6 +284,7 @@ export const run = function (commonElements) {
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         setLabel('label_subfamily');
     });
+    keyboardJS.bind(['alt + space'], toggleSelectHighlightedRow);
 
     initSlider();
 };
@@ -381,6 +382,30 @@ const setLabel = function (field) {
             );
 
         })
+    }
+};
+
+
+/**
+ * Toogle checkbox at the row where the mouse is currently highlighting.
+ * @param e
+ * @param args
+ */
+const toggleSelectHighlightedRow = function (e, args) {
+    let currentMouseEvent = grid.currentMouseEvent;
+    log(currentMouseEvent);
+
+    let selectedRow = grid.getSelectedRows().rows;
+    log(selectedRow);
+
+    let row = currentMouseEvent.row;
+    let index = selectedRow.indexOf(row);
+    if (index == -1) {
+        selectedRow.splice(index, 1);
+    }
+    else {
+        selectedRow.push(row);
+        grid.mainGrid.setSelectedRows(selectedRow);
     }
 };
 
