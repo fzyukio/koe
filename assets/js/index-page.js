@@ -284,7 +284,7 @@ export const run = function (commonElements) {
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         setLabel('label_subfamily');
     });
-    keyboardJS.bind(['alt + space'], toggleSelectHighlightedRow);
+    keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
 
     initSlider();
 };
