@@ -1380,7 +1380,7 @@ export const createCsv = function (grid, downloadType) {
             let columnField = column.field;
             let exportable = column.exportable;
             if (exportable) {
-                row.push(item[columnField]);
+                row.push(`${item[columnField] || ''}`);
             }
         }
         rows.push(row);
@@ -1388,9 +1388,11 @@ export const createCsv = function (grid, downloadType) {
 
     // Must enclose the column headings in quotes otherwise if the first column is `ID`, Excel
     // complains that the file type doesn't match
-    let lineArray = [columnHeadings.map(x => `"${x}"`).join(',')];
+    // Also enclose everything in quote to avoid having strings with special characters in it
+    
+    let lineArray = [columnHeadings.map(x => `"${x.replace(/"/g, '\"\"')}"`).join(',')];
     rows.forEach(function (rowArray) {
-        let line = rowArray.join(",");
+        let line = [rowArray.map(x => `"${x.replace(/"/g, '\"\"')}"`)].join(",");
         lineArray.push(line);
     });
 
