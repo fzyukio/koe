@@ -1386,7 +1386,9 @@ export const createCsv = function (grid, downloadType) {
         rows.push(row);
     }
 
-    let lineArray = [columnHeadings.join(",")];
+    // Must enclose the column headings in quotes otherwise if the first column is `ID`, Excel
+    // complains that the file type doesn't match
+    let lineArray = [columnHeadings.map(x => `"${x}"`).join(',')];
     rows.forEach(function (rowArray) {
         let line = rowArray.join(",");
         lineArray.push(line);
@@ -1406,7 +1408,7 @@ export const downloadBlob = function(blob, filename) {
         navigator.msSaveBlob(blob, filename);
     } else {
         let link = document.createElement("a");
-        if (link.download !== undefined) { // feature detection
+        if (link.download !== undefined) {
             // Browsers that support HTML5 download attribute
             let url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
