@@ -1,21 +1,22 @@
 import datetime
 import importlib
 import json
+import sys
 import traceback
 from collections import OrderedDict
 from json import JSONEncoder
-import sys
 
+from django.conf import settings
 from django.db.models.base import ModelBase
 from django.db.utils import OperationalError, ProgrammingError
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from koe import jsons
 from root.models import *
+from opbeat import Client
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -50,6 +51,21 @@ def JSONEncoder_newdefault(self, obj):
 
 
 JSONEncoder.default = JSONEncoder_newdefault
+
+opbeat_client = None
+if hasattr(settings, 'OPBEAT'):
+    opbeat_client = Client(
+        organization_id=settings.OPBEAT['ORGANIZATION_ID'],
+        app_id=settings.OPBEAT['APP_ID'],
+        secret_token=settings.OPBEAT['SECRET_TOKEN'],
+    )
+else:
+    class FakeOpbeatClient():
+
+        def capture_exception(self):
+            print(traceback.format_exc())
+
+    opbeat_client = FakeOpbeatClient()
 
 
 tables = None
@@ -416,6 +432,7 @@ values_grid_action_handlers = {
     'set-column-width': set_column_width_handler
 }
 
+
 @csrf_exempt
 def send_request(request, *args, **kwargs):
     """
@@ -436,7 +453,7 @@ def send_request(request, *args, **kwargs):
             try:
                 return function(request)
             except Exception as e:
-                print(traceback.format_exc())
+                opbeat_client.capture_exception()
                 return HttpResponse(e)
     return HttpResponseNotFound()
 
