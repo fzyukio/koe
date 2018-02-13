@@ -30,9 +30,6 @@ FF_COLOUR = [0, 0, 0]
 AXIS_COLOUR = [127, 127, 127]
 
 name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
-# gender_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='gender', type=ValueTypes.SHORT_TEXT)
-# quality_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='quality', type=ValueTypes.SHORT_TEXT)
-# date_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='date', type=ValueTypes.DATE)
 note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
 
 
@@ -270,6 +267,7 @@ def import_spectrograms(conn):
     n = len(segments_info)
     bar = Bar('Importing segments ...', max=n)
 
+
     for seg_id, song_name, start, end in segments_info:
         if song_name not in song_info:
             continue
@@ -292,7 +290,7 @@ def import_spectrograms(conn):
             syl_endtime = syl_row['endtime']
 
             cur.execute(
-                'select signal, starttime, timelength, fundfreq, gapbefore, gapafter, maxf, dy,'
+                'select starttime, timelength, fundfreq, gapbefore, gapafter, maxf, dy,'
                 'overallpeakfreq1, overallpeakfreq2 '
                 'from element where songid={} and starttime >= {} and (starttime + timelength) <= {}'
                     .format(song_id, syl_starttime, syl_endtime))
@@ -317,12 +315,22 @@ def import_spectrograms(conn):
 
             img_data_rgb = np.ones((height, width, 3), dtype=np.uint8) * 255
 
+            syl_max_ff = 0
+            syl_min_ff = 999999
+            syl_combined_ff = None
+
             for el_idx, el in enumerate(el_rows):
                 signal = list(map(int, el['signal'].strip().split(' ')))
                 fundfreq = np.array(el['fundfreq'].strip().split(' '), dtype='|S32').astype(np.float) / nyquist * height
+                el_max_ff = fundfreq[0]
+                el_min_ff = fundfreq[1]
 
                 # the first 4 numbers of fundfreq are: max, min, ? (no idea) and ? (no idea), so we ignore them
                 fundfreq = fundfreq[4:].astype(np.int)
+                if el_idx == 0:
+                    syl_combined_ff = fundfreq
+                else:
+                    syl_combined_ff = np.concatenate((syl_combined_ff, fundfreq))
                 i = 0
                 ff_row_idx = 0
                 while i < len(signal):
@@ -345,6 +353,12 @@ def import_spectrograms(conn):
                         img_data_rgb[img_row_idx_padded_low:img_row_idx_padded_high, img_col_idx, :] = FF_COLOUR
                     ff_row_idx += 1
                     i += (num_data + 1)
+
+                syl_max_ff = max(syl_max_ff, el_max_ff)
+                syl_min_ff = min(syl_min_ff, el_min_ff)
+            syl_mean_ff = np.mean(syl_combined_ff)
+
+            Segment.objects.filter(id=seg_id).update(mean_ff=syl_mean_ff)
 
             img = Image.fromarray(img_data_rgb)
             thumbnail_width = int(img.size[0])
@@ -382,9 +396,9 @@ class Command(BaseCommand):
             conns = utils.get_dbconf(dbs)
             for pop in conns:
                 conn = conns[pop]
-                import_songs(conn)
+                # import_songs(conn)
                 # import_syllables(conn)
-                # import_spectrograms(conn)
+                import_spectrograms(conn)
                 # import_song_info(conn)
 
         finally:

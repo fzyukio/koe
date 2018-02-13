@@ -112,6 +112,9 @@ class Segment(SimpleModel):
     # can't be a direct dependency of a Song. It must depend on a Segmentation object
     segmentation = models.ForeignKey('Segmentation', on_delete=models.CASCADE)
 
+    # Some measurements
+    mean_ff = models.FloatField(null=True)
+
     def __str__(self):
         return '{} - {}:{}'.format(self.segmentation.audio_file.name, self.start_time_ms, self.end_time_ms)
 

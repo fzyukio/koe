@@ -19,7 +19,7 @@ def bulk_get_segment_info(segs, extras):
     user = extras['user']
     rows = []
     if isinstance(segs, QuerySet):
-        attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms',
+        attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff',
                                                  'segmentation__audio_file__name',
                                                  'segmentation__audio_file__id',
                                                  'segmentation__audio_file__quality',
@@ -28,8 +28,17 @@ def bulk_get_segment_info(segs, extras):
                                                  'segmentation__audio_file__individual__name',
                                                  'segmentation__audio_file__individual__gender'))
     else:
-        attr_values_list = [(x.id, x.start_time_ms, x.end_time_ms, x.segmentation.audio_file.name,
-                             x.segmentation.audio_file.id) for x in segs]
+        attr_values_list = [(x.id,
+                             x.start_time_ms,
+                             x.end_time_ms,
+                             x.mean_ff,
+                             x.segmentation.audio_file.name,
+                             x.segmentation.audio_file.id,
+                             x.segmentation.audio_file.quality,
+                             x.segmentation.audio_file.track.name,
+                             x.segmentation.audio_file.track.date,
+                             x.segmentation.audio_file.individual.name,
+                             x.segmentation.audio_file.individual.gender) for x in segs]
 
     segids = [str(x[0]) for x in attr_values_list]
     extra_attrs = ExtraAttr.objects.filter(klass=Segment.__name__)
@@ -70,14 +79,14 @@ def bulk_get_segment_info(segs, extras):
         indices, distances = upgma_triu(ids, dm)
 
     for i in range(nrows):
-        id, start, end, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
+        id, start, end, mean_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
         dist = distances[i]
         index = indices[i]
         spect_img = spect_path(str(id))
         duration = end - start
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, spectrogram=spect_img,
                    distance=dist, dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date)
+                   song_quality=quality, song_date=date, mean_ff=mean_ff)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(str(song_id), {})
 

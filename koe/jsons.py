@@ -125,7 +125,12 @@ tables = \
                     "name": "Track",
                     "slug": "song_track",
                     "type": "SHORT_TEXT"
-                }
+                },
+                {
+                    "name": "Mean FF",
+                    "slug": "mean_ff",
+                    "type": "FLOAT"
+                },
             ]
         },
         "version-grid": {
