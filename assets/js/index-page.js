@@ -393,20 +393,16 @@ const setLabel = function (field) {
  */
 const toggleSelectHighlightedRow = function (e, args) {
     let currentMouseEvent = grid.currentMouseEvent;
-    log(currentMouseEvent);
-
     let selectedRow = grid.getSelectedRows().rows;
-    log(selectedRow);
-
     let row = currentMouseEvent.row;
     let index = selectedRow.indexOf(row);
     if (index == -1) {
-        selectedRow.splice(index, 1);
+        selectedRow.push(row);
     }
     else {
-        selectedRow.push(row);
-        grid.mainGrid.setSelectedRows(selectedRow);
+        selectedRow.splice(index, 1);
     }
+    grid.mainGrid.setSelectedRows(selectedRow);
 };
 
 const actionHandlers = {
