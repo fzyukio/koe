@@ -77,6 +77,7 @@ const initSlider = function () {
 };
 
 const playAudio = function (e, args) {
+    e.preventDefault();
     let cellElement = $(args.e.target);
     let hasImage = cellElement.closest(".has-image");
     if (hasImage.length == 1) {
@@ -239,6 +240,25 @@ const showBigSpectrogram = function (e, args) {
     }
 };
 
+
+/**
+ * Play the sound if the current active cell is the spectrogram
+ * @param e
+ */
+const playAudioOnKey = function (e) {
+    let grid_ = grid.mainGrid;
+    let activeCell = grid_.getActiveCell();
+    let activeCellEl = grid_.getCellNode(activeCell.row, activeCell.cell);
+    let column = grid_.getColumns()[activeCell.cell];
+    if (!column.editable) {
+        let fakeEvent = {target: activeCellEl};
+        let segId = grid_.getData().getItem(activeCell.row).id;
+        let args = {e: fakeEvent, songId: segId};
+        playAudio(e, args);
+    }
+};
+
+
 export const run = function (commonElements) {
     console.log("Index page is now running.");
     ce = commonElements;
@@ -285,6 +305,7 @@ export const run = function (commonElements) {
         setLabel('label_subfamily');
     });
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
+    keyboardJS.bind(['space'], playAudioOnKey);
 
     initSlider();
 };
