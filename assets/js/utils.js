@@ -947,6 +947,32 @@ function metadata(old_metadata) {
 
 
 /**
+ * If there is already a column in the array with the same ID, replace that with a new column
+ * Otherwise insert the new column at position
+ * @param columns An array of columns. It will be modified.
+ * @param newcol A new column
+ * @param position the position to insert if not found
+ */
+const insertOrReplaceColumn = function(columns, newcol, position) {
+    let index = -1;
+    for (let i=0; i<columns.length; i++) {
+        let column = columns[i];
+        if (column.id == newcol.id) {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1) {
+        columns.unshift(newcol);
+    }
+    else {
+        columns[index] = newcol;
+    }
+};
+
+
+/**
  * Display a slickgrid & allow sorting
  * @param selector id of the bounding div
  * @param grid
@@ -1043,8 +1069,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 
     grid.setSelectionModel(new Slick.RowSelectionModel({selectActiveRow: false}));
     if (selectorPlugin) {
-        // Inject the checkbox column at the beginning of the column list
-        columns.unshift(selectorPlugin.getColumnDefinition());
+        // Inject the checkbox column at the beginning of the column list or replace it with an existing column
+        insertOrReplaceColumn(columns, selectorPlugin.getColumnDefinition(), 0);
+
         grid.registerPlugin(selectorPlugin);
         grid.getCheckBoxSelector = function () {
             return selectorPlugin;
@@ -1056,7 +1083,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             cancelEditOnDrag: true
         });
 
-        columns.unshift({
+        let moveableHandlerCol = {
             id: "#",
             field: "#",
             name: "",
@@ -1066,7 +1093,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             resizable: false,
             cssClass: "cell-reorder dnd",
             formatter: RowMoveableFormatter
-        });
+        };
+
+        insertOrReplaceColumn(columns, moveableHandlerCol, 0);
 
         moveRowsPlugin.onBeforeMoveRows.subscribe(function (e, data) {
             for (let i = 0; i < data.rows.length; i++) {

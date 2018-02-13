@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import json
+import traceback
 from collections import OrderedDict
 from json import JSONEncoder
 import sys
@@ -71,6 +72,8 @@ def get_attrs(objs, table, extras):
         attrs = {}
         rows = []
         for column in table['columns']:
+            if column['is_addon']:
+                continue
             getter = column['getter']
             attr = column['slug']
             value = getter(objs, extras)
@@ -118,6 +121,11 @@ def init_tables():
         if has_bulk_getter:
             table['getter'] = global_namespace[table['getter']]
         for column in table['columns']:
+            is_addon = column.get('is_addon', False)
+            column['is_addon'] = is_addon
+            if is_addon:
+                continue
+
             slug = column['slug']
             _type = column['type']
             _type = ValueTypes.get_key_val_pairs()[_type]
@@ -191,38 +199,49 @@ def get_grid_column_definition(request):
 
     for column in table['columns']:
         slug = column['slug']
-        name = column['name']
-        editable = column['editable']
-        total_label = column['total_label']
-        editor = column['editor']
-        formatter = column['formatter']
-        has_total = column['has_total']
-        sortable = column['sortable']
-        filter = column['filter']
-        css_class = column['cssClass']
-        copyable = column['copyable']
-        exportable = column['exportable']
+        is_addon = column['is_addon']
 
-        if callable(editable):
-            editable = 'True'
+        if is_addon:
+            column = dict(id=slug, field=slug)
+        else:
+            name = column['name']
+            editable = column['editable']
+            total_label = column['total_label']
+            editor = column['editor']
+            formatter = column['formatter']
+            has_total = column['has_total']
+            sortable = column['sortable']
+            filter = column['filter']
+            css_class = column['cssClass']
+            copyable = column['copyable']
+            exportable = column['exportable']
 
-        column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
-                      formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                      cssClass=css_class, copyable=copyable, exportable=exportable)
+            if callable(editable):
+                editable = 'True'
 
-        if editable:
-            column['cssClass'] += ' editable'
+            column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
+                          formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
+                          cssClass=css_class, copyable=copyable, exportable=exportable)
+            if editable:
+                column['cssClass'] += ' editable'
 
         columns.append(column)
 
-    name_to_column = {x['id']: x for x in columns}
+    col_id_to_col = {x['id']: x for x in columns}
     action_names = list(actions.keys())
 
     for action_name in action_names:
         handler = values_grid_action_handlers[action_name]
-        name_to_column = handler(action_name, table_name, user, name_to_column)
+        col_id_to_col = handler(action_name, table_name, user, col_id_to_col)
 
-    columns = list(name_to_column.values())
+    columns = list(col_id_to_col.values())
+    #
+    # column_names = list(col_id_to_col.keys())
+    # other_columns = ColumnActionValue.objects\
+    #     .exclude(user=user, table=table_name, column__in=col_id_to_col)\
+    #     .filter(user=user, table=table_name).values_list('column', flat=True).distinct()
+    #
+    # other_columns_action_value
 
     # Final column is for the actions
     columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_names,
@@ -417,6 +436,7 @@ def send_request(request, *args, **kwargs):
             try:
                 return function(request)
             except Exception as e:
+                print(traceback.format_exc())
                 return HttpResponse(e)
     return HttpResponseNotFound()
 
