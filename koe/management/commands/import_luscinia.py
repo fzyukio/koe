@@ -5,7 +5,6 @@ import array
 import contextlib
 import datetime
 import os
-import pickle
 import re
 import sys
 import wave
@@ -17,17 +16,35 @@ import pydub
 from PIL import Image
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
+from scipy import signal
 
+from koe import wavfile
 from koe import wavfile as wf
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time
+from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual
 from root.models import ExtraAttr, ExtraAttrValue, ValueTypes, User
-from root.utils import audio_path, ensure_parent_folder_exists, spect_path
+from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
+
+from koe.colourmap import *
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
 AXIS_COLOUR = [127, 127, 127]
+
+window_size = 256
+noverlap = 256 * 0.75
+window = signal.get_window('hann', 256)
+low_bound = 800
+scale = window.sum()
+roi_max_width = 1200
+roi_pad_width = 10
+
+global_min_spect_pixel = -9.421019554138184
+global_max_spect_pixel = 2.8522987365722656
+global_spect_pixel_range = global_max_spect_pixel - global_min_spect_pixel
+interval64 = global_spect_pixel_range / 63
+
 
 name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
 note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
@@ -57,9 +74,9 @@ def get_wav_info(audio_file):
 
 def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
     if wav_file_path is None:
-        wav_file_path = audio_path(song_name, 'wav')
+        wav_file_path = wav_path(song_name)
     if mp3_url is None:
-        mp3_url = audio_path(song_name, 'mp3')
+        mp3_url = mp3_path(song_name)
 
     if not os.path.isfile(wav_file_path):
         # print('Importing {}'.format(song_name))
@@ -244,7 +261,7 @@ def import_songs(conn):
     bar.finish()
 
 
-def import_spectrograms(conn):
+def import_signal_mask(conn):
     """
     Export pictures of the syllable with fundamentals
     :param conn:
@@ -368,14 +385,91 @@ def import_spectrograms(conn):
 
             if syl_idx > 0:
                 warning('Syl_idx > 0')
-                file_path = spect_path('{}_{}'.format(seg_id, syl_idx))
+                file_path = spect_mask_path('{}_{}'.format(seg_id, syl_idx))
             else:
-                file_path = spect_path('{}'.format(seg_id))
+                file_path = spect_mask_path('{}'.format(seg_id))
             ensure_parent_folder_exists(file_path)
 
             img.save(file_path, format='PNG')
         bar.next()
     bar.finish()
+
+
+def extract_spectrogram():
+    values_list = Segment.objects.values_list('id', 'segmentation__audio_file__id', 'segmentation__audio_file__name','start_time_ms', 'end_time_ms')
+    audio_to_segs = {}
+    for id, song_id, song_name, start, end in values_list:
+        key = (song_name, song_id)
+        if key not in audio_to_segs:
+            audio_to_segs[key] = [(id, start, end)]
+        else:
+            audio_to_segs[key].append((id, start, end))
+
+    n = len(audio_to_segs)
+    bar = Bar('Exporting spects ...', max=n)
+
+    for (song_name, song_id), seg_list in audio_to_segs.items():
+        count = 0
+        for seg_id, start, end in seg_list:
+            seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+            if os.path.isfile(seg_spect_path):
+                count += 1
+        if count == len(seg_list):
+            bar.next()
+            continue
+
+        filepath = wav_path(song_name)
+
+        fs, sig = wav_2_mono(filepath)
+        duration_ms = len(sig) * 1000 / fs
+
+        _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
+        file_spect = np.abs(s * scale)
+
+        height, width = np.shape(file_spect)
+        file_spect = np.flipud(file_spect)
+
+        try:
+
+            file_spect = np.log10(file_spect)
+            file_spect = ((file_spect - global_min_spect_pixel) / interval64)
+            file_spect[np.isinf(file_spect)] = 0
+            file_spect = file_spect.astype(np.int)
+
+            file_spect = file_spect.reshape((width * height,), order='C')
+            file_spect[file_spect >= 64] = 63
+            file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
+            file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape((height, width)) * 255
+            file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape((height, width)) * 255
+            file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape((height, width)) * 255
+
+            file_spect_img = Image.fromarray(file_spect_rgb)
+            file_spect_path = spect_fft_path(song_id, 'song')
+            ensure_parent_folder_exists(file_spect_path)
+            if not os.path.isfile(file_spect_path):
+                file_spect_img.save(file_spect_path, format='PNG')
+
+            for seg_id, start, end in seg_list:
+                roi_start = int(start / duration_ms * width)
+                roi_end = int(np.ceil(end / duration_ms * width))
+
+                seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
+                seg_spect_img = Image.fromarray(seg_spect_rgb)
+                seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+                ensure_parent_folder_exists(seg_spect_path)
+
+                if not os.path.isfile(seg_spect_path):
+                    seg_spect_img.save(seg_spect_path, format='PNG')
+
+        except Exception as e:
+            warning('Error occured at song id: {}'.format(song_id))
+            raise e
+
+        bar.next()
+    bar.finish()
+
+
+
 
 
 class Command(BaseCommand):
@@ -391,18 +485,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, dbs, *args, **options):
-        conns = None
-        try:
-            conns = utils.get_dbconf(dbs)
-            for pop in conns:
-                conn = conns[pop]
-                # import_songs(conn)
-                # import_syllables(conn)
-                import_spectrograms(conn)
-                # import_song_info(conn)
 
-        finally:
-            for dbconf in conns:
-                conn = conns[dbconf]
-                if conn is not None:
-                    conn.close()
+        # conns = None
+        # try:
+        #     conns = utils.get_dbconf(dbs)
+        #     for pop in conns:
+        #         conn = conns[pop]
+        #         # import_songs(conn)
+        #         # import_syllables(conn)
+        #         # import_signal_mask(conn)
+        #         # import_song_info(conn)
+        #
+        # finally:
+        #     for dbconf in conns:
+        #         conn = conns[dbconf]
+        #         if conn is not None:
+        #             conn.close()
+
+        extract_spectrogram()

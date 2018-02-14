@@ -7,7 +7,7 @@ from progress.bar import Bar
 from python_speech_features import xfcc, delta, xfc
 from scipy import interpolate
 
-from root.utils import audio_path
+from root.utils import wav_path
 
 window_size_relative = 0.2  # Of the largest window
 
@@ -76,7 +76,7 @@ def extract_xfcc(segments_ids, config, method_name='mfcc'):
         start /= duration_ms
         end /= duration_ms
 
-        file_url = audio_path(file_name, 'wav')
+        file_url = wav_path(file_name)
 
         sig = wavfile.read_segment(file_url, start, end, mono=True)
 

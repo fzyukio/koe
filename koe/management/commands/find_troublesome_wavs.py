@@ -1,16 +1,12 @@
-import array
 import sys
 
-import numpy as np
 import psycopg2
-import pydub
 from django.core.management.base import BaseCommand
 
-from koe import wavfile
 from koe.management.commands import utils
 from koe.management.commands.import_luscinia import import_pcm, get_wav_info
 from koe.models import AudioFile
-from root.utils import audio_path
+from root.utils import wav_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -33,7 +29,7 @@ class Command(BaseCommand):
     def handle(self, dbs, *args, **options):
         # Correct false wav info
         for af in AudioFile.objects.all():
-            wav_file_path = audio_path(af.name, 'wav')
+            wav_file_path = wav_path(af.name, 'wav')
             fs, length = get_wav_info(wav_file_path)
             if fs != af.fs or length != af.length:
                 print('Correct file {}, originally length={} fs={}, now length={}, fs={}'.format(af.name, af.length, af.fs, length, fs))

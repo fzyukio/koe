@@ -3,7 +3,7 @@ from django.db.models.query import QuerySet
 from koe.model_utils import upgma_triu
 from koe.models import AudioFile, Segment
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_path
+from root.utils import spect_mask_path, spect_fft_path
 
 
 __all__ = ['bulk_get_segment_info']
@@ -82,11 +82,12 @@ def bulk_get_segment_info(segs, extras):
         id, start, end, mean_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
         dist = distances[i]
         index = indices[i]
-        spect_img = spect_path(str(id))
+        mask_img = spect_mask_path(str(id))
+        spect_img = spect_fft_path(str(id), 'syllable')
         duration = end - start
-        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, spectrogram=spect_img,
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, signal_mask=mask_img,
                    distance=dist, dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date, mean_ff=mean_ff)
+                   song_quality=quality, song_date=date, mean_ff=mean_ff, spectrogram=spect_img)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(str(song_id), {})
 

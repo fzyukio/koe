@@ -47,6 +47,12 @@ tables = \
                     "type": "SHORT_TEXT"
                 },
                 {
+                    "name": "Signal mask",
+                    "slug": "signal_mask",
+                    "type": "IMAGE",
+                    "css_class": "has-image"
+                },
+                {
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",

@@ -11,8 +11,8 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 from koe.utils import base64_to_array, array_to_base64
-from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, AutoSetterGetterMixin, User
-from root.utils import audio_path, history_path, ensure_parent_folder_exists, data_path
+from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User
+from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, data_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -91,11 +91,11 @@ class AudioFile(StandardModel):
 
     @property
     def file_path(self):
-        return audio_path(self.name, 'wav')
+        return wav_path(self.name)
 
     @property
     def mp3_path(self):
-        return audio_path(self.name, 'mp3')
+        return mp3_path(self.name)
 
     def __str__(self):
         return self.name
@@ -150,7 +150,7 @@ class DistanceMatrix(StandardModel):
         return hashlib.md5(ids_str.encode('ascii')).hexdigest()[:24]
 
     def save(self, *args, **kwargs):
-        fpath = data_path('pickle', self.chksum)
+        fpath = data_path('pickle', self.chksum, 'pkl')
         ensure_parent_folder_exists(fpath)
         if hasattr(self, '_ids'):
             ids = self._ids
@@ -169,7 +169,7 @@ class DistanceMatrix(StandardModel):
         super(DistanceMatrix, self).save(*args, **kwargs)
 
     def load(self):
-        fpath = data_path('pickle', self.chksum)
+        fpath = data_path('pickle', self.chksumm, 'pkl')
         with open(fpath, 'rb') as f:
             loaded = pickle.load(f)
             self._ids = loaded['ids']

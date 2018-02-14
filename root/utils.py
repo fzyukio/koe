@@ -67,21 +67,35 @@ def data_path(prefix, fullname, ext=None):
     _ext = _ext[1:]
     if ext is None:
         ext = _ext
-    url = os.path.join(settings.MEDIA_URL, prefix, ext, '{}.{}'.format(filename, ext))[1:]
+    url = os.path.join(settings.MEDIA_URL, prefix, '{}.{}'.format(filename, ext))[1:]
 
     return url
 
 
-def audio_path(fullname, ext):
-    return data_path('audio', fullname, ext)
+def wav_path(fullname):
+    return data_path('audio/wav', fullname, 'wav')
+
+
+def mp3_path(fullname):
+    return data_path('audio/mp3', fullname, 'mp3')
 
 
 def history_path(fullname):
     return data_path('history', fullname, 'zip')
 
 
-def spect_path(fullname):
-    return data_path('spect', fullname, 'png')
+def spect_fft_path(fullname, subdir=None):
+    folder = 'spect/fft'
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, 'png')
+
+
+def spect_mask_path(fullname, subdir=None):
+    folder = 'spect/mask'
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, 'png')
 
 
 def ensure_empty_file_exists(file_path):
