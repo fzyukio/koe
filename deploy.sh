@@ -23,15 +23,43 @@ On_Purple='\033[45m'      # Purple
 On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
+PACKAGE_NAME=package-`date "+%Y-%m-%d_%H-%M-%S"`.tar.gz
+
+source ./.venv/bin/activate
 
 echo -e "${Yellow}${On_Purple}Remove old asset bundles before building a new one.${Color_Off}"
-echo -e "${Green}${On_Black}rm -rf assets/bundles${Color_Off}"
-rm -rf assets/bundles
+echo -e "${Green}${On_Black}rm -rf assets/bundles static${Color_Off}"
+rm -rf assets/bundles static
 
 echo -e "${Yellow}${On_Purple}build-prod will compile javascript, sass and give them a hash,${Color_Off}"
 echo -e "${Yellow}${On_Purple} so the files can be served as static${Color_Off}"
 echo -e "${Green}${On_Black}yarn build-prod${Color_Off}"
 yarn build-prod
+echo -e "${Green}${On_Black}DJANGO_SETTINGS_MODULE=koe.settings.production python manage.py collectstatic --noinput${Color_Off}"
+
+DJANGO_SETTINGS_MODULE=koe.settings.production python manage.py collectstatic --noinput
+
+RESULT=$?
+if [ $RESULT -eq 0 ]; then
+
+    echo -e "${Yellow}${On_Purple}Now package the generated files to be copied over${Color_Off}"
+    echo -e "${Green}${On_Black}tar -cvf $PACKAGE_NAME assets/bundles static jquery-webpack-stats.json webpack-stats.json${Color_Off}"
+    tar -cvf $PACKAGE_NAME assets/bundles static jquery-webpack-stats.json webpack-stats.json
+else
+    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
+    exit
+fi
+
+RESULT=$?
+if [ $RESULT -eq 0 ]; then
+
+    echo -e "${Yellow}${On_Purple}Now copying the package${Color_Off}"
+    echo -e "${Green}${On_Black}scp -i ~/stack/koe.pem -r $PACKAGE_NAME ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/${Color_Off}"
+    scp -i ~/stack/koe.pem -r $PACKAGE_NAME ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/
+else
+    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
+    exit
+fi
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
@@ -54,28 +82,9 @@ ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-    echo -e "${Yellow}${On_Purple}Now copy the compile bundles over${Color_Off}"
-    echo -e "${Yellow}${On_Purple} (We can compile them on the server, but it will be slow)${Color_Off}"
-    echo -e "${Green}${On_Black}scp -r assets/bundles -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/assets/${Color_Off}"
-    scp -i ~/stack/koe.pem -r assets/bundles ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/assets/
-else
-    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
-    exit
-fi
-
-RESULT=$?
-if [ $RESULT -eq 0 ]; then
-    echo -e "${Green}${On_Black}scp -r jquery-webpack-stats.json -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/${Color_Off}"
-    scp -i ~/stack/koe.pem -r jquery-webpack-stats.json ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/
-else
-    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
-    exit
-fi
-
-RESULT=$?
-if [ $RESULT -eq 0 ]; then
-    echo -e "${Green}${On_Black}scp -r webpack-stats.json -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/${Color_Off}"
-    scp -i ~/stack/koe.pem -r webpack-stats.json ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com:/home/ubuntu/workspace/koe/
+    echo -e "${Yellow}${On_Purple}Now extracting the package${Color_Off}"
+    echo -e "${Green}${On_Black}tar --warning=no-unknown-keyword -xvf $PACKAGE_NAME${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "cd /home/ubuntu/workspace/koe/;tar --warning=no-unknown-keyword -xvf $PACKAGE_NAME"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
@@ -94,7 +103,7 @@ fi
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now, remove the compiled bundles, rebuild the production version (no compile)${Color_Off}"
-    echo -e "${Green}${On_Black}rm -rf assets/bundles${Color_Off}"
+    echo -e "${Green}${On_Black}rm -rf assets/bundles static${Color_Off}"
     rm -rf assets/bundles
     echo -e "${Green}${On_Black}yarn build${Color_Off}"
     yarn build
@@ -110,3 +119,6 @@ else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
 fi
+
+ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "mv /home/ubuntu/workspace/koe/$PACKAGE_NAME /home/ubuntu/workspace/$PACKAGE_NAME"
+rm $PACKAGE_NAME

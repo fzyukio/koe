@@ -42,10 +42,6 @@ cd ${DJANGODIR}
 source .venv/bin/activate
 echo -e "${Black}${On_White}Run migrate${Color_Off}"
 .venv/bin/python manage.py migrate --database=default
-echo -e "${Black}${On_White}Collect static${Color_Off}"
-.venv/bin/python manage.py collectstatic --noinput
-#export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
-#export PYTHONPATH=$DJANGODIR:$PYTHONPATH
 
 # Create the run directory if it doesn't exist
 RUNDIR=$(dirname $SOCKFILE)

@@ -43,8 +43,8 @@ ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now, run gunicorn remotely ${Color_Off}"
-    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"/home/ubuntu/workspace/koe/post-deploy-hot.sh\"${Color_Off}"
-    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "/home/ubuntu/workspace/koe/post-deploy-hot.sh"
+    echo -e "${Green}${On_Black}ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com \"/home/ubuntu/workspace/koe/post-deploy.sh\"${Color_Off}"
+    ssh -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "/home/ubuntu/workspace/koe/post-deploy.sh"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit
