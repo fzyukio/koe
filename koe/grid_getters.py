@@ -19,7 +19,7 @@ def bulk_get_segment_info(segs, extras):
     user = extras['user']
     rows = []
     if isinstance(segs, QuerySet):
-        attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff',
+        attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
                                                  'segmentation__audio_file__name',
                                                  'segmentation__audio_file__id',
                                                  'segmentation__audio_file__quality',
@@ -79,7 +79,7 @@ def bulk_get_segment_info(segs, extras):
         indices, distances = upgma_triu(ids, dm)
 
     for i in range(nrows):
-        id, start, end, mean_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
+        id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
         dist = distances[i]
         index = indices[i]
         mask_img = spect_mask_path(str(id))
@@ -87,7 +87,8 @@ def bulk_get_segment_info(segs, extras):
         duration = end - start
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, signal_mask=mask_img,
                    distance=dist, dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date, mean_ff=mean_ff, spectrogram=spect_img)
+                   song_quality=quality, song_date=date, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
+                   spectrogram=spect_img)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(str(song_id), {})
 

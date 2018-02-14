@@ -114,6 +114,8 @@ class Segment(SimpleModel):
 
     # Some measurements
     mean_ff = models.FloatField(null=True)
+    min_ff = models.FloatField(null=True)
+    max_ff = models.FloatField(null=True)
 
     def __str__(self):
         return '{} - {}:{}'.format(self.segmentation.audio_file.name, self.start_time_ms, self.end_time_ms)

@@ -284,7 +284,6 @@ def import_signal_mask(conn):
     n = len(segments_info)
     bar = Bar('Importing segments ...', max=n)
 
-
     for seg_id, song_name, start, end in segments_info:
         if song_name not in song_info:
             continue
@@ -337,17 +336,19 @@ def import_signal_mask(conn):
             syl_combined_ff = None
 
             for el_idx, el in enumerate(el_rows):
-                signal = list(map(int, el['signal'].strip().split(' ')))
-                fundfreq = np.array(el['fundfreq'].strip().split(' '), dtype='|S32').astype(np.float) / nyquist * height
+                # signal = list(map(int, el['signal'].strip().split(' ')))
+                fundfreq = np.array(el['fundfreq'].strip().split(' '), dtype='|S32').astype(np.float)
                 el_max_ff = fundfreq[0]
                 el_min_ff = fundfreq[1]
-
-                # the first 4 numbers of fundfreq are: max, min, ? (no idea) and ? (no idea), so we ignore them
-                fundfreq = fundfreq[4:].astype(np.int)
+                fundfreq = fundfreq[4:]
                 if el_idx == 0:
                     syl_combined_ff = fundfreq
                 else:
                     syl_combined_ff = np.concatenate((syl_combined_ff, fundfreq))
+
+                the first 4 numbers of fundfreq are: max, min, ? (no idea) and ? (no idea), so we ignore them
+                fundfreq = (fundfreq / nyquist * height).astype(np.int)
+
                 i = 0
                 ff_row_idx = 0
                 while i < len(signal):
@@ -376,6 +377,8 @@ def import_signal_mask(conn):
             syl_mean_ff = np.mean(syl_combined_ff)
 
             Segment.objects.filter(id=seg_id).update(mean_ff=syl_mean_ff)
+            Segment.objects.filter(id=seg_id).update(max_ff=syl_max_ff)
+            Segment.objects.filter(id=seg_id).update(min_ff=syl_min_ff)
 
             img = Image.fromarray(img_data_rgb)
             thumbnail_width = int(img.size[0])
@@ -486,20 +489,20 @@ class Command(BaseCommand):
 
     def handle(self, dbs, *args, **options):
 
-        # conns = None
-        # try:
-        #     conns = utils.get_dbconf(dbs)
-        #     for pop in conns:
-        #         conn = conns[pop]
-        #         # import_songs(conn)
-        #         # import_syllables(conn)
-        #         # import_signal_mask(conn)
-        #         # import_song_info(conn)
-        #
-        # finally:
-        #     for dbconf in conns:
-        #         conn = conns[dbconf]
-        #         if conn is not None:
-        #             conn.close()
+        conns = None
+        try:
+            conns = utils.get_dbconf(dbs)
+            for pop in conns:
+                conn = conns[pop]
+                # import_songs(conn)
+                # import_syllables(conn)
+                import_signal_mask(conn)
+                # import_song_info(conn)
 
-        extract_spectrogram()
+        finally:
+            for dbconf in conns:
+                conn = conns[dbconf]
+                if conn is not None:
+                    conn.close()
+
+        # extract_spectrogram()

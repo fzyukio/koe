@@ -137,6 +137,16 @@ tables = \
                     "slug": "mean_ff",
                     "type": "FLOAT"
                 },
+                {
+                    "name": "Min FF",
+                    "slug": "min_ff",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Max FF",
+                    "slug": "max_ff",
+                    "type": "FLOAT"
+                },
             ]
         },
         "version-grid": {
