@@ -75,6 +75,7 @@ def delete_history(request):
     """
     version_id = request.POST['version-id']
     HistoryEntry.objects.get(id=version_id).delete()
+    return HttpResponse('ok')
 
 
 def get_segment_audio(request):
