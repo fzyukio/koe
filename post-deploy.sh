@@ -22,18 +22,17 @@ On_Purple='\033[45m'      # Purple
 On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
+APP_NAME=koe
 
-
-NAME="koe"                                  # Name of the application
 DJANGODIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"             # Django project directory
 SOCKFILE=${DJANGODIR}/gunicorn.sock  # we will communicte using this unix socket
 USER=`whoami`                                        # the user to run as
 GROUP=`id -gn`                                     # the group to run as
 NUM_WORKERS=3                                     # how many worker processes should Gunicorn spawn
-DJANGO_SETTINGS_MODULE=koe.settings             # which settings file should Django use
-DJANGO_WSGI_MODULE=koe.wsgi                     # WSGI module name
+DJANGO_SETTINGS_MODULE=$APP_NAME.settings             # which settings file should Django use
+DJANGO_WSGI_MODULE=$APP_NAME.wsgi                     # WSGI module name
 
-echo "Starting $NAME as $USER"
+echo "Starting $APP_NAME as $USER"
 echo "Current Dir is $DJANGODIR"
 
 cd ${DJANGODIR}
@@ -51,7 +50,7 @@ test -d $RUNDIR || mkdir -p $RUNDIR
 # Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
 echo -e "${Black}${On_White}Run the app${Color_Off}"
 nohup .venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
-  --name $NAME \
+  --name $APP_NAME \
   --workers $NUM_WORKERS \
   --user=$USER \
   --group=$GROUP \
