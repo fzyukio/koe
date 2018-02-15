@@ -125,6 +125,7 @@ const selectTextForCopy = function (e, args) {
 
 
 const resetStatus = function (e, args) {
+    e.preventDefault();
     let nRowChanged = 0;
     if (e.type == "row-added") {
         nRowChanged = 1;
@@ -141,7 +142,8 @@ const resetStatus = function (e, args) {
 
 
 const subscribeEvents = function () {
-    grid.on('click', function () {
+    grid.on('click', function (e) {
+        e.preventDefault();
         playAudio.apply(null, arguments);
         toggleCheckBox.apply(null, arguments);
         selectTextForCopy.apply(null, arguments);
@@ -149,6 +151,7 @@ const subscribeEvents = function () {
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', function (e, args) {
+        e.preventDefault();
         let cellElement = $(args.e.target);
         let hasImage = cellElement.closest(".has-image");
         if (hasImage.length == 1) {
@@ -158,8 +161,8 @@ const subscribeEvents = function () {
     });
 
     grid.subscribe('onContextMenu', function (e, args) {
-        let grid_ = args.grid;
         e.preventDefault();
+        let grid_ = args.grid;
         let cell = grid_.getCellFromEvent(e);
         let colDef = grid_.getColumns()[cell.cell];
         let field = colDef.field;
@@ -199,6 +202,7 @@ export const orientationChange = function () {
 
 
 const showBigSpectrogram = function (e, args) {
+    e.preventDefault();
     let cellElement = $(args.e.target);
     let hasImage = cellElement.closest(".has-image");
     if (hasImage.length == 1) {
