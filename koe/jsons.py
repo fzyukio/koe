@@ -9,11 +9,6 @@ tables = \
             "getter": "koe.bulk_get_segment_info",
             "columns": [
                 {
-                    "slug": "#",
-                    "editable": False,
-                    "is_addon": True
-                },
-                {
                     "slug": "_checkbox_selector",
                     "editable": False,
                     "is_addon": True
@@ -84,11 +79,6 @@ tables = \
                     "is_extra_attr": True,
                     "editor": "Select",
                     "css_class": "overflow"
-                },
-                {
-                    "name": "DTW distance",
-                    "slug": "distance",
-                    "type": "FLOAT"
                 },
                 {
                     "name": "DTW Index",

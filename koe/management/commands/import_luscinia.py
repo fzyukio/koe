@@ -340,13 +340,14 @@ def import_signal_mask(conn):
                 fundfreq = np.array(el['fundfreq'].strip().split(' '), dtype='|S32').astype(np.float)
                 el_max_ff = fundfreq[0]
                 el_min_ff = fundfreq[1]
+
+                # the first 4 numbers of fundfreq are: max, min, ? (no idea) and ? (no idea), so we ignore them
                 fundfreq = fundfreq[4:]
                 if el_idx == 0:
                     syl_combined_ff = fundfreq
                 else:
                     syl_combined_ff = np.concatenate((syl_combined_ff, fundfreq))
 
-                the first 4 numbers of fundfreq are: max, min, ? (no idea) and ? (no idea), so we ignore them
                 fundfreq = (fundfreq / nyquist * height).astype(np.int)
 
                 i = 0

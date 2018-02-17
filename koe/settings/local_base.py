@@ -1,3 +1,5 @@
+import sys
+
 from .base import *  # noqa
 
 
@@ -54,3 +56,14 @@ LOGGING = {
 }
 
 JS_REVERSE_JS_MINIFY = False
+
+PY3 = sys.version_info[0] == 3
+if PY3:
+    import builtins
+else:
+    import __builtin__ as builtins
+
+try:
+    builtins.profile
+except AttributeError:
+    builtins.profile = lambda x: x

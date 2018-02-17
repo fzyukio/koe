@@ -1,10 +1,8 @@
 import datetime
 import importlib
 import json
-import sys
 import traceback
 from collections import OrderedDict
-from json import JSONEncoder
 
 from django.conf import settings
 from django.db.models.base import ModelBase
@@ -13,44 +11,10 @@ from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
+from opbeat import Client
 
 from koe import jsons
 from root.models import *
-from opbeat import Client
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    import builtins
-else:
-    import __builtin__ as builtins
-
-try:
-    builtins.profile
-except AttributeError:
-    builtins.profile = lambda x: x
-
-
-JSONEncoder_olddefault = JSONEncoder.default
-
-
-def JSONEncoder_newdefault(self, obj):
-    """
-    The original JSONEncoder doesn't handle datetime object.
-    Replace it with this
-    :param self:
-    :param obj:
-    :return: the JSONified string
-    """
-    if isinstance(obj, datetime.datetime):
-        if obj.utcoffset() is not None:
-            obj = obj - obj.utcoffset()
-        return obj.strftime('%Y-%m-%d %H:%M:%S')
-    elif isinstance(obj, datetime.date):
-        return obj.strftime('%Y-%m-%d')
-    return JSONEncoder_olddefault(self, obj)
-
-
-JSONEncoder.default = JSONEncoder_newdefault
 
 opbeat_client = None
 if hasattr(settings, 'OPBEAT'):

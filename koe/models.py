@@ -1,7 +1,6 @@
 import hashlib
 import os
 import pickle
-import sys
 from logging import warning
 
 import numpy as np
@@ -9,21 +8,13 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+import django.db.models.options as options
 
 from koe.utils import base64_to_array, array_to_base64
-from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User
-from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, data_path
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    import builtins
-else:
-    import __builtin__ as builtins
-
-try:
-    builtins.profile
-except AttributeError:
-    builtins.profile = lambda x: x
+from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, MagicChoices, \
+    AutoSetterGetterMixin, \
+    IdSafeModel
+from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, pickle_path
 
 
 class NumpyArrayField(models.TextField):
@@ -31,6 +22,7 @@ class NumpyArrayField(models.TextField):
     A class that faciliates storing and retrieving numpy array in database.
     The undelying value in database is a base64 string
     """
+
     def __init__(self, *args, **kwargs):
         super(NumpyArrayField, self).__init__(*args, **kwargs)
 
@@ -135,16 +127,120 @@ class Segmentation(StandardModel):
         return '{} by {}'.format(self.audio_file.name, self.source)
 
 
-class CompareAlgorithm(StandardModel):
-    """
-    Name of algorithm
-    """
-    name = models.CharField(max_length=255)
+options.DEFAULT_NAMES += 'attrs',
 
 
-class DistanceMatrix(StandardModel):
+class PicklePersistedModel(IdSafeModel):
+    """
+    Abstract base for models that need to persist its attributes not in the database but in a pickle file
+    Any attributes can be added to the model by declaring `attrs = ('attribute1', 'attribute2',...) in class Meta
+    """
+
+    class Meta:
+        abstract = True
+
+    def __init__(self, *args, **kwargs):
+        super(PicklePersistedModel, self).__init__(*args, **kwargs)
+
+        # Load the persisted data on to the model from its pickle file
+        self.load()
+
+    def save(self, *args, **kwargs):
+        """
+        Save the object and then use its ID to store a pickle file contaning all the attrs as declared
+        Pickle file will be stored in user_data/pickle/<class name>/
+        :param args:
+        :param kwargs:
+        :return: None
+        """
+        super(PicklePersistedModel, self).save(*args, **kwargs)
+
+        fpath = pickle_path(str(self.id), self.__class__.__name__)
+        ensure_parent_folder_exists(fpath)
+
+        mdict = {}
+        for attr in self._meta.attrs:
+            mdict[attr] = getattr(self, attr)
+
+        with open(fpath, 'wb') as f:
+            pickle.dump(mdict, f, pickle.HIGHEST_PROTOCOL)
+
+    def load(self):
+        """
+        Load the persisted data on to the model from its pickle file
+        Not to be called when the model is being constructed
+        :return: None
+        """
+        if self.id:
+            fpath = pickle_path(str(self.id), self.__class__.__name__)
+            if os.path.isfile(fpath):
+                with open(fpath, 'rb') as f:
+                    mdict = pickle.load(f)
+                for attr in self._meta.attrs:
+                    # _attr = '_{}'.format(attr)
+                    setattr(self, attr, mdict[attr])
+                self._loaded = True
+            else:
+                warning('Can\'t restore data for {} #{}. File {} not found'
+                        .format(self.__class__.__name__, self.id, fpath))
+
+    def __str__(self):
+        retval = ['{} #{}: '.format(self.__class__.__name__, self.id)]
+        for attr in self._meta.attrs:
+            retval.append('{}: {}'.format(attr, getattr(self, attr, None)))
+
+        return ', '.join(retval)
+
+    # I onced overwrote these methods to fake attribute, but no longer needed.
+    #    However this might still be useful some time later.
+    # def __getattr__(self, attr):
+    #     try:
+    #         if attr in self._meta.attrs:
+    #             _attr = '_{}'.format(attr)
+    #             if not self.__dict__.get('_loaded', False):
+    #                 self.load()
+    #             return self.__dict__[_attr]
+    #         else:
+    #             return self.__dict__[attr]
+    #     except KeyError as e:
+    #         raise AttributeError('AttributeError: \'{}\' object has no attribute \'{}\''.format(self.__class__.__name__, attr))
+    #
+    # def __setattr__(self, attr, value):
+    #     try:
+    #         if attr in self._meta.attrs:
+    #             _attr = '_{}'.format(attr)
+    #             self.__dict__[_attr] = value
+    #         else:
+    #             self.__dict__[attr] = value
+    #     except KeyError as e:
+    #         raise AttributeError('AttributeError: \'{}\' object has no attribute \'{}\''.format(self.__class__.__name__, attr))
+
+
+class AlgorithmicModelMixin(models.Model):
+    """
+    This is an abstract for models that can be distinguished by the attribute algorithm
+    """
+    algorithm = models.CharField(max_length=255)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        standard_str = super(AlgorithmicModelMixin, self).__str__()
+        extras = 'algorithm: {}'.format(self.algorithm)
+        return '{}, {}'.format(standard_str, extras)
+
+
+class IdOrderedModel(PicklePersistedModel):
+    """
+    This is an abstract for models that have a unique list of IDs as its attribute.
+      To facilitate querying, we store a checksum of the concatenated list as a unique field in the database
+      The checksum is calculated automatically upon saving
+    """
     chksum = models.CharField(max_length=24)
-    algorithm = models.ForeignKey(CompareAlgorithm, on_delete=models.CASCADE)
+
+    class Meta:
+        abstract = True
 
     @classmethod
     def calc_chksum(cls, ids):
@@ -152,65 +248,26 @@ class DistanceMatrix(StandardModel):
         return hashlib.md5(ids_str.encode('ascii')).hexdigest()[:24]
 
     def save(self, *args, **kwargs):
-        fpath = data_path('pickle', self.chksum, 'pkl')
-        ensure_parent_folder_exists(fpath)
-        if hasattr(self, '_ids'):
-            ids = self._ids
-        else:
-            ids = self.ids
+        self.chksum = IdOrderedModel.calc_chksum(self.ids)
+        super(IdOrderedModel, self).save(*args, **kwargs)
 
-        if hasattr(self, '_triu'):
-            triu = self._triu
-        else:
-            triu = self.triu
 
-        with open(fpath, 'wb') as f:
-            loaded = dict(ids=ids, triu=triu)
-            pickle.dump(loaded, f, pickle.HIGHEST_PROTOCOL)
-
-        super(DistanceMatrix, self).save(*args, **kwargs)
-
-    def load(self):
-        fpath = data_path('pickle', self.chksumm, 'pkl')
-        with open(fpath, 'rb') as f:
-            loaded = pickle.load(f)
-            self._ids = loaded['ids']
-            self._triu = loaded['triu']
-
-    @property
-    def ids(self):
-        if not hasattr(self, '_ids'):
-            self.load()
-        return self._ids
-
-    @property
-    def triu(self):
-        if not hasattr(self, '_triu'):
-            self.load()
-        return self._triu
-
-    @ids.setter
-    def ids(self, val):
-        self._ids = val
-
-    @triu.setter
-    def triu(self, val):
-        self._triu = val
-
+class DistanceMatrix(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
+    """
+    To store the upper triangle (triu) of a distance matrix
+    """
     class Meta:
         unique_together = ('chksum', 'algorithm')
+        attrs = ('ids', 'triu')
 
 
-class ValueForSorting(StandardModel):
+class Coordinate(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
     """
-    Currently unused
+    To store a list of coordinates together with the clustered tree and the sorted natural order of the elements
     """
-    segment = models.ForeignKey(Segment, on_delete=models.CASCADE)
-    algorithm = models.ForeignKey(CompareAlgorithm, on_delete=models.CASCADE)
-    value = models.FloatField()
-
     class Meta:
-        unique_together = ('segment', 'algorithm')
+        unique_together = ('chksum', 'algorithm')
+        attrs = ('ids', 'coordinates', 'tree', 'order')
 
 
 class HistoryEntry(StandardModel):
@@ -284,3 +341,20 @@ def _mymodel_delete(sender, instance, **kwargs):
     else:
         warning('File {} doesnot exist.'.format(filepath))
 
+
+@receiver(post_delete)
+def _mymodel_delete(sender, instance, **kwargs):
+    """
+    When a PicklePersistedModel is deleted, also delete its pickle file
+    :param sender:
+    :param instance:
+    :param kwargs:
+    :return:
+    """
+    if isinstance(instance, PicklePersistedModel):
+        filepath = pickle_path(str(instance.id), instance.__class__.__name__)
+        print('Delete {}'.format(filepath))
+        if os.path.isfile(filepath):
+            os.remove(filepath)
+        else:
+            warning('File {} doesnot exist.'.format(filepath))

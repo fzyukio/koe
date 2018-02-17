@@ -3,26 +3,13 @@ Run DTW on a list of command-line specified features
 args:
     --features=wes-f0,yin-f0,mfcc13,mfcc39 (comma separated)
 """
-import sys
 
 import numpy as np
 from ced import pyed
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
-from .ftxtract import extract_funcs, window_size_relative
-
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    import builtins
-else:
-    import __builtin__ as builtins
-
-try:
-    builtins.profile
-except AttributeError:
-    builtins.profile = lambda x: x
+from .ftxtract import extract_funcs
 
 
 def calc_sigma(feature_arrays, ratio=0.25):
@@ -130,7 +117,6 @@ class Command(BaseCommand):
                             extract_func = extract_funcs[feature_name]
                             feature_array = extract_func(segments_ids, config)
 
-                        # triu = np.empty((ndistances,), dtype=np.float32)
                         distance_count = 0
 
                         bar = Bar('Calc distance ({})'.format(test_name), max=nsegs)

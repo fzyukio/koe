@@ -1,7 +1,8 @@
+import numpy as np
+
 from django.db.models.query import QuerySet
 
-from koe.model_utils import upgma_triu
-from koe.models import AudioFile, Segment
+from koe.models import AudioFile, Segment, Coordinate
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path
 
@@ -68,25 +69,25 @@ def bulk_get_segment_info(segs, extras):
 
     ids = [x[0] for x in attr_values_list]
 
-    dm = extras['dm']
-    # dm = DistanceMatrix.objects.filter(id=dm).first()
-    dm = None
+    similarity = extras['similarity']
+    similarity = Coordinate.objects.filter(id=similarity).first()
 
     nrows = len(attr_values_list)
-    if dm is None:
-        indices, distances = [0] * nrows, [0] * nrows
+    if similarity is None:
+        indices = [0] * nrows
     else:
-        indices, distances = upgma_triu(ids, dm)
+        sorted_ids = similarity.ids
+        sorted_order = similarity.order
+        indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
 
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
-        dist = distances[i]
         index = indices[i]
         mask_img = spect_mask_path(str(id))
         spect_img = spect_fft_path(str(id), 'syllable')
         duration = end - start
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, signal_mask=mask_img,
-                   distance=dist, dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
+                   dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
                    song_quality=quality, song_date=date, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
                    spectrogram=spect_img)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})

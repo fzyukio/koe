@@ -1,6 +1,7 @@
 # https://docs.djangoproject.com/en/1.10/ref/settings/
-
+import datetime
 import os
+from json import JSONEncoder
 
 from decouple import config
 
@@ -181,3 +182,25 @@ DATABASES = {
 
 
 SIGN_UP_SECRET = '123456'
+
+JSONEncoder_olddefault = JSONEncoder.default
+
+
+def JSONEncoder_newdefault(self, obj):
+    """
+    The original JSONEncoder doesn't handle datetime object.
+    Replace it with this
+    :param self:
+    :param obj:
+    :return: the JSONified string
+    """
+    if isinstance(obj, datetime.datetime):
+        if obj.utcoffset() is not None:
+            obj = obj - obj.utcoffset()
+        return obj.strftime('%Y-%m-%d %H:%M:%S')
+    elif isinstance(obj, datetime.date):
+        return obj.strftime('%Y-%m-%d')
+    return JSONEncoder_olddefault(self, obj)
+
+
+JSONEncoder.default = JSONEncoder_newdefault

@@ -26,14 +26,14 @@
                 <input id="segment-info-filter" type="text" class="form-control middle">
                 <span class="input-group-addon right">
                 <div class="dropdown pull-right">
-                    <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="distance-matrix-combo"
-                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" dm="{{ dms.0.0 }}">
-                        {{ dms.0.1 }}&nbsp;<span class="caret"></span>
+                    <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="similarity-sort-combo"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" similarity="{{ similarities.0.0 }}">
+                        {{ similarities.0.1 }}&nbsp;<span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="segmentation-btn">
-                        {% for dm in dms %}
-                            <li><a href="#" class="select-dm" dm="{{ dm.0 }}">
-                                {{ dm.1 }}
+                        {% for similarity in similarity %}
+                            <li><a href="#" class="select-similarity" similarity="{{ similarity.0 }}">
+                                {{ similarity.1 }}
                             </a></li>
                         {% endfor %}
                     </ul>

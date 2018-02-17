@@ -6,17 +6,6 @@ from scipy.cluster.hierarchy import linkage
 from koe.models import DistanceMatrix, Segment
 from koe.utils import triu2mat, mat2triu
 
-PY3 = sys.version_info[0] == 3
-if PY3:
-    import builtins
-else:
-    import __builtin__ as builtins
-
-try:
-    builtins.profile
-except AttributeError:
-    builtins.profile = lambda x: x
-
 
 def add_node(node, idx_2_seg_id, parent, root_triu):
     """
@@ -97,3 +86,88 @@ def upgma_triu(segments_ids, dm):
     indices, distances = dist_from_root(tree)
 
     return indices.tolist(), distances.tolist()
+
+
+def natural_order(tree):
+    """
+    Put leaf nodes of a clustered tree into their natural order. This is the order in which the nodes appear in the
+    dendrographic display of this tree
+
+    Example: given the following tree:
+            1            9      0.14822
+            4            7       0.3205
+            5            6       0.3336
+            8           11      0.41462
+            0            3      0.44112
+           10           13      0.58161
+            2           12      0.69368
+           14           15      0.77539
+           16           17      0.89688
+
+    The dendrogram will look like this:
+                +__1
+        +-------|__9
+        |
+        |       ___4
+        |----+-|___7
+        |    |_____8
+        |
+        |  +-------0
+        |--|_______5
+        |
+        |    +_____6
+        +-+--|_____7
+          |________3
+
+    The natural order is [1 9 4 7 8 0 5 6 7 3]
+    :param tree: result of scipy.cluster.hierarchy.linkage
+    :return: the natural order
+    """
+    nnodes = tree.shape[0] + 1
+
+    branches = [None] * tree.shape[0]
+    row_idxs = np.arange(0, nnodes-1, dtype=np.int32)
+
+    for idx in row_idxs:
+        join = tree[idx]
+        left = int(join[0])
+        right = int(join[1])
+        distance = join[2]
+
+        if left < nnodes and right < nnodes:
+            branches[idx] = [left, right], distance
+        elif left < nnodes <= right:
+            node_idx = right - nnodes
+            node = branches[node_idx]
+            branches[node_idx] = 0
+            node[0].append(left)
+            branches[idx] = node[0], node[1]
+
+        elif left >= nnodes > right:
+            node_idx = left - nnodes
+            node = branches[node_idx]
+            branches[node_idx] = 0
+            node[0].append(right)
+            branches[idx] = node[0], node[1]
+        else:
+            left_node_idx = left - nnodes
+            left_node = branches[left_node_idx]
+            branches[left_node_idx] = 0
+
+            right_node_idx = right - nnodes
+            right_node = branches[right_node_idx]
+            branches[right_node_idx] = 0
+
+            left_node_distance = left_node[1]
+            right_node_distance = right_node[1]
+
+            if left_node_distance < right_node_distance:
+                node_leaves = left_node[0] + right_node[0]
+                distance = left_node_distance
+            else:
+                node_leaves = right_node[0] + left_node[0]
+                distance = right_node_distance
+
+            branches[idx] = node_leaves, distance
+
+    return branches[-1][0]

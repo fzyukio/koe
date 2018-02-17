@@ -13,7 +13,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
-from koe.models import AudioFile, Segment, HistoryEntry, DistanceMatrix
+from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
 from root.models import ExtraAttrValue, ExtraAttr
 from root.utils import history_path, ensure_parent_folder_exists
 
@@ -175,8 +175,8 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        dms = DistanceMatrix.objects.all().values_list('id', 'algorithm')
-        dms = list(dms)
-        context['dms'] = dms
+        similarities = Coordinate.objects.all().values_list('id', 'algorithm')
+        similarities = list(similarities)
+        context['similarities'] = similarities
         context['page'] = 'index'
         return context

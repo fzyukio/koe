@@ -270,20 +270,20 @@ export const run = function (commonElements) {
     ah.initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader({rowMoveable: true, multiSelect: true}, function () {
-        let dm = $('#distance-matrix-combo').attr('dm');
-        grid.initMainGridContent({__extra__dm: dm});
+    grid.initMainGridHeader({multiSelect: true}, function () {
+        let similarity = $('#similarity-sort-combo').attr('similarity');
+        grid.initMainGridContent({__extra__similarity: similarity});
         subscribeEvents();
     });
 
-    $('.select-dm').on('click', function (e) {
+    $('.select-similarity').on('click', function (e) {
         e.preventDefault();
-        let dm = this.getAttribute('dm');
-        let dmName = $(this).html().trim();
-        grid.initMainGridContent({__extra__dm: dm});
+        let similarity = this.getAttribute('similarity');
+        let similarityName = $(this).html().trim();
+        grid.initMainGridContent({__extra__similarity: similarity});
 
         /* Update the button */
-        $('#distance-matrix-combo').attr('dm', dm).html(dmName + `<span class="caret"></span>`);
+        $('#similarity-sort-combo').attr('similarity', similarity).html(similarityName + `<span class="caret"></span>`);
     });
 
     contextMenu.click(function (e, args) {

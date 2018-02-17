@@ -72,6 +72,13 @@ def data_path(prefix, fullname, ext=None):
     return url
 
 
+def pickle_path(fullname, subdir=None):
+    folder = 'pickle'
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, 'pkl')
+
+
 def wav_path(fullname):
     return data_path('audio/wav', fullname, 'wav')
 
