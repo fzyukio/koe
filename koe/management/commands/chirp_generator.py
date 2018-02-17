@@ -1,16 +1,15 @@
+import pickle
 from collections import OrderedDict
 
 import numpy as np
-from django.db.models import F
-from progress.bar import Bar
-from scipy.cluster.hierarchy import linkage
-from scipy.io import savemat
+import pyaudio
 import scipy.signal
 from django.core.management.base import BaseCommand
-import pickle
+from django.db.models import F
+from progress.bar import Bar
+from scipy.io import savemat
 
-from koe.model_utils import dist_from_root, natural_order
-from koe.models import Segment, DistanceMatrix, Coordinate
+from koe.models import Segment
 
 GLOBAL_F0_MIN = 475.57
 GLOBAL_F0_MAX = 5456.10
@@ -40,6 +39,8 @@ def generate_amp_profile(length, fadein=False, fadeout=False):
 
 f0_profiles = {
     'pipe': lambda t: gererate_f0_profile(t, GLOBAL_F0_MEAN, t[-1], GLOBAL_F0_MEAN, 'linear'),
+    'pipe-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'linear'),
+    'pipe-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'linear'),
     'squeak-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'logarithmic'),
     'squeak-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'logarithmic'),
     'squeak-convex': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic'),
@@ -84,16 +85,17 @@ def generate_chirp(f0_profile, amp_profile, duration, fs):
                        'fade-in': starts low (0.1) and goes louder (1) at the end
                        'fade-out': starts loud (1) and goes low (0.1) at the end
                        'fade-in-out': starts low (0.1), goes louder in the middle, and low (0.1) at the end
-    :param duration:
+    :param duration: in milliseconds
     :param fs:
     :return:
     """
-    time_step = 1 / fs
-    time_arr = np.arange(0, duration, time_step, dtype=np.float32)
+    # time_step = 1 / fs
+    # time_arr = np.arange(0, duration, time_step, dtype=np.float32)
+    time_arr = np.arange(0, duration * fs // 1000, dtype=np.uint32)
     time_arr, t1f, t2, t2f, method = f0_profiles[f0_profile](time_arr)
     amp = amp_profiles[amp_profile](len(time_arr))
 
-    signal = scipy.signal.chirp(time_arr, t1f, t2, t2f, method=method)
+    signal = scipy.signal.chirp(time_arr, t1f, t2, t2f, method=method).astype(np.float32)
     signal *= amp
 
     return signal
@@ -150,7 +152,7 @@ def generate_chirp_dictionary(pklfile):
         for amp_profile_name in amp_profile_names:
             _f0 = {}
             for f0_profile_name in f0_profile_names:
-                chirp = generate_chirp(f0_profile_name, amp_profile_name, duration / 1000, fs)
+                chirp = generate_chirp(f0_profile_name, amp_profile_name, duration, fs)
                 _f0[f0_profile_name] = chirp
                 bar.next()
             _amp[amp_profile_name] = _f0
@@ -163,7 +165,16 @@ def generate_chirp_dictionary(pklfile):
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        # generate_chirp_dictionary('chirps.pkl')
+        generate_chirp_dictionary('chirps.pkl')
+
+        # chirp = generate_chirp('pipe', 'constant', 182 / 1000, 48000)
+        #
+        # p = pyaudio.PyAudio()
+        # stream = p.open(format=pyaudio.paFloat32, channels=1, rate=48000, output=True)
+        # stream.write(chirp)
+        # stream.stop_stream()
+        # stream.close()
+        # p.terminate()
 
         # segment = Segment.objects.first()
         # duration = (segment.end_time_ms - segment.start_time_ms) / 1000
@@ -192,17 +203,17 @@ class Command(BaseCommand):
         # print(order_)
 
 
-        with open('mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max.pkl', 'rb') as f:
-            data = pickle.load(f)
+        # with open('mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max.pkl', 'rb') as f:
+        #     data = pickle.load(f)
 
         # Coordinate.objects.all().delete()
-        c = Coordinate()
-        c.algorithm = 'mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max'
-        c.ids = data['ids']
-        c.tree = data['tree']
-        c.order = data['order']
-        c.coordinates = data['coordinates']
-        c.save()
+        # c = Coordinate()
+        # c.algorithm = 'mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max'
+        # c.ids = data['ids']
+        # c.tree = data['tree']
+        # c.order = data['order']
+        # c.coordinates = data['coordinates']
+        # c.save()
 
 
         # coordinates = DistanceMatrix()

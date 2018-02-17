@@ -9,6 +9,22 @@
 },
 {
   "model": "koe.coordinate",
+  "pk": "8d4",
+  "fields": {
+    "algorithm": "mfcc-nmfcc=13-delta=2-euclid-xcorr2-none",
+    "chksum": "7c4a6698d99e1e9cb07236f4"
+  }
+},
+{
+  "model": "koe.coordinate",
+  "pk": "903",
+  "fields": {
+    "algorithm": "mfcc-nmfcc=13-delta=2-euclid-dtw-none #2",
+    "chksum": "7c4a6698d99e1e9cb07236f4"
+  }
+},
+{
+  "model": "koe.coordinate",
   "pk": "f91",
   "fields": {
     "algorithm": "mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max",

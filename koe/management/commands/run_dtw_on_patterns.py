@@ -1,14 +1,19 @@
+import traceback
+
 import numpy as np
 from ced import pyed
 from django.core.management.base import BaseCommand
+from django.db.utils import IntegrityError
 from progress.bar import Bar
 import pickle
 import os
 
+from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
 from koe.model_utils import dist_from_root, natural_order
 from koe.models import Coordinate
+from koe.utils import normxcorr2
 from .ftxtract import extract_funcs, window_size_relative
 import scipy.io
 
@@ -35,6 +40,19 @@ def calc_gap(feature_arrays):
 
     gap = np.zeros((feature_array_shape[1], ), dtype=np.float)
     return gap
+
+
+class MockDistance:
+    def __init__(self, distance):
+        self.distance = distance
+
+    def get_dist(self):
+        return self.distance
+
+
+def xcorrs(seg_one_f0, seg_two_f0, *args, **kwargs):
+    distance = normxcorr2(seg_one_f0, seg_two_f0)[0, 0]
+    return MockDistance(distance)
 
 
 class Command(BaseCommand):
@@ -108,7 +126,8 @@ class Command(BaseCommand):
                             chirps_feature_array = bulk_extract_func(segments_ids, config, True)
                             nchirps = len(chirps_feature_array[0])
 
-                        bar = Bar('Find coordinates of the segments ({})'.format(test_name), max=nsegs)
+                        bar = Bar('Find coordinates of the segments ({})'.format(test_name), max=nsegs,
+                                  suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
                         coordinates = np.zeros((nsegs, nchirps), dtype=np.float16)
 
                         if metric_name == 'edr':
@@ -123,9 +142,12 @@ class Command(BaseCommand):
                             sigmas = calc_sigma(segment_feature_array)
                             metric_func = pyed.Lcss
                             args = {'sigmas': sigmas}
-                        else:
+                        elif metric_name == 'dtw':
                             metric_func = pyed.Dtw
                             args = {}
+                        else:
+                            metric_func = xcorrs
+                            args = dict(boundary='symm', mode='same')
 
                         settings = pyed.Settings(dist=dist_name, norm=norm, compute_path=False)
 
@@ -154,10 +176,20 @@ class Command(BaseCommand):
                         #
                         # scipy.io.savemat('{}.mat'.format(test_name), mdict=mdict)
 
+                        # print(tree)
+
                         c = Coordinate()
                         c.algorithm = test_name
                         c.ids = segments_ids
                         c.tree = tree
                         c.order = sorted_order
                         c.coordinates = coordinates
-                        c.save()
+                        i = 1
+                        while True:
+                            try:
+                                c.save()
+                                break
+                            except IntegrityError as e:
+                                i += 1
+                                algorithm_name = '{} #{}'.format(test_name, i)
+                                c.algorithm = algorithm_name

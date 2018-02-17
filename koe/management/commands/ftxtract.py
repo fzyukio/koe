@@ -74,32 +74,28 @@ def extract_xfcc(segments_ids, config, is_pattern=False, method_name='mfcc'):
     upper = xtrargs['highfreq']
     nmfcc = xtrargs['numcep']
     bar = Bar('Extracting {} Range={}~{}, nCoefs={}, delta={}'.format(method_name, lower, upper, nmfcc, ndelta),
-              max=nsegs)
+              max=nsegs, suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
 
     segments_info = segments.values_list('segmentation__audio_file__name',
                                          'segmentation__audio_file__length',
                                          'segmentation__audio_file__fs',
                                          'start_time_ms',
                                          'end_time_ms')
-
     for file_name, length, fs, start, end in segments_info:
-        file_duration_sec = length / fs
-        segment_duration_ms = end-start
-        start = start / 1000 / file_duration_sec
-        end = end / 1000 / file_duration_sec
+        segment_duration = end-start
 
         file_url = wav_path(file_name)
         if is_pattern:
-            chirps = chirps_dict[segment_duration_ms]['constant'].values()
+            chirps = chirps_dict[segment_duration]['constant'].values()
             # chirps = generate_all_chirps(segment_duration_ms/1000, fs, None)
             mfcc_fts = []
-            if segment_duration_ms not in chirps_feature_dict:
+            if segment_duration not in chirps_feature_dict:
                 for chirp in chirps:
                     mfcc_ft = _extract_xfcc(chirp, fs, method, xtrargs, ndelta)
                     mfcc_fts.append(mfcc_ft)
-                chirps_feature_dict[segment_duration_ms] = mfcc_fts
+                chirps_feature_dict[segment_duration] = mfcc_fts
             else:
-                mfcc_fts = chirps_feature_dict[segment_duration_ms]
+                mfcc_fts = chirps_feature_dict[segment_duration]
 
         else:
             sig = wavfile.read_segment(file_url, start, end, mono=True)

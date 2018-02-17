@@ -82,7 +82,7 @@ tables = \
                     "css_class": "overflow"
                 },
                 {
-                    "name": "DTW Index",
+                    "name": "Dendrogram Index",
                     "slug": "dtw_index",
                     "type": "INTEGER"
                 },
