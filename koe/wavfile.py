@@ -122,13 +122,13 @@ def _read_riff_chunk(fid):
     return fsize
 
 
-def read_segment(file, beg, end, mono=False, normalised=True):
+def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
     :param normalised: If true, return float32 array, otherwise return the raw ubyte array
     :param file: file name
-    :param beg: begin of the segment (normalised to 0~1)
-    :param end: end of the segment (normalised to 0~1)
+    :param beg_ms: begin of the segment in milliseconds
+    :param end_ms: end of the segment in milliseconds
     :return: a np array
     """
     if hasattr(file, 'read'):
@@ -145,8 +145,8 @@ def read_segment(file, beg, end, mono=False, normalised=True):
         elif chunk_id == b'data':
             data_length = struct.unpack('<i', fid.read(4))[0] / ba
 
-            beg = int(beg * data_length) * ba
-            end = int(end * data_length) * ba
+            beg = int(beg_ms * rate * ba / 1000)
+            end = int(end_ms * rate * ba / 1000)
             chunk_size = end - beg
             current_pos = fid.tell()
 
