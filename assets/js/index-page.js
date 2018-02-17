@@ -3,6 +3,7 @@ import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 import {initSelectize} from "./selectize-formatter";
 import {log, debug, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
+import {setCache} from "./utils";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -150,15 +151,7 @@ const subscribeEvents = function () {
     });
 
     grid.on('mouseenter', showBigSpectrogram);
-    grid.on('mouseleave', function (e, args) {
-        e.preventDefault();
-        let cellElement = $(args.e.target);
-        let hasImage = cellElement.closest(".has-image");
-        if (hasImage.length == 1) {
-            tooltip.addClass('hidden');
-            hasImage.find('img').removeClass('highlight');
-        }
-    });
+    grid.on('mouseleave', clearSpectrogram);
 
     grid.subscribe('onContextMenu', function (e, args) {
         e.preventDefault();
@@ -187,7 +180,9 @@ const subscribeEvents = function () {
     grid.subscribeDv('onRowCountChanged', function (e, args) {
         let currentRowCount = args.current;
         gridStatusNTotal.html(currentRowCount);
-    })
+    });
+
+    grid.subscribe('onActiveCellChanged', showSpectrogramOnActiveCell);
 };
 
 
@@ -241,6 +236,21 @@ const showBigSpectrogram = function (e, args) {
             left = '';
         }
         tooltip.css('left', left).css('top', top);
+
+        setCache('current-highlighted-image', originalImage)
+    }
+};
+
+
+/**
+ * Hide the tooltip and remove highlight from the active image
+ */
+const clearSpectrogram = function () {
+    tooltip.addClass('hidden');
+    let originalImage = getCache('current-highlighted-image');
+    if (originalImage) {
+        originalImage.removeClass('highlight');
+        setCache('current-highlighted-image', undefined)
     }
 };
 
@@ -263,6 +273,30 @@ const playAudioOnKey = function (e) {
         }
     }
 };
+
+
+/**
+ * Highlight and show the big spectrogram when the active cell is a spectrogram
+ * @param e
+ * @param args
+ */
+const showSpectrogramOnActiveCell = function (e, args) {
+    clearSpectrogram();
+    let grid_ = grid.mainGrid;
+    let activeCell = grid_.getActiveCell();
+    if (activeCell) {
+        let activeCellEl = grid_.getCellNode(args.row, args.cell);
+        let column = grid_.getColumns()[activeCell.cell];
+        if (!column.editable) {
+            let fakeEvent = {
+                target: activeCellEl, preventDefault: function () {}
+            };
+            let args = {e: fakeEvent};
+            showBigSpectrogram(fakeEvent, args);
+        }
+    }
+};
+
 
 /**
  * Deselect all rows including rows hidden by the filter
