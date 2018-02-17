@@ -9,9 +9,10 @@ tables = \
             "getter": "koe.bulk_get_segment_info",
             "columns": [
                 {
-                    "slug": "_checkbox_selector",
+                    "slug": "_sel",
                     "editable": False,
-                    "is_addon": True
+                    "is_addon": True,
+                    "type": "BOOLEAN"
                 },
                 {
                     "name": "ID",
@@ -142,11 +143,6 @@ tables = \
         "version-grid": {
             "class": "koe.HistoryEntry",
             "columns": [
-                {
-                    "slug": "_checkbox_selector",
-                    "editable": False,
-                    "is_addon": True
-                },
                 {
                     "name": "Created by",
                     "slug": "creator",

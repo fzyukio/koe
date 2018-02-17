@@ -103,8 +103,8 @@ def init_tables():
         for column in table['columns']:
             is_addon = column.get('is_addon', False)
             column['is_addon'] = is_addon
-            if is_addon:
-                continue
+            # if is_addon:
+            #     continue
 
             slug = column['slug']
             _type = column['type']
@@ -181,29 +181,31 @@ def get_grid_column_definition(request):
         slug = column['slug']
         is_addon = column['is_addon']
 
-        if is_addon:
-            column = dict(id=slug, field=slug)
-        else:
+        if not is_addon:
             name = column['name']
-            editable = column['editable']
-            total_label = column['total_label']
-            editor = column['editor']
-            formatter = column['formatter']
-            has_total = column['has_total']
-            sortable = column['sortable']
-            filter = column['filter']
-            css_class = column['cssClass']
-            copyable = column['copyable']
-            exportable = column['exportable']
+        editable = column['editable']
+        total_label = column['total_label']
+        editor = column['editor']
+        formatter = column['formatter']
+        has_total = column['has_total']
+        sortable = column['sortable']
+        filter = column['filter']
+        css_class = column['cssClass']
+        copyable = column['copyable']
+        exportable = column['exportable']
 
-            if callable(editable):
-                editable = 'True'
+        if callable(editable):
+            editable = 'True'
 
-            column = dict(id=slug, name=name, field=slug, editable=editable, editor=editor, filter=filter,
-                          formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                          cssClass=css_class, copyable=copyable, exportable=exportable)
-            if editable:
-                column['cssClass'] += ' editable'
+        column = dict(id=slug, field=slug, editable=editable, editor=editor, filter=filter,
+                      formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
+                      cssClass=css_class, copyable=copyable, exportable=exportable)
+
+        if not is_addon:
+            column['name'] = name
+
+        if editable:
+            column['cssClass'] += ' editable'
 
         columns.append(column)
 

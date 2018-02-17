@@ -252,13 +252,15 @@ const showBigSpectrogram = function (e, args) {
 const playAudioOnKey = function (e) {
     let grid_ = grid.mainGrid;
     let activeCell = grid_.getActiveCell();
-    let activeCellEl = grid_.getCellNode(activeCell.row, activeCell.cell);
-    let column = grid_.getColumns()[activeCell.cell];
-    if (!column.editable) {
-        let fakeEvent = {target: activeCellEl};
-        let segId = grid_.getData().getItem(activeCell.row).id;
-        let args = {e: fakeEvent, songId: segId};
-        playAudio(e, args);
+    if (activeCell) {
+        let activeCellEl = grid_.getCellNode(activeCell.row, activeCell.cell);
+        let column = grid_.getColumns()[activeCell.cell];
+        if (!column.editable) {
+            let fakeEvent = {target: activeCellEl};
+            let segId = grid_.getData().getItem(activeCell.row).id;
+            let args = {e: fakeEvent, songId: segId};
+            playAudio(e, args);
+        }
     }
 };
 
@@ -439,7 +441,7 @@ const contextHandlerDecorator = function (colDef) {
     // if the column is not sortable, disable filter
     filterLi.removeClass('disabled');
     filterLiA.html(`Filter ${colDef.field}.`);
-    if (!colDef.sortable) {
+    if (!colDef.filter) {
         filterLi.addClass('disabled');
         filterLiA.html('No filter applicable to this column.')
     }

@@ -672,6 +672,7 @@ const numberFilter = function (number) {
  * @bind ({filterValue}) boolean
  */
 const booleanFilter = function (value) {
+    value = value == true;
     return value === this.filterValue;
 };
 
@@ -702,6 +703,9 @@ const filterGenerator = function (paramName, type, filterContent) {
         catch (e) {
             filterContent = null;
         }
+    }
+    else if (type === 'Boolean') {
+        filterContent = (filterContent == 'true')
     }
     setCache('regex-filter:' + paramName, filterContent);
     return filterFunctions[type].bind({filterValue: filterContent});
@@ -967,7 +971,13 @@ const insertOrReplaceColumn = function(columns, newcol, position) {
         columns.unshift(newcol);
     }
     else {
+        let oldColumn = columns[index];
         columns[index] = newcol;
+        for (let attr in oldColumn) {
+            if (oldColumn.hasOwnProperty(attr) && !newcol.hasOwnProperty(attr)) {
+                newcol[attr] = oldColumn[attr];
+            }
+        }
     }
 };
 

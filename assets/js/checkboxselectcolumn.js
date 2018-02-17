@@ -13,7 +13,7 @@
     let _handler = new Slick.EventHandler();
     let _selectedRowsLookup = {};
     let _defaults = {
-      columnId: "_checkbox_selector",
+      columnId: "_sel",
       cssClass: null,
       toolTip: "Select/Deselect All",
       width: 22,
@@ -142,7 +142,7 @@
         id: _options.columnId,
         name: `<input type='checkbox'/>`,
         toolTip: _options.toolTip,
-        field: "sel",
+        field: "_sel",
         width: _options.width,
         resizable: false,
         sortable: false,
