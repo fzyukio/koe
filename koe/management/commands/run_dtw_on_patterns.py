@@ -44,7 +44,7 @@ class Command(BaseCommand):
             action='store',
             dest='features',
             required=True,
-            help='List of features you want to run edit distance on',
+            help='List of features you want to use to represent syllables and acoustic patterns',
         )
 
         parser.add_argument(
@@ -60,15 +60,15 @@ class Command(BaseCommand):
             action='store',
             dest='metrics',
             required=True,
-            help='List of edit distance algorithms [dtw, edr, erp, lcss]',
+            help='List of edit distance algorithms [dtw, edr, erp, lcss, xcorr2]',
         )
 
         parser.add_argument(
             '--norms',
             action='store',
             dest='norms',
-            default='min',
-            help='List of normalisation algorithm [none, min, avg, max]',
+            default='none',
+            help='List of normalisation algorithm [none, max]',
         )
 
     def handle(self, features, dists, metrics, norms, *args, **options):
@@ -102,23 +102,6 @@ class Command(BaseCommand):
                 for metric_name in metrics.split(','):
                     for norm in norms.split(','):
                         test_name = '{}-{}{}-{}-{}'.format(feature_name, config_str, dist_name, metric_name, norm)
-                        #
-                        # if os.path.isfile('{}.pkl'.format(test_name)):
-                        #     with open('{}.pkl'.format(test_name), 'rb') as f:
-                        #         coordinates = pickle.load(f)
-                        #     tree = linkage(coordinates, method='average')
-                        #     order = natural_order(tree)
-                        #     sorted_order = np.argsort(order)
-                        #
-                        #     c = Coordinate()
-                        #     c.algorithm = test_name
-                        #     c.ids = segments_ids
-                        #     c.tree = tree
-                        #     c.order = sorted_order
-                        #     c.coordinates = coordinates
-                        #     c.save()
-                        #
-                        # else:
                         if bulk_extract_func is None or segment_feature_array is None:
                             bulk_extract_func = extract_funcs[feature_name]
                             segment_feature_array = bulk_extract_func(segments_ids, config, False)
@@ -144,15 +127,14 @@ class Command(BaseCommand):
                             metric_func = pyed.Dtw
                             args = {}
 
+                        settings = pyed.Settings(dist=dist_name, norm=norm, compute_path=False)
+
                         for i in range(nsegs):
                             seg_one_f0 = segment_feature_array[i]
                             seg_one_chirps = chirps_feature_array[i]
 
                             for j in range(nchirps):
                                 seg_two_f0 = seg_one_chirps[j]
-                                window_size = min(len(seg_one_f0), len(seg_two_f0), max(len(seg_one_f0), len(seg_two_f0)) * window_size_relative)
-                                settings = pyed.Settings(dist=dist_name, window='palival', norm=norm,
-                                                         compute_path=False, param=window_size)
                                 distance = metric_func(seg_one_f0, seg_two_f0, args, settings)
                                 coordinates[i, j] = distance.get_dist()
                             bar.next()

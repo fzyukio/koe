@@ -1,0 +1,18 @@
+[
+{
+  "model": "koe.coordinate",
+  "pk": "4b2",
+  "fields": {
+    "algorithm": "mfcc-nmfcc=13-delta=2-euclid-dtw-none",
+    "chksum": "7c4a6698d99e1e9cb07236f4"
+  }
+},
+{
+  "model": "koe.coordinate",
+  "pk": "f91",
+  "fields": {
+    "algorithm": "mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max",
+    "chksum": "7c4a6698d99e1e9cb07236f4"
+  }
+}
+]
