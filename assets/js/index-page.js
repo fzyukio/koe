@@ -264,6 +264,14 @@ const playAudioOnKey = function (e) {
     }
 };
 
+/**
+ * Deselect all rows including rows hidden by the filter
+ * @param e
+ */
+const deselectAll = function (e) {
+    grid.mainGrid.setSelectedRows([]);
+};
+
 
 export const run = function (commonElements) {
     console.log("Index page is now running.");
@@ -312,6 +320,7 @@ export const run = function (commonElements) {
     });
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
+    keyboardJS.bind(['esc'], deselectAll);
 
     initSlider();
 };
