@@ -103,8 +103,6 @@ def init_tables():
         for column in table['columns']:
             is_addon = column.get('is_addon', False)
             column['is_addon'] = is_addon
-            # if is_addon:
-            #     continue
 
             slug = column['slug']
             _type = column['type']
@@ -130,20 +128,23 @@ def init_tables():
             column['editable'] = editable
 
             if not has_bulk_getter:
-                if is_attribute:
-                    column['getter'] = klass.get_FIELD(slug)
-                elif is_extra_attr:
-                    column['getter'] = klass.get_EXTRA_FIELD(slug)
-                else:
-                    column['getter'] = getattr(klass, 'get_{}'.format(slug))
+                getter = getattr(klass, 'get_{}'.format(slug), None)
+                if getter is None:
+                    if is_attribute:
+                        getter = klass.get_FIELD(slug)
+                    elif is_extra_attr:
+                        getter = klass.get_EXTRA_FIELD(slug)
+                column['getter'] = getter
 
             if not has_bulk_setter:
-                if is_attribute:
-                    column['setter'] = klass.set_FIELD(slug)
-                elif is_extra_attr:
-                    column['setter'] = klass.set_EXTRA_FIELD(slug)
-                elif editable:
-                        column['setter'] = getattr(klass, 'set_{}'.format(slug))
+                setter = getattr(klass, 'set_{}'.format(slug), None)
+                if setter is None:
+                    if is_attribute:
+                        setter = klass.set_FIELD(slug)
+                    elif is_extra_attr:
+                        setter = klass.set_EXTRA_FIELD(slug)
+                if editable:
+                    column['setter'] = setter
 
             if is_extra_attr:
                 try:
