@@ -473,7 +473,7 @@ const setLabel = function (field) {
         ce.dialogModalOkBtn.off('click').one('click', function (e) {
             let value = inputEl.val();
             if (selectableOptions) {
-                selectableOptions[value] = (selectableOptions[value] || 0) + 1;
+                selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
             }
 
             $.post(getUrl('send-request', 'set-property-bulk'),
