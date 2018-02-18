@@ -139,6 +139,9 @@ const resetStatus = function (e, args) {
     }
     let nSelectedRows = parseInt(gridStatusNSelceted.html());
     gridStatusNSelceted.html(nSelectedRows + nRowChanged);
+
+    // Restore keyboard navigation to the grid
+    $($('div[hidefocus]')[0]).focus();
 };
 
 

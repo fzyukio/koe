@@ -30,17 +30,9 @@ const commonElements = {
  */
 const restoreModalAfterClosing = function () {
 
-    dialogModal.on('show.bs.modal', function (e) {
-        let activeElement = $(document.activeElement);
-        if (activeElement.is(':focus')) {
-            setCache('currently-focused-element', activeElement);
-        }
-    });
-
-
     dialogModal.on('hidden.bs.modal', function (e) {
-        let previouslyFocusedElement = getCache('currently-focused-element');
-        previouslyFocusedElement.focus();
+        // Restore keyboard navigation to the grid
+        $($('div[hidefocus]')[0]).focus();
     });
 
 };
