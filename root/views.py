@@ -272,6 +272,11 @@ def set_property_bulk(request):
     ids = json.loads(request.POST.get('ids', '[]'))
     objs = klass.objects.filter(pk__in=ids)
 
+    if has_field(klass, 'user'):
+        user_ids = list(klass.objects.values_list('user__id', flat=True).distinct())
+        if len(user_ids) == 0 or len(user_ids) > 1 or user_ids[0] != request.user.id:
+            raise Exception('You don\' have permission to change data that doesn\'t belong to you')
+
     for column in columns:
         attr = column['slug']
         if attr == field:
@@ -295,6 +300,10 @@ def change_properties(request):
     columns = table['columns']
     klass = table['class']
     obj = klass.objects.get(pk=grid_row['id'])
+
+    if has_field(klass, 'user'):
+        if obj.user != request.user:
+            raise Exception('You don\' have permission to change data that doesn\'t belong to you')
 
     for column in columns:
         attr = column['slug']

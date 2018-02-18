@@ -11,7 +11,7 @@ from django.dispatch import receiver
 import django.db.models.options as options
 
 from koe.utils import base64_to_array, array_to_base64
-from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, MagicChoices, \
+from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, \
     AutoSetterGetterMixin, \
     IdSafeModel
 from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, pickle_path

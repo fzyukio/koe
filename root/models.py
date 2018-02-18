@@ -6,13 +6,13 @@ import six
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db import utils
+from django.db.models.base import ModelBase
 from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 
-
 __all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
            'ColumnActionValue', 'User', 'SimpleModel', 'StandardModel', 'IdSafeModel',
-           'value_setter', 'value_getter', 'get_bulk_id']
+           'value_setter', 'value_getter', 'get_bulk_id', 'has_field']
 
 
 def enum(*sequential, **named):
@@ -310,8 +310,12 @@ class AutoSetterGetterMixin:
         """
         user = extras['user']
 
-        retval = {obj.id: None for obj in objs}
-        objids = list(retval.keys())
+        if isinstance(objs, QuerySet):
+            objids = list(objs.values_list('id', flat=True))
+        else:
+            objids = {obj.id: None for obj in objs}
+
+        retval = {objid: None for objid in objids}
 
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
         str2val = value_getter[extra_attr.type]
@@ -427,6 +431,7 @@ class StandardModel(IdSafeModel, AutoSetterGetterMixin):
     """
     A shortcut for any Model that requires safe ID and all the benefit of auto getter-setter
     """
+
     class Meta:
         abstract = True
 
@@ -435,6 +440,7 @@ class SimpleModel(models.Model, AutoSetterGetterMixin):
     """
     A shortcut for any Model that requires all the benefit of auto getter-setter but doesn't need a safe ID
     """
+
     class Meta:
         abstract = True
 
@@ -443,6 +449,7 @@ class User(AbstractUser, StandardModel):
     """
     A simple User model that uses safe ID
     """
+
     def get_avatar(self):
         return "https://api.adorable.io/avatars/200/" + self.email
 
@@ -464,5 +471,18 @@ class ColumnActionValue(SimpleModel):
     value = models.TextField()
 
     def __str__(self):
-        return '{} {} of column "{}" on table "{}" to {}'\
+        return '{} {} of column "{}" on table "{}" to {}' \
             .format(self.user, self.action, self.column, self.table, self.value)
+
+
+def has_field(klass, field):
+    """
+    Check if field exists in model
+    :param klass:
+    :param field:
+    :return:
+    """
+    if isinstance(klass, ModelBase):
+        fields = [x.name for x in klass._meta.fields]
+        return field in fields
+    return False

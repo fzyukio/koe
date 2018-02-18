@@ -74,7 +74,12 @@ def delete_history(request):
     :return:
     """
     version_id = request.POST['version-id']
-    HistoryEntry.objects.get(id=version_id).delete()
+    he = HistoryEntry.objects.get(id=version_id)
+    creator = he.user
+    if creator != request.user:
+        raise Exception('Only {} can delete this version'.format(creator.username))
+
+    he.delete()
     return HttpResponse('ok')
 
 

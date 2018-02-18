@@ -13,6 +13,10 @@ class SegmentGrid extends fg.FlexibleGrid {
             gridOptions: gridOptions
         });
     };
+
+    rowChangeHandler(e, args) {
+        super.rowChangeHandler(e, args, generalResponseHandler);
+    }
 }
 
 const grid = new SegmentGrid();
@@ -40,6 +44,21 @@ const subscribeFlexibleEvents = function () {
             .data("versionName", versionName);
 
     });
+};
+
+/**
+ * Display error in the alert box if a request failed, and vice versa
+ * @param response
+ */
+const generalResponseHandler = function (response) {
+    let message = `Success`;
+    let alertEl = ce.alertSuccess;
+    if (response != 'ok') {
+        message = `Something's wrong. The server says "${response}".`;
+        alertEl = ce.alertFailure;
+    }
+    alertEl.html(message);
+    alertEl.fadeIn().delay(4000).fadeOut(400);
 };
 
 /**
