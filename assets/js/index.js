@@ -3,7 +3,7 @@ export {
     Urls,
 };
 
-import {isNull, SlickEditors} from "./utils";
+import {isNull, SlickEditors, setCache, getCache} from "./utils";
 import {SelectizeEditor} from "./selectize-formatter";
 
 let page;
@@ -22,6 +22,27 @@ const commonElements = {
     dialogModalOkBtn: dialogModalOkBtn,
     alertSuccess: alertSuccess,
     alertFailure: alertFailure
+};
+
+
+/**
+ * If user uses keyboard shortcut to open the modal, restore the element that was focused before the modal was opened
+ */
+const restoreModalAfterClosing = function () {
+
+    dialogModal.on('show.bs.modal', function (e) {
+        let activeElement = $(document.activeElement);
+        if (activeElement.is(':focus')) {
+            setCache('currently-focused-element', activeElement);
+        }
+    });
+
+
+    dialogModal.on('hidden.bs.modal', function (e) {
+        let previouslyFocusedElement = getCache('currently-focused-element');
+        previouslyFocusedElement.focus();
+    });
+
 };
 
 
@@ -88,6 +109,8 @@ const _preRun = function () {
             body.removeClass("loading");
         }
     });
+
+    restoreModalAfterClosing();
 };
 
 
