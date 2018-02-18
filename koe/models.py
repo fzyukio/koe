@@ -13,7 +13,7 @@ import django.db.models.options as options
 from koe.utils import base64_to_array, array_to_base64
 from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, \
     AutoSetterGetterMixin, \
-    IdSafeModel
+    IdSafeModel, ValueTypes
 from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, pickle_path
 
 
@@ -323,6 +323,32 @@ class HistoryEntry(StandardModel):
             retval[id] = username
 
         return retval
+
+    @classmethod
+    def get_note(cls, objs, extras):
+        if isinstance(objs, QuerySet):
+            values_list = objs.values_list('id', 'user__id')
+        else:
+            values_list = [(x.id, x.user.username) for x in objs]
+
+        id_to_user = {x: y for x, y in values_list}
+
+        ids = list(id_to_user.keys())
+        users = list(id_to_user.values())
+
+        note_attr, _ = ExtraAttr.objects.get_or_create(klass=cls.__name__, name='note', type=ValueTypes.SHORT_TEXT)
+
+        note_attr_values = ExtraAttrValue.objects.filter(owner_id__in=ids, user__id__in=users, attr=note_attr)\
+            .values_list('owner_id', 'user__id', 'value')
+
+        retval = {x: None for x in ids}
+
+        for id, userid, note in note_attr_values:
+            if id_to_user[id] == userid:
+                retval[id] = note
+
+        return retval
+
 
 
 @receiver(post_delete, sender=HistoryEntry)
