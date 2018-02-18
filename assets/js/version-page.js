@@ -25,9 +25,9 @@ const fileUploadInput = fileUploadForm.find('input[type=file]');
 let ce;
 
 /**
- *
+ * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
-const subscribeEvents = function () {
+const subscribeFlexibleEvents = function () {
     grid.on('row-added', function (e, args) {
         applyVersionBtn.prop('disabled', false);
         deleteVersionBtn.prop('disabled', false);
@@ -47,7 +47,6 @@ const subscribeEvents = function () {
  */
 export const orientationChange = function () {
     grid.redrawMainGrid({rowMoveable: false, radioSelect: true});
-    subscribeEvents();
 };
 
 
@@ -173,7 +172,7 @@ export const run = function (commonElements) {
 };
 
 export const postRun = function () {
-    subscribeEvents();
+    subscribeFlexibleEvents();
     initApplyVersionBtn();
     initDeleteVersionBtn();
     initImportZipBtn();

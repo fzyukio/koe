@@ -142,7 +142,11 @@ const resetStatus = function (e, args) {
 };
 
 
-const subscribeEvents = function () {
+/**
+ * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
+ */
+const subscribeFlexibleEvents = function () {
+    log(`subscribeFlexibleEvents called`);
     grid.on('click', function (e) {
         e.preventDefault();
         playAudio.apply(null, arguments);
@@ -152,7 +156,19 @@ const subscribeEvents = function () {
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', clearSpectrogram);
+    grid.on('row-added', resetStatus)
+        .on('rows-added', resetStatus)
+        .on('row-removed', resetStatus)
+        .on('rows-removed', resetStatus);
+};
 
+
+/**
+ * Subscribe to events on the slick grid. This must be called everytime the slick is reconstructed, e.g. when changing
+ * screen orientation or size
+ */
+const subscribeSlickEvents = function () {
+    log(`subscribeSlickEvents called`);
     grid.subscribe('onContextMenu', function (e, args) {
         e.preventDefault();
         let grid_ = args.grid;
@@ -172,11 +188,6 @@ const subscribeEvents = function () {
         });
     });
 
-    grid.on('row-added', resetStatus)
-        .on('rows-added', resetStatus)
-        .on('row-removed', resetStatus)
-        .on('rows-removed', resetStatus);
-
     grid.subscribeDv('onRowCountChanged', function (e, args) {
         let currentRowCount = args.current;
         gridStatusNTotal.html(currentRowCount);
@@ -191,7 +202,7 @@ const subscribeEvents = function () {
  */
 export const orientationChange = function () {
     grid.redrawMainGrid({rowMoveable: true, multiSelect: true}, function () {
-        subscribeEvents();
+        subscribeSlickEvents();
     });
 };
 
@@ -317,7 +328,8 @@ export const run = function (commonElements) {
     grid.initMainGridHeader({multiSelect: true}, function () {
         let similarity = $('#similarity-sort-combo').attr('similarity');
         grid.initMainGridContent({__extra__similarity: similarity});
-        subscribeEvents();
+        subscribeSlickEvents();
+        subscribeFlexibleEvents();
     });
 
     $('.select-similarity').on('click', function (e) {
