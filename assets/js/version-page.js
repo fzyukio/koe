@@ -76,7 +76,7 @@ const initApplyVersionBtn = function () {
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400);
             });
-            ce.dialogModal.modal("hide");
+            ce.dialogModal.modal('hide');
         })
     });
 };
@@ -109,7 +109,7 @@ const initDeleteVersionBtn = function () {
                 alertEl.html(message);
                 alertEl.fadeIn().delay(4000).fadeOut(400, callback);
             });
-            ce.dialogModal.modal("hide");
+            ce.dialogModal.modal('hide');
         })
     });
 };

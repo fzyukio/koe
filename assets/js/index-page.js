@@ -366,7 +366,7 @@ export const run = function (commonElements) {
     });
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
-    keyboardJS.bind(['esc'], deselectAll);
+    keyboardJS.bind(['ctrl + esc'], deselectAll);
 
     initSlider();
 };
@@ -439,7 +439,7 @@ const setLabel = function (field) {
 
         ce.dialogModal.modal('show');
 
-        ce.dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.off('click').one('click', function (e) {
             let value = inputEl.val();
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + 1;
@@ -460,7 +460,7 @@ const setLabel = function (field) {
                         grid_.invalidateRow(row);
                     }
                     grid_.render();
-                    ce.dialogModal.modal("hide");
+                    ce.dialogModal.modal('hide');
                 }
             );
 
@@ -536,7 +536,7 @@ export const postRun = function () {
             ce.dialogModal.modal('hide');
 
             $.post(url, {comment: value}, function (filename) {
-                ce.dialogModal.modal("hide");
+                ce.dialogModal.modal('hide');
                 let message = `History saved to ${filename}. You can download it from the version control page`;
                 ce.alertSuccess.html(message);
                 ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
