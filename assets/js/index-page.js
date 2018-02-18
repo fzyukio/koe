@@ -369,7 +369,7 @@ export const run = function (commonElements) {
     });
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
-    keyboardJS.bind(['ctrl + esc'], deselectAll);
+    keyboardJS.bind(['ctrl + `'], deselectAll);
 
     initSlider();
 };
