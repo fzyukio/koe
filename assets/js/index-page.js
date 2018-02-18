@@ -372,21 +372,22 @@ export const run = function (commonElements) {
 };
 
 const addFilter = function (field) {
+    field = ' ' + field + ':';
     let filterInput = $(grid.filterSelector);
     let currentFilterValue = filterInput.val();
     let fieldValueIndex = currentFilterValue.indexOf(field);
     let fieldArgIndexEnd, fieldArgIndexBeg;
 
     if (fieldValueIndex == -1) {
-        currentFilterValue += " " + field + ":()";
+        currentFilterValue += field + "()";
         fieldValueIndex = currentFilterValue.indexOf(field);
         filterInput.val(currentFilterValue);
-        fieldArgIndexBeg = fieldValueIndex + field.length + 2;
+        fieldArgIndexBeg = fieldValueIndex + field.length + 1;
         fieldArgIndexEnd = fieldArgIndexBeg;
     }
     else {
         fieldArgIndexEnd = currentFilterValue.substr(fieldValueIndex).indexOf(")") + fieldValueIndex;
-        fieldArgIndexBeg = fieldValueIndex + field.length + 2;
+        fieldArgIndexBeg = fieldValueIndex + field.length + 1;
     }
     filterInput[0].setSelectionRange(fieldArgIndexBeg, fieldArgIndexEnd);
     filterInput[0].focus();
