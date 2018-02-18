@@ -321,6 +321,15 @@ const deselectAll = function (e) {
 };
 
 
+/**
+ * Set the focus on the grid right after page is loaded.
+ * This is mainly so that user can use Page Up and Page Down right away
+ */
+const focusOnGridOnInit = function () {
+    $($('div[hidefocus]')[0]).focus();
+};
+
+
 export const run = function (commonElements) {
     console.log("Index page is now running.");
     ce = commonElements;
@@ -330,7 +339,7 @@ export const run = function (commonElements) {
     grid.init();
     grid.initMainGridHeader({multiSelect: true}, function () {
         let similarity = $('#similarity-sort-combo').attr('similarity');
-        grid.initMainGridContent({__extra__similarity: similarity});
+        grid.initMainGridContent({__extra__similarity: similarity}, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -339,7 +348,7 @@ export const run = function (commonElements) {
         e.preventDefault();
         let similarity = this.getAttribute('similarity');
         let similarityName = $(this).html().trim();
-        grid.initMainGridContent({__extra__similarity: similarity});
+        grid.initMainGridContent({__extra__similarity: similarity}, focusOnGridOnInit);
 
         /* Update the button */
         $('#similarity-sort-combo').attr('similarity', similarity).html(similarityName + `<span class="caret"></span>`);

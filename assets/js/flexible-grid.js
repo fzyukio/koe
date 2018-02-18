@@ -330,7 +330,7 @@ export class FlexibleGrid {
         utils.setCache('selectableOptions', selectableColumns)
     }
 
-    initMainGridContent(defaultArgs) {
+    initMainGridContent(defaultArgs, callback) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
         let args = utils.deepCopy(self.defaultArgs);
@@ -341,6 +341,10 @@ export class FlexibleGrid {
             self.rows = rows;
             utils.updateSlickGridData(self.mainGrid, self.rows);
             self.cacheSelectableOptions();
+
+            if (typeof callback == 'function') {
+                callback();
+            }
         });
     }
 
