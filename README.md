@@ -1,96 +1,133 @@
-# Django React Boilerplate
+# Django-grid
 
-## About this boilerplate
+This project is folked from https://github.com/vintasoftware/django-react-boilerplate
+Substantial changes include:
+- Upgrade to Django 2.0.1 (which is Python 3 exclusive)
+- Out-of-the-box grid management using Slickgrid on the client side
+- The model is fully compatible with MySql, Postgre and Sqlite
 
-A Django 1.10 project boilerplate/template with lots of state of the art libraries and tools like:
-- React, for interactive UI development
-- django.js, for generating URLs on JS
-- Bootstrap 4, for responsive styling
-- Webpack, for bundling static assets
-- WhiteNoise with brotlipy, for efficient static files serving
+## Setup
+### First, make sure you have all the dependencies installed.
 
-For continuous integration, a [CircleCI](https://circleci.com/) configuration `circle.yml` is included.
-
-Also, includes a Heroku `app.json` and a working Django `production.py` settings, enabling easy deployments with ['Deploy to Heroku' button](https://devcenter.heroku.com/articles/heroku-button). Those Heroku plugins are included in `app.json`:
-- PostgreSQL, for DB
-- Sendgrid, for e-mail sending
-- Papertrail, for logs
-- Opbeat, for performance monitoring
-
-This should be enough as a starting point for any modern web project.
-
-## Project bootstrap [![CircleCI](https://circleci.com/gh/vintasoftware/django-react-boilerplate.svg?style=svg)](https://circleci.com/gh/vintasoftware/django-react-boilerplate)
-- [ ] Start your project using:
+#### For Debian/Ubuntu
+```shell
+sudo ./setup-ubuntu.sh
+sudo ./install-redis.sh
 ```
-django-admin startproject theprojectname --extension py,yml,json --name Procfile --template=https://github.com/vintasoftware/django-react-boilerplate/archive/boilerplate-release.zip
+
+#### For Mac:
 ```
-- [ ] Above: don't forget the `--extension` and `--name` params!
-- [ ] `pip install -r requirements-to-freeze.txt`
-- [ ] `pip freeze > requirements.txt`
-- [ ] `npm update --save`
-- [ ] Remove the `^` from `"bootstrap": "^4.0.0-alpha.4"` in the package.json file. While bootstrap is in alpha we have decided to lock the version to alpha4 to avoid breakage
-- [ ] Check for outdated npm dependencies with `npm outdated` and update them
-- [ ] Change the first line of README to the name of the project
-- [ ] Add an email address to the `ADMINS` settings variable
-- [ ] Change the `SERVER_EMAIL` to the email address used to send e-mails.
+Figure it out yourself
+```
 
-After completing ALL of the above, remove this `Project bootstrap` section from the project README.
+### Install virtualenv, then
+```
+cd /path/to/project/
+virtualenv -p `which python3` .venv
+```
 
-### How to test `django-admin startproject`
+Add the following lines in `.venv/bin/activate`:
+```bash
+export DJANGO_SETTINGS_MODULE=koe.settings.local
+export SECRET_KEY='????????????????????????????????????????????'
+export ALLOWED_HOSTS='*'
+export EMAIL_CONFIG=in-v3.mailjet.com:??????????????????:?????????????????????????????????:587
+export FROM_EMAIL='????????????'
+export REDIS_PORT=6379
+export REDIS_HOST=localhost
+export REDIS_URL='redis://'
+export REDIS_PASSWORD=abc123
+export PATH=$PATH:/usr/local/bin/
+export FFMPEG=/usr/local/bin/ffmpeg
+export WEBPACK_SERVER_PORT=9876
+## Database config
+#DB_TYPE=sqlite3
+DB_TYPE=mysql
+#DB_TYPE=postgresql
 
-If you made changes to this boilerplate and want to test them, commit your changes and use `git archive -o boilerplate.zip HEAD` to create the template zip.
+if test "$DB_TYPE" = "sqlite3"; then
+    export DB_ENGINE=django.db.backends.sqlite3
+    export DB_NAME=koe.db
+    export DB_USER=''
+    export DB_PASSWORD=''
+    export DB_PORT=''
+    export DB_HOST=''
+elif test "$DB_TYPE" = "postgresql"; then
+    export DB_ENGINE=django.db.backends.postgresql
+    export DB_NAME=yfukuzaw
+    export DB_USER='yfukuzaw'
+    export DB_PASSWORD=''
+    export DB_PORT='5444'
+    export DB_HOST='localhost'
+elif test "$DB_TYPE" = "mysql"; then
+    export DB_ENGINE=django.db.backends.mysql
+    export DB_NAME=koe
+    export DB_USER='koe'
+    export DB_PASSWORD='koe'
+    export DB_PORT=''
+    export DB_HOST='localhost'
+fi
+```
 
-### How to test Heroku deployment
+Then
+```bash
+source .venv/bin/activate
+```
 
-Push your changes to a branch and visit `https://dashboard.heroku.com/new?template=https://github.com/fill-org-or-user/fill-project-repo-name/tree/fill-branch` (replace all `fill`).
+## Install Python dependencies
+```bash
+pip install Cython
+pip install -r requirements.txt
+```
 
-### How to add a 'Deploy to Heroku' button
+## Install NPM dependencies
+```bash
+npm install -g webpack
+npm install
+```
 
-Read [this](https://devcenter.heroku.com/articles/heroku-button#adding-the-heroku-button).
+## Initialise the database
+```bash
+./migrate # This program to be run only once, as it will drop the entire database and create a new one
+```
 
-p.s. if you want to deploy in a different way please take a look the `app.json` file for what needs to be configured.
+## Build for development
+```bash
+yarn build
+yarn start # This command will run the server at port specified by $WEBPACK_SERVER_PORT
+```
 
-## Developing
+## Build for production
+```bash
+yarn build-prod
+```
 
-### Quickstart
+## Quick way to deploy on server:
+### Full deployment
+You should fully deploy your app if there is any Javascript change - as these need to be compiled and package by webpack
+To run this app on the server, config nginx or apache accordingly. The following scripts is written to deploy the app using gunicorn.
 
-- Create a copy of ``{{project_name}}/settings/local.py.example`` in ``{{project_name}}/settings/local.py``
-- Create a ``.env`` file in the root of the project and add ``DJANGO_SETTINGS_MODULE="{{project_name}}.settings.local"`` to it
-- Create the migrations for `users` app: `python manage.py makemigrations`
-- Run the migrations: `python manage.py migrate`
+Change file `deploy.sh` and `deploy-hot.sh` at the following lines:
+```bash
+REMOTE_ADDRESS=123.123.123.123
+REMOTE_USER=remote_user
+WORKSPACE=/path/to/project/on/server
+SSH_EXTRA_CREDENTIAL='-i /path/to/credential.pem' # Leave empty if not necessary
+APP_NAME=app_name
+```
 
-### Tools
+Run `deploy.sh` to fully deploy to the server
+Run `deploy-hot.sh` to simply pull the new, committed code onto the server workspace and restart the webserver
 
-- Setup [editorconfig](http://editorconfig.org/), [flake8](http://flake8.pycqa.org/en/latest/) and [ESLint](http://eslint.org/) in the text editor you will use to develop.
+# Licence
+MIT
 
-### Running the project
+TL;DR: You can do what the hell you want with this, as long as you credit me and not hold me responsible for any problem whatsoever.
 
-- `pip install -r requirements.txt`
-- `npm install`
-- `make bundle`
-- `python manage.py runserver`
+Copyright (c) 2013-9999 Yukio Fukuzawa
 
-### Testing
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-`make test`
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-Will run django tests using `--keepdb` and `--parallel`. You may pass a path to the desired test module in the make command. E.g.:
-
-`make test someapp.tests.test_views`
-
-### Adding new pypi libs
-
-Add high level dependecies to `requirements-to-freeze.txt` and `pip freeze > requirements.txt`. This is [A Better Pip Workflow](http://www.kennethreitz.org/essays/a-better-pip-workflow).
-
-## Checking lint
-
-- Manually with `flake8` and `npm run lint` on project root.
-- During development with an editor compatible with flake8 and ESLint.
-
-## Pre-commit hooks
-
-- Run `pre-commit install` to enable the hook into your git repo. The hook will run automatically for each commit.
-- Run `git commit -m "Your message" -n` to skip the hook if you need.
-
-## Commercial Support
-This project, as other Vinta open-source projects, is used in products of Vinta clients. We are always looking for exciting work, so if you need any commercial support, feel free to get in touch: contact@vinta.com.br
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
