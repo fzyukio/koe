@@ -14,6 +14,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import FormView
 from django.views.generic import TemplateView
+from mdx_audio import AudioExtension
 
 from koe.forms import HelpEditForm
 from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
@@ -26,7 +27,7 @@ __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_histor
 # reached this level, and vise verse
 normalised_max = pow(2, 31)
 
-md = markdown.Markdown(safe_mode='escape', extensions=['fenced_code', 'tables', 'oembed'])
+md = markdown.Markdown(safe_mode='escape', extensions=['fenced_code', 'tables', 'oembed', AudioExtension()])
 
 
 def match_target_amplitude(sound, loudness):
