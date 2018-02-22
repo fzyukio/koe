@@ -97,7 +97,6 @@ const initSlider = function () {
 };
 
 const playAudio = function (e, args) {
-    e.preventDefault();
     let cellElement = $(args.e.target);
     let hasImage = cellElement.closest(".has-image");
     if (hasImage.length == 1) {
@@ -297,12 +296,18 @@ const playAudioOnKey = function (e) {
     let activeCell = grid_.getActiveCell();
     if (activeCell) {
         let activeCellEl = grid_.getCellNode(activeCell.row, activeCell.cell);
-        let column = grid_.getColumns()[activeCell.cell];
-        if (!column.editable) {
-            let fakeEvent = {target: activeCellEl};
-            let segId = grid_.getData().getItem(activeCell.row).id;
-            let args = {e: fakeEvent, songId: segId};
-            playAudio(e, args);
+
+        // This if statement will check if the click falls into the grid
+        // Because the actual target is lost, the only way we know that the activeCellEl is focused
+        // Is if the event's path contains the main grid
+        if ($(e.path[1]).has($(activeCellEl)).length) {
+            let column = grid_.getColumns()[activeCell.cell];
+            if (!column.editable) {
+                let fakeEvent = {target: activeCellEl};
+                let segId = grid_.getData().getItem(activeCell.row).id;
+                let args = {e: fakeEvent, songId: segId};
+                playAudio(e, args);
+            }
         }
     }
 };
