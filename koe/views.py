@@ -12,10 +12,8 @@ from django.core import serializers
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
-from django.http import HttpResponseRedirect
 from django.views.generic import FormView
 from django.views.generic import TemplateView
-from markdown.extensions.fenced_code import FencedCodeExtension
 
 from koe.forms import HelpEditForm
 from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
@@ -218,7 +216,8 @@ class HelpView(TemplateView):
 
         markdown_content = get_help_md_content()
 
-        content = markdown.markdown(markdown_content, safe_mode='escape', extensions=[FencedCodeExtension()])
+        content = markdown.markdown(markdown_content, safe_mode='escape',
+                                    extensions=['fenced_code', 'tables'])
         context['content'] = content
 
         return context

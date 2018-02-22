@@ -21,3 +21,10 @@ $padding-bottom: 10px;
   display: none;
   height: calc(100000px - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
+
+.content-center {
+  .markdown-body {
+    font-family: inherit !important;
+    font-size: inherit !important;
+  }
+}

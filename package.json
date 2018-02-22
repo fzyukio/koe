@@ -36,6 +36,7 @@
     "font-awesome": "^4.7.0",
     "font-awesome-webpack": "0.0.5-beta.2",
     "fs": "0.0.1-security",
+    "github-markdown-css": "^2.10.0",
     "imports-loader": "^0.6.5",
     "jquery": "^3.1.1",
     "jquery-contextmenu": "^2.4.4",
