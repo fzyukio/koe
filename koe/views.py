@@ -26,6 +26,8 @@ __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_histor
 # reached this level, and vise verse
 normalised_max = pow(2, 31)
 
+md = markdown.Markdown(safe_mode='escape', extensions=['fenced_code', 'tables', 'oembed'])
+
 
 def match_target_amplitude(sound, loudness):
     """
@@ -216,8 +218,7 @@ class HelpView(TemplateView):
 
         markdown_content = get_help_md_content()
 
-        content = markdown.markdown(markdown_content, safe_mode='escape',
-                                    extensions=['fenced_code', 'tables'])
+        content = md.convert(markdown_content)
         context['content'] = content
 
         return context
