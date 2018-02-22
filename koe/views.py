@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.views.generic import FormView
 from django.views.generic import TemplateView
+from markdown.extensions.fenced_code import FencedCodeExtension
 
 from koe.forms import HelpEditForm
 from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
@@ -201,9 +202,8 @@ def get_help_md_content():
             f.write('')
 
     with open('help.md', 'r') as f:
-        lines = f.readlines()
+        markdown_content = f.read()
 
-    markdown_content = ''.join(lines)
     return markdown_content
 
 
@@ -218,7 +218,7 @@ class HelpView(TemplateView):
 
         markdown_content = get_help_md_content()
 
-        content = markdown.markdown(markdown_content, safe_mode='escape')
+        content = markdown.markdown(markdown_content, safe_mode='escape', extensions=[FencedCodeExtension()])
         context['content'] = content
 
         return context
