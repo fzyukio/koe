@@ -68,6 +68,7 @@ a {
   margin: auto;
   width: 100%;
   height: calc(100% - #{$navbar-height});
+  overflow-y: scroll;
 
   .content-center {
     color: black;

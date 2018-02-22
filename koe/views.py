@@ -4,6 +4,7 @@ import json
 import os
 import zipfile
 
+import markdown
 import numpy as np
 import pydub
 from django.conf import settings
@@ -11,8 +12,11 @@ from django.core import serializers
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
+from django.http import HttpResponseRedirect
+from django.views.generic import FormView
 from django.views.generic import TemplateView
 
+from koe.forms import HelpEditForm
 from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
 from root.models import ExtraAttrValue, ExtraAttr
 from root.utils import history_path, ensure_parent_folder_exists
@@ -185,3 +189,67 @@ class IndexView(TemplateView):
         context['similarities'] = similarities
         context['page'] = 'index'
         return context
+
+
+def get_help_md_content():
+    """
+    Get the content of help.md. If file does not exist, create it
+    :return: the content in help.md
+    """
+    if not os.path.isfile('help.md'):
+        with open('help.md', 'w') as f:
+            f.write('')
+
+    with open('help.md', 'r') as f:
+        lines = f.readlines()
+
+    markdown_content = ''.join(lines)
+    return markdown_content
+
+
+class HelpView(TemplateView):
+    """
+    View of the /help page
+    """
+    template_name = 'help.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(HelpView, self).get_context_data(**kwargs)
+
+        markdown_content = get_help_md_content()
+
+        content = markdown.markdown(markdown_content, safe_mode='escape')
+        context['content'] = content
+
+        return context
+
+
+class HelpEditView(FormView):
+    """
+    View of the help-edit page
+    """
+    form_class = HelpEditForm
+    template_name = 'help-edit.html'
+
+    def get_initial(self):
+        """
+        Pre-populate the content using the current content stored in help.md
+        :return:
+        """
+        initials = {'content': get_help_md_content()}
+        return initials
+
+    def form_valid(self, form):
+        """
+        On submit, save the content to help.md
+        :param form:
+        :return:
+        """
+        form_data = form.cleaned_data
+        content = form_data['content']
+        content = '\n'.join(content.split('\r\n'))
+        with open('help.md', 'w') as f:
+            f.write(content)
+
+        context = self.get_context_data()
+        return self.render_to_response(context)

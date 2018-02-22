@@ -165,6 +165,9 @@ $(document).ready(function () {
     else if (pageName === '/version') {
         page = require('version-page');
     }
+    else if (pageName === '/help-edit') {
+        page = require('help-edit-page');
+    }
 
     _preRun();
 

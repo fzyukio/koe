@@ -82,5 +82,6 @@ def get_server_constants():
 def get_navbar_urls():
     return {
         'index': 'Home Page',
-        'version': 'Version Control'
+        'version': 'Version Control',
+        'help': 'Help'
     }
