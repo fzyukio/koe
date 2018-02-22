@@ -142,7 +142,7 @@ const _postRun = function () {
     };
 
     window.addEventListener('orientationchange', viewPortChangeCallback);
-    window.addEventListener('resize', viewPortChangeCallback);
+    // window.addEventListener('resize', viewPortChangeCallback);
 
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
