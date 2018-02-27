@@ -1,14 +1,12 @@
-import io
 import json
-import tokenize
 from os.path import splitext
 
 from django import template
 from django.conf import settings
-from django.template.loader_tags import do_extends
 from django.urls import NoReverseMatch
 from django.urls import reverse
 
+from cms.models import HomePage
 from root.models import MagicChoices
 
 register = template.Library()
@@ -84,3 +82,14 @@ def get_navbar_urls():
         'index': 'Label',
         'version': 'Versions'
     }
+
+
+@register.simple_tag
+def get_pages():
+    """
+    Return all the child pages of the first home page (The welcome page)
+    :return: a list of HomePage instances that are children of the first HomePage
+    """
+    home_page_root = HomePage.objects.first()
+    home_page_children = home_page_root.get_children()
+    return home_page_children

@@ -46,7 +46,7 @@
     {# The nav`bar is supposed to be always on top#}
     <div id="navbar">
         <span class="navbar-brand" href="#">
-            鳥声 KOE |
+            鳥声 KOE ||
             {% get_navbar_urls as urls %}
             {% for url, text in urls.items %}
                 {% if page == url %}
@@ -54,6 +54,19 @@
                 {% else %}
                     <a href="{% url url %}" class="navbar-link">{{ text }}</a>
                 {% endif %}
+            {% endfor %}
+
+||          {# Display all child pages of the Welcome page (from the CMS system) #}
+            {% get_pages as pages %}
+            {# We must use page_ to not shadow the page variable that is given by the view #}
+            {% for page_ in pages %}
+
+                {% if page.slug == page_.slug %}
+                    <span href="{{ page_.url }}" class="navbar-link active">{{ page_.slug|title }}</span>
+                {% else %}
+                    <a href="{{ page_.url }}" class="navbar-link">{{ page_.slug|title }}</a>
+                {% endif %}
+
             {% endfor %}
 
         </span>
