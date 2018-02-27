@@ -81,7 +81,6 @@ def get_server_constants():
 @register.simple_tag
 def get_navbar_urls():
     return {
-        'index': 'Home Page',
-        'version': 'Version Control',
-        'help': 'Help'
+        'index': 'Label',
+        'version': 'Versions'
     }

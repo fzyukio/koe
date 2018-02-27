@@ -90,3 +90,5 @@ mysqlclient
 Markdown
 python-markdown-oembed
 mdx_audio
+djangorestframework==3.7.7
+wagtail==2.0rc1

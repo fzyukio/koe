@@ -25,7 +25,7 @@ AUTH_USER_MODEL = 'root.User'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
-    # 'django.contrib.admin',
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -37,11 +37,29 @@ INSTALLED_APPS = [
     'webpack_loader',
     'widget_tweaks',
 
+    'wagtail.contrib.forms',
+    'wagtail.contrib.redirects',
+    'wagtail.embeds',
+    'wagtail.sites',
+    'wagtail.users',
+    'wagtail.snippets',
+    'wagtail.documents',
+    'wagtail.images',
+    'wagtail.search',
+    'wagtail.admin',
+    'wagtail.core',
+
+    'modelcluster',
+    'taggit',
+
     'root',
-    'koe'
+    'koe',
+    'cms'
 ]
 
 MIDDLEWARE = [
+    'wagtail.core.middleware.SiteMiddleware',
+    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -164,7 +182,6 @@ else:  # assume we have fully-specified smtp configuration
     EMAIL_USE_TLS = True
     FROM_EMAIL = os.getenv('FROM_EMAIL')
 
-
 DB_CONFIG_ENV = {
     'ENGINE': os.environ['DB_ENGINE'],
     'NAME': os.environ['DB_NAME'],
@@ -174,14 +191,14 @@ DB_CONFIG_ENV = {
     'PORT': os.environ['DB_PORT']
 }
 
-DB_CONFIG = {x:y for x, y in DB_CONFIG_ENV.items() if y is not None}
+DB_CONFIG = {x: y for x, y in DB_CONFIG_ENV.items() if y is not None}
 
 DATABASES = {
     'default': DB_CONFIG
 }
 
-
 SIGN_UP_SECRET = '123456'
+WAGTAIL_SITE_NAME = 'Koe'
 
 JSONEncoder_olddefault = JSONEncoder.default
 
