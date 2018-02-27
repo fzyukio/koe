@@ -91,5 +91,5 @@ def get_pages():
     :return: a list of HomePage instances that are children of the first HomePage
     """
     home_page_root = HomePage.objects.first()
-    home_page_children = home_page_root.get_children()
+    home_page_children = home_page_root.get_children().filter(live__exact=True)
     return home_page_children
