@@ -167,7 +167,7 @@ export class FlexibleGrid {
     rowChangeHandler(e, args, callback) {
         const self = this;
         let dataView = args.grid.getData();
-        let item = dataView.getItem(args.row);
+        let item = args.item;
         let selectableColumns = utils.getCache('selectableOptions');
 
         /* Strip off all irrelevant information */
