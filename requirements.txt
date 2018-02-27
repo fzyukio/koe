@@ -89,3 +89,4 @@ openpyxl
 mysqlclient
 Markdown
 python-markdown-oembed
+mdx_audio

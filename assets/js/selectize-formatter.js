@@ -1,5 +1,5 @@
 import {getCache} from "./utils";
-require('selectize/dist/js/standalone/selectize.js');
+require('selectize/dist/js/selectize.js');
 
 
 export const initSelectize = function ($select, field, defaultValue) {
@@ -22,6 +22,7 @@ export const initSelectize = function ($select, field, defaultValue) {
         selectOnTab: true,
         openOnFocus: false,
         options: options,
+        dropdownDirection: 'auto',
         render: {
             option: function (item, escape) {
                 return `<div><span class="badge">${item.count}</span> ${item.option}</div>`

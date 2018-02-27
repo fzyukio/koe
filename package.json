@@ -57,7 +57,7 @@
     "resolve-url-loader": "^1.6.0",
     "sass-loader": "^4.0.2",
     "script-loader": "^0.7.0",
-    "selectize": "^0.12.4",
+    "selectize": "git+ssh://git@github.com/fzyukio/selectize.js.git#v0.12.4.1",
     "slickgrid": "^2.3.3",
     "source-map-loader": "^0.2.3",
     "style-loader": "^0.13.1",
