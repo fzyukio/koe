@@ -28,6 +28,7 @@ a {
 
 #navbar {
   height: $navbar-height;
+  margin: 0;
   width: 100%;
   color: black;
   background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
@@ -39,10 +40,32 @@ a {
       font-variant: normal;
       font-size: 0.8em;
     }
+
+    &.brand-image {
+      padding-top: 0;
+      padding-bottom: 0;
+      padding-right: 0;
+
+      img {
+        background-color: white;
+        border-radius: 50%;
+        border: 2px #a91b0c solid;
+      }
+    }
   }
 
   .navbar-link.active {
     font-weight: bolder;
+  }
+
+  #user-card {
+    margin-right: 0;
+
+    .user-avatar {
+      img {
+        width: 50px;
+      }
+    }
   }
 }
 
@@ -157,7 +180,6 @@ input::-webkit-input-placeholder {
   font-size: 17px;
   line-height: 18px;
   height: $navbar-height;
-  padding: 5px 15px;
 
   background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFE72510', endColorstr='#FFCB210E', GradientType=0);
@@ -171,6 +193,15 @@ input::-webkit-input-placeholder {
   height: 30px;
   border-bottom: 2px solid #a91b0c;
   background-color: white;
+}
+
+.navbar-login {
+  width: 305px;
+  padding: 10px 10px 0px;
+}
+
+.navbar-login-session {
+  padding: 0px 10px;
 }
 
 .has-grid {

@@ -36,6 +36,7 @@
             background: rgba(255, 255, 255, .8) url('{% static "images/loading-fading-squares.gif" %}') 50% 50% no-repeat;
         }
     </style>
+    {% block extra-css %}{% endblock %}
 </head>
 
 <body>
@@ -43,42 +44,7 @@
 <div class="vh-offset" id="content-wrapper">
     <iframe id="my_iframe" style="display:none;"></iframe>
 
-    {# The nav`bar is supposed to be always on top#}
-    <div id="navbar">
-        <span class="navbar-brand" href="#">
-            鳥声 KOE ||
-            {% get_navbar_urls as urls %}
-            {% for url, text in urls.items %}
-                {% if page == url %}
-                    <span href="{% url url %}" class="navbar-link active">{{ text }}</span>
-                {% else %}
-                    <a href="{% url url %}" class="navbar-link">{{ text }}</a>
-                {% endif %}
-            {% endfor %}
-
-||          {# Display all child pages of the Welcome page (from the CMS system) #}
-            {% get_pages as pages %}
-            {# We must use page_ to not shadow the page variable that is given by the view #}
-            {% for page_ in pages %}
-
-                {% if page.slug == page_.slug %}
-                    <span href="{{ page_.url }}" class="navbar-link active">{{ page_.slug|title }}</span>
-                {% else %}
-                    <a href="{{ page_.url }}" class="navbar-link">{{ page_.slug|title }}</a>
-                {% endif %}
-
-            {% endfor %}
-
-        </span>
-
-        {% block navbar-right %}
-            {% if user.is_authenticated %}
-                <span class="navbar-text">Hi {{ user.username }}
-                    <a href="{% url 'logout' %}" class="navbar-link">Log out</a>
-                </span>
-            {% endif %}
-        {% endblock %}
-    </div>
+    {% block navbar %}{% include "navbar.html" %}{% endblock %}
 
     {% block main-content %}
         <div class="main-content">
