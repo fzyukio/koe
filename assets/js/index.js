@@ -159,7 +159,10 @@ $(document).ready(function () {
     let pageName = location.pathname;
     console.log("Loading " + pageName);
 
-    if (pageName === '/label') {
+    if (pageName === '/') {
+        page = require('home-page');
+    }
+    else if (pageName === '/label') {
         page = require('index-page');
     }
     else if (pageName === '/version') {

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "animate.css": "^3.5.2",
+    "animejs": "^2.2.0",
     "autoprefixer": "^6.5.1",
     "babel-cli": "^6.18.0",
     "babel-core": "^6.18.0",

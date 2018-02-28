@@ -319,3 +319,102 @@
   margin-top: 140px;
   margin-bottom: 140px;
 }
+
+
+/************************/
+
+.header {
+  margin: 30px;
+}
+
+.header__title {
+  display: inline-block;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+.header__tagline {
+  display: inline-block;
+}
+
+.keys {
+  bottom: 20px;
+  position: absolute;
+  right: 20px;
+}
+
+@media all and (max-width: 768px) {
+  .keys {
+    display: none;
+  }
+}
+
+.container-poly-birds {
+  align-items: center;
+  display: flex;
+  margin: 0 auto;
+  width: 100%;
+  position: absolute;
+  top: 20%;
+}
+
+@media all and (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+}
+
+.birds {
+  flex-shrink: 1;
+  height: auto;
+  max-width: 900px;
+  width: 100%;
+}
+
+.birds circle {
+  fill: #e0e0e0;
+  pointer-events: none;
+}
+
+.birds path {
+  pointer-events: none;
+}
+
+.bird-text {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  line-height: 1.44;
+  padding: 0 20px;
+  width: 50%;
+  color: black;
+  font-size: 1.4em;
+}
+
+@media all and (max-width: 768px) {
+  .bird-text {
+    padding: 20px;
+    font-size: 1.2em;
+    width: 60%;
+  }
+}
+
+.bird-text__title {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+@media all and (max-width: 768px) {
+  .bird-text__title {
+    font-size: 1.8em;
+  }
+}
+
+.box {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.box:hover {
+  fill: #f2f2f2;
+}

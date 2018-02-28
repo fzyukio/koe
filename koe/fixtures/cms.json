@@ -93,7 +93,7 @@
 },
 {
   "model": "wagtailcore.page",
-  "pk": 4,
+  "pk": 6,
   "fields": {
     "path": "000100010001",
     "depth": 3,
@@ -103,7 +103,7 @@
     "slug": "help",
     "content_type": [
       "cms",
-      "homepage"
+      "instructionpage"
     ],
     "live": true,
     "has_unpublished_changes": false,
@@ -118,10 +118,10 @@
     "expire_at": null,
     "expired": false,
     "locked": false,
-    "first_published_at": "2018-02-27T10:52:31.401Z",
-    "last_published_at": "2018-02-27T11:01:35.175Z",
-    "latest_revision_created_at": "2018-02-27T11:01:35.129Z",
-    "live_revision": 11
+    "first_published_at": "2018-02-28T08:47:19.836Z",
+    "last_published_at": "2018-02-28T08:47:19.836Z",
+    "latest_revision_created_at": "2018-02-28T08:47:19.795Z",
+    "live_revision": 14
   }
 },
 {
@@ -168,20 +168,6 @@
 },
 {
   "model": "wagtailcore.pagerevision",
-  "pk": 7,
-  "fields": {
-    "page": 4,
-    "submitted_for_moderation": false,
-    "created_at": "2018-02-27T10:52:31.364Z",
-    "user": [
-      "superuser"
-    ],
-    "content_json": "{\"pk\": 4, \"path\": \"000100010001\", \"depth\": 3, \"numchild\": 0, \"title\": \"Help\", \"draft_title\": \"Help\", \"slug\": \"help\", \"content_type\": 38, \"live\": true, \"has_unpublished_changes\": false, \"url_path\": \"/welcome-koe/help/\", \"owner\": \"superuser-f2a4\", \"seo_title\": \"\", \"show_in_menus\": false, \"search_description\": \"\", \"go_live_at\": null, \"expire_at\": null, \"expired\": false, \"locked\": false, \"first_published_at\": null, \"last_published_at\": null, \"latest_revision_created_at\": null, \"live_revision\": null, \"body\": \"<p>Help is on the way</p>\"}",
-    "approved_go_live_at": null
-  }
-},
-{
-  "model": "wagtailcore.pagerevision",
   "pk": 8,
   "fields": {
     "page": 3,
@@ -196,43 +182,15 @@
 },
 {
   "model": "wagtailcore.pagerevision",
-  "pk": 9,
+  "pk": 14,
   "fields": {
-    "page": 4,
+    "page": 6,
     "submitted_for_moderation": false,
-    "created_at": "2018-02-27T10:58:45.658Z",
+    "created_at": "2018-02-28T08:47:19.795Z",
     "user": [
       "superuser"
     ],
-    "content_json": "{\"pk\": 4, \"path\": \"000100010001\", \"depth\": 3, \"numchild\": 0, \"title\": \"Help\", \"draft_title\": \"Help\", \"slug\": \"help\", \"content_type\": 38, \"live\": true, \"has_unpublished_changes\": false, \"url_path\": \"/welcome-koe/help/\", \"owner\": \"superuser-f2a4\", \"seo_title\": \"\", \"show_in_menus\": false, \"search_description\": \"\", \"go_live_at\": null, \"expire_at\": null, \"expired\": false, \"locked\": false, \"first_published_at\": \"2018-02-27T10:52:31.401Z\", \"last_published_at\": \"2018-02-27T10:52:31.401Z\", \"latest_revision_created_at\": \"2018-02-27T10:52:31.364Z\", \"live_revision\": 7, \"body\": \"<p>Insert a video:</p><embed embedtype=\\\"media\\\" url=\\\"https://www.youtube.com/watch?v=c1DDBtYqA4U\\\"/><p>Insert a document (or any file for download):</p><p><a id=\\\"2\\\" linktype=\\\"document\\\">Category shinking</a></p><p></p><h2>Heading 1</h2><h3>Section 1.1</h3><h4>Subsection 1.1.1</h4><hr/><p>Ordered list:</p><ol><li>Item 1</li><li>Item 2</li><li>Item 3</li></ol><p>Unordered list:</p><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><p></p>\"}",
-    "approved_go_live_at": null
-  }
-},
-{
-  "model": "wagtailcore.pagerevision",
-  "pk": 10,
-  "fields": {
-    "page": 4,
-    "submitted_for_moderation": false,
-    "created_at": "2018-02-27T11:00:18.970Z",
-    "user": [
-      "superuser"
-    ],
-    "content_json": "{\"pk\": 4, \"path\": \"000100010001\", \"depth\": 3, \"numchild\": 0, \"title\": \"Help\", \"draft_title\": \"Help\", \"slug\": \"help\", \"content_type\": 38, \"live\": true, \"has_unpublished_changes\": false, \"url_path\": \"/welcome-koe/help/\", \"owner\": \"superuser-f2a4\", \"seo_title\": \"\", \"show_in_menus\": false, \"search_description\": \"\", \"go_live_at\": null, \"expire_at\": null, \"expired\": false, \"locked\": false, \"first_published_at\": \"2018-02-27T10:52:31.401Z\", \"last_published_at\": \"2018-02-27T10:58:45.706Z\", \"latest_revision_created_at\": \"2018-02-27T10:58:45.658Z\", \"live_revision\": 9, \"body\": \"<p>Insert a video:</p><embed embedtype=\\\"media\\\" url=\\\"https://www.youtube.com/watch?v=c1DDBtYqA4U\\\"/><p>Insert a document (or any file for download):</p><p><a id=\\\"2\\\" linktype=\\\"document\\\">Category shinking</a></p><p></p><h2>Heading 1</h2><h3>Section 1.1</h3><h4>Subsection 1.1.1</h4><hr/><p>Ordered list:</p><ol><li>Item 1</li><li>Item 2</li><li>Item 3</li></ol><p>Unordered list:</p><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><p></p>\"}",
-    "approved_go_live_at": null
-  }
-},
-{
-  "model": "wagtailcore.pagerevision",
-  "pk": 11,
-  "fields": {
-    "page": 4,
-    "submitted_for_moderation": false,
-    "created_at": "2018-02-27T11:01:35.129Z",
-    "user": [
-      "superuser"
-    ],
-    "content_json": "{\"pk\": 4, \"path\": \"000100010001\", \"depth\": 3, \"numchild\": 0, \"title\": \"Help\", \"draft_title\": \"Help\", \"slug\": \"help\", \"content_type\": 38, \"live\": true, \"has_unpublished_changes\": false, \"url_path\": \"/welcome-koe/help/\", \"owner\": \"superuser-f2a4\", \"seo_title\": \"\", \"show_in_menus\": false, \"search_description\": \"\", \"go_live_at\": null, \"expire_at\": null, \"expired\": false, \"locked\": false, \"first_published_at\": \"2018-02-27T10:52:31.401Z\", \"last_published_at\": \"2018-02-27T11:00:19.019Z\", \"latest_revision_created_at\": \"2018-02-27T11:00:18.970Z\", \"live_revision\": 10, \"body\": \"<p>Insert a video:</p><ul><li>Doesn&#x27;t work - don&#x27;t try</li></ul><p>Insert a document (or any file for download):</p><p><a id=\\\"2\\\" linktype=\\\"document\\\">Category shinking</a></p><h2>Heading 1</h2><h3>Section 1.1</h3><h4>Subsection 1.1.1</h4><hr/><p>Ordered list:</p><ol><li>Item 1</li><li>Item 2</li><li>Item 3</li></ol><p>Unordered list:</p><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><p></p>\"}",
+    "content_json": "{\"pk\": 6, \"path\": \"000100010001\", \"depth\": 3, \"numchild\": 0, \"title\": \"Help\", \"draft_title\": \"Help\", \"slug\": \"help\", \"content_type\": 39, \"live\": true, \"has_unpublished_changes\": false, \"url_path\": \"/welcome-koe/help/\", \"owner\": \"superuser-f2a4\", \"seo_title\": \"\", \"show_in_menus\": false, \"search_description\": \"\", \"go_live_at\": null, \"expire_at\": null, \"expired\": false, \"locked\": false, \"first_published_at\": null, \"last_published_at\": null, \"latest_revision_created_at\": null, \"live_revision\": null, \"body\": \"<h2><b>What is Koe?</b></h2><p><i>Koe</i> (Japanese for &#x27;voice&#x27;) is an application for cataloguing birdsong syllables. The program allows rapid sorting of syllables into categories by eye and ear, and features advanced pre-sort algorithms, filtering and bulk labelling.<br/>To start using <i>Koe</i> you need a <i>Luscinia</i> database of measured song syllables. <i>Luscinia</i> is &quot;free software for archiving, measuring, and analysing bioacoustic data, with a particular slant for working with field recordings&quot;. You can download <i>Luscinia</i> here: https://github.com/rflachlan/Luscinia/wiki<br/>The <i>Luscinia</i> database is read into <i>Koe</i> as a table, with one syllable per row. The table has columns for syllable measurements, visualisation, labels and annotation (see table below for a description of each column).</p><h3>Koe Columns</h3><ul><li>Min FF: Minimum fundamental frequency of the syllable</li><li>Max FF: Maximum fundamental frequency of the syllable</li><li>Mean FF: Mean fundamental frequency of the syllable</li><li>ID: Unique syllable ID</li><li>Start: Start time of the syllable (milliseconds from song start).</li><li>End: End time of the syllable (milliseconds from song start).</li><li>Duration: Duration of the syllable (in milliseconds)</li><li>Song: Name of the song file the syllable comes from</li><li>Dendrogram Index: Sort by this column to group syllables by acoustic similarity.</li><li>Checkbox: This is the column you will use for selecting rows</li><li>Signal mask: Shows the measured signal as marked in <i>Luscinia.</i> Click to hear audio.</li><li>Spectrogram: Shows a spectrogram of the raw signal. Click to hear audio.</li><li>Label columns (Family, Subfamily, Label). These are where you label your syllables. The Family column is for broad groupings, Subfamily is more specific, and Label is the most specific. Just like biological taxonomy.</li><li>Note: Jot down notes about a row</li><li>Song note: (not editable) these are notes about the song, imported from the <i>Luscinia</i> database</li><li>Date: the date of the parent recording</li><li>Gender: the sex of the bird</li><li>Quality: the quality of the song. EX = Excellent, VG = Very Good, G = Good, OK = Ok, B = Bad.</li><li>Individual: The ID of the individual (from <i>Luscinia</i> database)</li></ul><p>Once your table is read in, the workflow is simple.<br/></p><h3>Navigating the grid</h3><p>To select a cell, click on it. You can also get around the grid with the arrow keys. This is to Click anywhere on the table and the clicked cell will be selected (you will see a red cell border). You can then quickly get around the grid with the arrow keys</p><h3>Sorting</h3><p>Start by pre-sorting your data using one of the fancy pre-sort algorithm options. At the top right of the screen there is a box with different pre-sort algorithms; select one. This will populate the Dendrogram Index column.  Sort by a column by clicking on its header (e.g. Dendrogram Index). To sort by multiple columns at once, Shift+click subsequent headers.</p><h3>Filtering</h3><p>The filter box at the top of the screen is a quick and powerful way of filtering your data, using regex (https://www.computerhope.com/jargon/r/regex.htm).<br/>To filter rows with a certain label, right-click the <b>Label</b> column and type a string. You can filter most columns in this way. You can also filter by multiple columns at once. To filter numerical columns, such as ID, use &#x27;==&#x27; for &#x27;exactly&#x27;, &#x27;&gt;&#x27; and &#x27;&lt;&#x27; for &#x27;greater than&#x27; and &#x27;less than&#x27;, respectively.   &#x27;^$&#x27; is a handy way of finding blanks; label:(^$) will find all rows with blank labels.<br/></p><h3>Audio playback</h3><p>Audio playback is an important part of the cataloguing process. To hear a syllable, simply click on its signal mask or spectrogram, or hit spacebar with signal mask or spectrogram cells selected.</p><h3>Labelling</h3><p>Labelling can be done in two ways; individually, or in bulk.</p><h4>Individual labelling</h4><p>Simply click in the label cell and start typing the label. If the label already exists you will see it come up in the dropdown list. Click the list item you want, or use Alt+Down to navigate down the list and Enter to select.<br/></p><h4>Bulk labelling</h4><p>Select multiple rows of the same type by clicking their checkboxes or hitting spacebar with the checkbox cell selected.</p>\"}",
     "approved_go_live_at": null
   }
 },
@@ -461,15 +419,13 @@
 {
   "model": "cms.homepage",
   "pk": 3,
-  "fields": {
-    "body": "<p>Click <a href=\"/label\">here</a> to start labelling syllables.</p><p>Click <a href=\"/version\">here</a> to go to version control</p><p>Click <a href=\"/help\">here</a> for the help page</p><p>If you&#x27;re admin, click <a href=\"/cms\">here</a> to edit this page or other pages</p>"
-  }
+  "fields": {}
 },
 {
-  "model": "cms.homepage",
-  "pk": 4,
+  "model": "cms.instructionpage",
+  "pk": 6,
   "fields": {
-    "body": "<p>Insert a video:</p><ul><li>Doesn&#x27;t work - don&#x27;t try</li></ul><p>Insert a document (or any file for download):</p><p><a id=\"2\" linktype=\"document\">Category shinking</a></p><h2>Heading 1</h2><h3>Section 1.1</h3><h4>Subsection 1.1.1</h4><hr/><p>Ordered list:</p><ol><li>Item 1</li><li>Item 2</li><li>Item 3</li></ol><p>Unordered list:</p><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><p></p>"
+    "body": "<h2><b>What is Koe?</b></h2><p><i>Koe</i> (Japanese for &#x27;voice&#x27;) is an application for cataloguing birdsong syllables. The program allows rapid sorting of syllables into categories by eye and ear, and features advanced pre-sort algorithms, filtering and bulk labelling.<br/>To start using <i>Koe</i> you need a <i>Luscinia</i> database of measured song syllables. <i>Luscinia</i> is &quot;free software for archiving, measuring, and analysing bioacoustic data, with a particular slant for working with field recordings&quot;. You can download <i>Luscinia</i> here: https://github.com/rflachlan/Luscinia/wiki<br/>The <i>Luscinia</i> database is read into <i>Koe</i> as a table, with one syllable per row. The table has columns for syllable measurements, visualisation, labels and annotation (see table below for a description of each column).</p><h3>Koe Columns</h3><ul><li>Min FF: Minimum fundamental frequency of the syllable</li><li>Max FF: Maximum fundamental frequency of the syllable</li><li>Mean FF: Mean fundamental frequency of the syllable</li><li>ID: Unique syllable ID</li><li>Start: Start time of the syllable (milliseconds from song start).</li><li>End: End time of the syllable (milliseconds from song start).</li><li>Duration: Duration of the syllable (in milliseconds)</li><li>Song: Name of the song file the syllable comes from</li><li>Dendrogram Index: Sort by this column to group syllables by acoustic similarity.</li><li>Checkbox: This is the column you will use for selecting rows</li><li>Signal mask: Shows the measured signal as marked in <i>Luscinia.</i> Click to hear audio.</li><li>Spectrogram: Shows a spectrogram of the raw signal. Click to hear audio.</li><li>Label columns (Family, Subfamily, Label). These are where you label your syllables. The Family column is for broad groupings, Subfamily is more specific, and Label is the most specific. Just like biological taxonomy.</li><li>Note: Jot down notes about a row</li><li>Song note: (not editable) these are notes about the song, imported from the <i>Luscinia</i> database</li><li>Date: the date of the parent recording</li><li>Gender: the sex of the bird</li><li>Quality: the quality of the song. EX = Excellent, VG = Very Good, G = Good, OK = Ok, B = Bad.</li><li>Individual: The ID of the individual (from <i>Luscinia</i> database)</li></ul><p>Once your table is read in, the workflow is simple.<br/></p><h3>Navigating the grid</h3><p>To select a cell, click on it. You can also get around the grid with the arrow keys. This is to Click anywhere on the table and the clicked cell will be selected (you will see a red cell border). You can then quickly get around the grid with the arrow keys</p><h3>Sorting</h3><p>Start by pre-sorting your data using one of the fancy pre-sort algorithm options. At the top right of the screen there is a box with different pre-sort algorithms; select one. This will populate the Dendrogram Index column.  Sort by a column by clicking on its header (e.g. Dendrogram Index). To sort by multiple columns at once, Shift+click subsequent headers.</p><h3>Filtering</h3><p>The filter box at the top of the screen is a quick and powerful way of filtering your data, using regex (https://www.computerhope.com/jargon/r/regex.htm).<br/>To filter rows with a certain label, right-click the <b>Label</b> column and type a string. You can filter most columns in this way. You can also filter by multiple columns at once. To filter numerical columns, such as ID, use &#x27;==&#x27; for &#x27;exactly&#x27;, &#x27;&gt;&#x27; and &#x27;&lt;&#x27; for &#x27;greater than&#x27; and &#x27;less than&#x27;, respectively.   &#x27;^$&#x27; is a handy way of finding blanks; label:(^$) will find all rows with blank labels.<br/></p><h3>Audio playback</h3><p>Audio playback is an important part of the cataloguing process. To hear a syllable, simply click on its signal mask or spectrogram, or hit spacebar with signal mask or spectrogram cells selected.</p><h3>Labelling</h3><p>Labelling can be done in two ways; individually, or in bulk.</p><h4>Individual labelling</h4><p>Simply click in the label cell and start typing the label. If the label already exists you will see it come up in the dropdown list. Click the list item you want, or use Alt+Down to navigate down the list and Enter to select.<br/></p><h4>Bulk labelling</h4><p>Select multiple rows of the same type by clicking their checkboxes or hitting spacebar with the checkbox cell selected.</p>"
   }
 }
 ]
