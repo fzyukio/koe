@@ -33,6 +33,22 @@ a {
   color: black;
   background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
 
+  .navbar-nav {
+    margin: 0;
+  }
+
+  .navbar-collapse {
+    padding: 0;
+    overflow: hidden;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+
+    &.collapse.in, &.collapsing {
+      float: right;
+      max-width: 300px;
+    }
+  }
+
   .navbar-brand {
     font-variant: small-caps;
     a, span {
@@ -65,6 +81,10 @@ a {
       img {
         width: 50px;
       }
+    }
+
+    .dropdown-menu {
+      background-color: white;
     }
   }
 }
@@ -124,12 +144,6 @@ a {
   bottom: calc(#{$bottom-height} + 20px);
   display: none;
   margin-bottom: 10px;
-}
-
-h1.title {
-  font-size: 50px;
-  font-family: 'Passion One', cursive;
-  font-weight: 400;
 }
 
 hr {

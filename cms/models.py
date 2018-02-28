@@ -6,6 +6,10 @@ from wagtail.admin.edit_handlers import FieldPanel
 
 
 class HomePage(Page):
+    pass
+
+
+class InstructionPage(Page):
     body = RichTextField(blank=True)
 
     content_panels = Page.content_panels + [

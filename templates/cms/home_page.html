@@ -1,8 +1,22 @@
 {% extends "cms/base__landing.html" %}
 {% load wagtailcore_tags %}
+{% load static %}
 
 {% block body_class %}template-homepage{% endblock %}
 
-{% block homepage-content %}
-    {{ page.body|richtext }}
+{% block content-container %}
+    <div class="overlay-content">
+        <div class="left-bottom col-xs-12 col-sm-6 col-md-6 col-lg-4">
+            <div class="blockquote">
+                <p>
+                    You have been the veterans of creative suffering.
+                    Continue to work with the faith that unearned suffering is redemptive.
+                </p>
+                <footer>
+                    - M.L.King Jr.
+                </footer>
+                <button onclick="window.location='{% url 'index' %}'">Click here to reduce your suffering</button>
+            </div>
+        </div>
+    </div>
 {% endblock %}

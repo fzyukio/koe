@@ -8,7 +8,7 @@
             background-image: url('{% static "images/bird-cells.svg" %}');
         }
 
-        .container-x {
+        #birds-container {
             background-image: linear-gradient(to bottom, rgba(255, 56, 76, 0.6) 0%, rgba(255, 123, 13, 0.6) 100%),
             url('{% static "images/landing.jpg" %}');
         }
@@ -18,15 +18,7 @@
 {% block navbar %}{% include "navbar.html" with transparent_bg=True %}{% endblock %}
 
 {% block main-content %}
-
-    <div class="container-x">
-        <div class="row">
-            <div class="col-xs-12">
-                <h1>Hello</h1>
-            </div>
-            <div class="homepage-content col-xs-12">{% block homepage-content %}{% endblock %}</div>
-        </div>
-
+    <div id="birds-container">
         <div class="bird-container bird-container--one">
             <div class="bird bird--one"></div>
         </div>
@@ -42,7 +34,8 @@
         <div class="bird-container bird-container--four">
             <div class="bird bird--four"></div>
         </div>
-
     </div>
+
+    {% block content-container %}{% endblock %}
 
 {% endblock %}
