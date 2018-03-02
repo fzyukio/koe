@@ -346,6 +346,27 @@ const deselectAll = function (e) {
 
 
 /**
+ * Jump to the next cell (on the same column) that has different value
+ */
+const jumpNext = function (e) {
+    let grid_ = grid.mainGrid;
+    let activeCell = grid_.getActiveCell();
+    if (activeCell) {
+        let field = grid_.getColumns()[activeCell.cell].field;
+        let items = grid_.getData().getFilteredItems();
+        let value = grid_.getDataItem(activeCell.row)[field];
+        let itemCount = items.length;
+        for (let i=activeCell.row+1; i<itemCount; i++) {
+            if (items[i][field] != value) {
+                grid_.gotoCell(i, activeCell.cell, true);
+                return;
+            }
+        }
+    }
+};
+
+
+/**
  * Set the focus on the grid right after page is loaded.
  * This is mainly so that user can use Page Up and Page Down right away
  */
@@ -403,6 +424,7 @@ export const run = function (commonElements) {
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
     keyboardJS.bind(['ctrl + `'], deselectAll);
+    keyboardJS.bind(['shift + mod + down'], jumpNext);
 
     initSlider();
 };
@@ -429,7 +451,7 @@ const addFilter = function (field) {
     filterInput[0].focus();
 };
 
-const inputText = $(`<input type="text" class="form-control">`);
+const inputText = $(`<input type="text" class="form-control"/>`);
 const inputSelect = $(`<select class="selectize" ></select>`);
 
 const setLabel = function (field) {
