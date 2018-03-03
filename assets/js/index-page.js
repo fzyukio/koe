@@ -348,7 +348,7 @@ const deselectAll = function (e) {
 /**
  * Jump to the next cell (on the same column) that has different value
  */
-const jumpNext = function (e) {
+const jumpNext = function (type) {
     let grid_ = grid.mainGrid;
     let activeCell = grid_.getActiveCell();
     if (activeCell) {
@@ -356,11 +356,34 @@ const jumpNext = function (e) {
         let items = grid_.getData().getFilteredItems();
         let value = grid_.getDataItem(activeCell.row)[field];
         let itemCount = items.length;
-        for (let i=activeCell.row+1; i<itemCount; i++) {
+        let begin, incFunc, conditionFunc;
+
+        if (type === 'down') {
+            begin = activeCell.row + 1;
+            incFunc = function (x) {
+                return x+1;
+            };
+            conditionFunc = function (x) {
+                return x < itemCount;
+            }
+        }
+        else {
+            begin = activeCell.row - 1;
+            incFunc = function (x) {
+                return x-1;
+            };
+            conditionFunc = function (x) {
+                return x > 0;
+            }
+        }
+
+        let i = begin;
+        while(conditionFunc(i)) {
             if (items[i][field] != value) {
                 grid_.gotoCell(i, activeCell.cell, true);
-                return;
+                break;
             }
+            i = incFunc(i);
         }
     }
 };
@@ -424,7 +447,12 @@ export const run = function (commonElements) {
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
     keyboardJS.bind(['ctrl + `'], deselectAll);
-    keyboardJS.bind(['shift + mod + down'], jumpNext);
+    keyboardJS.bind(['shift + mod + down'], function () {
+        jumpNext('down');
+    });
+    keyboardJS.bind(['shift + mod + up'], function () {
+        jumpNext('up');
+    });
 
     initSlider();
 };
