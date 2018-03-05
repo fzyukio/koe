@@ -447,10 +447,10 @@ export const run = function (commonElements) {
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
     keyboardJS.bind(['ctrl + `'], deselectAll);
-    keyboardJS.bind(['shift + mod + down'], function () {
+    keyboardJS.bind(['shift + mod + down', 'ctrl + down', 'mod + down', 'ctrl + shift + down'], function () {
         jumpNext('down');
     });
-    keyboardJS.bind(['shift + mod + up'], function () {
+    keyboardJS.bind(['shift + mod + up', 'ctrl + up', 'mod + up', 'ctrl + shift + up'], function () {
         jumpNext('up');
     });
 
