@@ -1,21 +1,14 @@
-import traceback
-
 import numpy as np
 from ced import pyed
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 from progress.bar import Bar
-import pickle
-import os
-
-from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
-from koe.model_utils import dist_from_root, natural_order
+from koe.model_utils import natural_order
 from koe.models import Coordinate
-from koe.utils import normxcorr2
-from .ftxtract import extract_funcs, window_size_relative
-import scipy.io
+from koe.sigproc_utils import normxcorr2
+from .ftxtract import extract_funcs
 
 
 def calc_sigma(feature_arrays, ratio=0.25):
