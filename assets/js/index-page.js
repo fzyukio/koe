@@ -64,6 +64,13 @@ const gridStatus = $('#grid-status');
 const gridStatusNSelceted = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
+const similarityCombo = $('#similarity-sort-combo');
+const databaseCombo = $('#database-select-combo');
+
+const currentSimilarityAttr = similarityCombo.attr('current-attr');
+const currentDatabaseAttr = databaseCombo.attr('current-attr');
+const similarityClass = similarityCombo.attr('cls');
+const databaseClass = databaseCombo.attr('cls');
 
 let ce;
 
@@ -406,20 +413,56 @@ export const run = function (commonElements) {
 
     grid.init();
     grid.initMainGridHeader({multiSelect: true}, function () {
-        let similarity = $('#similarity-sort-combo').attr('similarity');
-        grid.initMainGridContent({__extra__similarity: similarity}, focusOnGridOnInit);
+        grid.initMainGridContent({}, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
 
-    $('.select-similarity').on('click', function (e) {
+    $('li.not-active a.select-similarity').on('click', function (e) {
         e.preventDefault();
-        let similarity = this.getAttribute('similarity');
+        let similarityId = this.getAttribute('similarity');
         let similarityName = $(this).html().trim();
-        grid.initMainGridContent({__extra__similarity: similarity}, focusOnGridOnInit);
+
+        $.post(
+            getUrl('send-request', 'change-extra-attr-value'),
+            {
+                'attr': currentSimilarityAttr,
+                'klass': similarityClass,
+                'value': similarityId,
+                'owner': similarityCombo.attr('owner-id')
+            },
+            function () {
+                grid.initMainGridContent({}, focusOnGridOnInit);
+            }
+        );
 
         /* Update the button */
-        $('#similarity-sort-combo').attr('similarity', similarity).html(similarityName + `<span class="caret"></span>`);
+        similarityCombo.attr('similarity', similarityId).html(similarityName + `<span class="caret"></span>`);
+        $(this).parent().parent().find('li').removeClass('active').addClass('non-active');
+        $(this).parent().removeClass('non-active').addClass('active');
+    });
+
+    $('li.not-active a.select-database').on('click', function (e) {
+        e.preventDefault();
+        let databaseId = this.getAttribute('database');
+        let databaseName = $(this).html().trim();
+
+        $.post(
+            getUrl('send-request', 'change-extra-attr-value'),
+            {
+                'attr': currentDatabaseAttr,
+                'klass': databaseClass,
+                'value': databaseId
+            },
+            function () {
+                grid.initMainGridContent({}, focusOnGridOnInit);
+            }
+        );
+
+        /* Update the button */
+        databaseCombo.attr('database', databaseId).html(databaseName + `<span class="caret"></span>`);
+        $(this).parent().parent().find('li').removeClass('active').addClass('non-active');
+        $(this).parent().removeClass('non-active').addClass('active');
     });
 
     contextMenu.click(function (e, args) {

@@ -3,8 +3,9 @@ import sys
 import numpy as np
 from scipy.cluster.hierarchy import linkage
 
-from koe.models import DistanceMatrix, Segment
+from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database
 from koe.utils import triu2mat, mat2triu
+from root.models import User, ExtraAttr, ExtraAttrValue
 
 
 def add_node(node, idx_2_seg_id, parent, root_triu):
@@ -171,3 +172,35 @@ def natural_order(tree):
             branches[idx] = node_leaves, distance
 
     return branches[-1][0]
+
+
+def get_currents(user):
+    """
+    Return user's current database and the database's current similarity matrix
+    :param user:
+    :return:
+    """
+    assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id', flat=True)
+    databases = Database.objects.filter(id__in=assigned_databases_ids)
+
+    current_database_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-database')
+    current_database_value = ExtraAttrValue.objects.filter(attr=current_database_attr, owner_id=user.id, user=user).first()
+
+    if current_database_value:
+        current_database_id = current_database_value.value
+        current_database = databases.get(pk=current_database_id)
+    else:
+        current_database = databases.first()
+
+    similarities = Coordinate.objects.filter(database=current_database)
+    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-similarity')
+    current_similarity_value = ExtraAttrValue.objects.filter(attr=current_similarity_attr, user=user,
+                                                             owner_id=current_database.id).first()
+
+    if current_similarity_value:
+        current_similarity_id = current_similarity_value.value
+        current_similarity = Coordinate.objects.get(pk=current_similarity_id)
+    else:
+        current_similarity = similarities.first()
+
+    return similarities, current_similarity, databases, current_database

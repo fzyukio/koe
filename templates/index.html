@@ -25,20 +25,40 @@
                 <span class="input-group-addon left">Filter</span>
                 <input id="segment-info-filter" type="text" class="form-control middle">
                 <span class="input-group-addon right">
-                <div class="dropdown pull-right">
-                    <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="similarity-sort-combo"
-                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" similarity="{{ similarities.0.0 }}">
-                        {{ similarities.0.1 }}&nbsp;<span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="segmentation-btn">
-                        {% for similarity in similarities %}
-                            <li><a href="#" class="select-similarity" similarity="{{ similarity.0 }}">
-                                {{ similarity.1 }}
-                            </a></li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </span>
+                    <div class="dropdown pull-right">
+                        <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="similarity-sort-combo"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"
+                                similarity="{{ current_similarity.0 }}" cls="{{ current_similarity.2 }}"
+                                current-attr="current-similarity" owner-id="{{ current_database.0 }}">
+                            {{ current_similarity.1 }}&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            {% for similarity in similarities %}
+                                <li class="{% if current_similarity.0 == similarity.0 %}active{% else %}not-active{% endif %}">
+                                    <a class="select-similarity" href="#" similarity="{{ similarity.0 }}">
+                                    {{ similarity.1 }}
+                                </a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </span>
+                <span class="input-group-addon right">
+                    <div class="dropdown pull-right">
+                        <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="database-select-combo"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"
+                                database="{{ current_database.0 }}" cls="{{ current_database.2 }}"
+                                current-attr="current-database">
+                            {{ current_database.1 }}&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            {% for database in databases %}
+                                <li><a href="#" class="select-database" database="{{ database.0 }}">
+                                    {{ database.1 }}
+                                </a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </span>
             </div>
         </div>
     </div>

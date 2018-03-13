@@ -17,8 +17,9 @@ from django.views.generic import TemplateView
 from mdx_audio import AudioExtension
 
 from koe.forms import HelpEditForm
-from koe.models import AudioFile, Segment, HistoryEntry, Coordinate
-from root.models import ExtraAttrValue, ExtraAttr
+from koe.model_utils import get_currents
+from koe.models import AudioFile, Segment, HistoryEntry, Coordinate, DatabaseAssignment, DatabasePermission, Database
+from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history']
@@ -52,7 +53,7 @@ def save_history(request):
     comment = request.POST['comment']
     comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
 
-    extra_attr_values = ExtraAttrValue.objects.filter(user=request.user)
+    extra_attr_values = ExtraAttrValue.objects.filter(user=request.user).exclude(attr__klass=User.__name__)
     retval = serializers.serialize('json', extra_attr_values)
 
     zip_buffer = io.BytesIO()
@@ -173,7 +174,7 @@ def import_history(request):
 
     # Wrap all DB modification in one transaction to utilise the roll-back ability when things go wrong
     with transaction.atomic():
-        ExtraAttrValue.objects.filter(user=request.user).delete()
+        ExtraAttrValue.objects.filter(user=request.user).exclude(attr__klass=User.__name__).delete()
         ExtraAttrValue.objects.bulk_create(extra_attr_values)
         return HttpResponse('ok')
 
@@ -186,8 +187,13 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        similarities = Coordinate.objects.all().values_list('id', 'algorithm')
-        similarities = list(similarities)
-        context['similarities'] = similarities
+        user =self.request.user
+
+        similarities, current_similarity, databases, current_database = get_currents(user)
+
+        context['similarities'] = similarities.values_list('id', 'algorithm')
+        context['databases'] = databases.values_list('id', 'name')
+        context['current_database'] = (current_database.id, current_database.name, User.__name__)
+        context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
         context['page'] = 'index'
         return context

@@ -318,6 +318,29 @@ def change_properties(request):
     return HttpResponse('ok')
 
 
+def change_extra_attr_value(request):
+    """
+    Call to change one extra_attr_value
+    :param request: must contain the field 'value', 'klass', 'owner' and 'attr' in POST
+    :return:
+    """
+    attr = request.POST['attr']
+    klass = request.POST['klass']
+    owner = request.POST.get('owner', request.user.id)
+    value = request.POST['value']
+
+    extra_attr_value = ExtraAttrValue.objects.filter(user=request.user, owner_id=owner, attr__name=attr).first()
+    if extra_attr_value is None:
+        extra_attr_value = ExtraAttrValue()
+        extra_attr_value.user = request.user
+        extra_attr_value.owner_id=owner
+        extra_attr_value.attr = ExtraAttr.objects.get(klass=klass, name=attr)
+    extra_attr_value.value = value
+    extra_attr_value.save()
+
+    return HttpResponse('ok')
+
+
 def set_action_values(request):
     """
     Change the value of ColumnActionValue whenever the user changes the orders/widths of the columns

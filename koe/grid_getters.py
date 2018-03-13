@@ -1,8 +1,8 @@
 import numpy as np
-
 from django.db.models.query import QuerySet
 
-from koe.models import AudioFile, Segment, Coordinate
+from koe.model_utils import get_currents
+from koe.models import AudioFile, Segment
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path
 
@@ -18,8 +18,12 @@ def bulk_get_segment_info(segs, extras):
     :return: [row]
     """
     user = extras['user']
+    similarities, current_similarity, databases, current_database = get_currents(user)
+
     rows = []
+
     if isinstance(segs, QuerySet):
+        segs = segs.filter(segmentation__audio_file__database=current_database.id)
         attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
                                                  'segmentation__audio_file__name',
                                                  'segmentation__audio_file__id',
@@ -39,7 +43,8 @@ def bulk_get_segment_info(segs, extras):
                              x.segmentation.audio_file.track.name,
                              x.segmentation.audio_file.track.date,
                              x.segmentation.audio_file.individual.name,
-                             x.segmentation.audio_file.individual.gender) for x in segs]
+                             x.segmentation.audio_file.individual.gender) for x in segs
+                            if x.segmentation.audio_file.database == current_database]
 
     segids = [str(x[0]) for x in attr_values_list]
     extra_attrs = ExtraAttr.objects.filter(klass=Segment.__name__)
@@ -69,15 +74,12 @@ def bulk_get_segment_info(segs, extras):
 
     ids = [x[0] for x in attr_values_list]
 
-    similarity = extras['similarity']
-    similarity = Coordinate.objects.filter(id=similarity).first()
-
     nrows = len(attr_values_list)
-    if similarity is None:
+    if current_similarity is None:
         indices = [0] * nrows
     else:
-        sorted_ids = similarity.ids
-        sorted_order = similarity.order
+        sorted_ids = current_similarity.ids
+        sorted_order = current_similarity.order
         indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
 
     for i in range(nrows):

@@ -13,7 +13,7 @@ import django.db.models.options as options
 from koe.utils import base64_to_array, array_to_base64
 from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, \
     AutoSetterGetterMixin, \
-    IdSafeModel, ValueTypes
+    IdSafeModel, ValueTypes, MagicChoices
 from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, pickle_path
 
 
@@ -70,6 +70,37 @@ class Individual(StandardModel):
         return self.name
 
 
+class Database(StandardModel):
+    """
+    This works as a separator between different sets of audio files that are not related.
+    E.g. a database of bellbirds and a database of dolphin sounds...
+    """
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class DatabasePermission(MagicChoices):
+    VIEW = 1
+    EDIT = 2
+
+
+class DatabaseAssignment(SimpleModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
+    permission = models.IntegerField(choices=DatabasePermission.as_choices())
+
+    def __str__(self):
+        return 'Database {} assigned to user {} with {} permission'.format(
+            self.database.name, self.user.username, self.get_permission_display()
+        )
+
+    class Meta:
+        unique_together = ('user', 'database', 'permission')
+        ordering = ('user', 'database', 'permission')
+
+
 class AudioFile(StandardModel):
     """
     Represent a song
@@ -80,6 +111,7 @@ class AudioFile(StandardModel):
     track = models.ForeignKey(AudioTrack, null=True, blank=True, on_delete=models.SET_NULL)
     individual = models.ForeignKey(Individual, null=True, blank=True, on_delete=models.SET_NULL)
     quality = models.CharField(max_length=2, null=True, blank=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
 
     @property
     def file_path(self):
@@ -221,13 +253,14 @@ class AlgorithmicModelMixin(models.Model):
     This is an abstract for models that can be distinguished by the attribute algorithm
     """
     algorithm = models.CharField(max_length=255)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
 
     def __str__(self):
         standard_str = super(AlgorithmicModelMixin, self).__str__()
-        extras = 'algorithm: {}'.format(self.algorithm)
+        extras = 'Database: {] algorithm: {}'.format(self.database.name, self.algorithm)
         return '{}, {}'.format(standard_str, extras)
 
 
@@ -257,7 +290,7 @@ class DistanceMatrix(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedMode
     To store the upper triangle (triu) of a distance matrix
     """
     class Meta:
-        unique_together = ('chksum', 'algorithm')
+        unique_together = ('chksum', 'algorithm', 'database')
         attrs = ('ids', 'triu')
 
 
@@ -266,7 +299,7 @@ class Coordinate(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
     To store a list of coordinates together with the clustered tree and the sorted natural order of the elements
     """
     class Meta:
-        unique_together = ('chksum', 'algorithm')
+        unique_together = ('chksum', 'algorithm', 'database')
         attrs = ('ids', 'coordinates', 'tree', 'order')
 
 

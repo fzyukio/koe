@@ -43,5 +43,32 @@
     "name": "note",
     "type": 1
   }
+},
+{
+  "model": "root.extraattr",
+  "pk": 6,
+  "fields": {
+    "klass": "HistoryEntry",
+    "name": "note",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 7,
+  "fields": {
+    "klass": "User",
+    "name": "current-database",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 8,
+  "fields": {
+    "klass": "User",
+    "name": "current-similarity",
+    "type": 0
+  }
 }
 ]

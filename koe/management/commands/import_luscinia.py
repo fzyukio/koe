@@ -18,15 +18,14 @@ from django.core.management.base import BaseCommand
 from progress.bar import Bar
 from scipy import signal
 
-from koe import wavfile
 from koe import wavfile as wf
+from koe.colourmap import *
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
-from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual
+from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual, Database, DatabaseAssignment, \
+    DatabasePermission
 from root.models import ExtraAttr, ExtraAttrValue, ValueTypes, User
 from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
-
-from koe.colourmap import *
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
@@ -48,9 +47,6 @@ interval64 = global_spect_pixel_range / 63
 
 name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
 note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
-
-
-user = User.objects.get(username='wesley')
 
 
 PY3 = sys.version_info[0] == 3
@@ -115,7 +111,7 @@ def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
     return fs, length
 
 
-def import_song_info(conn):
+def import_song_info(conn, user):
     song_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     song_cur.execute('select i.name as iname, s.call_context, s.name as sname from songdata s join individual i on s.individualid=i.id')
@@ -240,7 +236,7 @@ def import_syllables(conn):
     bar.finish()
 
 
-def import_songs(conn):
+def import_songs(conn, database):
     song_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
 
@@ -257,7 +253,7 @@ def import_songs(conn):
         bar.song_name = song_name
         bar.next()
         if audio_file is None:
-            AudioFile.objects.create(name=song_name, length=length, fs=fs)
+            AudioFile.objects.create(name=song_name, length=length, fs=fs, database=database)
     bar.finish()
 
 
@@ -400,6 +396,10 @@ def import_signal_mask(conn):
 
 
 def extract_spectrogram():
+    """
+    Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia)
+    :return:
+    """
     values_list = Segment.objects.values_list('id', 'segmentation__audio_file__id', 'segmentation__audio_file__name','start_time_ms', 'end_time_ms')
     audio_to_segs = {}
     for id, song_id, song_name, start, end in values_list:
@@ -473,9 +473,6 @@ def extract_spectrogram():
     bar.finish()
 
 
-
-
-
 class Command(BaseCommand):
 
     def add_arguments(self, parser):
@@ -488,17 +485,38 @@ class Command(BaseCommand):
             help='List of databases, e.g. TMI:TMI_MMR:6666,PKI:PKI_WHW_MMR:6667',
         )
 
-    def handle(self, dbs, *args, **options):
+        parser.add_argument(
+            '--database-name',
+            action='store',
+            dest='database_name',
+            required=True,
+            type=str,
+            help='E.g Bellbird, Whale, ...',
+        )
+
+        parser.add_argument(
+            '--owner',
+            action='store',
+            dest='username',
+            default='wesley',
+            type=str,
+            help='Name of the person who owns this database',
+        )
+
+    def handle(self, dbs, database_name, username, *args, **options):
+        user = User.objects.get(username=username)
+        database = Database.objects.get_or_create(name=database_name)
+        DatabaseAssignment.objects.get_or_create(user=user, database=database, permission=DatabasePermission.EDIT)
 
         conns = None
         try:
             conns = utils.get_dbconf(dbs)
             for pop in conns:
                 conn = conns[pop]
-                # import_songs(conn)
-                # import_syllables(conn)
+                import_songs(conn, database)
+                import_syllables(conn)
                 import_signal_mask(conn)
-                # import_song_info(conn)
+                import_song_info(conn, user)
 
         finally:
             for dbconf in conns:
@@ -506,4 +524,4 @@ class Command(BaseCommand):
                 if conn is not None:
                     conn.close()
 
-        # extract_spectrogram()
+        extract_spectrogram()
