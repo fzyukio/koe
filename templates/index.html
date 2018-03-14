@@ -37,7 +37,8 @@
                                 <li class="{% if current_similarity.0 == similarity.0 %}active{% else %}not-active{% endif %}">
                                     <a class="select-similarity" href="#" similarity="{{ similarity.0 }}">
                                     {{ similarity.1 }}
-                                </a></li>
+                                    </a>
+                                </li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -52,9 +53,11 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right">
                             {% for database in databases %}
-                                <li><a href="#" class="select-database" database="{{ database.0 }}">
+                                <li class="{% if current_database.0 == database.0 %}active{% else %}not-active{% endif %}">
+                                    <a href="#" class="select-database" database="{{ database.0 }}">
                                     {{ database.1 }}
-                                </a></li>
+                                    </a>
+                                </li>
                             {% endfor %}
                         </ul>
                     </div>
