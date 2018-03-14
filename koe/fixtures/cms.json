@@ -29,37 +29,6 @@
 },
 {
   "model": "wagtailcore.page",
-  "pk": 1,
-  "fields": {
-    "path": "0001",
-    "depth": 1,
-    "numchild": 1,
-    "title": "Root",
-    "draft_title": "Root",
-    "slug": "root",
-    "content_type": [
-      "wagtailcore",
-      "page"
-    ],
-    "live": true,
-    "has_unpublished_changes": false,
-    "url_path": "/",
-    "owner": null,
-    "seo_title": "",
-    "show_in_menus": false,
-    "search_description": "",
-    "go_live_at": null,
-    "expire_at": null,
-    "expired": false,
-    "locked": false,
-    "first_published_at": null,
-    "last_published_at": null,
-    "latest_revision_created_at": null,
-    "live_revision": null
-  }
-},
-{
-  "model": "wagtailcore.page",
   "pk": 3,
   "fields": {
     "path": "00010001",
@@ -74,7 +43,7 @@
     ],
     "live": true,
     "has_unpublished_changes": false,
-    "url_path": "/welcome-koe/",
+    "url_path": "/welcome/",
     "owner": [
       "superuser"
     ],
@@ -107,7 +76,7 @@
     ],
     "live": true,
     "has_unpublished_changes": false,
-    "url_path": "/welcome-koe/help/",
+    "url_path": "/welcome/help/",
     "owner": [
       "superuser"
     ],
