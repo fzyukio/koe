@@ -53,7 +53,15 @@ def save_history(request):
     comment = request.POST['comment']
     comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
 
-    extra_attr_values = ExtraAttrValue.objects.filter(user=request.user).exclude(attr__klass=User.__name__)
+    _, _, _, current_database = get_currents(request.user)
+
+    segments_ids = Segment.objects.filter(segmentation__audio_file__database=current_database)\
+        .values_list('id', flat=True)
+
+    extra_attr_values = ExtraAttrValue.objects\
+        .filter(user=request.user, owner_id__in=segments_ids)\
+        .exclude(attr__klass=User.__name__)
+
     retval = serializers.serialize('json', extra_attr_values)
 
     zip_buffer = io.BytesIO()
@@ -194,6 +202,7 @@ class IndexView(TemplateView):
         context['similarities'] = similarities.values_list('id', 'algorithm')
         context['databases'] = databases.values_list('id', 'name')
         context['current_database'] = (current_database.id, current_database.name, User.__name__)
-        context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
+        if current_similarity:
+            context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
         context['page'] = 'index'
         return context
