@@ -12,7 +12,7 @@ from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
 from koe.model_utils import dist_from_root, natural_order
-from koe.models import Coordinate
+from koe.models import Coordinate, Database
 from koe.utils import normxcorr2
 from .ftxtract import extract_funcs, window_size_relative
 import scipy.io
@@ -55,6 +55,18 @@ def xcorrs(seg_one_f0, seg_two_f0, *args, **kwargs):
     return MockDistance(distance)
 
 
+def euclid(seg_one_f0, seg_two_f0, *args, **kwargs):
+    """
+    :param seg_one_f0:
+    :param seg_two_f0:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    distance = np.linalg.norm(seg_one_f0 - seg_two_f0)
+    return MockDistance(distance)
+
+
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
@@ -89,10 +101,33 @@ class Command(BaseCommand):
             help='List of normalisation algorithm [none, max]',
         )
 
-    def handle(self, features, dists, metrics, norms, *args, **options):
+        parser.add_argument(
+            '--database-name',
+            action='store',
+            dest='database_name',
+            required=True,
+            type=str,
+            help='E.g Bellbird, Whale, ...',
+        )
+
+        parser.add_argument(
+            '--algorithm-name',
+            action='store',
+            dest='algorithm_name',
+            default=None,
+            type=str,
+            help='E.g Bellbird, Whale, ...',
+        )
+
+    def handle(self, features, dists, metrics, norms, database_name, algorithm_name, *args, **options):
         from koe.models import Segment, DistanceMatrix
-        DistanceMatrix.objects.all().delete()
-        segments_ids = np.array(list(Segment.objects.all().order_by('id').values_list('id', flat=True)))
+        # DistanceMatrix.objects.all().delete()
+        database, _ = Database.objects.get_or_create(name=database_name)
+        segments = Segment.objects.filter(segmentation__audio_file__database=database) #, id__lte=33200)
+
+        unsorted_ids = np.array(segments.values_list('id', flat=True))
+        sorted_idx = np.argsort(unsorted_ids)
+        segments_ids = unsorted_ids[sorted_idx]
 
         nsegs = len(segments_ids)
 
@@ -122,13 +157,17 @@ class Command(BaseCommand):
                         test_name = '{}-{}{}-{}-{}'.format(feature_name, config_str, dist_name, metric_name, norm)
                         if bulk_extract_func is None or segment_feature_array is None:
                             bulk_extract_func = extract_funcs[feature_name]
-                            segment_feature_array = bulk_extract_func(segments_ids, config, False)
-                            chirps_feature_array = bulk_extract_func(segments_ids, config, True)
+                            chirps_feature_array = bulk_extract_func(segments, config, True)
+                            segment_feature_array = bulk_extract_func(segments, config, False)
+
+                            chirps_feature_array = chirps_feature_array[sorted_idx]
+                            segment_feature_array = segment_feature_array[sorted_idx]
+
                             nchirps = len(chirps_feature_array[0])
 
                         bar = Bar('Find coordinates of the segments ({})'.format(test_name), max=nsegs,
                                   suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
-                        coordinates = np.zeros((nsegs, nchirps), dtype=np.float16)
+                        coordinates = np.zeros((nsegs, nchirps), dtype=np.float64)
 
                         if metric_name == 'edr':
                             sigmas = calc_sigma(segment_feature_array)
@@ -145,9 +184,11 @@ class Command(BaseCommand):
                         elif metric_name == 'dtw':
                             metric_func = pyed.Dtw
                             args = {}
-                        else:
+                        elif metric_name == 'xcorrs':
                             metric_func = xcorrs
                             args = dict(boundary='symm', mode='same')
+                        else:
+                            metric_func = euclid
 
                         settings = pyed.Settings(dist=dist_name, norm=norm, compute_path=False)
 
@@ -179,7 +220,11 @@ class Command(BaseCommand):
                         # print(tree)
 
                         c = Coordinate()
-                        c.algorithm = test_name
+                        c.database = database
+                        if algorithm_name is None:
+                            c.algorithm = test_name
+                        else:
+                            c.algorithm = algorithm_name
                         c.ids = segments_ids
                         c.tree = tree
                         c.order = sorted_order

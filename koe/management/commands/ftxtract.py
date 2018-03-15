@@ -1,17 +1,15 @@
 from __future__ import print_function
 
 import numpy as np
-from django.db.models import Case
-from django.db.models import When
+from django.db.models import Count
+from django.db.models import F
 from progress.bar import Bar
 from python_speech_features import xfcc, delta, xfc
 from scipy import interpolate
-import pickle
 
-from koe.management.commands.chirp_generator import generate_all_chirps
-from root.utils import wav_path
-from koe.models import Segment
 from koe import wavfile
+from koe.management.commands.chirp_generator import *
+from root.utils import wav_path
 
 window_size_relative = 0.2  # Of the largest window
 
@@ -24,21 +22,15 @@ def resize_arr(arr, length):
     return f(t1)
 
 
-with open('chirps.pkl', 'rb') as f:
-    chirps_dict = pickle.load(f)
-
-chirps_feature_dict = {}
+# with open('chirps.pkl', 'rb') as f:
+#     chirps_dict = pickle.load(f)
+#
+# chirps_feature_dict = {}
 
 
 @profile
-def extract_xfcc(segments_ids, config, is_pattern=False, method_name='mfcc'):
-    preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(segments_ids)])
-    segments = Segment.objects.filter(id__in=segments_ids).order_by(preserved)
-
-    nsegs = len(segments_ids)
-    assert len(segments) == nsegs
-
-    mfccs = []
+def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
+    nsegs = len(segments)
 
     lower = int(config.get('lower', 20))
     upper = int(config.get('upper', 8000))
@@ -76,35 +68,69 @@ def extract_xfcc(segments_ids, config, is_pattern=False, method_name='mfcc'):
     bar = Bar('Extracting {} Range={}~{}, nCoefs={}, delta={}'.format(method_name, lower, upper, nmfcc, ndelta),
               max=nsegs, suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
 
-    segments_info = segments.values_list('segmentation__audio_file__name',
-                                         'segmentation__audio_file__length',
-                                         'segmentation__audio_file__fs',
-                                         'start_time_ms',
-                                         'end_time_ms')
-    for file_name, length, fs, start, end in segments_info:
-        segment_duration = end-start
+    if is_pattern:
+        cache = {}
 
-        file_url = wav_path(file_name)
-        if is_pattern:
-            chirps = chirps_dict[segment_duration]['constant'].values()
-            # chirps = generate_all_chirps(segment_duration_ms/1000, fs, None)
-            mfcc_fts = []
-            if segment_duration not in chirps_feature_dict:
+        original_segment_ids = np.array(segments.values_list('id', flat=True), dtype=np.int32)
+
+        # Sort by duration so that we can cache them effectively
+        segments = segments.annotate(duration=F('end_time_ms') - F('start_time_ms')).order_by('duration')
+        duration_sorted_segment_ids = np.array(segments.values_list('id', flat=True), dtype=np.int32)
+
+        # We need the index array in order to restore the original order:
+        ascending_sorted_idx = np.sort(original_segment_ids)
+
+        ascending_sorted_to_original_order = np.searchsorted(ascending_sorted_idx, original_segment_ids)
+        duration_sorted_to_ascending_sorted_order = np.argsort(duration_sorted_segment_ids)
+        duration_sorted_to_original_order = duration_sorted_to_ascending_sorted_order[
+            ascending_sorted_to_original_order]
+
+        sorted_mfcc = []
+
+        segments_info = segments.values_list('duration', 'segmentation__audio_file__fs')
+        for duration, fs in segments_info:
+            if duration not in cache:
+                cache = {duration: {}}
+            if fs not in cache[duration]:
+                chirps = []
+                for amp_profile_name in amp_profile_names:
+                    for f0_profile_name in f0_profile_names:
+                        chirp = generate_chirp(f0_profile_name, amp_profile_name, duration, fs)
+                        chirps.append(chirp)
+                cache[duration][fs] = chirps
+
+            if 'ft' not in cache[duration]:
+                chirps = cache[duration][fs]
+                mfcc_fts = []
+
                 for chirp in chirps:
                     mfcc_ft = _extract_xfcc(chirp, fs, method, xtrargs, ndelta)
                     mfcc_fts.append(mfcc_ft)
-                chirps_feature_dict[segment_duration] = mfcc_fts
-            else:
-                mfcc_fts = chirps_feature_dict[segment_duration]
 
-        else:
+                cache[duration]['ft'] = mfcc_fts
+
+            else:
+                mfcc_fts = cache[duration]['ft']
+
+            sorted_mfcc.append(mfcc_fts)
+            bar.next()
+        mfccs = np.array(sorted_mfcc)[duration_sorted_to_original_order]
+
+    else:
+        mfccs = []
+        segments_info = segments.values_list('segmentation__audio_file__name', 'segmentation__audio_file__length',
+                                             'segmentation__audio_file__fs', 'start_time_ms', 'end_time_ms')
+
+        for file_name, length, fs, start, end in segments_info:
+            file_url = wav_path(file_name)
             sig = wavfile.read_segment(file_url, start, end, mono=True)
             mfcc_fts = _extract_xfcc(sig, fs, method, xtrargs, ndelta)
 
-        mfccs.append(mfcc_fts)
-        bar.next()
-    bar.finish()
+            mfccs.append(mfcc_fts)
+            bar.next()
+        mfccs = np.array(mfccs)
 
+    bar.finish()
     return mfccs
 
 
@@ -124,19 +150,13 @@ def _extract_xfcc(sig, fs, method, xtrargs, ndelta):
     return mfcc_fts
 
 
-def dummy(segments_ids, configs):
-    nsegs = len(segments_ids)
-    return np.ndarray((nsegs, 1), dtype=np.float32)
-
-
 extract_funcs = {
-    'mfcc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'mfcc'),
-    'bfcc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'bfcc'),
-    'gfcc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'gfcc'),
-    'lfcc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'lfcc'),
-    'mfc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'mfc'),
-    'bfc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'bfc'),
-    'gfc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'gfc'),
-    'lfc': lambda ids, cfg, ip: extract_xfcc(ids, cfg, ip, 'lfc'),
-    'dummy': dummy
+    'mfcc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'mfcc'),
+    'bfcc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'bfcc'),
+    'gfcc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'gfcc'),
+    'lfcc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'lfcc'),
+    'mfc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'mfc'),
+    'bfc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'bfc'),
+    'gfc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'gfc'),
+    'lfc': lambda objs, cfg, ip: extract_xfcc(objs, cfg, ip, 'lfc')
 }

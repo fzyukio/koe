@@ -9,7 +9,7 @@ from django.db.models import F
 from progress.bar import Bar
 from scipy.io import savemat
 
-from koe.models import Segment
+from koe.models import Segment, Database
 
 GLOBAL_F0_MIN = 475.57
 GLOBAL_F0_MAX = 5456.10
@@ -39,8 +39,8 @@ def generate_amp_profile(length, fadein=False, fadeout=False):
 
 f0_profiles = {
     'pipe': lambda t: gererate_f0_profile(t, GLOBAL_F0_MEAN, t[-1], GLOBAL_F0_MEAN, 'linear'),
-    'pipe-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'linear'),
-    'pipe-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'linear'),
+    # 'pipe-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'linear'),
+    # 'pipe-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'linear'),
     'squeak-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'logarithmic'),
     'squeak-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'logarithmic'),
     'squeak-convex': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic'),
@@ -54,9 +54,9 @@ f0_profiles = {
 
 amp_profiles = {
     'constant': lambda length: generate_amp_profile(length, fadein=False, fadeout=False),
-    'fade-in': lambda length: generate_amp_profile(length, fadein=True, fadeout=False),
-    'fade-out': lambda length: generate_amp_profile(length, fadein=False, fadeout=True),
-    'fade-in-out': lambda length: generate_amp_profile(length, fadein=True, fadeout=True),
+    # 'fade-in': lambda length: generate_amp_profile(length, fadein=True, fadeout=False),
+    # 'fade-out': lambda length: generate_amp_profile(length, fadein=False, fadeout=True),
+    # 'fade-in-out': lambda length: generate_amp_profile(length, fadein=True, fadeout=True),
 }
 
 
@@ -133,22 +133,25 @@ def generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat'):
     return chirps
 
 
-def generate_chirp_dictionary(pklfile):
+def generate_chirp_dictionary(pklfile, database):
     """
     Create all chirps with any possible duration
     :param pklfile: path to the pickle file to be saved
     :return: None
     """
-    durations = Segment.objects.annotate(duration=F('end_time_ms') - F('start_time_ms'))\
-        .values_list('duration', flat=True).order_by('duration').distinct()
+    durations = list(set(Segment.objects.filter(segmentation__audio_file__database=database)\
+                                        .annotate(duration=F('end_time_ms') - F('start_time_ms'))\
+                                        .values_list('duration', flat=True)))
+
+    fss = list(set(Segment.objects.filter(segmentation__audio_file__database=database)\
+                             .values_list('segmentation__audio_file__fs', flat=True)))
 
     chirp_dict = OrderedDict()
-    fs = 48000
+    fs = fss[0]
 
     bar = Bar('Creating chirps', max=len(durations) * len(f0_profile_names) * len(amp_profile_names))
     for duration in durations:
         _amp = {}
-
         for amp_profile_name in amp_profile_names:
             _f0 = {}
             for f0_profile_name in f0_profile_names:
@@ -164,8 +167,20 @@ def generate_chirp_dictionary(pklfile):
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
-        generate_chirp_dictionary('chirps.pkl')
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--database-name',
+            action='store',
+            dest='database_name',
+            required=True,
+            type=str,
+            help='E.g Bellbird, Whale, ...',
+        )
+
+    def handle(self, database_name, *args, **options):
+        database, _ = Database.objects.get_or_create(name=database_name)
+
+        generate_chirp_dictionary('chirps-{}.pkl'.format(database_name), database)
 
         # chirp = generate_chirp('pipe', 'constant', 182 / 1000, 48000)
         #
