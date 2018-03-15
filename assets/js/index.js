@@ -127,8 +127,31 @@ const countDown = function () {
 
 
 /**
+ * Submenu of a right-aligned menu should open all the way to the left.
+ * However this is impossible to do with css because the value of `left` depends on the width of the submenu item
+ * e.g. if the submenu is 200px wide then its css should be `left: -200px;`, but submenu's width is unknown.
+ * This script will calculate the width of the submenu and set the css attribute accordingly.
+ */
+const subMenuOpenRight = function () {
+    $('.dropdown-menu-right .dropdown-submenu').on('mouseover', function () {
+        let submenu = $(this).find('.dropdown-menu');
+        let width = submenu.width();
+
+        /*
+         * Make it 10px overlap with the parent item, so that it looks nice & also to prevent it from disappearing when
+         * the mouse reaches the border of the parent
+         */
+        submenu.css('display', 'block').css('left', `-${width - 10}px`);
+        return false;
+    }).on('mouseleave', function () {
+        $(this).find('.dropdown-menu').css('display', 'none');
+        return false;
+    });
+};
+
+
+/**
  * Put everything you need to run after the page has been loaded here
- * @private
  */
 const _postRun = function () {
     const viewPortChangeCallback = function () {
@@ -150,6 +173,7 @@ const _postRun = function () {
     });
 
     countDown();
+    subMenuOpenRight();
 };
 
 /**

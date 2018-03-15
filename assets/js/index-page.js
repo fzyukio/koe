@@ -334,7 +334,8 @@ const showSpectrogramOnActiveCell = function (e, args) {
         let column = grid_.getColumns()[activeCell.cell];
         if (!column.editable) {
             let fakeEvent = {
-                target: activeCellEl, preventDefault: function () {}
+                target: activeCellEl, preventDefault: function () {
+                }
             };
             let args = {e: fakeEvent};
             showBigSpectrogram(fakeEvent, args);
@@ -368,7 +369,7 @@ const jumpNext = function (type) {
         if (type === 'down') {
             begin = activeCell.row + 1;
             incFunc = function (x) {
-                return x+1;
+                return x + 1;
             };
             conditionFunc = function (x) {
                 return x < itemCount;
@@ -377,7 +378,7 @@ const jumpNext = function (type) {
         else {
             begin = activeCell.row - 1;
             incFunc = function (x) {
-                return x-1;
+                return x - 1;
             };
             conditionFunc = function (x) {
                 return x > 0;
@@ -385,7 +386,7 @@ const jumpNext = function (type) {
         }
 
         let i = begin;
-        while(conditionFunc(i)) {
+        while (conditionFunc(i)) {
             if (items[i][field] != value) {
                 grid_.gotoCell(i, activeCell.cell, true);
                 break;
@@ -418,51 +419,60 @@ export const run = function (commonElements) {
         subscribeFlexibleEvents();
     });
 
-    $('li.not-active a.select-similarity').on('click', function (e) {
+    $('.select-similarity').on('click', function (e) {
         e.preventDefault();
-        let similarityId = this.getAttribute('similarity');
-        let similarityName = $(this).html().trim();
 
-        $.post(
-            getUrl('send-request', 'change-extra-attr-value'),
-            {
-                'attr': currentSimilarityAttr,
-                'klass': similarityClass,
-                'value': similarityId,
-                'owner': similarityCombo.attr('owner-id')
-            },
-            function () {
-                grid.initMainGridContent({}, focusOnGridOnInit);
-            }
-        );
+        let parent = $(this).parent();
+        if (parent.hasClass('not-active')) {
 
-        /* Update the button */
-        similarityCombo.attr('similarity', similarityId).html(similarityName + `<span class="caret"></span>`);
-        $(this).parent().parent().find('li').removeClass('active').addClass('non-active');
-        $(this).parent().removeClass('non-active').addClass('active');
+            let similarityId = this.getAttribute('similarity');
+            let similarityName = $(this).html().trim();
+
+            $.post(
+                getUrl('send-request', 'change-extra-attr-value'),
+                {
+                    'attr': currentSimilarityAttr,
+                    'klass': similarityClass,
+                    'value': similarityId,
+                    'owner': similarityCombo.attr('owner-id')
+                },
+                function () {
+                    grid.initMainGridContent({}, focusOnGridOnInit);
+                }
+            );
+
+            /* Update the button */
+            similarityCombo.attr('similarity', similarityId);
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.removeClass('not-active').addClass('active');
+        }
     });
 
-    $('li.not-active a.select-database').on('click', function (e) {
+    $('.select-database').on('click', function (e) {
         e.preventDefault();
-        let databaseId = this.getAttribute('database');
-        let databaseName = $(this).html().trim();
 
-        $.post(
-            getUrl('send-request', 'change-extra-attr-value'),
-            {
-                'attr': currentDatabaseAttr,
-                'klass': databaseClass,
-                'value': databaseId
-            },
-            function () {
-                grid.initMainGridContent({}, focusOnGridOnInit);
-            }
-        );
+        let parent = $(this).parent();
+        if (parent.hasClass('not-active')) {
+            let databaseId = this.getAttribute('database');
+            let databaseName = $(this).html().trim();
 
-        /* Update the button */
-        databaseCombo.attr('database', databaseId).html(databaseName + `<span class="caret"></span>`);
-        $(this).parent().parent().find('li').removeClass('active').addClass('non-active');
-        $(this).parent().removeClass('non-active').addClass('active');
+            $.post(
+                getUrl('send-request', 'change-extra-attr-value'),
+                {
+                    'attr': currentDatabaseAttr,
+                    'klass': databaseClass,
+                    'value': databaseId
+                },
+                function () {
+                    grid.initMainGridContent({}, focusOnGridOnInit);
+                }
+            );
+
+            /* Update the button */
+            databaseCombo.attr('database', databaseId);
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.removeClass('not-active').addClass('active');
+        }
     });
 
     contextMenu.click(function (e, args) {
