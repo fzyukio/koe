@@ -663,7 +663,7 @@ export const postRun = function () {
         inputText.val('');
 
         ce.dialogModalTitle.html("Backing up your data...");
-        ce.dialogModalBody.html(`<label>Give it a comment (optionl)</label>`);
+        ce.dialogModalBody.html(`<label>Give it a comment (optional)</label>`);
         ce.dialogModalBody.append(inputText);
 
         ce.dialogModal.modal('show');
