@@ -37,6 +37,11 @@ export const initSelectize = function ($select, field, defaultValue) {
         e.stopPropagation();
     };
 
+    control[0].selectize.onClick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     return control;
 };
 
