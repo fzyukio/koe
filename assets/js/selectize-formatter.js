@@ -61,6 +61,7 @@ export const SelectizeEditor = function (args) {
 
     this.destroy = function () {
         $select.remove();
+        $select[0].selectize.destroy();
     };
 
     this.focus = function () {
