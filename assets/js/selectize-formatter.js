@@ -32,6 +32,11 @@ export const initSelectize = function ($select, field, defaultValue) {
         items: [defaultValue]
     });
 
+    control[0].selectize.onMouseDown = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     return control;
 };
 
@@ -51,7 +56,7 @@ export const SelectizeEditor = function (args) {
 
         initSelectize($select, args.column.field, args.item[args.column.field]);
 
-        $select[0].selectize.focus()
+        $select[0].selectize.focus();
     };
 
     this.destroy = function () {
