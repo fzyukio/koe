@@ -167,7 +167,7 @@ const showBigSpectrogram = function (e, args) {
 
         originalImage.addClass('highlight');
 
-        const panelHeight = $('#segment-info').height();
+        const panelHeight = $('#exemplars-grid').height();
         const imgWidth = tooltipImg.width();
         const imgHeight = tooltipImg.height();
 
