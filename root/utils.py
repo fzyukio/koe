@@ -62,47 +62,48 @@ def forget_password_handler(user):
     send_email_thread.start()
 
 
-def data_path(prefix, fullname, ext=None):
+def data_path(prefix, fullname, ext=None, for_url=False):
     filename, _ext = os.path.splitext(fullname)
     _ext = _ext[1:]
     if ext is None:
         ext = _ext
     url = os.path.join(settings.MEDIA_URL, prefix, '{}.{}'.format(filename, ext))[1:]
-
+    if for_url:
+        return '/' + url
     return url
 
 
-def pickle_path(fullname, subdir=None):
+def pickle_path(fullname, subdir=None, for_url=False):
     folder = 'pickle'
     if subdir:
         folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'pkl')
+    return data_path(folder, fullname, 'pkl', for_url)
 
 
-def wav_path(fullname):
-    return data_path('audio/wav', fullname, 'wav')
+def wav_path(fullname, for_url=False):
+    return data_path('audio/wav', fullname, 'wav', for_url)
 
 
-def mp3_path(fullname):
-    return data_path('audio/mp3', fullname, 'mp3')
+def mp3_path(fullname, for_url=False):
+    return data_path('audio/mp3', fullname, 'mp3', for_url)
 
 
-def history_path(fullname):
-    return data_path('history', fullname, 'zip')
+def history_path(fullname, for_url=False):
+    return data_path('history', fullname, 'zip', for_url)
 
 
-def spect_fft_path(fullname, subdir=None):
+def spect_fft_path(fullname, subdir=None, for_url=False):
     folder = 'spect/fft'
     if subdir:
         folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'png')
+    return data_path(folder, fullname, 'png', for_url)
 
 
-def spect_mask_path(fullname, subdir=None):
+def spect_mask_path(fullname, subdir=None, for_url=False):
     folder = 'spect/mask'
     if subdir:
         folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'png')
+    return data_path(folder, fullname, 'png', for_url)
 
 
 def ensure_empty_file_exists(file_path):

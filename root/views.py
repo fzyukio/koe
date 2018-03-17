@@ -44,11 +44,11 @@ def get_attrs(objs, table, extras):
     :param extras: some getters need extra information
     :return: all the rows to be displayed.
     """
-    ids = get_bulk_id(objs)
     if 'getter' in table:
         getter = table['getter']
-        rows = getter(objs, extras)
+        ids, rows = getter(objs, extras)
     else:
+        ids = get_bulk_id(objs)
         attrs = {}
         rows = []
         for column in table['columns']:

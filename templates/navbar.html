@@ -22,6 +22,28 @@
                 {% endif %}
             {% endfor %}
 
+            {% get_complex_navbar_urls as urls %}
+            {% for url, pages in urls.items %}
+                <li class="dropdown {% if page == url %}active{% endif %}">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ pages.0 }}<span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                    {% for subpage in pages.1 %}
+                        <li {% if subpage.0 == subpage %}class="active"{% endif %}>
+                            <a href="{% url url %}/{{ subpage.0 }}">{{ subpage.1|title }}</a>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+
+            {% for url, list in urls.items %}
+                {% if page == url %}
+                    <li class="active"><a href="#">{{ text }}</a></li>
+                {% else %}
+                    <li><a href="{% url url %}">{{ text }}</a></li>
+                {% endif %}
+            {% endfor %}
+
             <!--Display all child pages of the Welcome page (from the CMS system) -->
             <li class="dropdown {% if page.is_cms_page %}active{% endif %}">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Other pages<span class="caret"></span></a>

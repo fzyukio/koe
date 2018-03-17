@@ -1,6 +1,6 @@
 import json
 
-__all__ = ['tables', 'actions']
+__all__ = ['tables', 'actions', 'num_exemplars']
 
 tables = \
     {
@@ -167,8 +167,47 @@ tables = \
                     "is_extra_attr": True
                 }
             ]
+        },
+        "exemplars-grid": {
+            "class": "koe.Segment",
+            "getter": "koe.bulk_get_exemplars",
+            "columns": [
+                {
+                    "name": "Class",
+                    "slug": "cls",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Exemplar count",
+                    "slug": "count",
+                    "type": "INTEGER"
+                }
+            ]
         }
     }
+
+num_exemplars = 10
+exemplars_grid_columns = tables['exemplars-grid']['columns']
+
+for i in range(1, num_exemplars + 1):
+    exemplars_grid_columns.append(
+        {
+            "name": "Exemplar {} Mask".format(i),
+            "slug": "exemplar{}_mask".format(i),
+            "type": "IMAGE",
+            "css_class": "has-image"
+        }
+    )
+
+for i in range(1, num_exemplars + 1):
+    exemplars_grid_columns.append(
+        {
+            "name": "Exemplar {} Spectrogram".format(i),
+            "slug": "exemplar{}_spect".format(i),
+            "type": "IMAGE",
+            "css_class": "has-image"
+        }
+    )
 
 actions = \
     {

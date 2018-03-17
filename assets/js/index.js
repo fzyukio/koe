@@ -192,8 +192,8 @@ $(document).ready(function () {
     else if (pageName === '/version') {
         page = require('version-page');
     }
-    else if (pageName === '/help-edit') {
-        page = require('help-edit-page');
+    else if (pageName.startsWith('/exemplars')) {
+        page = require('exemplars-page');
     }
 
     _preRun();

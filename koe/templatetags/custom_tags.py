@@ -85,6 +85,15 @@ def get_navbar_urls():
 
 
 @register.simple_tag
+def get_complex_navbar_urls():
+    return {
+        'exemplars': ('Exemplars', [('label', 'By label'),
+                                    ('label_family', 'By family'),
+                                    ('label_subfamily', 'By subfamily')])
+    }
+
+
+@register.simple_tag
 def get_pages():
     """
     Return all the child pages of the first home page (The welcome page)

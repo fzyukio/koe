@@ -19,6 +19,8 @@ urlpatterns += [
     url(r'^admin/', admin.site.urls),
     url(r'^version$', login_required(root_views.get_view('version')), name='version'),
     url(r'^label$', login_required(views.IndexView.as_view()), name='index'),
+    url(r'^exemplars/(?P<class>[0-9a-z-_]+)$', login_required(views.ExemplarsView.as_view()), name='exemplars'),
+    url(r'^exemplars$', login_required(views.ExemplarsView.as_view()), name='exemplars'),
     re_path(r'^cms/', include(wagtailadmin_urls)),
     re_path(r'^documents/', include(wagtaildocs_urls)),
     re_path(r'', include(wagtail_urls))

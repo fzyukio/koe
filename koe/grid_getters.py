@@ -1,4 +1,5 @@
 import numpy as np
+from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 
 from koe.model_utils import get_currents
@@ -7,7 +8,7 @@ from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path
 
 
-__all__ = ['bulk_get_segment_info']
+__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars']
 
 
 def bulk_get_segment_info(segs, extras):
@@ -82,11 +83,14 @@ def bulk_get_segment_info(segs, extras):
         sorted_order = current_similarity.order
         indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
 
+    ids = []
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
+        ids.append(id)
+
         index = indices[i]
-        mask_img = spect_mask_path(str(id))
-        spect_img = spect_fft_path(str(id), 'syllable')
+        mask_img = spect_mask_path(str(id), for_url=True)
+        spect_img = spect_fft_path(str(id), 'syllable', for_url=True)
         duration = end - start
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, signal_mask=mask_img,
                    dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
@@ -104,4 +108,72 @@ def bulk_get_segment_info(segs, extras):
 
         rows.append(row)
 
-    return rows
+    return ids, rows
+
+
+def bulk_get_exemplars(objs, extras):
+    """
+    Return rows containing n exemplars per class. Each row is one class. Class can be label, label_family,
+    label_subfamily
+    :param objs: a list of Segments
+    :param extras: must contain key 'class', value can be one of 'label', 'label_family', 'label_subfamily'
+    :return:
+    """
+    cls = extras['cls']
+    user = extras['user']
+    _, _, _, current_database = get_currents(user)
+
+    if isinstance(objs, QuerySet):
+        ids = objs.filter(segmentation__audio_file__database=current_database.id).values_list('id', flat=True)
+    else:
+        ids = [x.id for x in objs if x.segmentation.audio_file.database == current_database]
+
+    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids, user=user)\
+        .order_by(Lower('value')).values_list('value', 'owner_id')
+
+    class_to_exemplars = []
+    current_class = ''
+    current_exemplars_list = None
+    current_exemplars_count = 0
+    total_exemplars_count = 0
+
+    from koe.jsons import num_exemplars
+
+    for cls, owner_id in values:
+        if cls:
+            cls = cls.strip()
+            if cls:
+                if cls.lower() != current_class.lower():
+                    class_to_exemplars.append((current_class, total_exemplars_count, current_exemplars_list))
+                    current_exemplars_count = 0
+                    current_class = cls
+                    total_exemplars_count = 0
+                    current_exemplars_list = [owner_id]
+                elif current_exemplars_count < num_exemplars:
+                    current_exemplars_list.append(owner_id)
+                    current_exemplars_count += 1
+
+                total_exemplars_count += 1
+
+    class_to_exemplars.append((current_class, total_exemplars_count, current_exemplars_list))
+
+    rows = []
+    ids = []
+    for cls, count, exemplars in class_to_exemplars:
+        if cls:
+            row = dict(id=cls, cls=cls, count=count)
+            for i in range(num_exemplars):
+                if i < len(exemplars):
+                    mask_img = spect_mask_path(exemplars[i], for_url=True)
+                    spect_img = spect_fft_path(exemplars[i], 'syllable', for_url=True)
+                else:
+                    mask_img = ''
+                    spect_img = ''
+                row['exemplar{}_mask'.format(i + 1)] = mask_img
+                row['exemplar{}_spect'.format(i + 1)] = spect_img
+
+            rows.append(row)
+            ids.append(cls)
+
+    return ids, rows
+
