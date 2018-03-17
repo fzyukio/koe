@@ -129,7 +129,7 @@ def bulk_get_exemplars(objs, extras):
         ids = [x.id for x in objs if x.segmentation.audio_file.database == current_database]
 
     values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids, user=user)\
-        .order_by(Lower('value')).values_list('value', 'owner_id')
+        .order_by(Lower('value'), 'owner_id').values_list('value', 'owner_id')
 
     class_to_exemplars = []
     current_class = ''
