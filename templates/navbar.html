@@ -36,14 +36,6 @@
                 </li>
             {% endfor %}
 
-            {% for url, list in urls.items %}
-                {% if page == url %}
-                    <li class="active"><a href="#">{{ text }}</a></li>
-                {% else %}
-                    <li><a href="{% url url %}">{{ text }}</a></li>
-                {% endif %}
-            {% endfor %}
-
             <!--Display all child pages of the Welcome page (from the CMS system) -->
             <li class="dropdown {% if page.is_cms_page %}active{% endif %}">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Other pages<span class="caret"></span></a>
