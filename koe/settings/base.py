@@ -87,6 +87,7 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'koe.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [

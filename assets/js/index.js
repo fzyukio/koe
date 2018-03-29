@@ -192,6 +192,9 @@ $(document).ready(function () {
     else if (pageName === '/version') {
         page = require('version-page');
     }
+    else if (pageName === '/songs') {
+        page = require('songs-page');
+    }
     else if (pageName.startsWith('/exemplars')) {
         page = require('exemplars-page');
     }

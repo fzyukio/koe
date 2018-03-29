@@ -109,7 +109,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Checkbox',
         BASE64_PNG: 'Base64PNG',
         IMAGE: 'Image',
-        URL: 'Url'
+        URL: 'Url',
+        SEQUENCE: 'Sequence',
     }
 
     _FORMATTER = {
@@ -121,7 +122,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Checkmark',
         BASE64_PNG: 'Base64PNG',
         IMAGE: 'Image',
-        URL: 'Url'
+        URL: 'Url',
+        SEQUENCE: 'Sequence',
     }
 
     _FILTER_TYPE = {
@@ -133,7 +135,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: 'Boolean',
         BASE64_PNG: None,
         IMAGE: None,
-        URL: 'String'
+        URL: 'String',
+        SEQUENCE: 'String',
     }
 
     _SORTABLE = {
@@ -145,7 +148,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: True,
         BASE64_PNG: False,
         IMAGE: False,
-        URL: True
+        URL: True,
+        SEQUENCE: False,
     }
 
     _COPYABLE = {
@@ -157,7 +161,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: False,
         BASE64_PNG: False,
         IMAGE: False,
-        URL: True
+        URL: True,
+        SEQUENCE: False,
     }
 
     _EXPORTABLE = {
@@ -169,7 +174,8 @@ class ValueTypes(MagicChoices):
         BOOLEAN: True,
         BASE64_PNG: False,
         IMAGE: False,
-        URL: True
+        URL: True,
+        SEQUENCE: False,
     }
 
     # This is a dictionary of transformable types, e.g. user is allowed to change property type from
@@ -184,6 +190,7 @@ class ValueTypes(MagicChoices):
         FLOAT: [INTEGER, FLOAT],
         BOOLEAN: [BOOLEAN, INTEGER, FLOAT],
         DATE: [DATE],
+        SEQUENCE: [SEQUENCE]
     }
 
     @classmethod

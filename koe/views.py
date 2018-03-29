@@ -18,11 +18,12 @@ from mdx_audio import AudioExtension
 
 from koe.forms import HelpEditForm
 from koe.model_utils import get_currents
-from koe.models import AudioFile, Segment, HistoryEntry, Coordinate, DatabaseAssignment, DatabasePermission, Database
+from koe.models import AudioFile, Segment, HistoryEntry, Coordinate, DatabaseAssignment, DatabasePermission, Database, \
+    Segmentation
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists
 
-__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history']
+__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence']
 
 # Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
 # reached this level, and vise verse
@@ -55,11 +56,11 @@ def save_history(request):
 
     _, _, _, current_database = get_currents(request.user)
 
-    segments_ids = Segment.objects.filter(segmentation__audio_file__database=current_database)\
+    segments_ids = Segment.objects.filter(segmentation__audio_file__database=current_database) \
         .values_list('id', flat=True)
 
-    extra_attr_values = ExtraAttrValue.objects\
-        .filter(user=request.user, owner_id__in=segments_ids)\
+    extra_attr_values = ExtraAttrValue.objects \
+        .filter(user=request.user, owner_id__in=segments_ids) \
         .exclude(attr__klass=User.__name__)
 
     retval = serializers.serialize('json', extra_attr_values)
@@ -187,6 +188,51 @@ def import_history(request):
         return HttpResponse('ok')
 
 
+label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
+
+
+def get_sequence(request):
+    song_id = request.POST['song-id']
+
+    segmentation = Segmentation.objects.filter(source='user', audio_file__pk=song_id).first()
+    if segmentation is None:
+        return HttpResponse()
+
+    segments = Segment.objects.filter(segmentation=segmentation)
+    segment_ids = segments.values_list('id', flat=True)
+
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=segment_ids, user=request.user)\
+        .values_list('value', flat=True)
+
+    if len(labels) == 0:
+        return HttpResponse()
+
+    gaps = []
+    for i in range(len(segments) - 1):
+        gaps.append(segments[i+1].start_time_ms - segments[i].end_time_ms)
+
+    symbol_sequence = []
+    label_sequence = []
+    starts = []
+    ends = []
+    segment_ids = []
+
+    for idx, l in enumerate(labels):
+        symbol_sequence.append('{{{}}}'.format(l))
+        label_sequence.append(l)
+        starts.append(segments[idx].start_time_ms)
+        ends.append(segments[idx].end_time_ms)
+        segment_ids.append(segments[idx].id)
+
+    audio_file = segmentation.audio_file
+
+    row = {'_sequence': json.dumps(symbol_sequence), 'label-sequence': json.dumps(label_sequence),
+           'segment-ids': json.dumps(segment_ids), 'starts': json.dumps(starts), 'ends': json.dumps(ends),
+           'mp3-file-url': audio_file.mp3_path}
+
+    return HttpResponse(json.dumps(row))
+
+
 class IndexView(TemplateView):
     """
     The view to index page
@@ -195,7 +241,7 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        user =self.request.user
+        user = self.request.user
 
         similarities, current_similarity, databases, current_database = get_currents(user)
 
@@ -224,4 +270,22 @@ class ExemplarsView(TemplateView):
         context['page'] = 'exemplars'
         context['subpage'] = 'exemplars/{}'.format(cls)
 
+        return context
+
+
+class SongsView(TemplateView):
+    """
+    The view to index page
+    """
+    template_name = 'songs.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(SongsView, self).get_context_data(**kwargs)
+        user = self.request.user
+
+        _, _, databases, current_database = get_currents(user)
+
+        context['databases'] = databases.values_list('id', 'name')
+        context['current_database'] = (current_database.id, current_database.name, User.__name__)
+        context['page'] = 'songs'
         return context

@@ -152,6 +152,63 @@ classes should alter those!
 .slick-cell {
   display: flex;
   align-items: center;
+
+  &.has-sequence {
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow-x: auto;
+    .btn {
+      line-height: 1;
+    }
+
+    .syllable {
+      padding-left: 5px;
+      padding-right: 5px;
+      float: left;
+      background-color: #D9230F;
+      text-align: center;
+      color: white;
+      border-radius: 11px;
+      height: 22px;
+      border: solid 2px #a91b0c;
+      &.end, &.start, &.sub {
+        background-color: transparent;
+        border: none;
+        padding: 2px;
+        width: 14px;
+        color: black;
+      }
+      &.active {
+        background-color: #E84B30;
+      }
+    }
+
+    .syllable:last-child {
+      margin-right: 0;
+    }
+
+    .syllable-gap {
+      float: left;
+      text-align: center;
+      color: black;
+      height: 22px;
+      font-size: 0.7em;
+
+      &::before, &::after {
+        content: '';
+        flex-grow: 1;
+        height: 2px;
+        background: #570F5C;
+        min-width: 5px;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      &.active {
+        color: #E84B30;
+      }
+    }
+  }
+
 }
 
 .slick-row.even.edited {

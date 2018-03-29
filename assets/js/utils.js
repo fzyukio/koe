@@ -370,6 +370,42 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
 
 
 /**
+ * Show sequence of syllable nicely
+ * @param row
+ * @param cell
+ * @param value
+ * @param columnDef
+ * @param song
+ * @returns {string}
+ * @constructor
+ */
+const SequenceFormatter = function (row, cell, value, columnDef, song) {
+    let duration = song.duration;
+    let songUrl = song['song-url'];
+    let segLabels = song['sequence-labels'];
+    let segStarts = song['sequence-starts'];
+    let segEnds = song['sequence-ends'];
+    let imgSrcs = song['sequence-imgs'];
+
+
+    let retval = `<div class="syllable start full-audio" song-url="${songUrl}" start=0 end=${duration}>
+                  <i class="fa fa-play" aria-hidden="true"></i>
+                </div>`;
+
+    for (let i = 0; i < segLabels.length; i++) {
+        let start = segStarts[i];
+        let end = segEnds[i];
+        let segLabel = segLabels[i];
+        let imgSrc = imgSrcs[i];
+        retval += `<div class="syllable" start=${start} end=${end} imgsrc="${imgSrc}">${segLabel}</div>`;
+    }
+
+    retval += `<div class="syllable end"><i class="fa fa-stop"></i></div>`;
+    return retval;
+};
+
+
+/**
  * For embedded URL we're using Markdown's pattern, e.g. [http://www.example.com](example.com)
  * e.g. file_duration:(<3.5) (meaning that filter out any file that has duration > 3.5 sec)
  * @type {RegExp}
@@ -386,6 +422,7 @@ SlickFormatters['Action'] = ActionButtonFormatter;
 SlickFormatters['Checkmark'] = CheckmarkFormatter;
 SlickFormatters['Image'] = ImageFormatter;
 SlickFormatters['Url'] = UrlFormatter;
+SlickFormatters['Sequence'] = SequenceFormatter;
 
 
 const FloatEditor__rewritten = function (args) {
@@ -957,9 +994,9 @@ function metadata(old_metadata) {
  * @param newcol A new column
  * @param position the position to insert if not found
  */
-const insertOrReplaceColumn = function(columns, newcol, position) {
+const insertOrReplaceColumn = function (columns, newcol, position) {
     let index = -1;
-    for (let i=0; i<columns.length; i++) {
+    for (let i = 0; i < columns.length; i++) {
         let column = columns[i];
         if (column.id == newcol.id) {
             index = i;
@@ -1428,7 +1465,7 @@ export const createCsv = function (grid, downloadType) {
     // Must enclose the column headings in quotes otherwise if the first column is `ID`, Excel
     // complains that the file type doesn't match
     // Also enclose everything in quote to avoid having strings with special characters in it
-    
+
     let lineArray = [columnHeadings.map(x => `"${x.replace(/"/g, '\"\"')}"`).join(',')];
     rows.forEach(function (rowArray) {
         let line = [rowArray.map(x => `"${x.replace(/"/g, '\"\"')}"`)].join(",");
@@ -1444,7 +1481,7 @@ export const createCsv = function (grid, downloadType) {
  * @param blob an instance of Blob
  * @param filename name with extension
  */
-export const downloadBlob = function(blob, filename) {
+export const downloadBlob = function (blob, filename) {
     if (navigator.msSaveBlob) { // IE 10+
         navigator.msSaveBlob(blob, filename);
     } else {

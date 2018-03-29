@@ -5,10 +5,11 @@ from django.db.models.query import QuerySet
 from koe.model_utils import get_currents
 from koe.models import AudioFile, Segment
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_mask_path, spect_fft_path
+from root.utils import spect_mask_path, spect_fft_path, mp3_path
 
+__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences']
 
-__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars']
+label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
 
 
 def bulk_get_segment_info(segs, extras):
@@ -25,35 +26,32 @@ def bulk_get_segment_info(segs, extras):
 
     if isinstance(segs, QuerySet):
         segs = segs.filter(segmentation__audio_file__database=current_database.id)
-        attr_values_list = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
-                                                 'segmentation__audio_file__name',
-                                                 'segmentation__audio_file__id',
-                                                 'segmentation__audio_file__quality',
-                                                 'segmentation__audio_file__track__name',
-                                                 'segmentation__audio_file__track__date',
-                                                 'segmentation__audio_file__individual__name',
-                                                 'segmentation__audio_file__individual__gender'))
+        values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms',
+                                       'segmentation__audio_file__name',
+                                       'segmentation__audio_file__id',
+                                       'segmentation__audio_file__quality',
+                                       'segmentation__audio_file__track__name',
+                                       'segmentation__audio_file__track__date',
+                                       'segmentation__audio_file__individual__name',
+                                       'segmentation__audio_file__individual__gender'))
     else:
-        attr_values_list = [(x.id,
-                             x.start_time_ms,
-                             x.end_time_ms,
-                             x.mean_ff,
-                             x.segmentation.audio_file.name,
-                             x.segmentation.audio_file.id,
-                             x.segmentation.audio_file.quality,
-                             x.segmentation.audio_file.track.name,
-                             x.segmentation.audio_file.track.date,
-                             x.segmentation.audio_file.individual.name,
-                             x.segmentation.audio_file.individual.gender) for x in segs
-                            if x.segmentation.audio_file.database == current_database]
+        values = [(x.id, x.start_time_ms, x.end_time_ms,
+                   x.segmentation.audio_file.name,
+                   x.segmentation.audio_file.id,
+                   x.segmentation.audio_file.quality,
+                   x.segmentation.audio_file.track.name,
+                   x.segmentation.audio_file.track.date,
+                   x.segmentation.audio_file.individual.name,
+                   x.segmentation.audio_file.individual.gender) for x in segs
+                  if x.segmentation.audio_file.database == current_database]
 
-    segids = [str(x[0]) for x in attr_values_list]
+    segids = [str(x[0]) for x in values]
     extra_attrs = ExtraAttr.objects.filter(klass=Segment.__name__)
     extra_attr_values_list = ExtraAttrValue.objects \
         .filter(user=user, attr__in=extra_attrs, owner_id__in=segids) \
         .values_list('owner_id', 'attr__name', 'value')
 
-    song_ids = list(set([x[4] for x in attr_values_list]))
+    song_ids = list(set([x[4] for x in values]))
     song_extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
     song_extra_attr_values_list = ExtraAttrValue.objects \
         .filter(user=user, attr__in=song_extra_attrs, owner_id__in=song_ids) \
@@ -73,9 +71,9 @@ def bulk_get_segment_info(segs, extras):
         extra_attr_dict = song_extra_attr_values_lookup[id]
         extra_attr_dict[attr] = value
 
-    ids = [x[0] for x in attr_values_list]
+    ids = [x[0] for x in values]
 
-    nrows = len(attr_values_list)
+    nrows = len(values)
     if current_similarity is None:
         indices = [0] * nrows
     else:
@@ -85,7 +83,8 @@ def bulk_get_segment_info(segs, extras):
 
     ids = []
     for i in range(nrows):
-        id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = attr_values_list[i]
+        id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = \
+            values[i]
         ids.append(id)
 
         index = indices[i]
@@ -124,11 +123,11 @@ def bulk_get_exemplars(objs, extras):
     _, _, _, current_database = get_currents(user)
 
     if isinstance(objs, QuerySet):
-        ids = objs.filter(segmentation__audio_file__database=current_database.id).values_list('id', flat=True)
+        ids = objs.filter(segmentation__audio_file__database=current_database).values_list('id', flat=True)
     else:
         ids = [x.id for x in objs if x.segmentation.audio_file.database == current_database]
 
-    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids, user=user)\
+    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids, user=user) \
         .order_by(Lower('value'), 'owner_id').values_list('value', 'owner_id')
 
     class_to_exemplars = []
@@ -177,3 +176,100 @@ def bulk_get_exemplars(objs, extras):
 
     return ids, rows
 
+
+def bulk_get_song_sequences(songs, extras):
+    """
+    For the song sequence page. For each song, send the sequence of syllables in order of appearance
+    :param segs: a QuerySet list of Segments
+    :param extras:
+    :return:
+    """
+    user = extras['user']
+    _, _, _, current_database = get_currents(user)
+
+    songs = songs.filter(database=current_database)
+
+    segs = Segment.objects.filter(segmentation__audio_file__in=songs, segmentation__source='user') \
+        .order_by('segmentation__audio_file__name', 'start_time_ms')
+    values = segs.values_list('id', 'start_time_ms', 'end_time_ms',
+                              'segmentation__audio_file__name',
+                              'segmentation__audio_file__id',
+                              'segmentation__audio_file__quality',
+                              'segmentation__audio_file__length',
+                              'segmentation__audio_file__track__name',
+                              'segmentation__audio_file__track__date',
+                              'segmentation__audio_file__individual__name',
+                              'segmentation__audio_file__individual__gender')
+    seg_ids = segs.values_list('id', flat=True)
+    song_ids = songs.values_list('id', flat=True)
+
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids) \
+        .values_list('owner_id', 'value')
+
+    seg_id_to_label = {int(x): y for x, y in labels}
+
+    extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
+    extra_attr_values_list = ExtraAttrValue.objects \
+        .filter(user=user, attr__in=extra_attrs, owner_id__in=song_ids) \
+        .values_list('owner_id', 'attr__name', 'value')
+
+    extra_attr_values_lookup = {}
+    for id, attr, value in extra_attr_values_list:
+        if id not in extra_attr_values_lookup:
+            extra_attr_values_lookup[id] = {}
+        extra_attr_dict = extra_attr_values_lookup[id]
+        extra_attr_dict[attr] = value
+
+    ids = []
+    rows = []
+
+    # Bagging song syllables by song name
+    songs = {}
+
+    for seg_id, start, end, name, song_id, quality, duration, track, date, individual, gender in values:
+        if song_id not in songs:
+            song_info = dict(filename=name, track=track, individual=individual, gender=gender, quality=quality,
+                             date=date, duration=duration)
+            segs_info = []
+            songs[song_id] = dict(song=song_info, segs=segs_info)
+        else:
+            segs_info = songs[song_id]['segs']
+
+        label = seg_id_to_label.get(seg_id, '__NONE__')
+        segs_info.append((seg_id, label, start, end))
+
+    for song_id, info in songs.items():
+        song_info = info['song']
+        segs_info = info['segs']
+
+        sequence_labels = []
+        sequence_starts = []
+        sequence_ends = []
+        sequence_masks = []
+
+        for seg_id, label, start, end in segs_info:
+            sequence_labels.append(label)
+            sequence_starts.append(start)
+            sequence_ends.append(end)
+            mask_img = spect_mask_path(str(seg_id), for_url=True)
+            sequence_masks.append(mask_img)
+
+        sequence_str = '-'.join('\"{}\"'.format(x) for x in sequence_labels)
+
+        row = song_info
+        row['id'] = song_id
+        row['sequence'] = sequence_str
+        row['sequence-labels'] = sequence_labels
+        row['sequence-starts'] = sequence_starts
+        row['sequence-ends'] = sequence_ends
+        row['sequence-imgs'] = sequence_masks
+        row['song-url'] = mp3_path(song_info['filename'])
+
+        extra_attr_dict = extra_attr_values_lookup.get(str(song_id), {})
+        for attr in extra_attr_dict:
+            row[attr] = extra_attr_dict[attr]
+
+        ids.append(song_id)
+        rows.append(row)
+
+    return ids, rows

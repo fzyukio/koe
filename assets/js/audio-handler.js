@@ -47,10 +47,10 @@ export const initAudioContext = function () {
 
 /**
  * Plays a owner of the audio from begin point to end point
- * @param begin see below
- * @param end and begin : both normalised to the duration of the audio, to be in range [0-1]
+ * @param beginMs see below
+ * @param endSecond and beginMs : in millisecond
  */
-export const playAudio = function (begin, end, callback) {
+export const playAudio = function (beginMs='start', endSecond='end', callback=null) {
     if (isNull(audioContext) || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
@@ -72,12 +72,16 @@ export const playAudio = function (begin, end, callback) {
     source.playbackRate.setValueAtTime(playbackSpeed / 100.0, 0);
     source.connect(audioContext.destination);
 
-    // Convert to seconds then play
-    let duration = audioBuffer.duration;
-    let beginMs = begin * duration;
-    let endMs = end * duration;
+    if (beginMs === 'start') {
+        beginMs = 0
+    }
+
+    if (endSecond === 'end') {
+        endSecond = audioBuffer.duration;
+    }
+
     // For more information, read up AudioBufferSourceNode.start([when][, offset][, duration])
-    source.start(0, beginMs, endMs - beginMs);
+    source.start(0, beginMs, endSecond - beginMs);
     source.onended = function () {
         audioContext.close();
         if (typeof callback === 'function') {
@@ -87,10 +91,10 @@ export const playAudio = function (begin, end, callback) {
 };
 
 
-const playAudioDataArray = function (fullAudioDataArray, sampleRate) {
+const playAudioDataArray = function (fullAudioDataArray, sampleRate, startSecond='start', endSecond='end') {
     audioBuffer = audioContext.createBuffer(1, fullAudioDataArray.length, sampleRate);
     audioBuffer.getChannelData(0).set(fullAudioDataArray);
-    playAudio(0, 1);
+    playAudio(startSecond, endSecond);
 };
 
 
@@ -128,5 +132,39 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
         };
         $.event.trigger("ajaxStart");
         xhr.send(postData)
+    }
+};
+
+export const playAudioFromUrl = function (url, startSecond, endSecond, callback) {
+    let cached = cachedArrays[url];
+    if (url && cached) {
+        playAudioDataArray(cached[0], cached[1], startSecond, endSecond);
+    }
+    else {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const arrayBuffer = reader.result;
+            audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
+                let fullAudioDataArray = _audioBuffer.getChannelData(0);
+                let sampleRate = _audioBuffer.sampleRate;
+                if (url) {
+                    cachedArrays[url] = [fullAudioDataArray, sampleRate];
+                }
+                debug(`Playing at sampleRate: ${sampleRate}`);
+                playAudioDataArray(fullAudioDataArray, sampleRate, startSecond, endSecond);
+            });
+        };
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+
+        xhr.onload = function (e) {
+            if (this.status == 200) {
+                reader.readAsArrayBuffer(new Blob([this.response]));
+            }
+        };
+
+        xhr.send();
     }
 };

@@ -1,0 +1,92 @@
+{% extends 'base-with-grid-and-footer.html' %}
+
+{% block content-grid %}
+
+    <div id="controller-wrapper">
+
+        <div id="grid-status">
+            <div class="input-group">
+                <span class="input-group-addon left">
+                    Count: <span id="ntotal">0</span>
+                </span>
+            </div>
+        </div>
+
+        <div id="speed-controller">
+            <div class="input-group">
+                <span class="input-group-addon left">Speed</span>
+                <input id="speed-slider" type="text" data-slider-id='speed-slider-handler'
+                       data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
+            </div>
+        </div>
+
+        <div id="songs-grid-controller">
+            <div class="input-group">
+                <span class="input-group-addon left">Filter</span>
+                <input id="songs-grid-filter" type="text" class="form-control middle">
+                <span class="input-group-addon right dropdown">
+                    <button class="btn btn-primary btn-xs dropdown-toggle" type="button"
+                            id="features-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                        <span rel="tooltip" data-toggle="tooltip" data-trigger="hover" data-animation="false"
+                              data-placement="top" title="" class="fa fa-cogs" data-original-title="Add feature">
+                        </span>&nbsp
+                        <span class="caret"></span>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu">
+                        <li class="dropdown-submenu">
+                            <a id="database-select-combo" data-toggle="dropdown" database="{{ current_database.0 }}"
+                               cls="{{ current_database.2 }}" current-attr="current-database">Database</a>
+                            <ul class="dropdown-menu">
+                                {% for database in databases %}
+                                    <li class="{% if current_database.0 == database.0 %}active{% else %}not-active{% endif %}">
+                                        <a href="#" class="select-database" database="{{ database.0 }}">
+                                            {{ database.1 }}
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+
+                        </li>
+                    </ul>
+                </span>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="vh-offset has-grid" id="songs-grid" cls="{{ cls }}"></div>
+    <div class="offset-holder" id="songs-grid-offset-holder" attr="height"></div>
+
+    <div id="spectrogram-details-tooltip" class="hidden">
+        <img src=""/>
+    </div>
+
+{% endblock %}
+
+{% block modal-button %}
+    <div class="btn-group" role="group">
+        <button type="button" id="dialog-modal-yes-button" data-action="save" role="button"
+                class="btn btn-primary btn-hover-green">Set
+        </button>
+    </div>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-primary" data-dismiss="modal" role="button">Cancel
+        </button>
+    </div>
+{% endblock %}
+
+{% block bottom %}
+    <div class="btn-group btn-group-justified" role="group" aria-label="...">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-primary download-xls" data-download-type="all">Save entire table as
+                CSV
+            </button>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-primary download-xls" data-download-type="visible-rows-only">Save
+                visible rows as CSV
+            </button>
+        </div>
+    </div>
+{% endblock %}

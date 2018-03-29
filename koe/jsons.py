@@ -183,6 +183,65 @@ tables = \
                     "type": "INTEGER"
                 }
             ]
+        },
+        "songs-grid": {
+            "class": "koe.AudioFile",
+            "getter": "koe.bulk_get_song_sequences",
+            "columns": [
+                {
+                    "name": "Filename",
+                    "slug": "filename",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Date",
+                    "slug": "date",
+                    "type": "DATE"
+                },
+                {
+                    "name": "Gender",
+                    "slug": "gender",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Quality",
+                    "slug": "quality",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Individual",
+                    "slug": "individual",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Track",
+                    "slug": "track",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Sequence",
+                    "slug": "sequence",
+                    "type": "SEQUENCE",
+                    "css_class": "has-sequence"
+                },
+                {
+                    "name": "Type",
+                    "slug": "type",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True,
+                    "editor": "Select",
+                    "css_class": "overflow"
+                },
+                {
+                    "name": "Note",
+                    "slug": "note",
+                    "type": "LONG_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True,
+                    "css_class": "overflow"
+                }
+            ]
         }
     }
 

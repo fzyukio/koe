@@ -80,7 +80,8 @@ def get_server_constants():
 def get_navbar_urls():
     return {
         'index': 'Label',
-        'version': 'Versions'
+        'songs': 'Songs',
+        'version': 'Versions',
     }
 
 
