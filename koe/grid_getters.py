@@ -26,7 +26,7 @@ def bulk_get_segment_info(segs, extras):
 
     if isinstance(segs, QuerySet):
         segs = segs.filter(segmentation__audio_file__database=current_database.id)
-        values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms',
+        values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
                                        'segmentation__audio_file__name',
                                        'segmentation__audio_file__id',
                                        'segmentation__audio_file__quality',
@@ -35,7 +35,7 @@ def bulk_get_segment_info(segs, extras):
                                        'segmentation__audio_file__individual__name',
                                        'segmentation__audio_file__individual__gender'))
     else:
-        values = [(x.id, x.start_time_ms, x.end_time_ms,
+        values = [(x.id, x.start_time_ms, x.end_time_ms, x.mean_ff, x.min_ff, x.max_ff,
                    x.segmentation.audio_file.name,
                    x.segmentation.audio_file.id,
                    x.segmentation.audio_file.quality,

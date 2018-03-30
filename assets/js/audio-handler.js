@@ -164,7 +164,10 @@ export const playAudioFromUrl = function (url, startSecond, endSecond, callback)
                 reader.readAsArrayBuffer(new Blob([this.response]));
             }
         };
-
+        xhr.onloadend = function () {
+            $.event.trigger("ajaxStop");
+        };
+        $.event.trigger("ajaxStart");
         xhr.send();
     }
 };
