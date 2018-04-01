@@ -203,7 +203,7 @@ def bulk_get_song_sequences(songs, extras):
     seg_ids = segs.values_list('id', flat=True)
     song_ids = songs.values_list('id', flat=True)
 
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids) \
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user)\
         .values_list('owner_id', 'value')
 
     seg_id_to_label = {int(x): y for x, y in labels}
