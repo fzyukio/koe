@@ -10,9 +10,9 @@ const osType = os.type();
 const productionMode = process.argv[2] == 'production';
 
 const mode = productionMode ? "production": "development";
-const configFile = productionMode ? "webpack.prod.config.js": "webpack.prod.config.js";
+const configFile = productionMode ? "webpack.prod.config.js": "webpack.local.config.js";
 
-console.log(`Build in ${mode} mode on ${osType} system`);
+console.log(`Build in ${mode} mode on ${osType} system using ${configFile}`);
 
 if (osType === 'Linux' || osType == 'Darwin')
     exec(`NODE_ENV=${mode} webpack -p --progress --colors --config ${configFile} --bail`, log);
