@@ -80,14 +80,12 @@ let datepicker = $.fn.datepicker.noConflict();
 $.fn.bootstrapDP = datepicker;
 
 
-export const editabilityAwareFormatter = function(row, cell, value, columnDef, item) {
+export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
     if (isNull(value)) {
         value = "";
     }
     else {
-        value = (String(value)).replace(/&/g, "&amp;").
-            replace(/</g, "&lt;").
-            replace(/>/g, "&gt;");
+        value = (String(value)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     let field = columnDef.field;
@@ -249,11 +247,9 @@ function DecimalPointFormatter(row, cell, value, columnDef, item) {
  * @param allCaps
  */
 export const capsToTitleCase = function (allCaps) {
-    return allCaps.
-        replace(/_/g, ' ').
-        replace(/\w\S*/g, function (word) {
-            return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
-        });
+    return allCaps.replace(/_/g, ' ').replace(/\w\S*/g, function (word) {
+        return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+    });
 };
 
 /**
@@ -615,14 +611,7 @@ const DateEditorRewritten = function (args) {
  * e.g. file_duration:(<3.5) (meaning that filter out any file that has duration > 3.5 sec)
  * @type {RegExp}
  */
-const filterRegex = /([^()]+)\s*:\s*\(([^()]+)\)/;
-
-/**
- * The overall filter can be multiple of individual filter,
- * e.g. category:(A) file_duration:(>2)
- * @type {RegExp}
- */
-const filtersRegex = /(\s*[^()]+\s*:\s*\([^()]+\)\s*)+/;
+const filterRegex = /(.*?):(.*)+/;
 
 /**
  * Accept anything that contain the substring
@@ -700,7 +689,6 @@ const filterFunctions = {
  * @param filterContent
  */
 const filterGenerator = function (paramName, type, filterContent) {
-    filterContent = filterContent.replace("%%quoteb%%", "\\(").replace("%%quotee%%", "\\)");
     if (filterContent === '') {
         filterContent = null;
     }
@@ -717,23 +705,6 @@ const filterGenerator = function (paramName, type, filterContent) {
     }
     setCache('regex-filter:' + paramName, filterContent);
     return filterFunctions[type].bind({filterValue: filterContent});
-};
-
-export const regexMatchMultiple = function (regex, value) {
-    let matches = filtersRegex.exec(value);
-    if (!matches) {
-        return null;
-    }
-    let retval = [matches[0]];
-    while (matches) {
-        let match = matches[1];
-        retval.push(match);
-        let matchedIndexBeg = value.indexOf(match);
-        let matchedIndexEnd = matchedIndexBeg + match.length - 1;
-        value = value.substr(0, matchedIndexBeg) + value.substr(matchedIndexEnd);
-        matches = filtersRegex.exec(value);
-    }
-    return retval;
 };
 
 /**
@@ -756,57 +727,60 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
     }
 
     $(inputSelector).on("input", function () {
-        let filterContent = this.value.replace("\\(", "%%quoteb%%").replace("\\)", "%%quotee%%").
-            trim();
-        let matches = regexMatchMultiple(filtersRegex, filterContent);
-        let filterArgs = {};
-        let filterIsCompleted = true;
+        let filterContents = this.value.split(';');
 
-        /* The default case */
-        if (isNull(matches) && !isNull(defaultField)) {
-            if (availableFilters.indexOf(defaultField) >= 0) {
-                filterArgs[defaultField] = filterGenerator(defaultField, 'String', filterContent);
+        /*
+         * If there is only one filter, it can be the default filter
+         */
+        if (filterContents.length == 1) {
+            let filterContent = filterContents[0];
+            if (filterContent.indexOf(':') == -1) {
+                filterContents[0] = defaultField + ':' + filterContent;
             }
         }
 
-        else {
-            let allMatchesCombined = matches[0].trim();
-            if (allMatchesCombined == filterContent) {
-                for (let i = 1; i < matches.length; i++) {
-                    let filter = filterRegex.exec(matches[i]);
-                    let param = filter[1].trim();
-                    let value = filter[2].trim();
-                    let filterType = filterTypes[param];
-
-                    /* A filter must match a slug of one of the column, e.g. filename, file_duration, ... */
-                    if (availableFilters.indexOf(param) >= 0 && filterType !== undefined) {
-
-                        /* Value of this dict is a function handle with bounded filter value */
-                        filterArgs[param] = filterGenerator(param, filterType, value);
-                    }
-                }
+        let matches = [];
+        for (let i = 0; i < filterContents.length; i++) {
+            let filterContent = filterContents[i];
+            let match = filterRegex.exec(filterContent);
+            if (match) {
+                matches.push(match);
             }
             else {
-                filterIsCompleted = false;
+                $(inputSelector).addClass('has-error');
+                return;
             }
         }
-        if (filterIsCompleted) {
-            setCache('filterArgs', filterArgs);
 
+        let filterArgs = {};
+        for (let i = 0; i < matches.length; i++) {
+            let match = matches[i];
+            let param = match[1].trim();
+            let value = match[2].trim();
+            let filterType = filterTypes[param];
 
-            dataView.setFilterArgs(filterArgs);
+            /* A filter must match a slug of one of the column, e.g. filename, file_duration, ... */
+            if (availableFilters.indexOf(param) >= 0 && filterType !== undefined) {
 
-            /*
-             * Call this to remove the rows that are filtered out
-             */
-            dataView.refresh();
-
-            /*
-             * Call this to force rerendering the rows. Helpful if the row is rendered differently after applying the filter
-             */
-            grid.invalidate();
-            grid.render();
+                /* Value of this dict is a function handle with bounded filter value */
+                filterArgs[param] = filterGenerator(param, filterType, value);
+            }
         }
+        setCache('filterArgs', filterArgs);
+
+
+        dataView.setFilterArgs(filterArgs);
+
+        /*
+         * Call this to remove the rows that are filtered out
+         */
+        dataView.refresh();
+
+        /*
+         * Call this to force rerendering the rows. Helpful if the row is rendered differently after applying the filter
+         */
+        grid.invalidate();
+        grid.render();
     });
 };
 
@@ -846,12 +820,16 @@ SlickEditors.Float = FloatEditorRewritten;
  */
 const NonBlankValidator = function (value) {
     if (isNull(value) || !value.length) {
-        return {valid: false,
-            msg: "This is a required field"};
+        return {
+            valid: false,
+            msg: "This is a required field"
+        };
     }
     else {
-        return {valid: true,
-            msg: null};
+        return {
+            valid: true,
+            msg: null
+        };
     }
 };
 
@@ -864,17 +842,25 @@ const NonBlankValidator = function (value) {
  */
 const IsoDateValidator = function (dateString) {
     let regEx = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateString.match(regEx)) return {valid: false,
-        msg: "The format must be like 2016-01-20 (YYYY-MM-DD)"};
+    if (!dateString.match(regEx)) return {
+        valid: false,
+        msg: "The format must be like 2016-01-20 (YYYY-MM-DD)"
+    };
     let d;
-    if (!((d = new Date(dateString)) || 0)) return {valid: false,
-        msg: "This date is invalid"};
+    if (!((d = new Date(dateString)) || 0)) return {
+        valid: false,
+        msg: "This date is invalid"
+    };
     if (d.toISOString().slice(0, 10) !== dateString) {
-        return {valid: false,
-            msg: "This date is invalid"};
+        return {
+            valid: false,
+            msg: "This date is invalid"
+        };
     }
-    return {valid: true,
-        msg: null};
+    return {
+        valid: true,
+        msg: null
+    };
 };
 
 /**
@@ -1268,10 +1254,8 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     grid.onBeforeCellEditorDestroy.subscribe(function (e, args_) {
         let currentCell = args_.grid.getActiveCell();
         let currentElement = $(args_.grid.getCellNode(currentCell.row, currentCell.cell));
-        currentElement.parent().find('[role=tooltip]').
-            remove();
-        currentElement.attr('data-placement', undefined).attr('data-original-title', undefined).
-            attr('data-content', undefined);
+        currentElement.parent().find('[role=tooltip]').remove();
+        currentElement.attr('data-placement', undefined).attr('data-original-title', undefined).attr('data-content', undefined);
     });
 
     /*
@@ -1289,9 +1273,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         if (currentRowIndex < rowCount / 2) {
             toolTipPlace = 'bottom'
         }
-        element.attr('data-placement', toolTipPlace).attr('data-original-title', 'Input error').
-            attr('data-content', args_.validationResults.msg).
-            popover('show');
+        element.attr('data-placement', toolTipPlace).attr('data-original-title', 'Input error').attr('data-content', args_.validationResults.msg).popover('show');
     });
 
 
@@ -1351,8 +1333,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 
         if (apa.hasActionsOfType('click', columnActions)) {
             grid.onClick.subscribe(function (e, args_) {
-                let action = $(e.target).closest('button').
-                    attr("action");
+                let action = $(e.target).closest('button').attr("action");
                 let handler = apa.actionHandlers[action];
                 let row = args_.row;
                 let dataView_ = args_.grid.getData();
