@@ -102,8 +102,10 @@ npm install
 ```
 
 ## Initialise the database
+> The database must be initialised using this script.
+
 ```bash
-./migrate # Every time this runs it will drop the entire database and create a new one
+./migrate.sh # Every time this runs it will drop the entire database and create a new one
 ```
 
 ## Build for development
