@@ -111,9 +111,10 @@ const selectTextForCopy = function (e, args) {
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
-const subscribeFlexibleEvents = function (...args) {
-    log(`subscribeFlexibleEvents called`);
-    grid.on('click', function (e) {
+const subscribeFlexibleEvents = function () {
+    log(`subscribeFlexibleEvents called from songs-pages`);
+    grid.on('click', function (...args) {
+        let e = args[0];
         e.preventDefault();
         playAudio(...args);
         selectTextForCopy(...args);

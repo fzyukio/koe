@@ -118,7 +118,8 @@ const selectTextForCopy = function (e, args) {
  */
 const subscribeFlexibleEvents = function () {
     log(`subscribeFlexibleEvents called`);
-    grid.on('click', function (e, ...args) {
+    grid.on('click', function (...args) {
+        let e = args[0];
         e.preventDefault();
         playAudio(...args);
         selectTextForCopy(...args);
