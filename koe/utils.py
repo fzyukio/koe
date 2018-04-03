@@ -1,40 +1,9 @@
 import base64
-import binascii
-import io
-import re
 import contextlib
+import re
 
-import joblib
 import numpy as np
 from scipy.signal import fftconvolve
-
-
-def gzip_ndarray(arr):
-    out = io.BytesIO()
-    joblib.dump(arr, out, compress=('zlib', 1))
-    value = out.getvalue()
-    out.close()
-    return value
-
-
-def gunzip_byte(barr):
-    in_ = io.BytesIO()
-    in_.write(barr)
-    in_.seek(0)
-    return joblib.load(in_)
-
-
-def array_to_compressed_base64(array):
-    # Compress array to bytes:
-    arr_z = gzip_ndarray(array)
-    b64_arr_z = binascii.b2a_base64(arr_z)
-
-    return b64_arr_z
-
-
-def compressed_base64_to_array(b64_arr_z):
-    arr_z = binascii.a2b_base64(b64_arr_z)
-    return gunzip_byte(arr_z)
 
 
 def array_to_base64(array):

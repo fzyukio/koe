@@ -9,8 +9,6 @@ from root.utils import spect_mask_path, spect_fft_path, mp3_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences']
 
-label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
-
 
 def bulk_get_segment_info(segs, extras):
     """
@@ -203,6 +201,7 @@ def bulk_get_song_sequences(songs, extras):
     seg_ids = segs.values_list('id', flat=True)
     song_ids = songs.values_list('id', flat=True)
 
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
     labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user)\
         .values_list('owner_id', 'value')
 

@@ -9,6 +9,16 @@ Substantial changes include:
 ## Setup
 ### First, make sure you have all the dependencies installed.
 
+List of important dependencies:
+- Python 3
+- ffmpeg
+- mysql
+- postgre (if use postgre)
+- sqlite3 (if use sqlite3)
+- virtualenv
+- nodejs (>=9.0)
+- redis
+
 #### For Debian/Ubuntu
 ```shell
 sudo ./setup-ubuntu.sh
@@ -28,15 +38,15 @@ virtualenv -p `which python3` .venv
 
 Add the following lines in `.venv/bin/activate`:
 ```bash
-export DJANGO_SETTINGS_MODULE=koe.settings.local
+export DJANGO_SETTINGS_MODULE=koe.settings.production
 export SECRET_KEY='????????????????????????????????????????????'
 export ALLOWED_HOSTS='*'
-export EMAIL_CONFIG=in-v3.mailjet.com:??????????????????:?????????????????????????????????:587
-export FROM_EMAIL='????????????'
+export EMAIL_CONFIG=in-v3.mailjet.com:306f80c638198c7284dd3833162cc881:7e9618e6955c3672aa86fa353fec74ba:587
+export FROM_EMAIL='fa@io.ac.nz'
 export REDIS_PORT=6379
 export REDIS_HOST=localhost
 export REDIS_URL='redis://'
-export REDIS_PASSWORD=abc123
+export REDIS_PASSWORD=''
 export PATH=$PATH:/usr/local/bin/
 export FFMPEG=/usr/local/bin/ffmpeg
 export WEBPACK_SERVER_PORT=9876
@@ -69,6 +79,10 @@ elif test "$DB_TYPE" = "mysql"; then
 fi
 ```
 
+> Note: SECRET_KEY: A random string, use this [tool](https://www.miniwebtool.com/django-secret-key-generator/) to generate one   
+> Other variables: change to specific settings if necessary
+
+
 Then
 ```bash
 source .venv/bin/activate
@@ -76,6 +90,7 @@ source .venv/bin/activate
 
 ## Install Python dependencies
 ```bash
+pip install numpy
 pip install Cython
 pip install -r requirements.txt
 ```
@@ -88,7 +103,7 @@ npm install
 
 ## Initialise the database
 ```bash
-./migrate # This program to be run only once, as it will drop the entire database and create a new one
+./migrate # Every time this runs it will drop the entire database and create a new one
 ```
 
 ## Build for development
@@ -97,13 +112,14 @@ yarn build
 yarn start # This command will run the server at port specified by $WEBPACK_SERVER_PORT
 ```
 
+
 ## Build for production
 ```bash
-yarn build-prod
+yarn build-prod # Compile Javascript and SCSS
+python manage.py collectstatic --noinput # Collect static files to /static/
 ```
 
 ## Quick way to deploy on server:
-### Full deployment
 You should fully deploy your app if there is any Javascript change - as these need to be compiled and package by webpack
 To run this app on the server, config nginx or apache accordingly. The following scripts is written to deploy the app using gunicorn.
 

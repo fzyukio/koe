@@ -145,11 +145,8 @@ def init_tables():
                 if editable:
                     column['setter'] = setter
 
-            if is_extra_attr:
-                try:
-                    ExtraAttr.objects.get_or_create(klass=klass.__name__, type=_type, name=slug)
-                except (OperationalError, ProgrammingError) as e:
-                    pass
+            # if is_extra_attr:
+            #     ExtraAttr.objects.get(klass=klass.__name__, type=_type, name=slug)
 
             if 'total_label' not in column:
                 column['total_label'] = '-/-'

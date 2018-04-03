@@ -168,10 +168,6 @@ assert SITE_URL.endswith('/'), 'SITE_URL must have trailing /'
 _email_config = os.getenv('EMAIL_CONFIG', 'console')
 if _email_config == 'console':
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-elif _email_config == 'naomi':
-    INSTALLED_APPS += ('naomi',)
-    EMAIL_BACKEND = 'naomi.mail.backends.naomi.NaomiBackend'
-    EMAIL_FILE_PATH = base_dir_join('tmp_email')
 else:  # assume we have fully-specified smtp configuration
     email_host, email_user, email_pass, email_port = _email_config.split(':', 3)
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

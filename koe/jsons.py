@@ -1,5 +1,3 @@
-import json
-
 __all__ = ['tables', 'actions', 'num_exemplars']
 
 tables = \

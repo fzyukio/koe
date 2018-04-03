@@ -4,7 +4,6 @@ import json
 import os
 import zipfile
 
-import markdown
 import numpy as np
 import pydub
 from django.conf import settings
@@ -12,14 +11,10 @@ from django.core import serializers
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
-from django.views.generic import FormView
 from django.views.generic import TemplateView
-from mdx_audio import AudioExtension
 
-from koe.forms import HelpEditForm
 from koe.model_utils import get_currents
-from koe.models import AudioFile, Segment, HistoryEntry, Coordinate, DatabaseAssignment, DatabasePermission, Database, \
-    Segmentation
+from koe.models import AudioFile, Segment, HistoryEntry, Segmentation
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists
 
@@ -28,8 +23,6 @@ __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_histor
 # Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
 # reached this level, and vise verse
 normalised_max = pow(2, 31)
-
-md = markdown.Markdown(safe_mode='escape', extensions=['fenced_code', 'tables', 'oembed', AudioExtension()])
 
 
 def match_target_amplitude(sound, loudness):
@@ -188,9 +181,6 @@ def import_history(request):
         return HttpResponse('ok')
 
 
-label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
-
-
 def get_sequence(request):
     song_id = request.POST['song-id']
 
@@ -200,6 +190,7 @@ def get_sequence(request):
 
     segments = Segment.objects.filter(segmentation=segmentation)
     segment_ids = segments.values_list('id', flat=True)
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
 
     labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=segment_ids, user=request.user)\
         .values_list('value', flat=True)

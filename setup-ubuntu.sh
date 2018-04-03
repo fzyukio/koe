@@ -25,9 +25,14 @@ npm run build-assets
 npm install -g yarn
 
 # Install python, virtualenv
-sudo apt-get install python-pip python-dev build-essential
+# Install python 3:
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install python3.6 python3.6-dev build-essential
 sudo pip install --upgrade pip
 sudo pip install --upgrade virtualenv
+
 virtualenv -p `which python` .venv
 
 # nginx

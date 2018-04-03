@@ -1,3 +1,6 @@
+Cython
+numpy
+scipy
 amqp==2.1.4
 appdirs==1.4.3
 appnope==0.1.0
@@ -76,19 +79,16 @@ django-cors-headers
 django-redis
 line_profiler
 dotmap
-numpy
 django-countries
 Pillow
-Cython
 git+https://github.com/fzyukio/cdtw
 progress
-scipy
 git+https://github.com/fzyukio/python_speech_features
 matplotlib
 openpyxl
 mysqlclient
 Markdown
 python-markdown-oembed
-mdx_audio
 djangorestframework==3.7.7
 wagtail==2.0rc1
+pydub
