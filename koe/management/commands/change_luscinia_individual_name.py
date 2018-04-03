@@ -4,11 +4,9 @@ Import syllables (not elements) from luscinia (after songs have been imported)
 
 import psycopg2.extras
 from openpyxl import load_workbook
-
-# name_regex = re.compile('(\w+)_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(EX|VG|G)?(\.[^.]+)?(\..*)?\.wav')
-COLUMN_NAMES = ['Individual name', 'Corrected to']
-
 import argparse
+
+COLUMN_NAMES = ['Individual name', 'Corrected to']
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 
@@ -61,7 +59,8 @@ ws = wb['Labels']
 
 try:
     port = int(port)
-    conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+    conn = psycopg2.connect(
+        "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
     conn.set_client_encoding('LATIN1')
 
     cur = conn.cursor()
@@ -119,7 +118,8 @@ try:
         if corrected_name:
             try:
                 id = song_name_to_id[original_name]
-                cur.execute('update individual set name=\'%s\' where id=%i' % (corrected_name, id))
+                cur.execute('update individual set name=\'%s\' where id=%i' % (
+                    corrected_name, id))
                 conn.commit()
             except KeyError as e:
                 pass

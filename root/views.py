@@ -31,7 +31,6 @@ else:
 
     opbeat_client = FakeOpbeatClient()
 
-
 tables = None
 actions = None
 
@@ -333,7 +332,7 @@ def change_extra_attr_value(request):
     if extra_attr_value is None:
         extra_attr_value = ExtraAttrValue()
         extra_attr_value.user = request.user
-        extra_attr_value.owner_id=owner
+        extra_attr_value.owner_id = owner
         extra_attr_value.attr = ExtraAttr.objects.get(klass=klass, name=attr)
     extra_attr_value.value = value
     extra_attr_value.save()
@@ -362,7 +361,8 @@ def set_action_values(request):
 
             assert value is not None, 'actions_values = {}'.format(json.dumps(actions_values))
 
-            action_value = ColumnActionValue.objects.filter(user=user, action=action, column=column, table=grid_type).first()
+            action_value = ColumnActionValue.objects.filter(user=user, action=action, column=column,
+                                                            table=grid_type).first()
             if action_value is None:
                 action_value = ColumnActionValue()
                 action_value.action = action
@@ -392,7 +392,7 @@ def reorder_columns_handler(action_name, table_name, user, modified_columns):
 
     action = actions[action_name]
     str2val = action['str2val']
-    column_values = {k: str2val(v) for k,v in column_values}
+    column_values = {k: str2val(v) for k, v in column_values}
 
     column_names = modified_columns.keys()
     column_names = sorted(column_names, key=lambda pk: str2val(column_values.get(pk, '-999999')))
@@ -463,6 +463,7 @@ def get_view(name):
     :param name: name of the view. A `name`.html must exist in the template folder
     :return:
     """
+
     class View(TemplateView):
         template_name = name + '.html'
 
@@ -492,6 +493,6 @@ def register_app_modules(package, filename):
 
     # Then import all Models
     for old_name, module in package_modules.items():
-        if not old_name in exposed_modules and isinstance(module, ModelBase):
+        if old_name not in exposed_modules and isinstance(module, ModelBase):
             new_name = '{}.{}'.format(package, old_name)
             globals_dict[new_name] = module

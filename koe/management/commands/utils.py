@@ -27,7 +27,8 @@ def get_dbconf(dbs):
     for dbconf in dbs.split(','):
         abbr, dbname, port = dbconf.split(':')
         port = int(port)
-        conn = psycopg2.connect("dbname={} user=sa password='sa' host=localhost port={}".format(dbname, port))
+        conn = psycopg2.connect(
+            "dbname={} user=sa password='sa' host=localhost port={}".format(dbname, port))
         conn.set_client_encoding('LATIN1')
         conns[abbr] = conn
 

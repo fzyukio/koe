@@ -1,8 +1,7 @@
 import * as fg from "flexible-grid";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
-import {initSelectize} from "./selectize-formatter";
-import {log, debug, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
+import {log, deepCopy, getUrl, getCache} from "utils";
 import {setCache} from "./utils";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -19,11 +18,11 @@ class ExemplarsGrid extends fg.FlexibleGrid {
             'grid-name': 'exemplars-grid',
             'grid-type': 'exemplars-grid',
             'default-field': 'cls',
-            gridOptions: gridOptions
+            gridOptions
         });
 
         this.cls = cls;
-    };
+    }
 
     /**
      * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
@@ -44,7 +43,10 @@ class ExemplarsGrid extends fg.FlexibleGrid {
             let coldef = grid.getColumns()[col];
             let rowElement = $(e.target.parentElement);
             let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement, coldef: coldef});
+            self.eventNotifier.trigger(eventType, {e,
+                songId,
+                rowElement,
+                coldef});
         }
     }
 }
@@ -61,8 +63,6 @@ const gridStatusNTotal = gridStatus.find('#ntotal');
 const databaseCombo = $('#database-select-combo');
 const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const databaseClass = databaseCombo.attr('cls');
-
-let ce;
 
 
 const initSlider = function () {
@@ -88,7 +88,6 @@ const playAudio = function (e, args) {
         let match = imgRegex.exec(imgSrc);
         if (match) {
             let segId = match[1];
-            console.log(segId);
             let data = new FormData();
             data.append('segment-id', segId);
             ah.queryAndPlayAudio(getUrl('send-request', 'koe/get-segment-audio'), data, segId);
@@ -119,10 +118,10 @@ const selectTextForCopy = function (e, args) {
  */
 const subscribeFlexibleEvents = function () {
     log(`subscribeFlexibleEvents called`);
-    grid.on('click', function (e) {
+    grid.on('click', function (e, ...args) {
         e.preventDefault();
-        playAudio.apply(null, arguments);
-        selectTextForCopy.apply(null, arguments);
+        playAudio(...args);
+        selectTextForCopy(...args);
     });
 
     grid.on('mouseenter', showBigSpectrogram);
@@ -149,7 +148,8 @@ const subscribeSlickEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true, multiSelect: true}, function () {
+    grid.redrawMainGrid({rowMoveable: true,
+        multiSelect: true}, function () {
         subscribeSlickEvents();
     });
 };
@@ -179,7 +179,7 @@ const showBigSpectrogram = function (e, args) {
         let cellCentreX = cellLeft + originalImage.width() / 2;
         let imgLeft = cellCentreX - imgWidth / 2;
 
-        let top, left;
+        let left, top;
 
         if (cellBottom < panelHeight / 2) {
             top = cellBottom + 20 + 'px';
@@ -253,11 +253,14 @@ const showSpectrogramOnActiveCell = function (e, args) {
         let column = grid_.getColumns()[activeCell.cell];
         if (!column.editable) {
             let fakeEvent = {
-                target: activeCellEl, preventDefault: function () {
+                target: activeCellEl,
+                preventDefault () {
+
+                    /* do nothing */
                 }
             };
-            let args = {e: fakeEvent};
-            showBigSpectrogram(fakeEvent, args);
+            let args_ = {e: fakeEvent};
+            showBigSpectrogram(fakeEvent, args_);
         }
     }
 };
@@ -272,15 +275,13 @@ const focusOnGridOnInit = function () {
 };
 
 
-export const run = function (commonElements) {
-    console.log("Exemplars page is now running.");
-    ce = commonElements;
+export const run = function () {
 
     ah.initAudioContext();
 
     grid.init(cls);
     grid.initMainGridHeader({}, function () {
-        grid.initMainGridContent({__extra__cls: cls}, focusOnGridOnInit);
+        grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -291,7 +292,6 @@ export const run = function (commonElements) {
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
             let databaseId = this.getAttribute('database');
-            let databaseName = $(this).html().trim();
 
             $.post(
                 getUrl('send-request', 'change-extra-attr-value'),
@@ -301,13 +301,15 @@ export const run = function (commonElements) {
                     'value': databaseId
                 },
                 function () {
-                    grid.initMainGridContent({__extra__cls: cls}, focusOnGridOnInit);
+                    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
                 }
             );
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.parent().find('li.active').
+                removeClass('active').
+                addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
@@ -315,42 +317,4 @@ export const run = function (commonElements) {
     keyboardJS.bind(['space'], playAudioOnKey);
 
     initSlider();
-};
-
-
-export const postRun = function () {
-    $('#save-data-btn').click(function (e) {
-        inputText.val('');
-
-        ce.dialogModalTitle.html("Backing up your data...");
-        ce.dialogModalBody.html(`<label>Give it a comment (optional)</label>`);
-        ce.dialogModalBody.append(inputText);
-
-        ce.dialogModal.modal('show');
-
-        ce.dialogModalOkBtn.one('click', function (e) {
-            let url = getUrl('send-request', 'koe/save-history');
-            let value = inputText.val();
-            inputText.val('');
-
-            ce.dialogModal.modal('hide');
-
-            $.post(url, {comment: value}, function (filename) {
-                ce.dialogModal.modal('hide');
-                let message = `History saved to ${filename}. You can download it from the version control page`;
-                ce.alertSuccess.html(message);
-                ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
-            });
-        });
-    });
-
-    $('.download-xls').click(function (e) {
-        let downloadType = $(this).data('download-type');
-        let csvContent = createCsv(grid.mainGrid, downloadType);
-
-        let d = new Date();
-        let filename = `koe-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
-        let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
-        downloadBlob(blob, filename);
-    });
 };

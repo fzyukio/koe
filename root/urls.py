@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from root import views, userviews
 
 urlpatterns = [
-url(r'^jsreverse/$', django_js_reverse.views.urls_js, name='js_reverse'),
+    url(r'^jsreverse/$', django_js_reverse.views.urls_js, name='js_reverse'),
     url(r'^send-request/(?P<type>[0-9a-z-]+)/$', login_required(views.send_request), name='send-request'),
     url(r'^send-request/(?P<module>[0-9a-z-]+)/(?P<type>[0-9a-z-]+)/$', login_required(views.send_request),
         name='send-request'),

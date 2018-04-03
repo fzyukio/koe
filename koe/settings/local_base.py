@@ -2,7 +2,6 @@ import sys
 
 from .base import *  # noqa
 
-
 DEBUG = True
 
 HOST = 'http://localhost:8000'
@@ -16,16 +15,12 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/user_data/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'user_data')
 
-#DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-#STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 AUTH_PASSWORD_VALIDATORS = []  # allow easy passwords only on local
 
 # Celery
 CELERY_TASK_ALWAYS_EAGER = True
-
 
 # Logging
 LOGGING = {

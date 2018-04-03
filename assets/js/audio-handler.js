@@ -1,5 +1,4 @@
-const base64 = require('base64-arraybuffer/lib/base64-arraybuffer.js');
-import {isNull, debug, log} from "./utils";
+import {isNull, debug} from "./utils";
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -50,21 +49,17 @@ export const initAudioContext = function () {
  * @param beginMs see below
  * @param endSecond and beginMs : in millisecond
  */
-export const playAudio = function (beginMs='start', endSecond='end', callback=null) {
+export const playAudio = function (beginMs = 'start', endSecond = 'end', callback = null) {
     if (isNull(audioContext) || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
+
     /*
      * Prevent multiple audio playing at the same time: stop any instance if audioContext that is currently running
      */
     else if (!isNull(audioContext) && audioContext.state === 'running') {
-        try {
-            audioContext.close();
-            audioContext = new AudioContext();
-        }
-        catch (e) {
-            console.log(`Catch error: ${e}`);
-        }
+        audioContext.close();
+        audioContext = new AudioContext();
     }
     let source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
@@ -91,7 +86,7 @@ export const playAudio = function (beginMs='start', endSecond='end', callback=nu
 };
 
 
-const playAudioDataArray = function (fullAudioDataArray, sampleRate, startSecond='start', endSecond='end') {
+const playAudioDataArray = function (fullAudioDataArray, sampleRate, startSecond = 'start', endSecond = 'end') {
     audioBuffer = audioContext.createBuffer(1, fullAudioDataArray.length, sampleRate);
     audioBuffer.getChannelData(0).set(fullAudioDataArray);
     playAudio(startSecond, endSecond);
@@ -122,7 +117,7 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
         xhr.open('POST', url, true);
         xhr.responseType = 'blob';
 
-        xhr.onload = function (e) {
+        xhr.onload = function () {
             if (this.status == 200) {
                 reader.readAsArrayBuffer(new Blob([this.response]));
             }
@@ -135,7 +130,7 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
     }
 };
 
-export const playAudioFromUrl = function (url, startSecond, endSecond, callback) {
+export const playAudioFromUrl = function (url, startSecond, endSecond) {
     let cached = cachedArrays[url];
     if (url && cached) {
         playAudioDataArray(cached[0], cached[1], startSecond, endSecond);
@@ -159,7 +154,7 @@ export const playAudioFromUrl = function (url, startSecond, endSecond, callback)
         xhr.open('GET', url, true);
         xhr.responseType = 'blob';
 
-        xhr.onload = function (e) {
+        xhr.onload = function () {
             if (this.status == 200) {
                 reader.readAsArrayBuffer(new Blob([this.response]));
             }

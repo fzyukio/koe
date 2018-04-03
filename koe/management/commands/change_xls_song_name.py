@@ -10,7 +10,8 @@ from openpyxl import load_workbook
 
 from root.models import *
 
-name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
+name_regex = re.compile(
+    '(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
 
 COLUMN_NAMES = ['Song name', 'Problem', 'Recommend name']
 
@@ -25,6 +26,7 @@ ColumnName = enum(
 )
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
 
 def get_column_letter(col_idx):
     result = []
@@ -101,12 +103,14 @@ class Command(BaseCommand):
         name_wb = load_workbook(filename=xls, read_only=True, data_only=True)
         name_ws = name_wb['Labels']
 
-        label_wb = load_workbook(filename=label, read_only=True, data_only=True)
+        label_wb = load_workbook(
+            filename=label, read_only=True, data_only=True)
         label_ws = label_wb['Complete']
 
         try:
             port = int(port)
-            conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+            conn = psycopg2.connect(
+                "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
             conn.set_client_encoding('LATIN1')
 
             cur = conn.cursor()
@@ -136,7 +140,8 @@ class Command(BaseCommand):
 
                 matches = name_regex.match(corrected_name)
                 if matches is None:
-                    warning('Corrected name at row {} is still incorrect: {}'.format(idx, corrected_name))
+                    warning('Corrected name at row {} is still incorrect: {}'.format(
+                        idx, corrected_name))
                     continue
             name_wb.close()
 
@@ -191,9 +196,11 @@ class Command(BaseCommand):
                 # lines = ', '.join(list(map(str,not_found[name])))
                 print('Not found: {} in {} lines'.format(name, nlines))
                 if name_clean in old_names:
-                    print('--->But found as cleaned {}, change to {}'.format(name_clean, old_to_new[name_clean]))
+                    print(
+                        '--->But found as cleaned {}, change to {}'.format(name_clean, old_to_new[name_clean]))
                 elif name_24 in old_names:
-                    print('--->But found as :24 {}, change to {}'.format(old_24_to_old[name_24], old_to_new[name_24]))
+                    print('--->But found as :24 {}, change to {}'.format(
+                        old_24_to_old[name_24], old_to_new[name_24]))
 
             # for name in found:
             #     nlines = len(found[name])
@@ -202,13 +209,16 @@ class Command(BaseCommand):
             #     print('Found: {} in {} lines'.format(name, nlines))
 
             print('-------------------------------')
-            print('Total found: {} files, {} lines'.format(len(found.keys()), nlinesfound))
-            print('Total not found: {} files, {} lines'.format(len(not_found.keys()), nlinesnotfound))
+            print('Total found: {} files, {} lines'.format(
+                len(found.keys()), nlinesfound))
+            print('Total not found: {} files, {} lines'.format(
+                len(not_found.keys()), nlinesnotfound))
 
             name_wb.close()
             label_wb.close()
 
-            label_wb = load_workbook(filename=label, read_only=False, data_only=True)
+            label_wb = load_workbook(
+                filename=label, read_only=False, data_only=True)
             label_ws = label_wb['Complete']
 
             rows = list(label_ws.rows)

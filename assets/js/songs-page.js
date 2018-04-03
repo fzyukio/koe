@@ -1,9 +1,7 @@
 import * as fg from "flexible-grid";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
-import {initSelectize} from "./selectize-formatter";
-import {log, debug, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
-import {setCache} from "./utils";
+import {log, deepCopy, getUrl} from "utils";
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -18,11 +16,11 @@ class Grid extends fg.FlexibleGrid {
             'grid-name': 'songs-grid',
             'grid-type': 'songs-grid',
             'default-field': 'filename',
-            gridOptions: gridOptions
+            gridOptions
         });
 
         this.cls = cls;
-    };
+    }
 
     /**
      * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
@@ -43,7 +41,12 @@ class Grid extends fg.FlexibleGrid {
             let coldef = grid.getColumns()[col];
             let rowElement = $(e.target.parentElement);
             let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement, coldef: coldef});
+            self.eventNotifier.trigger(eventType, {
+                e,
+                songId,
+                rowElement,
+                coldef
+            });
         }
     }
 }
@@ -60,8 +63,6 @@ const gridStatusNTotal = gridStatus.find('#ntotal');
 const databaseCombo = $('#database-select-combo');
 const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const databaseClass = databaseCombo.attr('cls');
-
-let ce;
 
 
 const initSlider = function () {
@@ -81,7 +82,8 @@ const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
     let hasSyllable = cellElement.closest(".syllable");
     if (hasSyllable.length == 1) {
-        let audioUrl = hasSyllable.parent().find('.full-audio').attr('song-url');
+        let audioUrl = hasSyllable.parent().find('.full-audio').
+            attr('song-url');
         let start = parseInt(hasSyllable.attr('start')) / 1000.0;
         let end = parseInt(hasSyllable.attr('end')) / 1000.0;
         ah.playAudioFromUrl(audioUrl, start, end);
@@ -109,14 +111,14 @@ const selectTextForCopy = function (e, args) {
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
-const subscribeFlexibleEvents = function () {
+const subscribeFlexibleEvents = function (...args) {
     log(`subscribeFlexibleEvents called`);
     grid.on('click', function (e) {
         e.preventDefault();
-        playAudio.apply(null, arguments);
-        selectTextForCopy.apply(null, arguments);
-        clearSpectrogram.apply(null, arguments);
-        showBigSpectrogram.apply(null, arguments);
+        playAudio(...args);
+        selectTextForCopy(...args);
+        clearSpectrogram(...args);
+        showBigSpectrogram(...args);
     });
 };
 
@@ -140,7 +142,10 @@ const subscribeSlickEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true, multiSelect: true}, function () {
+    grid.redrawMainGrid({
+        rowMoveable: true,
+        multiSelect: true
+    }, function () {
         subscribeSlickEvents();
     });
 };
@@ -165,10 +170,10 @@ const showBigSpectrogram = function (e, args) {
             const cellLeft = pos.left;
 
             let cellBottom = cellTop + isSyllable.height();
-            let cellCentreX = cellLeft + isSyllable.width() / 2;
-            let imgLeft = cellCentreX - imgWidth / 2;
+            let cellCentreX = cellLeft + (isSyllable.width() / 2);
+            let imgLeft = cellCentreX - (imgWidth / 2);
 
-            let top, left;
+            let left, top;
 
             if (cellBottom < panelHeight / 2) {
                 top = cellBottom + 20 + 'px';
@@ -206,15 +211,12 @@ const focusOnGridOnInit = function () {
 };
 
 
-export const run = function (commonElements) {
-    console.log("Exemplars page is now running.");
-    ce = commonElements;
-
+export const run = function () {
     ah.initAudioContext();
 
     grid.init(cls);
     grid.initMainGridHeader({}, function () {
-        grid.initMainGridContent({__extra__cls: cls}, focusOnGridOnInit);
+        grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -225,7 +227,6 @@ export const run = function (commonElements) {
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
             let databaseId = this.getAttribute('database');
-            let databaseName = $(this).html().trim();
 
             $.post(
                 getUrl('send-request', 'change-extra-attr-value'),
@@ -235,20 +236,18 @@ export const run = function (commonElements) {
                     'value': databaseId
                 },
                 function () {
-                    grid.initMainGridContent({__extra__cls: cls}, focusOnGridOnInit);
+                    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
                 }
             );
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.parent().find('li.active').
+                removeClass('active').
+                addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
 
     initSlider();
-};
-
-
-export const postRun = function () {
 };

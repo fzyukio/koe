@@ -1,3 +1,5 @@
+/* global Slick */
+
 require('jquery-ui/ui/widgets/sortable');
 require('slickgrid/lib/jquery.event.drag-2.3.0');
 require('slickgrid/slick.core');
@@ -40,11 +42,13 @@ if ($.ui.keyCode === undefined) {
 }
 
 export const log = function (str) {
+    // eslint-disable-next-line
     console.log(str)
 };
 
 export const debug = function (str) {
     if (window.APP_DEBUG) {
+        // eslint-disable-next-line
         console.log(str);
     }
 };
@@ -58,7 +62,8 @@ jQuery.fn.selectText = function () {
         range = document.body.createTextRange();
         range.moveToElementText(element);
         range.select();
-    } else if (window.getSelection) {
+    }
+    else if (window.getSelection) {
         selection = window.getSelection();
         range = document.createRange();
         range.selectNodeContents(element);
@@ -75,19 +80,22 @@ let datepicker = $.fn.datepicker.noConflict();
 $.fn.bootstrapDP = datepicker;
 
 
-export const editabilityAwareFormatter = function DefaultFormatter(row, cell, value, columnDef, item) {
-    if (!value) {
+export const editabilityAwareFormatter = function(row, cell, value, columnDef, item) {
+    if (isNull(value)) {
         value = "";
-    } else {
-        value = (value + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    else {
+        value = (String(value)).replace(/&/g, "&amp;").
+            replace(/</g, "&lt;").
+            replace(/>/g, "&gt;");
     }
 
     let field = columnDef.field;
 
-    let field_editability = '__' + field + '_editable';
+    let fieldEditability = '__' + field + '_editable';
     let editability = 'non-editable';
-    if (!isNull(item[field_editability])) {
-        editability = item[field_editability] ? 'editable' : 'non-editable';
+    if (!isNull(item[fieldEditability])) {
+        editability = item[fieldEditability] ? 'editable' : 'non-editable';
     }
     if (!isNull(value)) {
         try {
@@ -230,11 +238,7 @@ export const findGetParameter = function (parameterName) {
  */
 function DecimalPointFormatter(row, cell, value, columnDef, item) {
     if (!isNull(value)) {
-        try {
-            value = value.toFixed(this.numDecimal);
-        }
-        catch (e) {
-        }
+        value = value.toFixed(this.numDecimal);
     }
     return editabilityAwareFormatter(row, cell, value, columnDef, item)
 }
@@ -245,9 +249,9 @@ function DecimalPointFormatter(row, cell, value, columnDef, item) {
  * @param allCaps
  */
 export const capsToTitleCase = function (allCaps) {
-    return allCaps
-        .replace(/_/g, ' ')
-        .replace(/\w\S*/g, function (word) {
+    return allCaps.
+        replace(/_/g, ' ').
+        replace(/\w\S*/g, function (word) {
             return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
         });
 };
@@ -262,38 +266,6 @@ function SelectionFormatter(row, cell, value, columnDef, dataContext) {
         if (options.hasOwnProperty(key)) {
             if (parseInt(value) === options[key]) {
                 return capsToTitleCase(key);
-            }
-        }
-    }
-    return editabilityAwareFormatter(row, cell, value, columnDef, dataContext);
-}
-
-/**
- * To facilitate displaying a button inside a grid cell
- * Signature follows other Slick.Formatters
- * @param row
- * @param cell
- * @param value
- * @param columnDef
- * @param dataContext
- * @returns string HTML string of the button
- */
-function ActionButtonFormatter(row, cell, value, columnDef, dataContext) {
-    let formattedString = "";
-    let actions = columnDef.actions;
-    let actionsValues = dataContext.actions || {};
-    for (let i = 0; i < actions.length; i++) {
-        let action = actions[i];
-
-        if (apa.interactionTypes[action] === 'click') {
-            let actionValue = actionsValues[action] || '_default';
-            let actionIcon = apa.actionIcons[action][actionValue];
-            let actionTitle = apa.actionTitles[action][actionValue];
-            let actionButtonStyle = apa.actionButtonStyles[action][actionValue];
-            if (apa.isClickableOnRow(row, dataContext, action)) {
-                formattedString += `<button type="button" class="btn btn-xs ` + actionButtonStyle + `" action="` + action + `" row="` + row + `">
-                           <i class="fa ` + actionIcon + `"></i> ` + actionTitle + `
-                           </button>`
             }
         }
     }
@@ -319,6 +291,7 @@ const CheckmarkFormatter = function (row, cell, value, columnDef, dataContext) {
 /**
  * @return {string}
  */
+// eslint-disable-next-line no-unused-vars
 const ImageFormatter = function (row, cell, imgUrl, columnDef, item) {
     return `<img src="${imgUrl}" height="100%"/>`;
 };
@@ -327,6 +300,7 @@ const ImageFormatter = function (row, cell, imgUrl, columnDef, item) {
 /**
  * @return {string}
  */
+// eslint-disable-next-line no-unused-vars
 const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
     return `<i class="fa fa-bars" aria-hidden="true"></i>`;
 };
@@ -361,9 +335,11 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
 
     let matches = urlRegex.exec(value);
     if (matches) {
-        let url = dataContext[fieldUrl] = matches[1];
-        let value = dataContext[fieldName] = matches[2];
-        return `<a href="${url}" target="_blank">${matches[2]}</a>`
+        let url = matches[1];
+        let val = matches[2];
+        dataContext[fieldUrl] = url;
+        dataContext[fieldName] = val;
+        return `<a href="${url}" target="_blank">${val}</a>`
     }
     return value
 };
@@ -416,19 +392,17 @@ const urlRegex = /\[(.*)]\((.*)\)/;
  * Make a copy of Slick.Formater and then add new formatter
  */
 const SlickFormatters = $.extend({}, Slick.Formatters);
-SlickFormatters['DecimalPoint'] = DecimalPointFormatter.bind({numDecimal: 2});
-SlickFormatters['Select'] = SelectionFormatter;
-SlickFormatters['Action'] = ActionButtonFormatter;
-SlickFormatters['Checkmark'] = CheckmarkFormatter;
-SlickFormatters['Image'] = ImageFormatter;
-SlickFormatters['Url'] = UrlFormatter;
-SlickFormatters['Sequence'] = SequenceFormatter;
+SlickFormatters.DecimalPoint = DecimalPointFormatter.bind({numDecimal: 2});
+SlickFormatters.Select = SelectionFormatter;
+SlickFormatters.Checkmark = CheckmarkFormatter;
+SlickFormatters.Image = ImageFormatter;
+SlickFormatters.Url = UrlFormatter;
+SlickFormatters.Sequence = SequenceFormatter;
 
 
-const FloatEditor__rewritten = function (args) {
+const FloatEditorRewritten = function (args) {
     let $input;
     let defaultValue;
-    let scope = this;
 
     this.init = function () {
         $input = $("<INPUT type=\"number\" inputmode=\"numeric\" step=\"0.01\" class='editor-text' />");
@@ -451,11 +425,13 @@ const FloatEditor__rewritten = function (args) {
         $input.focus();
     };
 
+    /**
+     * returns the number of fixed decimal places or null
+     */
     function getDecimalPlaces() {
-        // returns the number of fixed decimal places or null
         let rtn = args.column.editorFixedDecimalPlaces;
         if (typeof rtn == 'undefined') {
-            rtn = FloatEditor__rewritten.DefaultDecimalPlaces;
+            rtn = FloatEditorRewritten.DefaultDecimalPlaces;
         }
         return (!rtn && rtn !== 0 ? null : rtn);
     }
@@ -464,9 +440,9 @@ const FloatEditor__rewritten = function (args) {
         defaultValue = item[args.column.field];
 
         let decPlaces = getDecimalPlaces();
-        if (decPlaces !== null
-            && (defaultValue || defaultValue === 0)
-            && defaultValue.toFixed) {
+        if (decPlaces !== null &&
+            (defaultValue || defaultValue === 0) &&
+            defaultValue.toFixed) {
             defaultValue = defaultValue.toFixed(decPlaces);
         }
 
@@ -477,18 +453,19 @@ const FloatEditor__rewritten = function (args) {
 
     this.serializeValue = function () {
         let rtn = parseFloat($input.val());
-        if (FloatEditor__rewritten.AllowEmptyValue) {
+        if (FloatEditorRewritten.AllowEmptyValue) {
             if (!rtn && rtn !== 0) {
                 rtn = '';
             }
-        } else {
-            rtn |= 0;
+        }
+        else if (isNull(rtn)) {
+            rtn = 0;
         }
 
         let decPlaces = getDecimalPlaces();
-        if (decPlaces !== null
-            && (rtn || rtn === 0)
-            && rtn.toFixed) {
+        if (decPlaces !== null &&
+            (rtn || rtn === 0) &&
+            rtn.toFixed) {
             rtn = parseFloat(rtn.toFixed(decPlaces));
         }
 
@@ -500,7 +477,7 @@ const FloatEditor__rewritten = function (args) {
     };
 
     this.isValueChanged = function () {
-        return (!($input.val() == "" && defaultValue == null)) && ($input.val() != defaultValue);
+        return (!($input.val() === "" && defaultValue === null)) && ($input.val() !== defaultValue);
     };
 
     this.validate = function () {
@@ -527,8 +504,8 @@ const FloatEditor__rewritten = function (args) {
     this.init();
 }
 
-FloatEditor__rewritten.DefaultDecimalPlaces = null;
-FloatEditor__rewritten.AllowEmptyValue = false;
+FloatEditorRewritten.DefaultDecimalPlaces = null;
+FloatEditorRewritten.AllowEmptyValue = false;
 
 
 /**
@@ -539,7 +516,7 @@ FloatEditor__rewritten.AllowEmptyValue = false;
  *
  * @constructor
  */
-const DateEditor__rewritten = function (args) {
+const DateEditorRewritten = function (args) {
     let inputElement;
     let defaultValue;
     let calendarOpen = false;
@@ -590,12 +567,6 @@ const DateEditor__rewritten = function (args) {
         if (calendarOpen) {
             inputElement.bootstrapDP('hide');
             calendarOpen = false;
-        }
-    };
-
-    this.position = function (position) {
-        if (calendarOpen) {
-            // Not sure what to do here. This function appears to be unbound to `this`
         }
     };
 
@@ -692,7 +663,7 @@ const regexFilter = function (string) {
  */
 const numberFilter = function (number) {
     try {
-        //noinspection JSValidateTypes
+        // noinspection JSValidateTypes
         return eval(number + ' ' + this.filterValue);
     }
     catch (e) {
@@ -777,14 +748,16 @@ export const regexMatchMultiple = function (regex, value) {
  */
 export const initFilter = function (inputSelector, grid, cols, defaultField) {
     let dataView = grid.getData();
-    let availableFilters = [], filterTypes = {};
+    let availableFilters = [],
+        filterTypes = {};
     for (let i = 0; i < cols.length; i++) {
         availableFilters.push(cols[i].field);
         filterTypes[cols[i].field] = cols[i].filter;
     }
 
     $(inputSelector).on("input", function () {
-        let filterContent = this.value.replace("\\(", "%%quoteb%%").replace("\\)", "%%quotee%%").trim();
+        let filterContent = this.value.replace("\\(", "%%quoteb%%").replace("\\)", "%%quotee%%").
+            trim();
         let matches = regexMatchMultiple(filtersRegex, filterContent);
         let filterArgs = {};
         let filterIsCompleted = true;
@@ -798,10 +771,7 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
 
         else {
             let allMatchesCombined = matches[0].trim();
-            if (allMatchesCombined != filterContent) {
-                filterIsCompleted = false;
-            }
-            else {
+            if (allMatchesCombined == filterContent) {
                 for (let i = 1; i < matches.length; i++) {
                     let filter = filterRegex.exec(matches[i]);
                     let param = filter[1].trim();
@@ -815,6 +785,9 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
                         filterArgs[param] = filterGenerator(param, filterType, value);
                     }
                 }
+            }
+            else {
+                filterIsCompleted = false;
             }
         }
         if (filterIsCompleted) {
@@ -865,17 +838,20 @@ export const gridFilter = function (item, filters) {
  * Make a copy of Slick.Editor and then add new editors
  */
 export const SlickEditors = $.extend({}, Slick.Editors);
-SlickEditors['Date'] = DateEditor__rewritten;
-SlickEditors['Float'] = FloatEditor__rewritten;
+SlickEditors.Date = DateEditorRewritten;
+SlickEditors.Float = FloatEditorRewritten;
 
 /**
  * A validator against zero length text
  */
 const NonBlankValidator = function (value) {
     if (isNull(value) || !value.length) {
-        return {valid: false, msg: "This is a required field"};
-    } else {
-        return {valid: true, msg: null};
+        return {valid: false,
+            msg: "This is a required field"};
+    }
+    else {
+        return {valid: true,
+            msg: null};
     }
 };
 
@@ -888,15 +864,17 @@ const NonBlankValidator = function (value) {
  */
 const IsoDateValidator = function (dateString) {
     let regEx = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateString.match(regEx))
-        return {valid: false, msg: "The format must be like 2016-01-20 (YYYY-MM-DD)"};
+    if (!dateString.match(regEx)) return {valid: false,
+        msg: "The format must be like 2016-01-20 (YYYY-MM-DD)"};
     let d;
-    if (!((d = new Date(dateString)) | 0))
-        return {valid: false, msg: "This date is invalid"};
+    if (!((d = new Date(dateString)) || 0)) return {valid: false,
+        msg: "This date is invalid"};
     if (d.toISOString().slice(0, 10) !== dateString) {
-        return {valid: false, msg: "This date is invalid"};
+        return {valid: false,
+            msg: "This date is invalid"};
     }
-    return {valid: true, msg: null};
+    return {valid: true,
+        msg: null};
 };
 
 /**
@@ -931,7 +909,7 @@ export const updateSlickGridData = function (grid, rows) {
  */
 export const appendSlickGridData = function (grid, rows) {
     let dataView = grid.getData();
-    let row, i;
+    let i, row;
     for (i = 0; i < rows.length; i++) {
         row = rows[i];
         if (row) {
@@ -960,24 +938,25 @@ export const deleteSyllableGridData = function (grid, sylsToDelete) {
     for (let i = 0; i < sylsToDelete.length; i++) {
         dataView.deleteItem(sylsToDelete[i]);
     }
-    //dataView.endUpdate();
+    // dataView.endUpdate();
 };
 
 
 /**
  * Attach any class designated by 'rowClass1 property to the row
- * @param old_metadata
+ * @param oldMetadata
  * @returns {Function}
  */
-function metadata(old_metadata) {
+function metadata(oldMetadata) {
     return function (row) {
         let item = this.getItem(row);
-        let meta = old_metadata(row) || {};
+        let meta = oldMetadata(row) || {};
         if (item) {
             if (item.rowClass) {
                 if (meta.cssClasses) {
                     meta.cssClasses += ' ' + item.rowClass;
-                } else {
+                }
+                else {
                     meta.cssClasses = ' ' + item.rowClass;
                 }
             }
@@ -989,12 +968,11 @@ function metadata(old_metadata) {
 
 /**
  * If there is already a column in the array with the same ID, replace that with a new column
- * Otherwise insert the new column at position
+ * Otherwise insert the new column at the beginning
  * @param columns An array of columns. It will be modified.
  * @param newcol A new column
- * @param position the position to insert if not found
  */
-const insertOrReplaceColumn = function (columns, newcol, position) {
+const insertOrReplaceColumn = function (columns, newcol) {
     let index = -1;
     for (let i = 0; i < columns.length; i++) {
         let column = columns[i];
@@ -1052,10 +1030,14 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 
     let columnActions = [];
     const gridType = args.gridType;
+
     /*
      * Assign appropriate input validator, input editor, output formatter, and make the cell width minimum at 50px
      */
-    let swappableFields = [], swappableClasses = [], idxOfActionColumn;
+    let swappableFields = [];
+    let swappableClasses = [];
+    let idxOfActionColumn;
+
     for (let i = 0; i < columns.length; i++) {
         let c = columns[i];
 
@@ -1117,7 +1099,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     grid.setSelectionModel(new Slick.RowSelectionModel({selectActiveRow: false}));
     if (selectorPlugin) {
         // Inject the checkbox column at the beginning of the column list or replace it with an existing column
-        insertOrReplaceColumn(columns, selectorPlugin.getColumnDefinition(), 0);
+        insertOrReplaceColumn(columns, selectorPlugin.getColumnDefinition());
 
         grid.registerPlugin(selectorPlugin);
         grid.getCheckBoxSelector = function () {
@@ -1142,7 +1124,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             formatter: RowMoveableFormatter
         };
 
-        insertOrReplaceColumn(columns, moveableHandlerCol, 0);
+        insertOrReplaceColumn(columns, moveableHandlerCol);
 
         moveRowsPlugin.onBeforeMoveRows.subscribe(function (e, data) {
             for (let i = 0; i < data.rows.length; i++) {
@@ -1154,33 +1136,34 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             }
             return true;
         });
-        moveRowsPlugin.onMoveRows.subscribe(function (e, args) {
-            let extractedRows = [], left, right;
-            let rows = args.rows;
-            let insertBefore = args.insertBefore;
+        moveRowsPlugin.onMoveRows.subscribe(function (e, args_) {
+            let extractedRows = [],
+                left, right;
+            let rows_ = args_.rows;
+            let insertBefore = args_.insertBefore;
             let dataView = grid.getData();
             let data = dataView.getItems();
             left = data.slice(0, insertBefore);
             right = data.slice(insertBefore, data.length);
-            rows.sort(function (a, b) {
+            rows_.sort(function (a, b) {
                 return a - b;
             });
-            for (let i = 0; i < rows.length; i++) {
-                extractedRows.push(data[rows[i]]);
+            for (let i = 0; i < rows_.length; i++) {
+                extractedRows.push(data[rows_[i]]);
             }
-            rows.reverse();
-            for (let i = 0; i < rows.length; i++) {
-                let row = rows[i];
+            rows_.reverse();
+            for (let i = 0; i < rows_.length; i++) {
+                let row = rows_[i];
                 if (row < insertBefore) {
                     left.splice(row, 1);
-                } else {
+                }
+                else {
                     right.splice(row - insertBefore, 1);
                 }
             }
             data = left.concat(extractedRows.concat(right));
             let selectedRows = [];
-            for (let i = 0; i < rows.length; i++)
-                selectedRows.push(left.length + i);
+            for (let i = 0; i < rows_.length; i++) selectedRows.push(left.length + i);
             grid.resetActiveCell();
             // let filterArgs = getCache('filterArgs');
             // dataView.setFilterArgs(null);
@@ -1206,17 +1189,17 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
      * options on the row items.
      */
     if (swappableFields.length) {
-        let fieldValue, swappableOptions, swappableField, swappableClass;
+        let fieldValue, swappableClass, swappableField, swappableOptions;
         for (let i = 0; i < swappableFields.length; i++) {
             swappableField = swappableFields[i];
             swappableClass = swappableClasses[i];
-            for (let i = 0; i < rows.length; i++) {
-                fieldValue = rows[i][swappableField];
+            for (let j = 0; j < rows.length; j++) {
+                fieldValue = rows[j][swappableField];
                 swappableOptions = getCache('aliases', swappableClass)[fieldValue];
-                if (rows[i].swappables === undefined) {
-                    rows[i].swappables = {};
+                if (rows[j].swappables === undefined) {
+                    rows[j].swappables = {};
                 }
-                rows[i].swappables[swappableField] = swappableOptions;
+                rows[j].swappables[swappableField] = swappableOptions;
             }
         }
     }
@@ -1229,12 +1212,12 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     grid.init();
 
     // Make the grid respond to DataView change events.
-    dataView.onRowCountChanged.subscribe(function (e, args) {
+    dataView.onRowCountChanged.subscribe(function () {
         grid.updateRowCount();
     });
 
-    dataView.onRowsChanged.subscribe(function (e, args) {
-        grid.invalidateRows(args.rows);
+    dataView.onRowsChanged.subscribe(function (e, args_) {
+        grid.invalidateRows(args_.rows);
         grid.render();
     });
 
@@ -1252,18 +1235,20 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     /*
      * A standard sort function
      */
-    grid.onSort.subscribe(function (e, args) {
-        let cols = args.sortCols;
+    grid.onSort.subscribe(function (e, args_) {
+        let cols = args_.sortCols;
         dataView.sort(function (dataRow1, dataRow2) {
             for (let i = 0, l = cols.length; i < l; i++) {
                 let field = cols[i].sortCol.field;
                 let sign = cols[i].sortAsc ? 1 : -1;
                 if (field === 'sel') {
-                    let value1 = dataRow1._sel, value2 = dataRow2._sel;
+                    let value1 = dataRow1._sel,
+                        value2 = dataRow2._sel;
                     return value1 ? value2 ? 0 : sign : value2 ? -sign : 0;
                 }
                 else {
-                    let value1 = dataRow1[field], value2 = dataRow2[field];
+                    let value1 = dataRow1[field],
+                        value2 = dataRow2[field];
                     let result = (value1 === value2 ? 0 : (value1 > value2 ? 1 : -1)) * sign;
                     if (result !== 0) {
                         return result;
@@ -1272,28 +1257,30 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
             }
             return 0;
         });
-        args.grid.invalidate();
-        args.grid.render();
+        args_.grid.invalidate();
+        args_.grid.render();
     });
 
     /*
      * Destroy the current tooltip before the editor is destroyed.
      * (If there is still an error, a new tooltip will be created anyway)
      */
-    grid.onBeforeCellEditorDestroy.subscribe(function (e, args) {
-        let currentCell = args.grid.getActiveCell();
-        let currentElement = $(args.grid.getCellNode(currentCell.row, currentCell.cell));
-        currentElement.parent().find('[role=tooltip]').remove();
-        currentElement.attr('data-placement', undefined).attr('data-original-title', undefined).attr('data-content', undefined);
+    grid.onBeforeCellEditorDestroy.subscribe(function (e, args_) {
+        let currentCell = args_.grid.getActiveCell();
+        let currentElement = $(args_.grid.getCellNode(currentCell.row, currentCell.cell));
+        currentElement.parent().find('[role=tooltip]').
+            remove();
+        currentElement.attr('data-placement', undefined).attr('data-original-title', undefined).
+            attr('data-content', undefined);
     });
 
     /*
      * Show a tooltip if input error
      */
-    grid.onValidationError.subscribe(function (e, args) {
-        let element = $(args.grid.getCellNode(args.row, args.cell));
-        let rowCount = args.grid.getDataLength();
-        let currentRowIndex = args.row;
+    grid.onValidationError.subscribe(function (e, args_) {
+        let element = $(args_.grid.getCellNode(args_.row, args_.cell));
+        let rowCount = args_.grid.getDataLength();
+        let currentRowIndex = args_.row;
         let toolTipPlace = 'top';
 
         /*
@@ -1302,28 +1289,30 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         if (currentRowIndex < rowCount / 2) {
             toolTipPlace = 'bottom'
         }
-        element.attr('data-placement', toolTipPlace).attr('data-original-title', 'Input error').attr('data-content', args.validationResults.msg).popover('show');
+        element.attr('data-placement', toolTipPlace).attr('data-original-title', 'Input error').
+            attr('data-content', args_.validationResults.msg).
+            popover('show');
     });
 
 
     /*
      * Allow adding a new item and edit items that allow edit, except the fields that are not editable
      */
-    grid.onBeforeEditCell.subscribe(function (e, args) {
-        let field = args.column.field;
-        let field_editability = '__' + field + '_editable';
+    grid.onBeforeEditCell.subscribe(function (e, args_) {
+        let field = args_.column.field;
+        let fieldEditability = '__' + field + '_editable';
         let editable = true;
-        if (!isNull(args.item[field_editability])) {
-            editable = args.item[field_editability];
+        if (!isNull(args_.item[fieldEditability])) {
+            editable = args_.item[fieldEditability];
         }
-        let value = args.item[field];
-        args.item['_old_' + field] = value;
+        let value = args_.item[field];
+        args_.item['_old_' + field] = value;
 
-        if (args.row === args.grid.getDataLength()) {
+        if (args_.row === args_.grid.getDataLength()) {
             return true;
         }
         else {
-            let item = args.item;
+            let item = args_.item;
 
             /*
              * item._isNew when it is being created, in which case any field (incl. immutable fields) can be edited.
@@ -1334,26 +1323,25 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
              * TL;DR: user can make change to a field of a new item or of an exiting item given that both the item and the
              *   field are editable (some items have a blanket ban on editing)
              */
-            if (item._isNew)
-                return true;
+            if (item._isNew) return true;
 
-            return (args.column.editable !== false && item.editable !== false && editable);
+            return (args_.column.editable !== false && item.editable !== false && editable);
         }
     });
 
     /*
      * Add new row to the grid (but not yet submitted to the server)
      */
-    grid.onAddNewRow.subscribe(function (e, args) {
-        let item = args.item;
-        let dataView = grid.getData();
-        let rows = dataView.getItems();
+    grid.onAddNewRow.subscribe(function (e, args_) {
+        let item = args_.item;
+        let dataView_ = grid.getData();
+        let items = dataView_.getItems();
         item._isNew = true;
-        item.id = rows.length;
-        args.grid.invalidateRow(rows.length);
-        dataView.addItem(item);
-        args.grid.updateRowCount();
-        args.grid.render();
+        item.id = items.length;
+        args_.grid.invalidateRow(items.length);
+        dataView_.addItem(item);
+        args_.grid.updateRowCount();
+        args_.grid.render();
     });
 
     /*
@@ -1362,12 +1350,13 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     if (columnActions.length) {
 
         if (apa.hasActionsOfType('click', columnActions)) {
-            grid.onClick.subscribe(function (e, args) {
-                let action = $(e.target).closest('button').attr("action");
+            grid.onClick.subscribe(function (e, args_) {
+                let action = $(e.target).closest('button').
+                    attr("action");
                 let handler = apa.actionHandlers[action];
-                let row = args.row;
-                let dataView = args.grid.getData();
-                let item = dataView.getItem(row);
+                let row = args_.row;
+                let dataView_ = args_.grid.getData();
+                let item = dataView_.getItem(row);
 
                 if (apa.isClickableOnRow(row, item, action)) {
                     handler(row, grid);
@@ -1376,19 +1365,19 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         }
 
         if (apa.hasActionsOfType('resize', columnActions)) {
-            grid.onColumnsResized.subscribe(function (e, args) {
+            grid.onColumnsResized.subscribe(function (e, args_) {
                 let handlers = apa.getHandlerOfActionType('resize', columnActions);
                 for (let i = 0; i < handlers.length; i++) {
-                    handlers[i](e, args.grid, gridType);
+                    handlers[i](e, args_.grid, gridType);
                 }
             });
         }
 
         if (apa.hasActionsOfType('reorder', columnActions)) {
-            grid.onColumnsReordered.subscribe(function (e, args) {
+            grid.onColumnsReordered.subscribe(function (e, args_) {
                 let handlers = apa.getHandlerOfActionType('reorder', columnActions);
                 for (let i = 0; i < handlers.length; i++) {
-                    handlers[i](e, args.grid, gridType);
+                    handlers[i](e, args_.grid, gridType);
                 }
             });
         }
@@ -1397,15 +1386,15 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     /*
      * Allow changing the property
      */
-    grid.onCellChange.subscribe(function (e, args) {
-        let item = args.item;
-        let dataView = grid.getData();
-        let rows = dataView.getItems();
+    grid.onCellChange.subscribe(function (e, args_) {
+        let item = args_.item;
+        let dataView_ = grid.getData();
+        let items = dataView_.getItems();
         item._isChanged = true;
-        args.grid.invalidateRow(rows.length);
-        dataView.updateItem(item.id, item);
-        args.grid.updateRowCount();
-        args.grid.render();
+        args_.grid.invalidateRow(items.length);
+        dataView_.updateItem(item.id, item);
+        args_.grid.updateRowCount();
+        args_.grid.render();
     });
 
     return grid;
@@ -1465,10 +1454,9 @@ export const createCsv = function (grid, downloadType) {
     // Must enclose the column headings in quotes otherwise if the first column is `ID`, Excel
     // complains that the file type doesn't match
     // Also enclose everything in quote to avoid having strings with special characters in it
-
-    let lineArray = [columnHeadings.map(x => `"${x.replace(/"/g, '\"\"')}"`).join(',')];
+    let lineArray = [columnHeadings.map((x) => `"${x.replace(/"/g, '""')}"`).join(',')];
     rows.forEach(function (rowArray) {
-        let line = [rowArray.map(x => `"${x.replace(/"/g, '\"\"')}"`)].join(",");
+        let line = [rowArray.map((x) => `"${x.replace(/"/g, '""')}"`)].join(",");
         lineArray.push(line);
     });
 
@@ -1482,9 +1470,10 @@ export const createCsv = function (grid, downloadType) {
  * @param filename name with extension
  */
 export const downloadBlob = function (blob, filename) {
-    if (navigator.msSaveBlob) { // IE 10+
+    if (navigator.msSaveBlob) {
         navigator.msSaveBlob(blob, filename);
-    } else {
+    }
+    else {
         let link = document.createElement("a");
         if (link.download !== undefined) {
             // Browsers that support HTML5 download attribute

@@ -1,9 +1,11 @@
+/* eslint global-require: off */
+
 let Urls = window.Urls;
 export {
     Urls,
 };
 
-import {isNull, SlickEditors, setCache, getCache} from "./utils";
+import {isNull, SlickEditors} from "./utils";
 import {SelectizeEditor} from "./selectize-formatter";
 
 let page;
@@ -16,12 +18,12 @@ const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
 const commonElements = {
-    dialogModal: dialogModal,
-    dialogModalTitle: dialogModalTitle,
-    dialogModalBody: dialogModalBody,
-    dialogModalOkBtn: dialogModalOkBtn,
-    alertSuccess: alertSuccess,
-    alertFailure: alertFailure
+    dialogModal,
+    dialogModalTitle,
+    dialogModalBody,
+    dialogModalOkBtn,
+    alertSuccess,
+    alertFailure
 };
 
 
@@ -30,7 +32,7 @@ const commonElements = {
  */
 const restoreModalAfterClosing = function () {
 
-    dialogModal.on('hidden.bs.modal', function (e) {
+    dialogModal.on('hidden.bs.modal', function () {
         // Restore keyboard navigation to the grid
         $($('div[hidefocus]')[0]).focus();
     });
@@ -85,7 +87,7 @@ const adjustFullHeightOffset = function () {
  */
 const _preRun = function () {
 
-    SlickEditors['Select'] = SelectizeEditor;
+    SlickEditors.Select = SelectizeEditor;
 
     adjustFullHeightOffset();
     let body = $("body");
@@ -94,10 +96,10 @@ const _preRun = function () {
      * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
      */
     $(document).on({
-        ajaxStart: function () {
+        ajaxStart () {
             body.addClass("loading");
         },
-        ajaxStop: function () {
+        ajaxStop () {
             body.removeClass("loading");
         }
     });
@@ -181,8 +183,6 @@ const _postRun = function () {
  */
 $(document).ready(function () {
     let pageName = location.pathname;
-    console.log("Loading " + pageName);
-
     if (pageName === '/') {
         page = require('home-page');
     }

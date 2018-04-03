@@ -1,6 +1,6 @@
 import * as fg from "flexible-grid";
 import {defaultGridOptions} from "./flexible-grid";
-import {getUrl, deepCopy, log} from "./utils";
+import {getUrl, deepCopy} from "./utils";
 
 const gridOptions = deepCopy(defaultGridOptions);
 
@@ -10,9 +10,9 @@ class SegmentGrid extends fg.FlexibleGrid {
             'grid-name': 'version-grid',
             'grid-type': 'version-grid',
             'default-field': 'label_family',
-            gridOptions: gridOptions
+            gridOptions
         });
-    };
+    }
 
     rowChangeHandler(e, args) {
         super.rowChangeHandler(e, args, generalResponseHandler);
@@ -39,9 +39,9 @@ const subscribeFlexibleEvents = function () {
         let versionId = args.item.id;
         let versionName = args.item.url;
 
-        ce.dialogModal
-            .data("versionId", versionId)
-            .data("versionName", versionName);
+        ce.dialogModal.
+            data("versionId", versionId).
+            data("versionName", versionName);
 
     });
 };
@@ -58,14 +58,16 @@ const generalResponseHandler = function (response) {
         alertEl = ce.alertFailure;
     }
     alertEl.html(message);
-    alertEl.fadeIn().delay(4000).fadeOut(400);
+    alertEl.fadeIn().delay(4000).
+        fadeOut(400);
 };
 
 /**
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: false, radioSelect: true});
+    grid.redrawMainGrid({rowMoveable: false,
+        radioSelect: true});
 };
 
 
@@ -75,14 +77,13 @@ const initApplyVersionBtn = function () {
         let versionName = ce.dialogModal.data("versionName");
 
         ce.dialogModalTitle.html("Confirm import history");
-        ce.dialogModalBody.html(
-            `Importing history from will erase your current data.
+        ce.dialogModalBody.html(`Importing history from will erase your current data.
              Make sure you have saved the current version before doing this.
              Are you sure you want to import ${versionName}?`);
 
         ce.dialogModal.modal('show');
 
-        ce.dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/import-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully imported`;
@@ -93,7 +94,8 @@ const initApplyVersionBtn = function () {
                     alertEl = ce.alertFailure
                 }
                 alertEl.html(message);
-                alertEl.fadeIn().delay(4000).fadeOut(400);
+                alertEl.fadeIn().delay(4000).
+                    fadeOut(400);
             });
             ce.dialogModal.modal('hide');
         })
@@ -107,12 +109,11 @@ const initDeleteVersionBtn = function () {
         let versionName = ce.dialogModal.data("versionName");
 
         ce.dialogModalTitle.html("Confirm delete history");
-        ce.dialogModalBody.html(
-            `Are you sure you want to delete ${versionName}?`);
+        ce.dialogModalBody.html(`Are you sure you want to delete ${versionName}?`);
 
         ce.dialogModal.modal('show');
 
-        ce.dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/delete-history');
             $.post(url, {'version-id': versionId}, function (response) {
                 let message = `Verison ${versionName} successfully deleted. This page will reload`;
@@ -126,7 +127,8 @@ const initDeleteVersionBtn = function () {
                     callback = undefined;
                 }
                 alertEl.html(message);
-                alertEl.fadeIn().delay(4000).fadeOut(400, callback);
+                alertEl.fadeIn().delay(4000).
+                    fadeOut(400, callback);
             });
             ce.dialogModal.modal('hide');
         })
@@ -139,11 +141,11 @@ const initDeleteVersionBtn = function () {
  */
 const initImportZipBtn = function () {
     let url = getUrl('send-request', 'koe/import-history');
-    importZipBtn.click(function (e) {
+    importZipBtn.click(function () {
         fileUploadInput.click();
     });
 
-    fileUploadInput.change(function (e) {
+    fileUploadInput.change(function () {
         fileUploadBtn.click();
     });
 
@@ -156,7 +158,8 @@ const initImportZipBtn = function () {
             alertEl = ce.alertFailure;
         }
         alertEl.html(message);
-        alertEl.fadeIn().delay(4000).fadeOut(400);
+        alertEl.fadeIn().delay(4000).
+            fadeOut(400);
     };
 
     fileUploadForm.submit(function (e) {
@@ -164,10 +167,10 @@ const initImportZipBtn = function () {
         let filename = fileUploadInput.val();
         let formData = new FormData(this);
         $.ajax({
-            url: url,
+            url,
             type: 'POST',
             data: formData,
-            success: responseHandler.bind({filename: filename}),
+            success: responseHandler.bind({filename}),
             // !IMPORTANT: this tells jquery to not set expectation of the content type.
             // If not set to false it will not send the file
             contentType: false,
@@ -181,11 +184,11 @@ const initImportZipBtn = function () {
 };
 
 export const run = function (commonElements) {
-    console.log("History page is now running.");
     ce = commonElements;
 
     grid.init();
-    grid.initMainGridHeader({rowMoveable: false, radioSelect: true}, function () {
+    grid.initMainGridHeader({rowMoveable: false,
+        radioSelect: true}, function () {
         grid.initMainGridContent();
     });
 };

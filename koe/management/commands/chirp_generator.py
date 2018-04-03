@@ -24,7 +24,7 @@ def gererate_f0_profile(time_arr, t1f, t2, t2f, method, centre=0.5):
 
 
 def generate_amp_profile(length, fadein=False, fadeout=False):
-    original = np.ones((length, ), dtype=np.float32)
+    original = np.ones((length,), dtype=np.float32)
     if fadein:
         onset_idx = int(length * 0.3)
         fading_factor = np.linspace(0.1, 1, onset_idx)
@@ -44,13 +44,16 @@ f0_profiles = {
     'squeak-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'logarithmic'),
     'squeak-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'logarithmic'),
     'squeak-convex': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic'),
-    'squeak-convex-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic', centre=1/3),
-    'squeak-convex-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic', centre=2/3),
+    'squeak-convex-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic',
+                                                        centre=1 / 3),
+    'squeak-convex-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic',
+                                                         centre=2 / 3),
     'squeak-concave': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic'),
-    'squeak-concave-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic', centre=1/3),
-    'squeak-concave-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic', centre=2/3),
+    'squeak-concave-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic',
+                                                         centre=1 / 3),
+    'squeak-concave-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic',
+                                                          centre=2 / 3),
 }
-
 
 amp_profiles = {
     'constant': lambda length: generate_amp_profile(length, fadein=False, fadeout=False),
@@ -58,7 +61,6 @@ amp_profiles = {
     # 'fade-out': lambda length: generate_amp_profile(length, fadein=False, fadeout=True),
     # 'fade-in-out': lambda length: generate_amp_profile(length, fadein=True, fadeout=True),
 }
-
 
 f0_profile_names = f0_profiles.keys()
 amp_profile_names = amp_profiles.keys()
@@ -95,7 +97,8 @@ def generate_chirp(f0_profile, amp_profile, duration, fs):
     time_arr, t1f, t2, t2f, method = f0_profiles[f0_profile](time_arr)
     amp = amp_profiles[amp_profile](len(time_arr))
 
-    signal = scipy.signal.chirp(time_arr, t1f, t2, t2f, method=method).astype(np.float32)
+    signal = scipy.signal.chirp(
+        time_arr, t1f, t2, t2f, method=method).astype(np.float32)
     signal *= amp
 
     return signal
@@ -113,7 +116,8 @@ def generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat'):
             chirp = generate_chirp(name, amp_profile_name, duration, fs)
 
             if matfile:
-                mat['chirp_{}_{}'.format(matlab_f0_idx, matlab_amp_idx)] = chirp
+                mat['chirp_{}_{}'.format(
+                    matlab_f0_idx, matlab_amp_idx)] = chirp
                 mat['fs_{}_{}'.format(matlab_f0_idx, matlab_amp_idx)] = fs
 
             chirps.append(chirp)
@@ -139,12 +143,12 @@ def generate_chirp_dictionary(pklfile, database):
     :param pklfile: path to the pickle file to be saved
     :return: None
     """
-    durations = list(set(Segment.objects.filter(segmentation__audio_file__database=database)\
-                                        .annotate(duration=F('end_time_ms') - F('start_time_ms'))\
-                                        .values_list('duration', flat=True)))
+    durations = list(set(Segment.objects.filter(segmentation__audio_file__database=database)
+                         .annotate(duration=F('end_time_ms') - F('start_time_ms'))
+                         .values_list('duration', flat=True)))
 
-    fss = list(set(Segment.objects.filter(segmentation__audio_file__database=database)\
-                             .values_list('segmentation__audio_file__fs', flat=True)))
+    fss = list(set(Segment.objects.filter(segmentation__audio_file__database=database)
+                   .values_list('segmentation__audio_file__fs', flat=True)))
 
     chirp_dict = OrderedDict()
     fs = fss[0]
@@ -155,7 +159,8 @@ def generate_chirp_dictionary(pklfile, database):
         for amp_profile_name in amp_profile_names:
             _f0 = {}
             for f0_profile_name in f0_profile_names:
-                chirp = generate_chirp(f0_profile_name, amp_profile_name, duration, fs)
+                chirp = generate_chirp(
+                    f0_profile_name, amp_profile_name, duration, fs)
                 _f0[f0_profile_name] = chirp
                 bar.next()
             _amp[amp_profile_name] = _f0
@@ -180,7 +185,8 @@ class Command(BaseCommand):
     def handle(self, database_name, *args, **options):
         database, _ = Database.objects.get_or_create(name=database_name)
 
-        generate_chirp_dictionary('chirps-{}.pkl'.format(database_name), database)
+        generate_chirp_dictionary(
+            'chirps-{}.pkl'.format(database_name), database)
 
         # chirp = generate_chirp('pipe', 'constant', 182 / 1000, 48000)
         #
@@ -217,7 +223,6 @@ class Command(BaseCommand):
         # order_ = sorted_order[np.searchsorted(ids, ids_)]
         # print(order_)
 
-
         # with open('mfcc-nmfcc=13-delta=2-euclid_squared-dtw-max.pkl', 'rb') as f:
         #     data = pickle.load(f)
 
@@ -230,7 +235,6 @@ class Command(BaseCommand):
         # c.coordinates = data['coordinates']
         # c.save()
 
-
         # coordinates = DistanceMatrix()
         # coordinates.ids = np.array([1,2,3,4,5])
         # coordinates.triu = np.array([9,8,7,6,5,4,3,2,1])
@@ -240,5 +244,3 @@ class Command(BaseCommand):
         #
         # coordinates = DistanceMatrix.objects.all()[0]
         # print(coordinates)
-
-

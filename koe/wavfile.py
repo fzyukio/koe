@@ -15,7 +15,8 @@
 # * write: 24 bit support
 # * write: can write from a float normalized in [-1, 1]
 #
-# * removed RIFX support (big-endian) (never seen one in 10+ years of audio production/audio programming), only RIFF (little-endian) are supported
+# * removed RIFX support (big-endian) (never seen one in 10+ years of audio production/audio programming),
+#   only RIFF (little-endian) are supported
 # * removed read(..., mmap)
 #
 #
@@ -257,11 +258,11 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
 
         elif chunk_id == b'smpl':
             str1 = fid.read(40)
-            size, manuf, prod, sampleperiod, midiunitynote, midipitchfraction, smptefmt, smpteoffs, numsampleloops, samplerdata = struct.unpack(
-                '<iiiiiIiiii', str1)
+            size, manuf, prod, fs, midiunitynote, midipitchfraction, smptefmt, smpteoffs, nsampleloops, samplerdata = \
+                struct.unpack('<iiiiiIiiii', str1)
             cents = midipitchfraction * 1. / (2 ** 32 - 1)
             pitch = 440. * 2 ** ((midiunitynote + cents - 69.) / 12)
-            for i in range(numsampleloops):
+            for i in range(nsampleloops):
                 str1 = fid.read(24)
                 cuepointid, type, start, end, fraction, playcount = struct.unpack('<iiiiii', str1)
                 loops.append([start, end])
@@ -277,12 +278,12 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
     _cue = [m['position'] for m in _markerslist]
     _cuelabels = [m['label'] for m in _markerslist]
 
-    return (rate, data, bits,) \
-           + ((_cue,) if readmarkers else ()) \
-           + ((_cuelabels,) if readmarkerlabels else ()) \
-           + ((_markerslist,) if readmarkerslist else ()) \
-           + ((loops,) if readloops else ()) \
-           + ((pitch,) if readpitch else ())
+    return (rate, data, bits,) + \
+           ((_cue,) if readmarkers else ()) + \
+           ((_cuelabels,) if readmarkerlabels else ()) + \
+           ((_markerslist,) if readmarkerslist else ()) + \
+           ((loops,) if readloops else ()) + \
+           ((pitch,) if readpitch else ())
 
 
 def write_raw():
@@ -415,9 +416,11 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
         else:
             a32 = numpy.asarray(data, dtype=numpy.int32)
         if a32.ndim == 1:
-            a32.shape = a32.shape + (1,)  # Convert to a 2D array with a single column.
-        a8 = (a32.reshape(a32.shape + (1,)) >> numpy.array([0, 8,
-                                                            16])) & 255  # By shifting first 0 bits, then 8, then 16, the resulting output is 24 bit little-endian.
+            # Convert to a 2D array with a single column.
+            a32.shape = a32.shape + (1,)
+
+        # By shifting first 0 bits, then 8, then 16, the resulting output is 24 bit little-endian.
+        a8 = (a32.reshape(a32.shape + (1,)) >> numpy.array([0, 8, 16])) & 255
         data = a8.astype(numpy.uint8)
     else:
         if normalized:  # default to 32 bit int

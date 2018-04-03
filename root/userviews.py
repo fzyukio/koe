@@ -10,7 +10,6 @@ from root.models import User
 from root.utils import forget_password_handler
 
 
-
 def handle_redirect(request):
     """
     Redirect the user to the "next" address, e.g. localhost:8000/login?next=/ will redirect to localhost:8000/
@@ -56,7 +55,7 @@ class UserSignInView(FormView, RedirectIfAuthenticated):
 
         if not user.is_active:
             form.add_error('acc_or_email', 'Account is disabled. '
-                                       'Please contact the web administrator to enable your account')
+                                           'Please contact the web administrator to enable your account')
             context = self.get_context_data()
             context['form'] = form
             return self.render_to_response(context)

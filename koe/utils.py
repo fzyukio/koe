@@ -2,6 +2,7 @@ import base64
 import binascii
 import io
 import re
+import contextlib
 
 import joblib
 import numpy as np
@@ -108,7 +109,7 @@ def normxcorr2(template, image, mode="valid"):
 
     # If this happens, it is probably a mistake
     if np.ndim(template) > np.ndim(image) or \
-                    len([i for i in range(np.ndim(template)) if template.shape[i] > image.shape[i]]) > 0:
+            len([i for i in range(np.ndim(template)) if template.shape[i] > image.shape[i]]) > 0:
         print("normxcorr2: TEMPLATE larger than IMG. Arguments may be swapped.")
 
     template -= np.mean(template)
@@ -119,8 +120,8 @@ def normxcorr2(template, image, mode="valid"):
     ar = np.flipud(np.fliplr(template))
     out = fftconvolve(image, ar.conj(), mode=mode)
 
-    image = fftconvolve(np.square(image), a1, mode=mode) - \
-            np.square(fftconvolve(image, a1, mode=mode)) / (np.prod(template.shape))
+    image = fftconvolve(np.square(image), a1, mode=mode)\
+        - np.square(fftconvolve(image, a1, mode=mode)) / (np.prod(template.shape))
 
     # Remove small machine precision errors after subtraction
     image[np.where(image < 0)] = 0
@@ -134,8 +135,6 @@ def normxcorr2(template, image, mode="valid"):
     return out
 
 
-import contextlib
-
 @contextlib.contextmanager
 def printoptions(*args, **kwargs):
     original = np.get_printoptions()
@@ -148,7 +147,8 @@ def printoptions(*args, **kwargs):
 
 if __name__ == '__main__':
     b = np.array([[8, 1, 6], [3, 5, 7], [4, 9, 2]], dtype=np.float64)
-    a = np.array([[8, 1, 6, 8, 5], [3, 5, 7, 4, 6], [4, 9, 2, 0, 2], [0, 2, 9, 1, 3], [1, 8, 5, 2, 9]], dtype=np.float64)
+    a = np.array([[8, 1, 6, 8, 5], [3, 5, 7, 4, 6], [4, 9, 2, 0, 2], [0, 2, 9, 1, 3], [1, 8, 5, 2, 9]],
+                 dtype=np.float64)
 
     c = normxcorr2(b, a)
     with printoptions(precision=3, suppress=True):

@@ -1,3 +1,4 @@
+/* global Slick */
 import * as utils from './utils';
 
 require('slickgrid/plugins/slick.autotooltips');
@@ -35,7 +36,7 @@ export class FlexibleGrid {
         this.currentMouseEvent = null;
 
         this.mainGridSelector = '#' + this.gridName;
-        this.gridOptions = args['gridOptions'] || defaultGridOptions;
+        this.gridOptions = args.gridOptions || defaultGridOptions;
         this.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
         this.mainGrid.registerPlugin(new Slick.AutoTooltips());
         this.filterSelector = '#' + this.gridName + '-filter';
@@ -102,7 +103,7 @@ export class FlexibleGrid {
         else {
             rowElement.removeClass('highlight');
         }
-    };
+    }
 
     /**
      * Handling the event when a row is selected or not selected
@@ -116,8 +117,12 @@ export class FlexibleGrid {
         let dataView = grid.getData();
         let rows = args.rows;
         let previousRows = utils.getCache(self.previousRowCacheName) || {};
-        let i, row, rowId, fileId, item;
-        let removedRows = [], addedRows = [], removedItems = [], addedItems = [];
+        let i, item, row, rowId;
+        let removedRows = [];
+        let addedItems = [];
+        let addedRows = [];
+        let removedItems = [];
+
 
         for (rowId in previousRows) {
             if (previousRows.hasOwnProperty(rowId)) {
@@ -147,26 +152,41 @@ export class FlexibleGrid {
         }
 
         if (removedItems.length > 1) {
-            self.eventNotifier.trigger('rows-removed', {rows: removedRows, items: removedItems, grid: grid});
+            self.eventNotifier.trigger('rows-removed', {
+                rows: removedRows,
+                items: removedItems,
+                grid
+            });
         }
         else if (removedItems.length > 0) {
-            self.eventNotifier.trigger('row-removed', {row: removedRows[0], item: removedItems[0], grid: grid});
+            self.eventNotifier.trigger('row-removed', {
+                row: removedRows[0],
+                item: removedItems[0],
+                grid
+            });
         }
 
         if (addedItems.length > 1) {
-            self.eventNotifier.trigger('rows-added', {rows: addedRows, items: addedItems, grid: grid});
+            self.eventNotifier.trigger('rows-added', {
+                rows: addedRows,
+                items: addedItems,
+                grid
+            });
         }
         else if (addedItems.length > 0) {
-            self.eventNotifier.trigger('row-added', {row: addedRows[0], item: addedItems[0], grid: grid});
+            self.eventNotifier.trigger('row-added', {
+                row: addedRows[0],
+                item: addedItems[0],
+                grid
+            });
         }
 
         utils.setCache(self.previousRowCacheName, previousRows);
-    };
+    }
 
 
     rowChangeHandler(e, args, callback) {
         const self = this;
-        let dataView = args.grid.getData();
         let item = args.item;
         let selectableColumns = utils.getCache('selectableOptions');
 
@@ -190,7 +210,7 @@ export class FlexibleGrid {
 
         let postArgs = utils.deepCopy(self.defaultArgs);
         postArgs['grid-type'] = self.gridType;
-        postArgs['property'] = JSON.stringify(itemSimplified);
+        postArgs.property = JSON.stringify(itemSimplified);
 
         $.post(
             utils.getUrl('send-request', 'change-properties'),
@@ -208,7 +228,7 @@ export class FlexibleGrid {
      */
     appendRows(rows) {
         utils.appendSlickGridData(this.mainGrid, rows);
-    };
+    }
 
     /**
      *
@@ -227,7 +247,7 @@ export class FlexibleGrid {
         for (let i = 0; i < rows.length; i++) {
             dataView.deleteItem(rows[i]);
         }
-    };
+    }
 
     /**
      * Delete everything
@@ -266,8 +286,10 @@ export class FlexibleGrid {
             self.columns = JSON.parse(columns);
 
             utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
-                multiSelect: args.multiSelect, radioSelect: args.radioSelect,
-                rowMoveable: args.rowMoveable, gridType: self.gridType,
+                multiSelect: args.multiSelect,
+                radioSelect: args.radioSelect,
+                rowMoveable: args.rowMoveable,
+                gridType: self.gridType,
                 filter: args.filter || utils.gridFilter
             });
 
@@ -287,8 +309,10 @@ export class FlexibleGrid {
         self.mainGrid.registerPlugin(new Slick.AutoTooltips());
 
         utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
-            multiSelect: args.multiSelect, radioSelect: args.radioSelect,
-            rowMoveable: args.rowMoveable, gridType: self.gridType,
+            multiSelect: args.multiSelect,
+            radioSelect: args.radioSelect,
+            rowMoveable: args.rowMoveable,
+            gridType: self.gridType,
             filter: args.filter || utils.gridFilter
         });
         self.postMainGridHeader();
@@ -322,8 +346,7 @@ export class FlexibleGrid {
                     let count = selectableColumns[field];
                     let val = item[field];
                     val = val && val.trim();
-                    if (val)
-                        count[val] = (count[val] || 0) + 1;
+                    if (val) count[val] = (count[val] || 0) + 1;
                 }
             }
         }
@@ -356,6 +379,10 @@ export class FlexibleGrid {
         for (let i = 0; i < rows.length; i++) {
             items.push(dataView.getItem(rows[i]));
         }
-        return {items: items, rows: rows, grid: self.mainGrid};
+        return {
+            items,
+            rows,
+            grid: self.mainGrid
+        };
     }
 }

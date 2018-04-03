@@ -2,7 +2,7 @@ import * as fg from "flexible-grid";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 import {initSelectize} from "./selectize-formatter";
-import {log, debug, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
+import {log, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
 import {setCache} from "./utils";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -18,9 +18,9 @@ class SegmentGrid extends fg.FlexibleGrid {
             'grid-name': 'segment-info',
             'grid-type': 'segment-info',
             'default-field': 'label_family',
-            gridOptions: gridOptions
+            gridOptions
         });
-    };
+    }
 
     /**
      * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
@@ -41,7 +41,10 @@ class SegmentGrid extends fg.FlexibleGrid {
             let coldef = grid.getColumns()[col];
             let rowElement = $(e.target.parentElement);
             let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {e: e, songId: songId, rowElement: rowElement, coldef: coldef});
+            self.eventNotifier.trigger(eventType, {e,
+                songId,
+                rowElement,
+                coldef});
         }
     }
 
@@ -86,7 +89,8 @@ const generalResponseHandler = function (response) {
         alertEl = ce.alertFailure;
     }
     alertEl.html(message);
-    alertEl.fadeIn().delay(4000).fadeOut(400);
+    alertEl.fadeIn().delay(4000).
+        fadeOut(400);
 };
 
 
@@ -155,11 +159,14 @@ const resetStatus = function (e, args) {
     let nRowChanged = 0;
     if (e.type == "row-added") {
         nRowChanged = 1;
-    } else if (e.type == "rows-added") {
+    }
+    else if (e.type == "rows-added") {
         nRowChanged = args.rows.length;
-    } else if (e.type == "row-removed") {
+    }
+    else if (e.type == "row-removed") {
         nRowChanged = -1;
-    } else if (e.type == "rows-removed") {
+    }
+    else if (e.type == "rows-removed") {
         nRowChanged = -args.rows.length;
     }
     let nSelectedRows = parseInt(gridStatusNSelceted.html());
@@ -175,19 +182,19 @@ const resetStatus = function (e, args) {
  */
 const subscribeFlexibleEvents = function () {
     log(`subscribeFlexibleEvents called`);
-    grid.on('click', function (e) {
-        e.preventDefault();
-        playAudio.apply(null, arguments);
-        toggleCheckBox.apply(null, arguments);
-        selectTextForCopy.apply(null, arguments);
+    grid.on('click', function (e, ...args) {
+        e.preventDefault(...args);
+        playAudio(...args);
+        toggleCheckBox(...args);
+        selectTextForCopy(...args);
     });
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', clearSpectrogram);
-    grid.on('row-added', resetStatus)
-        .on('rows-added', resetStatus)
-        .on('row-removed', resetStatus)
-        .on('rows-removed', resetStatus);
+    grid.on('row-added', resetStatus).
+        on('rows-added', resetStatus).
+        on('row-removed', resetStatus).
+        on('rows-removed', resetStatus);
 };
 
 
@@ -206,11 +213,11 @@ const subscribeSlickEvents = function () {
 
         contextHandlerDecorator(colDef);
 
-        contextMenu
-            .data("field", field)
-            .css("top", e.pageY)
-            .css("left", e.pageX)
-            .show();
+        contextMenu.
+            data("field", field).
+            css("top", e.pageY).
+            css("left", e.pageX).
+            show();
         $("body").one("click", function () {
             contextMenu.hide();
         });
@@ -229,7 +236,8 @@ const subscribeSlickEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true, multiSelect: true}, function () {
+    grid.redrawMainGrid({rowMoveable: true,
+        multiSelect: true}, function () {
         subscribeSlickEvents();
     });
 };
@@ -256,10 +264,10 @@ const showBigSpectrogram = function (e, args) {
         const cellLeft = pos.left;
 
         let cellBottom = cellTop + originalImage.height();
-        let cellCentreX = cellLeft + originalImage.width() / 2;
-        let imgLeft = cellCentreX - imgWidth / 2;
+        let cellCentreX = cellLeft + (originalImage.width() / 2);
+        let imgLeft = cellCentreX - (imgWidth / 2);
 
-        let top, left;
+        let left, top;
 
         if (cellBottom < panelHeight / 2) {
             top = cellBottom + 20 + 'px';
@@ -312,7 +320,8 @@ const playAudioOnKey = function (e) {
             if (!column.editable) {
                 let fakeEvent = {target: activeCellEl};
                 let segId = grid_.getData().getItem(activeCell.row).id;
-                let args = {e: fakeEvent, songId: segId};
+                let args = {e: fakeEvent,
+                    songId: segId};
                 playAudio(e, args);
             }
         }
@@ -333,12 +342,18 @@ const showSpectrogramOnActiveCell = function (e, args) {
         let activeCellEl = grid_.getCellNode(args.row, args.cell);
         let column = grid_.getColumns()[activeCell.cell];
         if (!column.editable) {
-            let fakeEvent = {
-                target: activeCellEl, preventDefault: function () {
-                }
+
+            let preventDefault = function () {
+
+                /* do nothing */
             };
-            let args = {e: fakeEvent};
-            showBigSpectrogram(fakeEvent, args);
+
+            let fakeEvent = {
+                target: activeCellEl,
+                preventDefault
+            };
+            let args_ = {e: fakeEvent};
+            showBigSpectrogram(fakeEvent, args_);
         }
     }
 };
@@ -348,7 +363,7 @@ const showSpectrogramOnActiveCell = function (e, args) {
  * Deselect all rows including rows hidden by the filter
  * @param e
  */
-const deselectAll = function (e) {
+const deselectAll = function () {
     grid.mainGrid.setSelectedRows([]);
 };
 
@@ -364,7 +379,7 @@ const jumpNext = function (type) {
         let items = grid_.getData().getFilteredItems();
         let value = grid_.getDataItem(activeCell.row)[field];
         let itemCount = items.length;
-        let begin, incFunc, conditionFunc;
+        let begin, conditionFunc, incFunc;
 
         if (type === 'down') {
             begin = activeCell.row + 1;
@@ -407,7 +422,6 @@ const focusOnGridOnInit = function () {
 
 
 export const run = function (commonElements) {
-    console.log("Index page is now running.");
     ce = commonElements;
 
     ah.initAudioContext();
@@ -426,7 +440,6 @@ export const run = function (commonElements) {
         if (parent.hasClass('not-active')) {
 
             let similarityId = this.getAttribute('similarity');
-            let similarityName = $(this).html().trim();
 
             $.post(
                 getUrl('send-request', 'change-extra-attr-value'),
@@ -443,7 +456,9 @@ export const run = function (commonElements) {
 
             /* Update the button */
             similarityCombo.attr('similarity', similarityId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.parent().find('li.active').
+                removeClass('active').
+                addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
@@ -454,7 +469,6 @@ export const run = function (commonElements) {
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
             let databaseId = this.getAttribute('database');
-            let databaseName = $(this).html().trim();
 
             $.post(
                 getUrl('send-request', 'change-extra-attr-value'),
@@ -470,12 +484,14 @@ export const run = function (commonElements) {
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.parent().find('li.active').
+                removeClass('active').
+                addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
 
-    contextMenu.click(function (e, args) {
+    contextMenu.click(function (e) {
         if (!$(e.target).is("a")) {
             return;
         }
@@ -515,7 +531,7 @@ const addFilter = function (field) {
     let filterInput = $(grid.filterSelector);
     let currentFilterValue = filterInput.val();
     let fieldValueIndex = currentFilterValue.indexOf(field);
-    let fieldArgIndexEnd, fieldArgIndexBeg;
+    let fieldArgIndexBeg, fieldArgIndexEnd;
 
     if (fieldValueIndex == -1) {
         currentFilterValue += field + "()";
@@ -554,7 +570,7 @@ const setLabel = function (field) {
         let selectableColumns = getCache('selectableOptions');
         let selectableOptions = selectableColumns[field];
 
-        const isSelectize = !!selectableOptions;
+        const isSelectize = Boolean(selectableOptions);
         let inputEl = isSelectize ? inputSelect : inputText;
         ce.dialogModalBody.children().remove();
         ce.dialogModalBody.append(inputEl);
@@ -566,29 +582,30 @@ const setLabel = function (field) {
 
             initSelectize(inputEl, field, defaultValue);
 
-            ce.dialogModal.on('shown.bs.modal', function (e) {
+            ce.dialogModal.on('shown.bs.modal', function () {
                 inputEl[0].selectize.focus();
             });
         }
         else {
-            ce.dialogModal.on('shown.bs.modal', function (e) {
+            ce.dialogModal.on('shown.bs.modal', function () {
                 inputEl.focus();
             });
         }
 
         ce.dialogModal.modal('show');
 
-        ce.dialogModalOkBtn.off('click').one('click', function (e) {
+        ce.dialogModalOkBtn.off('click').one('click', function () {
             let value = inputEl.val();
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
             }
 
-            $.post(getUrl('send-request', 'set-property-bulk'),
+            $.post(
+                getUrl('send-request', 'set-property-bulk'),
                 {
                     ids: JSON.stringify(ids),
-                    field: field,
-                    value: value,
+                    field,
+                    value,
                     'grid-type': grid.gridType
                 },
                 function (msg) {
@@ -614,7 +631,7 @@ const setLabel = function (field) {
  * @param e
  * @param args
  */
-const toggleSelectHighlightedRow = function (e, args) {
+const toggleSelectHighlightedRow = function () {
     let currentMouseEvent = grid.currentMouseEvent;
     let selectedRow = grid.getSelectedRows().rows;
     let row = currentMouseEvent.row;
@@ -659,7 +676,7 @@ const contextHandlerDecorator = function (colDef) {
 };
 
 export const postRun = function () {
-    $('#save-data-btn').click(function (e) {
+    $('#save-data-btn').click(function () {
         inputText.val('');
 
         ce.dialogModalTitle.html("Backing up your data...");
@@ -668,7 +685,7 @@ export const postRun = function () {
 
         ce.dialogModal.modal('show');
 
-        ce.dialogModalOkBtn.one('click', function (e) {
+        ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/save-history');
             let value = inputText.val();
             inputText.val('');
@@ -679,12 +696,13 @@ export const postRun = function () {
                 ce.dialogModal.modal('hide');
                 let message = `History saved to ${filename}. You can download it from the version control page`;
                 ce.alertSuccess.html(message);
-                ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
+                ce.alertSuccess.fadeIn().delay(4000).
+                    fadeOut(400);
             });
         });
     });
 
-    $('.download-xls').click(function (e) {
+    $('.download-xls').click(function () {
         let downloadType = $(this).data('download-type');
         let csvContent = createCsv(grid.mainGrid, downloadType);
 

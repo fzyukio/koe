@@ -39,7 +39,8 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
     nmfcc = int(config.get('nmfcc', nfilt / 2))
 
     assert nmfcc <= nfilt
-    xtrargs = {'name': method_name, 'lowfreq': lower, 'highfreq': upper, 'numcep': nmfcc, 'nfilt': nfilt}
+    xtrargs = {'name': method_name, 'lowfreq': lower,
+               'highfreq': upper, 'numcep': nmfcc, 'nfilt': nfilt}
     if 'cepsfunc' in config:
         xtrargs['cepsfunc'] = config['cepsfunc']
 
@@ -71,23 +72,29 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
     if is_pattern:
         cache = {}
 
-        original_segment_ids = np.array(segments.values_list('id', flat=True), dtype=np.int32)
+        original_segment_ids = np.array(
+            segments.values_list('id', flat=True), dtype=np.int32)
 
         # Sort by duration so that we can cache them effectively
-        segments = segments.annotate(duration=F('end_time_ms') - F('start_time_ms')).order_by('duration')
-        duration_sorted_segment_ids = np.array(segments.values_list('id', flat=True), dtype=np.int32)
+        segments = segments.annotate(duration=F(
+            'end_time_ms') - F('start_time_ms')).order_by('duration')
+        duration_sorted_segment_ids = np.array(
+            segments.values_list('id', flat=True), dtype=np.int32)
 
         # We need the index array in order to restore the original order:
         ascending_sorted_idx = np.sort(original_segment_ids)
 
-        ascending_sorted_to_original_order = np.searchsorted(ascending_sorted_idx, original_segment_ids)
-        duration_sorted_to_ascending_sorted_order = np.argsort(duration_sorted_segment_ids)
+        ascending_sorted_to_original_order = np.searchsorted(
+            ascending_sorted_idx, original_segment_ids)
+        duration_sorted_to_ascending_sorted_order = np.argsort(
+            duration_sorted_segment_ids)
         duration_sorted_to_original_order = duration_sorted_to_ascending_sorted_order[
             ascending_sorted_to_original_order]
 
         sorted_mfcc = []
 
-        segments_info = segments.values_list('duration', 'segmentation__audio_file__fs')
+        segments_info = segments.values_list(
+            'duration', 'segmentation__audio_file__fs')
         for duration, fs in segments_info:
             if duration not in cache:
                 cache = {duration: {}}
@@ -95,7 +102,8 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
                 chirps = []
                 for amp_profile_name in amp_profile_names:
                     for f0_profile_name in f0_profile_names:
-                        chirp = generate_chirp(f0_profile_name, amp_profile_name, duration, fs)
+                        chirp = generate_chirp(
+                            f0_profile_name, amp_profile_name, duration, fs)
                         chirps.append(chirp)
                 cache[duration][fs] = chirps
 
@@ -135,7 +143,8 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
 
 
 def _extract_xfcc(sig, fs, method, xtrargs, ndelta):
-    mfcc_raw = method(signal=sig, samplerate=fs, winlen=0.002, winstep=0.001, **xtrargs)
+    mfcc_raw = method(signal=sig, samplerate=fs,
+                      winlen=0.002, winstep=0.001, **xtrargs)
     if ndelta == 1:
         mfcc_delta1 = delta(mfcc_raw, 1)
         mfcc_fts = np.concatenate((mfcc_raw, mfcc_delta1), axis=1)

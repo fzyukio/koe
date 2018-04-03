@@ -127,7 +127,7 @@ def natural_order(tree):
     nnodes = tree.shape[0] + 1
 
     branches = [None] * tree.shape[0]
-    row_idxs = np.arange(0, nnodes-1, dtype=np.int32)
+    row_idxs = np.arange(0, nnodes - 1, dtype=np.int32)
 
     for idx in row_idxs:
         join = tree[idx]
@@ -184,7 +184,8 @@ def get_currents(user):
     databases = Database.objects.filter(id__in=assigned_databases_ids)
 
     current_database_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-database')
-    current_database_value = ExtraAttrValue.objects.filter(attr=current_database_attr, owner_id=user.id, user=user).first()
+    current_database_value = ExtraAttrValue.objects.filter(attr=current_database_attr, owner_id=user.id,
+                                                           user=user).first()
 
     if current_database_value:
         current_database_id = current_database_value.value

@@ -51,7 +51,8 @@ class Command(BaseCommand):
         ws.append(COLUMN_NAMES)
         try:
             port = int(port)
-            conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+            conn = psycopg2.connect(
+                "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
             conn.set_client_encoding('LATIN1')
 
             cur = conn.cursor()

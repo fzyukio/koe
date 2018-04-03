@@ -1,0 +1,15 @@
+#image: alpine:3.4
+image: agileware/python-3.6.1-node-6.11
+
+before_script:
+  - pip install pycodestyle
+  - npm install -g eslint
+  - pwd
+  - ls -l
+
+test:
+  script:
+  - pycodestyle --max-line-length=120 --exclude=.venv,node_modules,migrations .
+  - eslint assets
+  allow_failure: false
+

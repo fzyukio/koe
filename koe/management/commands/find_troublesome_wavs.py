@@ -10,9 +10,9 @@ from root.utils import wav_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
-    str_to_bytes = lambda x: str.encode(x, encoding='LATIN-1')
+    def str_to_bytes(x): return str.encode(x, encoding='LATIN-1')
 else:
-    str_to_bytes = lambda x: x
+    def str_to_bytes(x): return x
 
 
 class Command(BaseCommand):
@@ -32,7 +32,8 @@ class Command(BaseCommand):
             wav_file_path = wav_path(af.name, 'wav')
             fs, length = get_wav_info(wav_file_path)
             if fs != af.fs or length != af.length:
-                print('Correct file {}, originally length={} fs={}, now length={}, fs={}'.format(af.name, af.length, af.fs, length, fs))
+                print('Correct file {}, originally length={} fs={}, now length={}, fs={}'.format(
+                    af.name, af.length, af.fs, length, fs))
                 af.fs = fs
                 af.length = length
                 af.save()
@@ -44,7 +45,8 @@ class Command(BaseCommand):
                 conn = conns[pop]
                 cur = conn.cursor()
                 bitrate = 16
-                song_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                song_cur = conn.cursor(
+                    cursor_factory=psycopg2.extras.RealDictCursor)
 
                 song_cur.execute('select w.framesize, w.stereo, w.samplerate, w.ssizeinbits, w.songid, s.name '
                                  'from wavs w join songdata s on w.songid=s.id where w.ssizeinbits={}'.format(bitrate))
@@ -55,7 +57,8 @@ class Command(BaseCommand):
                     # Import WAV data and save as WAV and MP3 files
                     wav_file_path = '/tmp/{}'.format(song_name)
                     mp3_file_path = '/tmp/{}.mp3'.format(song_name)
-                    fs, length = import_pcm(song, cur, song_name, wav_file_path, mp3_file_path)
+                    fs, length = import_pcm(
+                        song, cur, song_name, wav_file_path, mp3_file_path)
 
                     fs1, length1 = get_wav_info(wav_file_path)
 

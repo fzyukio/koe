@@ -22,7 +22,8 @@ class Command(BaseCommand):
         from koe.models import Herd
 
         herd = Herd.objects.first()
-        r = DotMap(POST={'grid-type': 'report', 'herd': herd.id, 'toDate': '28/02/18', 'fromDate': '01/12/17', 'freq': 'daily'})
+        r = DotMap(POST={'grid-type': 'report', 'herd': herd.id,
+                         'toDate': '28/02/18', 'fromDate': '01/12/17', 'freq': 'daily'})
 
         for i in range(10):
             c = get_grid_content(r)

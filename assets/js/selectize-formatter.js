@@ -10,7 +10,8 @@ export const initSelectize = function ($select, field, defaultValue) {
     for (let option in selectableOptions) {
         if (option && selectableOptions.hasOwnProperty(option)) {
             let count = selectableOptions[option];
-            options.push({option: option, count: count});
+            options.push({option,
+                count});
         }
     }
 
@@ -21,14 +22,17 @@ export const initSelectize = function ($select, field, defaultValue) {
         create: true,
         selectOnTab: true,
         openOnFocus: false,
-        options: options,
+        options,
         dropdownDirection: 'auto',
         render: {
-            option: function (item, escape) {
+            option (item) {
                 return `<div><span class="badge">${item.count}</span> ${item.option}</div>`
             }
         },
-        sortField: [{field: 'count', direction: 'desc'}, {field: '$score'}],
+        sortField: [
+            {field: 'count',
+                direction: 'desc'}, {field: '$score'}
+        ],
         items: [defaultValue]
     });
 
@@ -55,7 +59,8 @@ export const SelectizeEditor = function (args) {
     let $select, defaultValue;
 
     this.init = function () {
-        $(args.container).find('select').remove();
+        $(args.container).find('select').
+            remove();
         $select = $("<SELECT tabIndex='0' class='selectize'></SELECT>");
         $select.appendTo(args.container);
 
@@ -91,8 +96,7 @@ export const SelectizeEditor = function (args) {
 
     this.isValueChanged = function () {
         let val = $select.val();
-        if (val || defaultValue)
-            return (val !== defaultValue);
+        if (val || defaultValue) return (val !== defaultValue);
         return false;
     };
 

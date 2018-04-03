@@ -223,30 +223,6 @@ class PicklePersistedModel(IdSafeModel):
 
         return ', '.join(retval)
 
-    # I onced overwrote these methods to fake attribute, but no longer needed.
-    #    However this might still be useful some time later.
-    # def __getattr__(self, attr):
-    #     try:
-    #         if attr in self._meta.attrs:
-    #             _attr = '_{}'.format(attr)
-    #             if not self.__dict__.get('_loaded', False):
-    #                 self.load()
-    #             return self.__dict__[_attr]
-    #         else:
-    #             return self.__dict__[attr]
-    #     except KeyError as e:
-    #         raise AttributeError('AttributeError: \'{}\' object has no attribute \'{}\''.format(self.__class__.__name__, attr))
-    #
-    # def __setattr__(self, attr, value):
-    #     try:
-    #         if attr in self._meta.attrs:
-    #             _attr = '_{}'.format(attr)
-    #             self.__dict__[_attr] = value
-    #         else:
-    #             self.__dict__[attr] = value
-    #     except KeyError as e:
-    #         raise AttributeError('AttributeError: \'{}\' object has no attribute \'{}\''.format(self.__class__.__name__, attr))
-
 
 class AlgorithmicModelMixin(models.Model):
     """
@@ -289,6 +265,7 @@ class DistanceMatrix(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedMode
     """
     To store the upper triangle (triu) of a distance matrix
     """
+
     class Meta:
         unique_together = ('chksum', 'algorithm', 'database')
         attrs = ('ids', 'triu')
@@ -298,6 +275,7 @@ class Coordinate(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
     """
     To store a list of coordinates together with the clustered tree and the sorted natural order of the elements
     """
+
     class Meta:
         unique_together = ('chksum', 'algorithm', 'database')
         attrs = ('ids', 'coordinates', 'tree', 'order')
@@ -371,7 +349,7 @@ class HistoryEntry(StandardModel):
 
         note_attr, _ = ExtraAttr.objects.get_or_create(klass=cls.__name__, name='note', type=ValueTypes.SHORT_TEXT)
 
-        note_attr_values = ExtraAttrValue.objects.filter(owner_id__in=ids, user__id__in=users, attr=note_attr)\
+        note_attr_values = ExtraAttrValue.objects.filter(owner_id__in=ids, user__id__in=users, attr=note_attr) \
             .values_list('owner_id', 'user__id', 'value')
 
         retval = {x: None for x in ids}
@@ -381,7 +359,6 @@ class HistoryEntry(StandardModel):
                 retval[id] = note
 
         return retval
-
 
 
 @receiver(post_delete, sender=HistoryEntry)

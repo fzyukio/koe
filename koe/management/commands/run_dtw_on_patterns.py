@@ -1,21 +1,14 @@
-import traceback
-
 import numpy as np
 from ced import pyed
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 from progress.bar import Bar
-import pickle
-import os
-
-from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
-from koe.model_utils import dist_from_root, natural_order
+from koe.model_utils import natural_order
 from koe.models import Coordinate, Database
 from koe.utils import normxcorr2
-from .ftxtract import extract_funcs, window_size_relative
-import scipy.io
+from .ftxtract import extract_funcs
 
 
 def calc_sigma(feature_arrays, ratio=0.25):
@@ -120,10 +113,11 @@ class Command(BaseCommand):
         )
 
     def handle(self, features, dists, metrics, norms, database_name, algorithm_name, *args, **options):
-        from koe.models import Segment, DistanceMatrix
+        from koe.models import Segment
         # DistanceMatrix.objects.all().delete()
         database, _ = Database.objects.get_or_create(name=database_name)
-        segments = Segment.objects.filter(segmentation__audio_file__database=database) #, id__lte=33200)
+        segments = Segment.objects.filter(
+            segmentation__audio_file__database=database)  # , id__lte=33200)
 
         unsorted_ids = np.array(segments.values_list('id', flat=True))
         sorted_idx = np.argsort(unsorted_ids)
@@ -154,11 +148,14 @@ class Command(BaseCommand):
             for dist_name in dists.split(','):
                 for metric_name in metrics.split(','):
                     for norm in norms.split(','):
-                        test_name = '{}-{}{}-{}-{}'.format(feature_name, config_str, dist_name, metric_name, norm)
+                        test_name = '{}-{}{}-{}-{}'.format(
+                            feature_name, config_str, dist_name, metric_name, norm)
                         if bulk_extract_func is None or segment_feature_array is None:
                             bulk_extract_func = extract_funcs[feature_name]
-                            chirps_feature_array = bulk_extract_func(segments, config, True)
-                            segment_feature_array = bulk_extract_func(segments, config, False)
+                            chirps_feature_array = bulk_extract_func(
+                                segments, config, True)
+                            segment_feature_array = bulk_extract_func(
+                                segments, config, False)
 
                             chirps_feature_array = chirps_feature_array[sorted_idx]
                             segment_feature_array = segment_feature_array[sorted_idx]
@@ -167,7 +164,8 @@ class Command(BaseCommand):
 
                         bar = Bar('Find coordinates of the segments ({})'.format(test_name), max=nsegs,
                                   suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
-                        coordinates = np.zeros((nsegs, nchirps), dtype=np.float64)
+                        coordinates = np.zeros(
+                            (nsegs, nchirps), dtype=np.float64)
 
                         if metric_name == 'edr':
                             sigmas = calc_sigma(segment_feature_array)
@@ -190,7 +188,8 @@ class Command(BaseCommand):
                         else:
                             metric_func = euclid
 
-                        settings = pyed.Settings(dist=dist_name, norm=norm, compute_path=False)
+                        settings = pyed.Settings(
+                            dist=dist_name, norm=norm, compute_path=False)
 
                         for i in range(nsegs):
                             seg_one_f0 = segment_feature_array[i]
@@ -198,7 +197,8 @@ class Command(BaseCommand):
 
                             for j in range(nchirps):
                                 seg_two_f0 = seg_one_chirps[j]
-                                distance = metric_func(seg_one_f0, seg_two_f0, args, settings)
+                                distance = metric_func(
+                                    seg_one_f0, seg_two_f0, args, settings)
                                 coordinates[i, j] = distance.get_dist()
                             bar.next()
                         bar.finish()

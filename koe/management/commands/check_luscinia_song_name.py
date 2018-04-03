@@ -1,23 +1,19 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
-import os
+import argparse
 import re
-from logging import warning
 
 import openpyxl
 import psycopg2.extras
 from progress.bar import Bar
 
 name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
-name_regex_ignore_case = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(\w{1,2})(\.[^ ]*)?\.(wav|WAV)')
+name_regex_ignore_case = \
+    re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(\w{1,2})(\.[^ ]*)?\.(wav|WAV)')
 
 COLUMN_NAMES = ['Song name', 'Problem', 'Recommend name']
-
-import argparse
-
 parser = argparse.ArgumentParser(description='Process some integers.')
-
 parser.add_argument(
     '--db',
     action='store',
@@ -60,7 +56,8 @@ ws_noproblems.append(COLUMN_NAMES)
 
 try:
     port = int(port)
-    conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+    conn = psycopg2.connect(
+        "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
     conn.set_client_encoding('LATIN1')
 
     cur = conn.cursor()
@@ -105,7 +102,8 @@ try:
             extension = matches_ignore_case.group(10)
 
             recommend = '{}_{}_{}_{}_{}_{}_{}.{}.{}.{}'.format(
-                location, year, month, date, track_id, track_number, gender, quality.upper(), comment, extension.lower()
+                location, year, month, date, track_id, track_number, gender, quality.upper(
+                ), comment, extension.lower()
             )
         if not recommend:
             hint += ' has other problem than lower/upper case'
@@ -127,30 +125,6 @@ try:
 
     wb.save('Name_pattern_check.xlsx')
     print('Number of inconsistent song names: {} '.format(inconsistency_count))
-
-    # song_names_no_ext = []
-    # name2id = {}
-    # for idx, song in enumerate(songs):
-    #     song_name = song[1]
-    #     song_id = song[0]
-    #     song_name_no_ext, _ext = os.path.splitext(song_name)
-    #     song_names_no_ext.append(song_name_no_ext)
-    #     name2id[song_name_no_ext] = song_id
-    #
-    # for idx, song in enumerate(songs):
-    #     song_name = song[1]
-    #     song_name_no_ext, _ext = os.path.splitext(song_name)
-    #     if '.(A)' in song_name_no_ext:
-    #         # print('EXT = "{}", ORI = "{}"'.format(song_name_no_ext[-4:], song_name_no_ext[:-4]))
-    #         if song_name_no_ext[-4:] != '.(A)':
-    #             warning('File {} has (A) in it but not at the end'.format(song_name_no_ext))
-    #         else:
-    #             song_name_no_ext_original = song_name_no_ext[:-4]
-    #             if song_name_no_ext_original in song_names_no_ext:
-    #                 song_id = name2id[song_name_no_ext]
-    #                 original_song_id = name2id[song_name_no_ext_original]
-    #                 print('select s1.name, s1.call_context, s2.name, s2.call_context from songdata s1, songdata s2 where s1.id={} and s2.id={}  and (s1.call_context=\'DELETE\' and s2.call_context=\'DELETE\');;'.format(original_song_id, song_id))
-
 
 
 finally:
