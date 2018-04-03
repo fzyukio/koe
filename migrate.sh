@@ -23,6 +23,12 @@ On_Purple='\033[45m'      # Purple
 On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
+function run() {
+  echo "Running fixture: $1"
+  python manage.py loaddata koe/fixtures/$1.json
+}
+
+
 source .venv/bin/activate
 
 echo -e "${Yellow}${On_Purple}You're in `pwd` ${Color_Off}"
@@ -42,20 +48,19 @@ fi
 
 echo -e "${Yellow}${On_Purple}Running migration scripts${Color_Off}"
 
+export IMPORTING_FIXTURE="true"
+
 python manage.py makemigrations koe;
 python manage.py makemigrations root;
 python manage.py migrate --database=default
 
-function run() {
-  echo "Running fixture: $1"
-  python manage.py loaddata koe/fixtures/$1.json
-}
-
 echo -e "${Yellow}${On_Purple}Importing fixtures...${Color_Off}"
-#run auth
+
 run users
 run cms
 run data
 run root.columnactionvalue
 run root.extraattr
 run root.extraattrvalue
+
+export IMPORTING_FIXTURE="false"

@@ -145,8 +145,8 @@ def init_tables():
                 if editable:
                     column['setter'] = setter
 
-            # if is_extra_attr:
-            #     ExtraAttr.objects.get(klass=klass.__name__, type=_type, name=slug)
+            if is_extra_attr:
+                ExtraAttr.objects.get_or_create(klass=klass.__name__, type=_type, name=slug)
 
             if 'total_label' not in column:
                 column['total_label'] = '-/-'
@@ -214,13 +214,6 @@ def get_grid_column_definition(request):
         col_id_to_col = handler(action_name, table_name, user, col_id_to_col)
 
     columns = list(col_id_to_col.values())
-    #
-    # column_names = list(col_id_to_col.keys())
-    # other_columns = ColumnActionValue.objects\
-    #     .exclude(user=user, table=table_name, column__in=col_id_to_col)\
-    #     .filter(user=user, table=table_name).values_list('column', flat=True).distinct()
-    #
-    # other_columns_action_value
 
     # Final column is for the actions
     columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_names,
