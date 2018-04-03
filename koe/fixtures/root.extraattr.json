@@ -70,5 +70,50 @@
     "name": "current-similarity",
     "type": 0
   }
+},
+{
+  "model": "root.extraattr",
+  "pk": 9,
+  "fields": {
+    "klass": "Segment",
+    "name": "type",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 10,
+  "fields": {
+    "klass": "AudioFile",
+    "name": "label_family",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 11,
+  "fields": {
+    "klass": "AudioFile",
+    "name": "label_subfamily",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 12,
+  "fields": {
+    "klass": "AudioFile",
+    "name": "label",
+    "type": 0
+  }
+},
+{
+  "model": "root.extraattr",
+  "pk": 15,
+  "fields": {
+    "klass": "AudioFile",
+    "name": "type",
+    "type": 0
+  }
 }
 ]

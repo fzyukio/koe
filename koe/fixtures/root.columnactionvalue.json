@@ -9,7 +9,7 @@
     "table": "segment-info",
     "column": "song",
     "action": "set-column-width",
-    "value": "258.328"
+    "value": "81.29700000000003"
   }
 },
 {
@@ -35,7 +35,7 @@
     "table": "segment-info",
     "column": "label_family",
     "action": "set-column-width",
-    "value": "158.33333333333334"
+    "value": "106.328"
   }
 },
 {
@@ -61,7 +61,7 @@
     "table": "segment-info",
     "column": "label",
     "action": "set-column-width",
-    "value": "158.33333333333334"
+    "value": "99.31200000000001"
   }
 },
 {
@@ -101,6 +101,604 @@
     "column": "note",
     "action": "set-column-width",
     "value": "158.33333333333334"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 9,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "_sel",
+    "action": "reorder-columns",
+    "value": "10"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 10,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "id",
+    "action": "reorder-columns",
+    "value": "0"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 11,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "start_time_ms",
+    "action": "reorder-columns",
+    "value": "1"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 12,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "end_time_ms",
+    "action": "reorder-columns",
+    "value": "2"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 13,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "duration",
+    "action": "reorder-columns",
+    "value": "3"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 14,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song",
+    "action": "reorder-columns",
+    "value": "4"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 15,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "signal_mask",
+    "action": "reorder-columns",
+    "value": "8"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 16,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "dtw_index",
+    "action": "reorder-columns",
+    "value": "9"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 17,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "spectrogram",
+    "action": "reorder-columns",
+    "value": "11"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 18,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label_family",
+    "action": "reorder-columns",
+    "value": "6"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 19,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label_subfamily",
+    "action": "reorder-columns",
+    "value": "7"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 20,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "label",
+    "action": "reorder-columns",
+    "value": "5"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 21,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "note",
+    "action": "reorder-columns",
+    "value": "12"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 22,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_note",
+    "action": "reorder-columns",
+    "value": "13"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 23,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_date",
+    "action": "reorder-columns",
+    "value": "14"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 24,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_gender",
+    "action": "reorder-columns",
+    "value": "15"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 25,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_quality",
+    "action": "reorder-columns",
+    "value": "16"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 26,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_individual",
+    "action": "reorder-columns",
+    "value": "17"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 27,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_track",
+    "action": "reorder-columns",
+    "value": "18"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 28,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "mean_ff",
+    "action": "reorder-columns",
+    "value": "19"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 29,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "min_ff",
+    "action": "reorder-columns",
+    "value": "20"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 30,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "max_ff",
+    "action": "reorder-columns",
+    "value": "21"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 31,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "signal_mask",
+    "action": "set-column-width",
+    "value": "175"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 32,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "_sel",
+    "action": "reorder-columns",
+    "value": "0"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 33,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "creator",
+    "action": "reorder-columns",
+    "value": "1"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 34,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "time",
+    "action": "reorder-columns",
+    "value": "2"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 35,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "url",
+    "action": "reorder-columns",
+    "value": "3"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 36,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "note",
+    "action": "reorder-columns",
+    "value": "4"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 37,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "url",
+    "action": "set-column-width",
+    "value": "258"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 38,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "version-grid",
+    "column": "note",
+    "action": "set-column-width",
+    "value": "446"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 39,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "version-grid",
+    "column": "note",
+    "action": "set-column-width",
+    "value": "403"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 40,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "version-grid",
+    "column": "url",
+    "action": "set-column-width",
+    "value": "268"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 41,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "segment-info",
+    "column": "spectrogram",
+    "action": "set-column-width",
+    "value": "141"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 42,
+  "fields": {
+    "user": [
+      "wesley"
+    ],
+    "table": "segment-info",
+    "column": "song",
+    "action": "set-column-width",
+    "value": "238"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 43,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "segment-info",
+    "column": "song_note",
+    "action": "set-column-width",
+    "value": "136"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 44,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "cls",
+    "action": "set-column-width",
+    "value": "205"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 45,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "exemplar10",
+    "action": "set-column-width",
+    "value": "101"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 46,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "exemplar1_mask",
+    "action": "set-column-width",
+    "value": "116"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 47,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "exemplar2_mask",
+    "action": "set-column-width",
+    "value": "122"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 48,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "exemplar3_mask",
+    "action": "set-column-width",
+    "value": "157"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 49,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "exemplars-grid",
+    "column": "exemplar5_mask",
+    "action": "set-column-width",
+    "value": "160"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 50,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "songs-grid",
+    "column": "filename",
+    "action": "set-column-width",
+    "value": "177"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 51,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "songs-grid",
+    "column": "sequence",
+    "action": "set-column-width",
+    "value": "1168"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 52,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "songs-grid",
+    "column": "track",
+    "action": "set-column-width",
+    "value": "150"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 53,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "songs-grid",
+    "column": "note",
+    "action": "set-column-width",
+    "value": "329"
+  }
+},
+{
+  "model": "root.columnactionvalue",
+  "pk": 54,
+  "fields": {
+    "user": [
+      "superuser"
+    ],
+    "table": "songs-grid",
+    "column": "type",
+    "action": "set-column-width",
+    "value": "143"
   }
 }
 ]
