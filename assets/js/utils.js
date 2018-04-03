@@ -53,6 +53,10 @@ export const debug = function (str) {
     }
 };
 
+export const isNumber = function (str) {
+    return !isNaN(str);
+};
+
 jQuery.fn.selectText = function () {
     let doc = document;
     let element = this[0];
@@ -644,24 +648,6 @@ const regexFilter = function (string) {
 };
 
 /**
- * Evaluate a numerical expression
- * @param number lvalue of the expression, e.g. 50
- * @returns {boolean}
- *
- * @bind ({filterValue}) rvalue of the expression, e.g. ">5", "<= 3.5", etc.
- */
-const numberFilter = function (number) {
-    try {
-        // noinspection JSValidateTypes
-        return eval(number + ' ' + this.filterValue);
-    }
-    catch (e) {
-        // If syntax error, then ignore the filter - the user might not have finished typing
-        return true;
-    }
-};
-
-/**
  * Check if value is the same as the bounded value
  * @param {boolean} value
  * @returns {boolean}
@@ -676,9 +662,39 @@ const booleanFilter = function (value) {
 
 const filterFunctions = {
     'String': stringFilter,
-    'Number': numberFilter,
     'Boolean': booleanFilter,
     'Regex': regexFilter
+};
+
+
+const arithmeticOperator = {
+    '<' (x) {
+        return x < this.filterValue;
+    },
+    '<=' (x) {
+        return x <= this.filterValue;
+    },
+    '=' (x) {
+        return x == this.filterValue;
+    },
+    '==' (x) {
+        return x == this.filterValue;
+    },
+    '>' (x) {
+        return x > this.filterValue;
+    },
+    '>=' (x) {
+        return x >= this.filterValue;
+    },
+    '..' (x) {
+        return x > this.lower && x < this.upper;
+    },
+    '++' (x) {
+        return x >= this.lower && x <= this.upper;
+    },
+    'in' (x) {
+        return this.array.indexOf(x) != -1
+    },
 };
 
 
@@ -689,8 +705,11 @@ const filterFunctions = {
  * @param filterContent
  */
 const filterGenerator = function (paramName, type, filterContent) {
+    let filterFunction = filterFunctions[type];
+    let binding = null;
     if (filterContent === '') {
         filterContent = null;
+        binding = {filterValue: filterContent};
     }
     else if (type === 'String') {
         try {
@@ -699,12 +718,75 @@ const filterGenerator = function (paramName, type, filterContent) {
         catch (e) {
             filterContent = null;
         }
+        binding = {filterValue: filterContent};
     }
     else if (type === 'Boolean') {
-        filterContent = (filterContent == 'true')
+        filterContent = (filterContent == 'true');
+        binding = {filterValue: filterContent};
+    }
+    else if (type === 'Number') {
+
+        let char0 = filterContent.substring(0, 1);
+        let char1 = filterContent.substring(1, 2);
+        let char01 = filterContent.substring(0, 2);
+
+        if (char1 === '=') {
+            let remaining = filterContent.substring(2);
+            let filterValue = parseFloat(remaining);
+
+            filterFunction = arithmeticOperator[char01];
+            binding = {filterValue};
+        }
+        else if (char0 === '<' || char0 === '>' || char0 === '=') {
+            let remaining = filterContent.substring(1);
+            let filterValue = parseFloat(remaining);
+
+            filterFunction = arithmeticOperator[char0];
+            binding = {filterValue};
+
+        }
+        else if (char0 === '[') {
+            let remaining = filterContent.substring(1, filterContent.length - 1);
+            let array = remaining.split(',').map(function (item) {
+                return parseFloat(item);
+            });
+            filterFunction = arithmeticOperator.in;
+            binding = {array};
+        }
+        else if (isNumber(filterContent)) {
+            filterFunction = arithmeticOperator['='];
+            binding = {filterValue: parseFloat(filterContent)};
+        }
+        else {
+            let rangeOperators = ['..', '++'];
+            for (let i = 0; i < rangeOperators.length; i++) {
+                let rangeOperator = rangeOperators[i];
+                let rangeStart = filterContent.indexOf(rangeOperator);
+                if (rangeStart > -1) {
+                    let lower = filterContent.substring(0, rangeStart);
+                    let upper = filterContent.substring(rangeStart + rangeOperator.length);
+                    filterFunction = arithmeticOperator[rangeOperator];
+                    binding = {
+                        lower,
+                        upper
+                    };
+
+                    break;
+                }
+            }
+        }
+    }
+    else {
+        binding = {filterValue: filterContent};
     }
     setCache('regex-filter:' + paramName, filterContent);
-    return filterFunctions[type].bind({filterValue: filterContent});
+
+    if (isNull(filterFunction)) {
+        return () => {
+            true
+        };
+    }
+    return filterFunction.bind(binding);
 };
 
 /**
