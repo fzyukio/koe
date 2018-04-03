@@ -149,7 +149,7 @@ class ValueTypes(MagicChoices):
         BASE64_PNG: False,
         IMAGE: False,
         URL: True,
-        SEQUENCE: False,
+        SEQUENCE: True,
     }
 
     _COPYABLE = {
@@ -175,7 +175,7 @@ class ValueTypes(MagicChoices):
         BASE64_PNG: False,
         IMAGE: False,
         URL: True,
-        SEQUENCE: False,
+        SEQUENCE: True,
     }
 
     # This is a dictionary of transformable types, e.g. user is allowed to change property type from

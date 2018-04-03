@@ -51,7 +51,7 @@ class Grid extends fg.FlexibleGrid {
     }
 }
 
-const grid = new Grid();
+export const grid = new Grid();
 let cls = $('#songs-grid').attr('cls');
 
 const tooltip = $("#spectrogram-details-tooltip");

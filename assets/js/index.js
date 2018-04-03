@@ -5,7 +5,7 @@ export {
     Urls,
 };
 
-import {isNull, SlickEditors} from "./utils";
+import {isNull, SlickEditors, createCsv, downloadBlob} from "./utils";
 import {SelectizeEditor} from "./selectize-formatter";
 
 let page;
@@ -172,6 +172,16 @@ const _postRun = function () {
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
         window.location = this.getAttribute('url');
+    });
+
+    $('.download-xls').click(function () {
+        let downloadType = $(this).data('download-type');
+        let csvContent = createCsv(page.grid.mainGrid, downloadType);
+
+        let d = new Date();
+        let filename = `koe-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
+        let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        downloadBlob(blob, filename);
     });
 
     countDown();

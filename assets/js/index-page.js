@@ -2,7 +2,7 @@ import * as fg from "flexible-grid";
 import {defaultGridOptions} from "./flexible-grid";
 import * as ah from "./audio-handler";
 import {initSelectize} from "./selectize-formatter";
-import {log, deepCopy, getUrl, getCache, createCsv, downloadBlob} from "utils";
+import {log, deepCopy, getUrl, getCache} from "utils";
 import {setCache} from "./utils";
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -53,7 +53,7 @@ class SegmentGrid extends fg.FlexibleGrid {
     }
 }
 
-const grid = new SegmentGrid();
+export const grid = new SegmentGrid();
 const contextMenu = $("#context-menu");
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
@@ -701,15 +701,5 @@ export const postRun = function () {
                     fadeOut(400);
             });
         });
-    });
-
-    $('.download-xls').click(function () {
-        let downloadType = $(this).data('download-type');
-        let csvContent = createCsv(grid.mainGrid, downloadType);
-
-        let d = new Date();
-        let filename = `koe-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
-        let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
-        downloadBlob(blob, filename);
     });
 };
