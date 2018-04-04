@@ -1,0 +1,63 @@
+version: '3.4'
+services:
+#  webpack:
+#    container_name: koe_webpack
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.build
+#      network: host
+#    volumes:
+#      - code-volume:/code
+  db:
+    container_name: koe_db
+    image: mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - "../koe-db:/var/lib/mysql"
+    environment:
+      MYSQL_HOST: koe_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: koe
+      MYSQL_PASSWORD: koe
+      MYSQL_DATABASE: koe
+    restart: unless-stopped
+  app:
+    container_name: koe_app
+    build:
+      context: .
+      network: host
+#    volumes:
+#      - code-volume:/code
+    networks:
+      - default
+      - web
+    environment:
+      - VIRTUAL_HOST=dorsalf.in
+      - VIRTUAL_PROTO=uwsgi
+# Uncomment below to DELETE and re-create the database from fixtures
+#      - CLEAR_DB=true
+    env_file:
+      - koe.env
+    restart: unless-stopped
+    depends_on:
+      - db
+#  phpmyadmin:
+#    image: phpmyadmin/phpmyadmin
+#    environment:
+#      - PMA_ARBITRARY=1
+#    restart: always
+#    ports:
+#      - 8082:80
+#    volumes:
+#      - /sessions
+  cache:
+    image: redis
+    container_name: koe_cache
+    restart: unless-stopped
+#volumes:
+#  code-volume:
+networks:
+  web:
+    external:
+      name: web

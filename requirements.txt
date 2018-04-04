@@ -92,3 +92,5 @@ python-markdown-oembed
 djangorestframework==3.7.7
 wagtail==2.0rc1
 pydub
+uwsgi
+django-extensions
