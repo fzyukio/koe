@@ -87,7 +87,6 @@ TEMPLATES = [
     },
 ]
 
-
 WSGI_APPLICATION = 'koe.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -146,16 +145,17 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': '{0}:{1}'.format(config('REDIS_HOST'), config('REDIS_PORT')),
+        'LOCATION': 'redis://{0}:{1}/0'.format(config('REDIS_HOST'), config('REDIS_PORT')),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-            'PASSWORD': config('REDIS_PASSWORD'),
             'IGNORE_EXCEPTIONS': True,
-            'DB': 1
         }
     }
 }
+if config('REDIS_PASSWORD'):
+    CACHES['default']['OPTION']['PASSWORD'] = config('REDIS_PASSWORD')
+
 DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 
 LOGIN_URL = '/login'

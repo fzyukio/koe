@@ -93,3 +93,5 @@ djangorestframework==3.7.7
 wagtail==2.0rc1
 pydub
 flake8-docstrings
+uwsgi
+django-extensions
