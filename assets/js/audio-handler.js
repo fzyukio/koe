@@ -1,4 +1,4 @@
-import {isNull, debug} from "./utils";
+import {isNull, debug} from './utils';
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -34,7 +34,7 @@ export const initAudioContext = function () {
 
     if (!window.AudioContext) {
         if (!window.webkitAudioContext) {
-            alert("Your browser does not support any AudioContext and cannot play back this audio.");
+            alert('Your browser does not support any AudioContext and cannot play back this audio.');
             return;
         }
         window.AudioContext = window.webkitAudioContext;
@@ -123,9 +123,9 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
             }
         };
         xhr.onloadend = function () {
-            $.event.trigger("ajaxStop");
+            $.event.trigger('ajaxStop');
         };
-        $.event.trigger("ajaxStart");
+        $.event.trigger('ajaxStart');
         xhr.send(postData)
     }
 };
@@ -160,9 +160,9 @@ export const playAudioFromUrl = function (url, startSecond, endSecond) {
             }
         };
         xhr.onloadend = function () {
-            $.event.trigger("ajaxStop");
+            $.event.trigger('ajaxStop');
         };
-        $.event.trigger("ajaxStart");
+        $.event.trigger('ajaxStart');
         xhr.send();
     }
 };

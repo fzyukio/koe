@@ -125,7 +125,7 @@ export class FlexibleGrid {
 
 
         for (rowId in previousRows) {
-            if (previousRows.hasOwnProperty(rowId)) {
+            if (Object.prototype.hasOwnProperty.call(previousRows, rowId)) {
                 row = dataView.getIdxById(rowId);
                 item = dataView.getItemById(rowId);
 
@@ -193,9 +193,9 @@ export class FlexibleGrid {
         /* Strip off all irrelevant information */
         let itemSimplified = {id: item.id};
         for (let attr in item) {
-            if (item.hasOwnProperty(attr)) {
+            if (Object.prototype.hasOwnProperty.call(item, attr)) {
                 let oldAttr = '_old_' + attr;
-                if (item.hasOwnProperty(oldAttr)) {
+                if (Object.prototype.hasOwnProperty.call(item, oldAttr)) {
                     let newValue = item[attr];
                     itemSimplified[attr] = newValue;
                     itemSimplified[oldAttr] = item[oldAttr] || null;
@@ -342,7 +342,7 @@ export class FlexibleGrid {
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             for (let field in selectableColumns) {
-                if (selectableColumns.hasOwnProperty(field)) {
+                if (Object.prototype.hasOwnProperty.call(selectableColumns, field)) {
                     let count = selectableColumns[field];
                     let val = item[field];
                     val = val && val.trim();

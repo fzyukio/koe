@@ -1,4 +1,4 @@
-import {getCache} from "./utils";
+import {getCache} from './utils';
 require('selectize/dist/js/selectize.js');
 
 
@@ -8,7 +8,7 @@ export const initSelectize = function ($select, field, defaultValue) {
     let options = [];
 
     for (let option in selectableOptions) {
-        if (option && selectableOptions.hasOwnProperty(option)) {
+        if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
             let count = selectableOptions[option];
             options.push({option,
                 count});
@@ -61,7 +61,7 @@ export const SelectizeEditor = function (args) {
     this.init = function () {
         $(args.container).find('select').
             remove();
-        $select = $("<SELECT tabIndex='0' class='selectize'></SELECT>");
+        $select = $('<SELECT tabIndex=\'0\' class=\'selectize\'></SELECT>');
         $select.appendTo(args.container);
 
         initSelectize($select, args.column.field, args.item[args.column.field]);
@@ -85,7 +85,7 @@ export const SelectizeEditor = function (args) {
 
     this.serializeValue = function () {
         if (args.column._formatter == 'Checkmark') {
-            return ($select.val() === "yes");
+            return ($select.val() === 'yes');
         }
         return $select.val();
     };

@@ -5,15 +5,15 @@ export {
     Urls,
 };
 
-import {isNull, SlickEditors, createCsv, downloadBlob} from "./utils";
-import {SelectizeEditor} from "./selectize-formatter";
+import {isNull, SlickEditors, createCsv, downloadBlob} from './utils';
+import {SelectizeEditor} from './selectize-formatter';
 
 let page;
 
 const dialogModal = $('#dialog-modal');
 const dialogModalTitle = dialogModal.find('.modal-title');
 const dialogModalBody = dialogModal.find('.modal-body');
-const dialogModalOkBtn = dialogModal.find("#dialog-modal-yes-button");
+const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
@@ -90,17 +90,17 @@ const _preRun = function () {
     SlickEditors.Select = SelectizeEditor;
 
     adjustFullHeightOffset();
-    let body = $("body");
+    let body = $('body');
 
     /**
      * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
      */
     $(document).on({
         ajaxStart () {
-            body.addClass("loading");
+            body.addClass('loading');
         },
         ajaxStop () {
-            body.removeClass("loading");
+            body.removeClass('loading');
         }
     });
 
@@ -112,7 +112,7 @@ const _preRun = function () {
  * If there is a timer, count down to 0 and redirect
  */
 const countDown = function () {
-    const timer = document.getElementById("countdown-redirect");
+    const timer = document.getElementById('countdown-redirect');
     if (timer) {
         const redirect = timer.getAttribute('url');
         let count = parseInt(timer.getAttribute('count'));

@@ -1,6 +1,6 @@
-import * as fg from "flexible-grid";
-import {defaultGridOptions} from "./flexible-grid";
-import {getUrl, deepCopy} from "./utils";
+import * as fg from 'flexible-grid';
+import {defaultGridOptions} from './flexible-grid';
+import {getUrl, deepCopy} from './utils';
 
 const gridOptions = deepCopy(defaultGridOptions);
 
@@ -40,8 +40,8 @@ const subscribeFlexibleEvents = function () {
         let versionName = args.item.url;
 
         ce.dialogModal.
-            data("versionId", versionId).
-            data("versionName", versionName);
+            data('versionId', versionId).
+            data('versionName', versionName);
 
     });
 };
@@ -51,7 +51,7 @@ const subscribeFlexibleEvents = function () {
  * @param response
  */
 const generalResponseHandler = function (response) {
-    let message = `Success`;
+    let message = 'Success';
     let alertEl = ce.alertSuccess;
     if (response != 'ok') {
         message = `Something's wrong. The server says "${response}".`;
@@ -73,10 +73,10 @@ export const orientationChange = function () {
 
 const initApplyVersionBtn = function () {
     applyVersionBtn.click(function () {
-        let versionId = ce.dialogModal.data("versionId");
-        let versionName = ce.dialogModal.data("versionName");
+        let versionId = ce.dialogModal.data('versionId');
+        let versionName = ce.dialogModal.data('versionName');
 
-        ce.dialogModalTitle.html("Confirm import history");
+        ce.dialogModalTitle.html('Confirm import history');
         ce.dialogModalBody.html(`Importing history from will erase your current data.
              Make sure you have saved the current version before doing this.
              Are you sure you want to import ${versionName}?`);
@@ -105,10 +105,10 @@ const initApplyVersionBtn = function () {
 
 const initDeleteVersionBtn = function () {
     deleteVersionBtn.click(function () {
-        let versionId = ce.dialogModal.data("versionId");
-        let versionName = ce.dialogModal.data("versionName");
+        let versionId = ce.dialogModal.data('versionId');
+        let versionName = ce.dialogModal.data('versionName');
 
-        ce.dialogModalTitle.html("Confirm delete history");
+        ce.dialogModalTitle.html('Confirm delete history');
         ce.dialogModalBody.html(`Are you sure you want to delete ${versionName}?`);
 
         ce.dialogModal.modal('show');

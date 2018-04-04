@@ -3,7 +3,7 @@
 (function ($) {
     // register namespace
     $.extend(true, window, {
-        "Slick": {
+        'Slick': {
             RowSelectionModel
         }
     });
@@ -210,7 +210,7 @@
 
             init,
             destroy,
-            "onSelectedRangesChanged": new Slick.Event()
+            'onSelectedRangesChanged': new Slick.Event()
         });
     }
 }(jQuery));

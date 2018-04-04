@@ -1,7 +1,7 @@
-import * as fg from "flexible-grid";
-import {defaultGridOptions} from "./flexible-grid";
-import * as ah from "./audio-handler";
-import {log, deepCopy, getUrl} from "utils";
+import * as fg from 'flexible-grid';
+import {defaultGridOptions} from './flexible-grid';
+import * as ah from './audio-handler';
+import {log, deepCopy, getUrl} from 'utils';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -54,9 +54,9 @@ class Grid extends fg.FlexibleGrid {
 export const grid = new Grid();
 let cls = $('#songs-grid').attr('cls');
 
-const tooltip = $("#spectrogram-details-tooltip");
+const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
-const speedSlider = $("#speed-slider");
+const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
@@ -68,11 +68,11 @@ const databaseClass = databaseCombo.attr('cls');
 const initSlider = function () {
     speedSlider.slider();
 
-    speedSlider.on("slide", function (slideEvt) {
+    speedSlider.on('slide', function (slideEvt) {
         ah.changePlaybackSpeed(slideEvt.value);
     });
 
-    $('.slider').on("click", function () {
+    $('.slider').on('click', function () {
         let newvalue = $('.tooltip-inner').text();
         ah.changePlaybackSpeed(parseInt(newvalue));
     });
@@ -80,7 +80,7 @@ const initSlider = function () {
 
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
-    let hasSyllable = cellElement.closest(".syllable");
+    let hasSyllable = cellElement.closest('.syllable');
     if (hasSyllable.length == 1) {
         let audioUrl = hasSyllable.parent().find('.full-audio').
             attr('song-url');
@@ -112,7 +112,7 @@ const selectTextForCopy = function (e, args) {
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    log(`subscribeFlexibleEvents called from songs-pages`);
+    log('subscribeFlexibleEvents called from songs-pages');
     grid.on('click', function (...args) {
         let e = args[0];
         e.preventDefault();
@@ -155,7 +155,7 @@ export const orientationChange = function () {
 const showBigSpectrogram = function (e, args) {
     e.preventDefault();
     let cellElement = $(args.e.target);
-    let isSyllable = cellElement.closest(".syllable");
+    let isSyllable = cellElement.closest('.syllable');
     if (isSyllable.length == 1) {
         const imgSrc = isSyllable.attr('imgsrc');
         if (imgSrc) {

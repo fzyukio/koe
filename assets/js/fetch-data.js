@@ -1,5 +1,5 @@
 const base64 = require('base64-arraybuffer/lib/base64-arraybuffer.js');
-import * as utils from "./utils";
+import * as utils from './utils';
 
 /**
  * Decode numpy's array as base64 to typed array

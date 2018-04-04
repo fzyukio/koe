@@ -1,4 +1,4 @@
-import * as utils from "utils"
+import * as utils from 'utils'
 
 export const actionIcons = {
     'delete-property': {'_default': 'fa fa-trash'},
@@ -69,7 +69,7 @@ export const isClickableOnRow = function (row, item, action) {
     }
     let requirements = actionRequirements[action];
     for (let k in requirements) {
-        if (requirements.hasOwnProperty(k)) {
+        if (Object.prototype.hasOwnProperty.call(requirements, k)) {
             let requiredValue = requirements[k];
             let actualValue = item[k];
             if (requiredValue !== actualValue) {

@@ -1535,19 +1535,19 @@ let timeId = null;
 const slideTimeout = 7000;
 
 const birdTexts = [
-    "The <b>great tit</b> (<i>Parus major</i>) is a passerine bird in the tit family Paridae.",
-    "The <b>Eurasian bullfinch</b> (<i>Pyrrhula pyrrhula</i>) is a small passerine bird in the finch family Fringillidae.",
-    "The <b>dunnock</b> (<i>Prunella modularis</i>) is a small passerine, or perching bird in the Prunellidae family.",
-    "The <b>rock dove</b> or <b>rock pigeon</b> (<i>Columba livia</i>) is a member of the birdfamily Columbidae.",
-    "The <b>northern mockingbird</b> (<i>Mimus polyglottos</i>) a bird in the family Mimidae."
+    'The <b>great tit</b> (<i>Parus major</i>) is a passerine bird in the tit family Paridae.',
+    'The <b>Eurasian bullfinch</b> (<i>Pyrrhula pyrrhula</i>) is a small passerine bird in the finch family Fringillidae.',
+    'The <b>dunnock</b> (<i>Prunella modularis</i>) is a small passerine, or perching bird in the Prunellidae family.',
+    'The <b>rock dove</b> or <b>rock pigeon</b> (<i>Columba livia</i>) is a member of the birdfamily Columbidae.',
+    'The <b>northern mockingbird</b> (<i>Mimus polyglottos</i>) a bird in the family Mimidae.'
 ];
 
-const birdTitles = ["Great tit", "Bullfinch", "Dunnock", "Dove", "Mockingbird"];
+const birdTitles = ['Great tit', 'Bullfinch', 'Dunnock', 'Dove', 'Mockingbird'];
 
 function showText(index) {
-    const element = document.querySelector(".bird-text__body");
+    const element = document.querySelector('.bird-text__body');
     element.innerHTML = birdTexts[index];
-    document.querySelector(".bird-text__title").textContent = birdTitles[index];
+    document.querySelector('.bird-text__title').textContent = birdTitles[index];
 }
 
 function show(index, withDelay) {
@@ -1559,12 +1559,12 @@ function show(index, withDelay) {
             d: {
                 value: path.d,
                 duration: 1000,
-                easing: "easeInOutQuad"
+                easing: 'easeInOutQuad'
             },
             fill: {
                 value: path.fill,
                 duration: 1000,
-                easing: "easeInOutQuad"
+                easing: 'easeInOutQuad'
             },
             delay
         }));
@@ -1578,7 +1578,7 @@ function play(index) {
     });
 }
 
-const svg = document.querySelector(".birds");
+const svg = document.querySelector('.birds');
 
 ts.push([]);
 ts.push([]);
@@ -1587,8 +1587,8 @@ ts.push([]);
 ts.push([]);
 
 setTimeout(() => {
-    document.querySelector(".bird-text__body").innerHTML = birdTexts[0];
-    document.querySelector(".bird-text__title").textContent = birdTitles[0];
+    document.querySelector('.bird-text__body').innerHTML = birdTexts[0];
+    document.querySelector('.bird-text__title').textContent = birdTitles[0];
 }, 200);
 
 function prev() {
@@ -1642,7 +1642,7 @@ timeId = setTimeout(slideshow, slideTimeout);
 
 export const run = function () {
     document.addEventListener(
-        "keydown",
+        'keydown',
         function (event) {
             if (event.keyCode >= 49 && event.keyCode <= 53) {
                 restartAnimation(event.keyCode - 49);
@@ -1660,10 +1660,10 @@ export const run = function () {
     );
 
     birds[0].forEach(function (path) {
-        const newPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const newPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         svg.append(newPath);
-        newPath.setAttribute("id", path.id);
-        newPath.setAttribute("d", path.d);
-        newPath.setAttribute("style", "fill:" + path.fill);
+        newPath.setAttribute('id', path.id);
+        newPath.setAttribute('d', path.d);
+        newPath.setAttribute('style', 'fill:' + path.fill);
     });
 };

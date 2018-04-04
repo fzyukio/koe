@@ -1,8 +1,8 @@
-import * as fg from "flexible-grid";
-import {defaultGridOptions} from "./flexible-grid";
-import * as ah from "./audio-handler";
-import {log, deepCopy, getUrl, getCache} from "utils";
-import {setCache} from "./utils";
+import * as fg from 'flexible-grid';
+import {defaultGridOptions} from './flexible-grid';
+import * as ah from './audio-handler';
+import {log, deepCopy, getUrl, getCache} from 'utils';
+import {setCache} from './utils';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -54,9 +54,9 @@ class ExemplarsGrid extends fg.FlexibleGrid {
 const grid = new ExemplarsGrid();
 let cls = $('#exemplars-grid').attr('cls');
 
-const tooltip = $("#spectrogram-details-tooltip");
+const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
-const speedSlider = $("#speed-slider");
+const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
@@ -68,11 +68,11 @@ const databaseClass = databaseCombo.attr('cls');
 const initSlider = function () {
     speedSlider.slider();
 
-    speedSlider.on("slide", function (slideEvt) {
+    speedSlider.on('slide', function (slideEvt) {
         ah.changePlaybackSpeed(slideEvt.value);
     });
 
-    $('.slider').on("click", function () {
+    $('.slider').on('click', function () {
         let newvalue = $('.tooltip-inner').text();
         ah.changePlaybackSpeed(parseInt(newvalue));
     });
@@ -82,7 +82,7 @@ const imgRegex = /.*?\/(\d+)\.png/;
 
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
-    let hasImage = cellElement.closest(".has-image");
+    let hasImage = cellElement.closest('.has-image');
     if (hasImage.length == 1) {
         let imgSrc = hasImage.find('img').attr('src');
         let match = imgRegex.exec(imgSrc);
@@ -117,7 +117,7 @@ const selectTextForCopy = function (e, args) {
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    log(`subscribeFlexibleEvents called`);
+    log('subscribeFlexibleEvents called');
     grid.on('click', function (...args) {
         let e = args[0];
         e.preventDefault();
@@ -159,7 +159,7 @@ export const orientationChange = function () {
 const showBigSpectrogram = function (e, args) {
     e.preventDefault();
     let cellElement = $(args.e.target);
-    let hasImage = cellElement.closest(".has-image");
+    let hasImage = cellElement.closest('.has-image');
     if (hasImage.length == 1) {
         const originalImage = hasImage.find('img');
 

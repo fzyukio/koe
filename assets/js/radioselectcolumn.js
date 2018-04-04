@@ -3,7 +3,7 @@
 (function ($) {
     // register namespace
     $.extend(true, window, {
-        "Slick": {
+        'Slick': {
             RadioSelectColumn
         }
     });
@@ -14,9 +14,9 @@
         let _handler = new Slick.EventHandler();
         let _selectedRowsLookup = {};
         let _defaults = {
-            columnId: "_sel",
+            columnId: '_sel',
             cssClass: null,
-            toolTip: "Select/Deselect All",
+            toolTip: 'Select/Deselect All',
             width: 30
         };
 
@@ -46,7 +46,7 @@
                 }
             }
             for (let i in _selectedRowsLookup) {
-                if (_selectedRowsLookup.hasOwnProperty(i)) {
+                if (Object.prototype.hasOwnProperty.call(_selectedRowsLookup, i)) {
                     let item = _grid.getDataItem(i);
                     // Null check because the row can be out of view (filtered)
                     if (item) {
@@ -74,7 +74,7 @@
 
         function handleClick(e, args) {
             // clicking on a row select checkbox
-            if (_grid.getColumns()[args.cell].id === _options.columnId && $(e.target).is(":radio")) {
+            if (_grid.getColumns()[args.cell].id === _options.columnId && $(e.target).is(':radio')) {
                 // if editing, try to commit
                 if (_grid.getEditorLock().isActive() && !_grid.getEditorLock().commitCurrentEdit()) {
                     e.preventDefault();
@@ -96,9 +96,9 @@
         function getColumnDefinition() {
             return {
                 id: _options.columnId,
-                name: "",
+                name: '',
                 toolTip: _options.toolTip,
-                field: "_sel",
+                field: '_sel',
                 width: _options.width,
                 resizable: false,
                 sortable: false,
@@ -110,8 +110,8 @@
         function checkboxSelectionFormatter(row, cell, value, columnDef, dataContext) {
             if (dataContext) {
                 return _selectedRowsLookup[row] ?
-                    "<input type='radio' name='row-select' checked='checked'>" :
-                    "<input type='radio' name='row-select'>";
+                    '<input type=\'radio\' name=\'row-select\' checked=\'checked\'>' :
+                    '<input type=\'radio\' name=\'row-select\'>';
             }
             return null;
         }

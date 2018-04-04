@@ -88,7 +88,10 @@ module.exports = {
             "error",
             "beside"
         ],
-        "indent": "error",
+        "indent": [
+            "error",
+            4
+        ],
         "init-declarations": "off",
         "jsx-quotes": "error",
         "key-spacing": "error",
@@ -109,7 +112,7 @@ module.exports = {
         "lines-between-class-members": "error",
         "max-depth": "error",
         "max-len": "off",
-        "max-lines": "warn",
+        "max-lines": "off",
         "max-nested-callbacks": "error",
         "max-params": "off",
         "max-statements": "off",
@@ -178,7 +181,7 @@ module.exports = {
         "no-process-env": "error",
         "no-process-exit": "error",
         "no-proto": "error",
-        "no-prototype-builtins": "off",
+        "no-prototype-builtins": "error",
         "no-restricted-globals": "error",
         "no-restricted-imports": "error",
         "no-restricted-modules": "error",
@@ -242,7 +245,10 @@ module.exports = {
         "prefer-spread": "error",
         "prefer-template": "off",
         "quote-props": "off",
-        "quotes": "off",
+        "quotes": [
+            "error",
+            "single"
+        ],
         "radix": [
             "error",
             "as-needed"
@@ -250,7 +256,10 @@ module.exports = {
         "require-await": "error",
         "require-jsdoc": "error",
         "rest-spread-spacing": "error",
-        "semi": "off",
+        "semi": [
+            "off",
+            "always"
+        ],
         "semi-spacing": [
             "error",
             {

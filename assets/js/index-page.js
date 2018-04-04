@@ -1,9 +1,9 @@
-import * as fg from "flexible-grid";
-import {defaultGridOptions} from "./flexible-grid";
-import * as ah from "./audio-handler";
-import {initSelectize} from "./selectize-formatter";
-import {log, deepCopy, getUrl, getCache} from "utils";
-import {setCache} from "./utils";
+import * as fg from 'flexible-grid';
+import {defaultGridOptions} from './flexible-grid';
+import * as ah from './audio-handler';
+import {initSelectize} from './selectize-formatter';
+import {log, deepCopy, getUrl, getCache} from 'utils';
+import {setCache} from './utils';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -54,15 +54,15 @@ class SegmentGrid extends fg.FlexibleGrid {
 }
 
 export const grid = new SegmentGrid();
-const contextMenu = $("#context-menu");
+const contextMenu = $('#context-menu');
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
 const setLabelLiA = contextMenu.find('a[action=set-label]');
 const setLabelLi = setLabelLiA.parent();
 
-const tooltip = $("#spectrogram-details-tooltip");
+const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
-const speedSlider = $("#speed-slider");
+const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNSelceted = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
@@ -82,7 +82,7 @@ let ce;
  * @param response
  */
 const generalResponseHandler = function (response) {
-    let message = `Success`;
+    let message = 'Success';
     let alertEl = ce.alertSuccess;
     if (response != 'ok') {
         message = `Something's wrong. The server says "${response}".`;
@@ -97,11 +97,11 @@ const generalResponseHandler = function (response) {
 const initSlider = function () {
     speedSlider.slider();
 
-    speedSlider.on("slide", function (slideEvt) {
+    speedSlider.on('slide', function (slideEvt) {
         ah.changePlaybackSpeed(slideEvt.value);
     });
 
-    $('.slider').on("click", function () {
+    $('.slider').on('click', function () {
         let newvalue = $('.tooltip-inner').text();
         ah.changePlaybackSpeed(parseInt(newvalue));
     });
@@ -109,7 +109,7 @@ const initSlider = function () {
 
 const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
-    let hasImage = cellElement.closest(".has-image");
+    let hasImage = cellElement.closest('.has-image');
     if (hasImage.length == 1) {
         let segId = args.songId;
         let data = new FormData();
@@ -128,7 +128,7 @@ const playAudio = function (e, args) {
  */
 const toggleCheckBox = function (e, args) {
     let cellElement = $(args.e.target);
-    let hasCheckBox = cellElement.find('input[type=checkbox]').closest("input[type=checkbox]");
+    let hasCheckBox = cellElement.find('input[type=checkbox]').closest('input[type=checkbox]');
     if (hasCheckBox.length == 1) {
         hasCheckBox.click();
     }
@@ -157,16 +157,16 @@ const selectTextForCopy = function (e, args) {
 const resetStatus = function (e, args) {
     e.preventDefault();
     let nRowChanged = 0;
-    if (e.type == "row-added") {
+    if (e.type == 'row-added') {
         nRowChanged = 1;
     }
-    else if (e.type == "rows-added") {
+    else if (e.type == 'rows-added') {
         nRowChanged = args.rows.length;
     }
-    else if (e.type == "row-removed") {
+    else if (e.type == 'row-removed') {
         nRowChanged = -1;
     }
-    else if (e.type == "rows-removed") {
+    else if (e.type == 'rows-removed') {
         nRowChanged = -args.rows.length;
     }
     let nSelectedRows = parseInt(gridStatusNSelceted.html());
@@ -181,7 +181,7 @@ const resetStatus = function (e, args) {
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    log(`subscribeFlexibleEvents called`);
+    log('subscribeFlexibleEvents called');
     grid.on('click', function (...args) {
         let e = args[0];
         e.preventDefault();
@@ -204,7 +204,7 @@ const subscribeFlexibleEvents = function () {
  * screen orientation or size
  */
 const subscribeSlickEvents = function () {
-    log(`subscribeSlickEvents called`);
+    log('subscribeSlickEvents called');
     grid.subscribe('onContextMenu', function (e, args) {
         e.preventDefault();
         let grid_ = args.grid;
@@ -215,11 +215,11 @@ const subscribeSlickEvents = function () {
         contextHandlerDecorator(colDef);
 
         contextMenu.
-            data("field", field).
-            css("top", e.pageY).
-            css("left", e.pageX).
+            data('field', field).
+            css('top', e.pageY).
+            css('left', e.pageX).
             show();
-        $("body").one("click", function () {
+        $('body').one('click', function () {
             contextMenu.hide();
         });
     });
@@ -247,7 +247,7 @@ export const orientationChange = function () {
 const showBigSpectrogram = function (e, args) {
     e.preventDefault();
     let cellElement = $(args.e.target);
-    let hasImage = cellElement.closest(".has-image");
+    let hasImage = cellElement.closest('.has-image');
     if (hasImage.length == 1) {
         const originalImage = hasImage.find('img');
 
@@ -493,14 +493,14 @@ export const run = function (commonElements) {
     });
 
     contextMenu.click(function (e) {
-        if (!$(e.target).is("a")) {
+        if (!$(e.target).is('a')) {
             return;
         }
         if (!grid.mainGrid.getEditorLock().commitCurrentEdit()) {
             return;
         }
-        let action = e.target.getAttribute("action");
-        let field = $(this).data("field");
+        let action = e.target.getAttribute('action');
+        let field = $(this).data('field');
         let actionHandler = actionHandlers[action];
         actionHandler(field);
     });
@@ -535,22 +535,22 @@ const addFilter = function (field) {
     let fieldArgIndexBeg, fieldArgIndexEnd;
 
     if (fieldValueIndex == -1) {
-        currentFilterValue += field + "()";
+        currentFilterValue += field + '()';
         fieldValueIndex = currentFilterValue.indexOf(field);
         filterInput.val(currentFilterValue);
         fieldArgIndexBeg = fieldValueIndex + field.length + 1;
         fieldArgIndexEnd = fieldArgIndexBeg;
     }
     else {
-        fieldArgIndexEnd = currentFilterValue.substr(fieldValueIndex).indexOf(")") + fieldValueIndex;
+        fieldArgIndexEnd = currentFilterValue.substr(fieldValueIndex).indexOf(')') + fieldValueIndex;
         fieldArgIndexBeg = fieldValueIndex + field.length + 1;
     }
     filterInput[0].setSelectionRange(fieldArgIndexBeg, fieldArgIndexEnd);
     filterInput[0].focus();
 };
 
-const inputText = $(`<input type="text" class="form-control"/>`);
-const inputSelect = $(`<select class="selectize" ></select>`);
+const inputText = $('<input type="text" class="form-control"/>');
+const inputSelect = $('<select class="selectize" ></select>');
 
 const setLabel = function (field) {
     let grid_ = grid.mainGrid;
@@ -648,7 +648,7 @@ const toggleSelectHighlightedRow = function () {
 
 const actionHandlers = {
     filter: addFilter,
-    "set-label": setLabel
+    'set-label': setLabel
 };
 
 const contextHandlerDecorator = function (colDef) {
@@ -680,8 +680,8 @@ export const postRun = function () {
     $('#save-data-btn').click(function () {
         inputText.val('');
 
-        ce.dialogModalTitle.html("Backing up your data...");
-        ce.dialogModalBody.html(`<label>Give it a comment (optional)</label>`);
+        ce.dialogModalTitle.html('Backing up your data...');
+        ce.dialogModalBody.html('<label>Give it a comment (optional)</label>');
         ce.dialogModalBody.append(inputText);
 
         ce.dialogModal.modal('show');

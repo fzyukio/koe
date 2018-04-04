@@ -15,29 +15,29 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 
-import * as apa from "property-actions";
+import * as apa from 'property-actions';
 
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library
  */
 if ($.ui.keyCode === undefined) {
     $.ui.keyCode = {
-        "BACKSPACE": 8,
-        "COMMA": 188,
-        "DELETE": 46,
-        "DOWN": 40,
-        "END": 35,
-        "ENTER": 13,
-        "ESCAPE": 27,
-        "HOME": 36,
-        "LEFT": 37,
-        "PAGE_DOWN": 34,
-        "PAGE_UP": 33,
-        "PERIOD": 190,
-        "RIGHT": 39,
-        "SPACE": 32,
-        "TAB": 9,
-        "UP": 38
+        'BACKSPACE': 8,
+        'COMMA': 188,
+        'DELETE': 46,
+        'DOWN': 40,
+        'END': 35,
+        'ENTER': 13,
+        'ESCAPE': 27,
+        'HOME': 36,
+        'LEFT': 37,
+        'PAGE_DOWN': 34,
+        'PAGE_UP': 33,
+        'PERIOD': 190,
+        'RIGHT': 39,
+        'SPACE': 32,
+        'TAB': 9,
+        'UP': 38
     };
 }
 
@@ -56,6 +56,7 @@ export const debug = function (str) {
 export const isNumber = function (str) {
     return !isNaN(str);
 };
+
 
 jQuery.fn.selectText = function () {
     let doc = document;
@@ -86,10 +87,10 @@ $.fn.bootstrapDP = datepicker;
 
 export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
     if (isNull(value)) {
-        value = "";
+        value = '';
     }
     else {
-        value = (String(value)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        value = (String(value)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     let field = columnDef.field;
@@ -115,7 +116,7 @@ export const initDatePicker = function (jEl, defaultDate) {
     let defaultDateObject;
 
     if (defaultDate) {
-        let defaultDateParts = defaultDate.split("-");
+        let defaultDateParts = defaultDate.split('-');
         defaultDate = {
             year: parseInt(defaultDateParts[0]),
             month: parseInt(defaultDateParts[1]) - 1,
@@ -225,9 +226,9 @@ export const deepCopy = function (object) {
 export const findGetParameter = function (parameterName) {
     let result = null,
         tmp = [];
-    let items = location.search.substr(1).split("&");
+    let items = location.search.substr(1).split('&');
     for (let index = 0; index < items.length; index++) {
-        tmp = items[index].split("=");
+        tmp = items[index].split('=');
         if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
     }
     return result;
@@ -263,7 +264,7 @@ export const capsToTitleCase = function (allCaps) {
 function SelectionFormatter(row, cell, value, columnDef, dataContext) {
     let options = columnDef.options;
     for (let key in options) {
-        if (options.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(options, key)) {
             if (parseInt(value) === options[key]) {
                 return capsToTitleCase(key);
             }
@@ -302,7 +303,7 @@ const ImageFormatter = function (row, cell, imgUrl, columnDef, item) {
  */
 // eslint-disable-next-line no-unused-vars
 const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
-    return `<i class="fa fa-bars" aria-hidden="true"></i>`;
+    return '<i class="fa fa-bars" aria-hidden="true"></i>';
 };
 
 
@@ -376,7 +377,7 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
         retval += `<div class="syllable" start=${start} end=${end} imgsrc="${imgSrc}">${segLabel}</div>`;
     }
 
-    retval += `<div class="syllable end"><i class="fa fa-stop"></i></div>`;
+    retval += '<div class="syllable end"><i class="fa fa-stop"></i></div>';
     return retval;
 };
 
@@ -405,9 +406,9 @@ const FloatEditorRewritten = function (args) {
     let defaultValue;
 
     this.init = function () {
-        $input = $("<INPUT type=\"number\" inputmode=\"numeric\" step=\"0.01\" class='editor-text' />");
+        $input = $('<INPUT type="number" inputmode="numeric" step="0.01" class=\'editor-text\' />');
 
-        $input.on("keydown.nav", function (e) {
+        $input.on('keydown.nav', function (e) {
             if (e.keyCode === $.ui.keyCode.LEFT || e.keyCode === $.ui.keyCode.RIGHT) {
                 e.stopImmediatePropagation();
             }
@@ -477,14 +478,14 @@ const FloatEditorRewritten = function (args) {
     };
 
     this.isValueChanged = function () {
-        return (!($input.val() === "" && defaultValue === null)) && ($input.val() !== defaultValue);
+        return (!($input.val() === '' && defaultValue === null)) && ($input.val() !== defaultValue);
     };
 
     this.validate = function () {
         if (isNaN($input.val())) {
             return {
                 valid: false,
-                msg: "Please enter a valid number"
+                msg: 'Please enter a valid number'
             };
         }
 
@@ -528,7 +529,7 @@ const DateEditorRewritten = function (args) {
         inputElement.appendTo(args.container);
 
         if (defaultDate) {
-            let defaultDateParts = defaultDate.split("-");
+            let defaultDateParts = defaultDate.split('-');
             defaultDate = {
                 year: parseInt(defaultDateParts[0]),
                 month: parseInt(defaultDateParts[1]),
@@ -537,7 +538,7 @@ const DateEditorRewritten = function (args) {
         }
 
         inputElement.bootstrapDP({
-            format: "yyyy-mm-dd",
+            format: 'yyyy-mm-dd',
             autoclose: true,
             todayHighlight: true,
             todayBtn: true,
@@ -590,7 +591,7 @@ const DateEditorRewritten = function (args) {
     };
 
     this.isValueChanged = function () {
-        return (!(inputElement.val() === "" && isNull(defaultValue))) && (inputElement.val() !== defaultValue);
+        return (!(inputElement.val() === '' && isNull(defaultValue))) && (inputElement.val() !== defaultValue);
     };
 
     this.validate = function () {
@@ -808,7 +809,7 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
         filterTypes[cols[i].field] = cols[i].filter;
     }
 
-    $(inputSelector).on("input", function () {
+    $(inputSelector).on('input', function () {
         let filterContents = this.value.split(';');
 
         /*
@@ -877,7 +878,7 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
 export const gridFilter = function (item, filters) {
     if (filters) {
         for (let field in filters) {
-            if (filters.hasOwnProperty(field)) {
+            if (Object.prototype.hasOwnProperty.call(filters, field)) {
                 let filter = filters[field];
                 let val = item[field] || '';
                 if (!filter(val)) {
@@ -904,7 +905,7 @@ const NonBlankValidator = function (value) {
     if (isNull(value) || !value.length) {
         return {
             valid: false,
-            msg: "This is a required field"
+            msg: 'This is a required field'
         };
     }
     else {
@@ -926,17 +927,17 @@ const IsoDateValidator = function (dateString) {
     let regEx = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateString.match(regEx)) return {
         valid: false,
-        msg: "The format must be like 2016-01-20 (YYYY-MM-DD)"
+        msg: 'The format must be like 2016-01-20 (YYYY-MM-DD)'
     };
     let d;
     if (!((d = new Date(dateString)) || 0)) return {
         valid: false,
-        msg: "This date is invalid"
+        msg: 'This date is invalid'
     };
     if (d.toISOString().slice(0, 10) !== dateString) {
         return {
             valid: false,
-            msg: "This date is invalid"
+            msg: 'This date is invalid'
         };
     }
     return {
@@ -1057,7 +1058,7 @@ const insertOrReplaceColumn = function (columns, newcol) {
         let oldColumn = columns[index];
         columns[index] = newcol;
         for (let attr in oldColumn) {
-            if (oldColumn.hasOwnProperty(attr) && !newcol.hasOwnProperty(attr)) {
+            if (Object.prototype.hasOwnProperty.call(oldColumn, attr) && !Object.prototype.hasOwnProperty.call(newcol, attr)) {
                 newcol[attr] = oldColumn[attr];
             }
         }
@@ -1158,10 +1159,10 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
      */
     let selectorPlugin = null;
     if (multiSelect) {
-        selectorPlugin = new Slick.CheckboxSelectColumn({cssClass: "checkboxsel"});
+        selectorPlugin = new Slick.CheckboxSelectColumn({cssClass: 'checkboxsel'});
     }
     if (radioSelect) {
-        selectorPlugin = new Slick.RadioSelectColumn({cssClass: "checkboxsel"});
+        selectorPlugin = new Slick.RadioSelectColumn({cssClass: 'checkboxsel'});
     }
 
     grid.setSelectionModel(new Slick.RowSelectionModel({selectActiveRow: false}));
@@ -1181,14 +1182,14 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         });
 
         let moveableHandlerCol = {
-            id: "#",
-            field: "#",
-            name: "",
+            id: '#',
+            field: '#',
+            name: '',
             width: 40,
-            behavior: "selectAndMove",
+            behavior: 'selectAndMove',
             selectable: false,
             resizable: false,
-            cssClass: "cell-reorder dnd",
+            cssClass: 'cell-reorder dnd',
             formatter: RowMoveableFormatter
         };
 
@@ -1415,7 +1416,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 
         if (apa.hasActionsOfType('click', columnActions)) {
             grid.onClick.subscribe(function (e, args_) {
-                let action = $(e.target).closest('button').attr("action");
+                let action = $(e.target).closest('button').attr('action');
                 let handler = apa.actionHandlers[action];
                 let row = args_.row;
                 let dataView_ = args_.grid.getData();
@@ -1519,11 +1520,11 @@ export const createCsv = function (grid, downloadType) {
     // Also enclose everything in quote to avoid having strings with special characters in it
     let lineArray = [columnHeadings.map((x) => `"${x.replace(/"/g, '""')}"`).join(',')];
     rows.forEach(function (rowArray) {
-        let line = [rowArray.map((x) => `"${x.replace(/"/g, '""')}"`)].join(",");
+        let line = [rowArray.map((x) => `"${x.replace(/"/g, '""')}"`)].join(',');
         lineArray.push(line);
     });
 
-    return lineArray.join("\n");
+    return lineArray.join('\n');
 };
 
 
@@ -1537,12 +1538,12 @@ export const downloadBlob = function (blob, filename) {
         navigator.msSaveBlob(blob, filename);
     }
     else {
-        let link = document.createElement("a");
+        let link = document.createElement('a');
         if (link.download !== undefined) {
             // Browsers that support HTML5 download attribute
             let url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", filename);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
