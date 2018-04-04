@@ -8,7 +8,7 @@ import psycopg2
 from django.core.management import BaseCommand
 from openpyxl import load_workbook
 
-from root.models import *
+from root.models import enum
 
 name_regex = re.compile(
     '(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')

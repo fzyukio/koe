@@ -10,9 +10,11 @@ from root.utils import wav_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
-    def str_to_bytes(x): return str.encode(x, encoding='LATIN-1')
+    def str_to_bytes(x):
+        return str.encode(x, encoding='LATIN-1')
 else:
-    def str_to_bytes(x): return x
+    def str_to_bytes(x):
+        return x
 
 
 class Command(BaseCommand):

@@ -2,7 +2,6 @@ import pickle
 from collections import OrderedDict
 
 import numpy as np
-import pyaudio
 import scipy.signal
 from django.core.management.base import BaseCommand
 from django.db.models import F

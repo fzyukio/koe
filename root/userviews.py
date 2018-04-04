@@ -39,6 +39,7 @@ class UserSignInView(FormView, RedirectIfAuthenticated):
     """
     Handle user sign in.
     """
+
     form_class = UserSignInForm
     template_name = 'users/login.html'
 
@@ -75,6 +76,7 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
     """
     Handle user registration
     """
+
     form_class = UserRegistrationForm
     template_name = 'users/register.html'
 
@@ -125,11 +127,11 @@ class UserForgetPasswordView(FormView, RedirectIfAuthenticated):
     """
     Handle user registration
     """
+
     form_class = UserForgetPasswordForm
     template_name = 'users/forget-password.html'
 
     def form_valid(self, form):
-        has_error = False
 
         form_data = form.cleaned_data
         user = User.objects.filter(username__iexact=form_data['acc_or_email']).first()
@@ -151,6 +153,7 @@ class UserResetPasswordView(FormView, RedirectIfAuthenticated):
     """
     This is subtab "security" in tab "profile"
     """
+
     form_class = UserResetPasswordForm
     template_name = 'users/reset-password.html'
 

@@ -222,6 +222,7 @@ class ExtraAttr(models.Model):
     These are the user editable fields that usually can be direct properties of an object model
     However to support multi-user and custom fields, fields like this is detached from the object
     """
+
     klass = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     type = models.IntegerField(choices=ValueTypes.as_choices())
@@ -230,6 +231,7 @@ class ExtraAttr(models.Model):
         """
         One class can't have two properties with the same name
         """
+
         unique_together = ('klass', 'name')
 
     def __str__(self):
@@ -240,6 +242,7 @@ class ExtraAttrValue(models.Model):
     """
     This model stores the value of the aforementioned ExtraAttr model.
     """
+
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     owner_id = models.CharField(max_length=255)
     attr = models.ForeignKey(ExtraAttr, on_delete=models.CASCADE)
@@ -249,6 +252,7 @@ class ExtraAttrValue(models.Model):
         """
         One user can't set two different value to the same attribute of the same object
         """
+
         unique_together = ('user', 'owner_id', 'attr')
 
     def __str__(self):
@@ -423,6 +427,7 @@ class IdSafeModel(models.Model):
     An ID Safe Model has ID that cannot be guessed. The ID is small enough to be efficient to send in bulk over the
     wire, but safe enough to prevent injection of any kind.
     """
+
     id = models.CharField(primary_key=True, editable=False, auto_created=False, max_length=255)
 
     class Meta:
@@ -471,6 +476,7 @@ class ColumnActionValue(SimpleModel):
     So that each user after logging in will see the same grid setting they made before
     Each value is user specific
     """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     table = models.CharField(max_length=255)
     column = models.CharField(max_length=255)

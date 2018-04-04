@@ -1,6 +1,8 @@
+import os
+
 from decouple import Csv
 
-from .base import *  # noqa
+from .base import BASE_DIR, INSTALLED_APPS, MIDDLEWARE, config, DATABASES, WEBPACK_LOADER
 
 INSTALLED_APPS += ['corsheaders']
 MIDDLEWARE += ['corsheaders.middleware.CorsMiddleware', 'django.middleware.common.CommonMiddleware']

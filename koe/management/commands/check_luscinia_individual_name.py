@@ -1,21 +1,16 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
-import re
-from logging import warning
 
-from django.core.management.base import BaseCommand
-
-import psycopg2.extras
 import openpyxl
+import psycopg2.extras
+from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
-# name_regex = re.compile('(\w+)_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(EX|VG|G)?(\.[^.]+)?(\..*)?\.wav')
 COLUMN_NAMES = ['Individual name', 'Corrected to']
 
 
 class Command(BaseCommand):
-
     def add_arguments(self, parser):
         parser.add_argument(
             '--db',

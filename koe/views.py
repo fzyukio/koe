@@ -192,7 +192,7 @@ def get_sequence(request):
     segment_ids = segments.values_list('id', flat=True)
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
 
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=segment_ids, user=request.user)\
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=segment_ids, user=request.user) \
         .values_list('value', flat=True)
 
     if len(labels) == 0:
@@ -200,7 +200,7 @@ def get_sequence(request):
 
     gaps = []
     for i in range(len(segments) - 1):
-        gaps.append(segments[i+1].start_time_ms - segments[i].end_time_ms)
+        gaps.append(segments[i + 1].start_time_ms - segments[i].end_time_ms)
 
     symbol_sequence = []
     label_sequence = []
@@ -228,6 +228,7 @@ class IndexView(TemplateView):
     """
     The view to index page
     """
+
     template_name = 'index.html'
 
     def get_context_data(self, **kwargs):
@@ -268,6 +269,7 @@ class SongsView(TemplateView):
     """
     The view to index page
     """
+
     template_name = 'songs.html'
 
     def get_context_data(self, **kwargs):

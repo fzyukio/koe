@@ -1,14 +1,13 @@
 from __future__ import print_function
 
 import numpy as np
-from django.db.models import Count
 from django.db.models import F
 from progress.bar import Bar
 from python_speech_features import xfcc, delta, xfc
 from scipy import interpolate
 
 from koe import wavfile
-from koe.management.commands.chirp_generator import *
+from koe.management.commands.chirp_generator import amp_profile_names, f0_profile_names, generate_chirp
 from root.utils import wav_path
 
 window_size_relative = 0.2  # Of the largest window
@@ -22,13 +21,6 @@ def resize_arr(arr, length):
     return f(t1)
 
 
-# with open('chirps.pkl', 'rb') as f:
-#     chirps_dict = pickle.load(f)
-#
-# chirps_feature_dict = {}
-
-
-@profile
 def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
     nsegs = len(segments)
 

@@ -2,14 +2,14 @@
 image: agileware/python-3.6.1-node-6.11
 
 before_script:
-  - pip install pycodestyle
+  - pip install pycodestyle flake8 flake8-docstrings
   - npm install -g eslint
   - pwd
   - ls -l
 
 test:
   script:
-  - pycodestyle --max-line-length=120 --exclude=.venv,node_modules,migrations .
+  - flake8
   - eslint assets
   allow_failure: false
 

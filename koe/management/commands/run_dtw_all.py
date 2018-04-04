@@ -5,7 +5,6 @@ args:
 """
 
 import numpy as np
-from ced import pyed
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
@@ -33,10 +32,6 @@ class DummyDistance:
 
 
 d_ = DummyDistance()
-
-
-def dummy(seg_one_f0, seg_two_f0, *args, **kwargs):
-    return d_
 
 
 def calc_gap(feature_arrays):
@@ -82,7 +77,6 @@ class Command(BaseCommand):
             help='List of normalisation algorithm [none, min, avg, max]',
         )
 
-    @profile
     def handle(self, features, dists, metrics, norms, *args, **options):
         from koe.models import Segment, DistanceMatrix
         DistanceMatrix.objects.all().delete()
@@ -119,29 +113,7 @@ class Command(BaseCommand):
                             extract_func = extract_funcs[feature_name]
                             feature_array = extract_func(segments_ids, config)
 
-                        distance_count = 0
-
-                        bar = Bar('Calc distance ({})'.format(
-                            test_name), max=nsegs)
-
-                        if metric_name == 'dummy':
-                            metric_func = dummy
-                            args = {}
-                        elif metric_name == 'edr':
-                            sigmas = calc_sigma(feature_array)
-                            metric_func = pyed.Edr
-                            args = {'sigmas': sigmas}
-                        elif metric_name == 'erp':
-                            gap = calc_gap(feature_array)
-                            metric_func = pyed.Erp
-                            args = {'gap': gap}
-                        elif metric_name == 'lcss':
-                            sigmas = calc_sigma(feature_array)
-                            metric_func = pyed.Lcss
-                            args = {'sigmas': sigmas}
-                        else:
-                            metric_func = pyed.Dtw
-                            args = {}
+                        bar = Bar('Calc distance ({})'.format(test_name), max=nsegs)
 
                         triu = np.random.rand(ndistances).astype(np.float16)
 

@@ -19,7 +19,7 @@ from progress.bar import Bar
 from scipy import signal
 
 from koe import wavfile as wf
-from koe.colourmap import *
+from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual, Database, DatabaseAssignment, \
@@ -27,8 +27,7 @@ from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Individual,
 from root.models import ExtraAttr, ExtraAttrValue, ValueTypes, User
 from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
 
-COLOURS = [[69, 204, 255], [73, 232, 62], [
-    255, 212, 50], [232, 75, 48], [170, 194, 102]]
+COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
 AXIS_COLOUR = [127, 127, 127]
 
@@ -45,10 +44,8 @@ global_max_spect_pixel = 2.8522987365722656
 global_spect_pixel_range = global_max_spect_pixel - global_min_spect_pixel
 interval64 = global_spect_pixel_range / 63
 
-name_regex = re.compile(
-    '(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
-note_attr, _ = ExtraAttr.objects.get_or_create(
-    klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
+name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
+note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -97,13 +94,11 @@ def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
 
         if bitrate == 24:
             array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
-            array2 = array1.reshape(
-                (nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
+            array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
             wf.write_24b(wav_file_path, fs, array2)
         else:
             data = array.array('i', raw_pcm)
-            sound = pydub.AudioSegment(
-                data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
+            sound = pydub.AudioSegment(data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
             sound.export(wav_file_path, 'wav')
     else:
         fs, length = get_wav_info(wav_file_path)
@@ -154,14 +149,11 @@ def import_song_info(conn, user):
                 song_note = song['call_context']
                 individual_name = song['iname']
 
-                track_name = '{}_{}_{}'.format(
-                    location, date.strftime('%Y-%m-%d'), track_id)
+                track_name = '{}_{}_{}'.format(location, date.strftime('%Y-%m-%d'), track_id)
 
-                track, _ = AudioTrack.objects.get_or_create(
-                    name=track_name, date=date)
+                track, _ = AudioTrack.objects.get_or_create(name=track_name, date=date)
 
-                individual, _ = Individual.objects.get_or_create(
-                    name=individual_name, gender=gender)
+                individual, _ = Individual.objects.get_or_create(name=individual_name, gender=gender)
                 audio_file.track = track
                 audio_file.individual = individual
                 audio_file.quality = quality

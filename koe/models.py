@@ -52,6 +52,7 @@ class AudioTrack(StandardModel):
     """
     A track is a whole raw audio recording containing many songs.
     """
+
     name = models.CharField(max_length=255, unique=True)
     date = models.DateField(null=True, blank=True)
 
@@ -63,6 +64,7 @@ class Individual(StandardModel):
     """
     Represents a bird.
     """
+
     name = models.CharField(max_length=255)
     gender = models.CharField(max_length=16)
 
@@ -75,6 +77,7 @@ class Database(StandardModel):
     This works as a separator between different sets of audio files that are not related.
     E.g. a database of bellbirds and a database of dolphin sounds...
     """
+
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
@@ -87,6 +90,10 @@ class DatabasePermission(MagicChoices):
 
 
 class DatabaseAssignment(SimpleModel):
+    """
+    Grant user access to database with this
+    """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     database = models.ForeignKey(Database, on_delete=models.CASCADE)
     permission = models.IntegerField(choices=DatabasePermission.as_choices())
@@ -105,6 +112,7 @@ class AudioFile(StandardModel):
     """
     Represent a song
     """
+
     fs = models.IntegerField()
     length = models.IntegerField()
     name = models.CharField(max_length=255, unique=True)
@@ -129,6 +137,7 @@ class Segment(SimpleModel):
     """
     A segment of a song
     """
+
     start_time_ms = models.IntegerField()
     end_time_ms = models.IntegerField()
 
@@ -152,6 +161,7 @@ class Segmentation(StandardModel):
     """
     Represents a segmentation scheme, which aggregate all segments
     """
+
     audio_file = models.ForeignKey(AudioFile, null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=1023)
 
@@ -228,6 +238,7 @@ class AlgorithmicModelMixin(models.Model):
     """
     This is an abstract for models that can be distinguished by the attribute algorithm
     """
+
     algorithm = models.CharField(max_length=255)
     database = models.ForeignKey(Database, on_delete=models.CASCADE)
 
@@ -246,6 +257,7 @@ class IdOrderedModel(PicklePersistedModel):
       To facilitate querying, we store a checksum of the concatenated list as a unique field in the database
       The checksum is calculated automatically upon saving
     """
+
     chksum = models.CharField(max_length=24)
 
     class Meta:
@@ -285,6 +297,7 @@ class HistoryEntry(StandardModel):
     """
     Represent a snapshot of the current user's workspace.
     """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     time = models.DateTimeField()
     filename = models.CharField(max_length=255)
@@ -362,7 +375,7 @@ class HistoryEntry(StandardModel):
 
 
 @receiver(post_delete, sender=HistoryEntry)
-def _mymodel_delete(sender, instance, **kwargs):
+def _history_delete(sender, instance, **kwargs):
     """
     When a HistoryEntry is deleted, also delete its ZIP file
     :param sender:

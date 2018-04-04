@@ -36,11 +36,11 @@ Functions
 """
 from __future__ import division, print_function, absolute_import
 
-import numpy
+import collections
 import struct
 import warnings
-import collections
-from operator import itemgetter
+
+import numpy
 
 
 class WavFileWarning(UserWarning):
@@ -144,8 +144,6 @@ def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
         if chunk_id == b'fmt ':
             size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
         elif chunk_id == b'data':
-            data_length = struct.unpack('<i', fid.read(4))[0] / ba
-
             beg = int(beg_ms * rate * ba / 1000)
             end = int(end_ms * rate * ba / 1000)
             chunk_size = end - beg
@@ -192,28 +190,24 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
          normalized=False, forcestereo=False):
     """
     Return the sample rate (in samples/sec) and data from a WAV file
-
-    Parameters
-    ----------
-    file : file
-        Input wav file.
-
-    Returns
-    -------
-    rate : int
-        Sample rate of wav file
-    data : numpy array
-        Data read from wav file
-
     Notes
     -----
-
     * The file can be an open file or a filename.
 
     * The returned sample rate is a Python integer
     * The data is returned as a numpy array with a
       data-type determined from the file.
 
+    :param file: Input wav file.
+    :param readmarkers:
+    :param readmarkerlabels:
+    :param readmarkerslist:
+    :param readloops:
+    :param readpitch:
+    :param normalized:
+    :param forcestereo:
+    :return: rate : int Sample rate of wav file
+             data : numpy array Data read from wav file
     """
     if hasattr(file, 'read'):
         fid = file
@@ -406,7 +400,6 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
       (Nsamples, Nchannels).
 
     """
-
     # normalization and 24-bit handling
     if bitrate == 24:  # special handling of 24 bit wav, because there is no numpy.int24...
         if normalized:
@@ -439,7 +432,6 @@ def write_24b(filename, rate, data):
     :param data:
     :return:
     """
-
     assert data.dtype == numpy.uint8
     shape = numpy.shape(data)
     assert len(shape) == 3

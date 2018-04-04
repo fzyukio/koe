@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models.base import ModelBase
-from django.db.utils import OperationalError, ProgrammingError
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +13,8 @@ from django.views.generic import TemplateView
 from opbeat import Client
 
 from koe import jsons
-from root.models import *
+from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
+    ColumnActionValue, get_bulk_id
 
 opbeat_client = None
 if hasattr(settings, 'OPBEAT'):
@@ -453,7 +453,6 @@ def get_view(name):
     :param name: name of the view. A `name`.html must exist in the template folder
     :return:
     """
-
     class View(TemplateView):
         template_name = name + '.html'
 

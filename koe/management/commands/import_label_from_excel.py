@@ -1,14 +1,18 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
+import os
+from logging import warning
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models.functions import Cast
+from django.db.models.query import QuerySet
+from django.forms import models
 from openpyxl import load_workbook
 
-from koe.models import *
-from root.models import *
+from koe.models import Segment, AudioFile
+from root.models import enum, ExtraAttr, ValueTypes, User, value_setter, ExtraAttrValue
 
 ColumnName = enum(
     POPULATION='Population',

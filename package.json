@@ -9,7 +9,7 @@
     "start": "babel-node server.js",
     "build": "node build.js",
     "build-prod": "node build.js production",
-    "lint": "node lint.js"
+    "lint": "flake8 && eslint assets"
   },
   "dependencies": {
     "animate.css": "^3.5.2",

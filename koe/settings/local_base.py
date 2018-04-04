@@ -1,6 +1,7 @@
 import sys
+import os
 
-from .base import *  # noqa
+from .base import BASE_DIR
 
 DEBUG = True
 

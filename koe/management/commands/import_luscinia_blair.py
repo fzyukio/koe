@@ -21,15 +21,14 @@ from progress.bar import Bar
 from scipy import signal
 
 from koe import wavfile as wf
-from koe.colourmap import *
+from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
 from root.models import ExtraAttr, ValueTypes, User
 from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
 
-COLOURS = [[69, 204, 255], [73, 232, 62], [
-    255, 212, 50], [232, 75, 48], [170, 194, 102]]
+COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
 AXIS_COLOUR = [127, 127, 127]
 
@@ -144,7 +143,6 @@ def import_song_info(conn, user):
         audio_file = db_song_name_to_obj.get(song_name, None)
 
         if audio_file:
-            audio_file_id = audio_file.id
             # Populate info such as individuals, location, ...
             matches = name_regex.match(song_name)
             if matches is None:
@@ -510,12 +508,9 @@ def extract_spectrogram(database):
             file_spect = file_spect.reshape((width * height,), order='C')
             file_spect[file_spect >= 64] = 63
             file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
-            file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape(
-                (height, width)) * 255
-            file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape(
-                (height, width)) * 255
-            file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape(
-                (height, width)) * 255
+            file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape((height, width)) * 255
+            file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape((height, width)) * 255
+            file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape((height, width)) * 255
 
             for seg_id, start, end in seg_list:
                 seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
@@ -525,8 +520,7 @@ def extract_spectrogram(database):
 
                     seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
                     seg_spect_img = Image.fromarray(seg_spect_rgb)
-                    seg_spect_img = ImageOps.posterize(
-                        ImageOps.grayscale(seg_spect_img), 3)
+                    seg_spect_img = ImageOps.posterize(ImageOps.grayscale(seg_spect_img), 3)
                     ensure_parent_folder_exists(seg_spect_path)
 
                     seg_spect_img.save(seg_spect_path, format='PNG')

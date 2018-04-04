@@ -75,7 +75,6 @@ def normxcorr2(template, image, mode="valid"):
     same: The output is the same size as image, centered with respect to the ‘full’ output.
     :return: N-D array of same dimensions as image. Size depends on mode parameter.
     """
-
     # If this happens, it is probably a mistake
     if np.ndim(template) > np.ndim(image) or \
             len([i for i in range(np.ndim(template)) if template.shape[i] > image.shape[i]]) > 0:
