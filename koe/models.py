@@ -247,7 +247,7 @@ class AlgorithmicModelMixin(models.Model):
 
     def __str__(self):
         standard_str = super(AlgorithmicModelMixin, self).__str__()
-        extras = 'Database: {] algorithm: {}'.format(self.database.name, self.algorithm)
+        extras = 'Database: {} algorithm: {}'.format(self.database.name, self.algorithm)
         return '{}, {}'.format(standard_str, extras)
 
 
