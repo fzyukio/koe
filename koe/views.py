@@ -275,10 +275,13 @@ class SongsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SongsView, self).get_context_data(**kwargs)
         user = self.request.user
+        cls = kwargs.get('class', 'label')
 
         _, _, databases, current_database = get_currents(user)
 
         context['databases'] = databases.values_list('id', 'name')
         context['current_database'] = (current_database.id, current_database.name, User.__name__)
+        context['cls'] = cls
         context['page'] = 'songs'
+        context['subpage'] = 'songs/{}'.format(cls)
         return context

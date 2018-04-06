@@ -20,6 +20,7 @@ urlpatterns += [
     url(r'^version$', login_required(root_views.get_view('version')), name='version'),
     url(r'^label$', login_required(views.IndexView.as_view()), name='index'),
     url(r'^songs$', login_required(views.SongsView.as_view()), name='songs'),
+    url(r'^songs/(?P<class>[0-9a-z-_]+)$', login_required(views.SongsView.as_view()), name='songs'),
     url(r'^exemplars/(?P<class>[0-9a-z-_]+)$', login_required(views.ExemplarsView.as_view()), name='exemplars'),
     url(r'^exemplars$', login_required(views.ExemplarsView.as_view()), name='exemplars'),
     re_path(r'^cms/', include(wagtailadmin_urls)),

@@ -80,7 +80,6 @@ def get_server_constants():
 def get_navbar_urls():
     return {
         'index': 'Label',
-        'songs': 'Songs',
         'version': 'Versions',
     }
 
@@ -90,7 +89,10 @@ def get_complex_navbar_urls():
     return {
         'exemplars': ('Exemplars', [('label', 'By label'),
                                     ('label_family', 'By family'),
-                                    ('label_subfamily', 'By subfamily')])
+                                    ('label_subfamily', 'By subfamily')]),
+        'songs': ('Songs', [('label', 'Using labels'),
+                            ('label_family', 'Using family'),
+                            ('label_subfamily', 'Using subfamily')])
     }
 
 

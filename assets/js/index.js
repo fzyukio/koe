@@ -202,7 +202,7 @@ $(document).ready(function () {
     else if (pageName === '/version') {
         page = require('version-page');
     }
-    else if (pageName === '/songs') {
+    else if (pageName.startsWith('/songs')) {
         page = require('songs-page');
     }
     else if (pageName.startsWith('/exemplars')) {

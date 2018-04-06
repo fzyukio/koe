@@ -182,6 +182,7 @@ def bulk_get_song_sequences(songs, extras):
     :param extras:
     :return:
     """
+    cls = extras['cls']
     user = extras['user']
     _, _, _, current_database = get_currents(user)
 
@@ -201,7 +202,7 @@ def bulk_get_song_sequences(songs, extras):
     seg_ids = segs.values_list('id', flat=True)
     song_ids = songs.values_list('id', flat=True)
 
-    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
     labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user)\
         .values_list('owner_id', 'value')
 
@@ -262,7 +263,7 @@ def bulk_get_song_sequences(songs, extras):
         row['sequence-starts'] = sequence_starts
         row['sequence-ends'] = sequence_ends
         row['sequence-imgs'] = sequence_masks
-        row['song-url'] = mp3_path(song_info['filename'])
+        row['song-url'] = mp3_path(song_info['filename'], for_url=True)
 
         extra_attr_dict = extra_attr_values_lookup.get(str(song_id), {})
         for attr in extra_attr_dict:
