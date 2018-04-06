@@ -15,7 +15,7 @@ gridOptions.rowHeight = 50;
 class SegmentGrid extends fg.FlexibleGrid {
     init() {
         super.init({
-            'grid-name': 'segment-info',
+            'grid-name': 'labelling',
             'grid-type': 'segment-info',
             'default-field': 'label_family',
             gridOptions

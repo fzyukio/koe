@@ -15,7 +15,7 @@ class ExemplarsGrid extends fg.FlexibleGrid {
     init(cls) {
 
         super.init({
-            'grid-name': 'exemplars-grid',
+            'grid-name': 'exemplars',
             'grid-type': 'exemplars-grid',
             'default-field': 'cls',
             gridOptions

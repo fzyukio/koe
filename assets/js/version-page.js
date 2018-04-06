@@ -7,7 +7,7 @@ const gridOptions = deepCopy(defaultGridOptions);
 class SegmentGrid extends fg.FlexibleGrid {
     init() {
         super.init({
-            'grid-name': 'version-grid',
+            'grid-name': 'versions',
             'grid-type': 'version-grid',
             'default-field': 'label_family',
             gridOptions

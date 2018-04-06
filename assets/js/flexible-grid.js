@@ -35,18 +35,18 @@ export class FlexibleGrid {
         this.defaultFilterField = args['default-field'];
         this.currentMouseEvent = null;
 
-        this.mainGridSelector = '#' + this.gridName;
+        this.mainGridSelector = '#' + this.gridType;
         this.gridOptions = args.gridOptions || defaultGridOptions;
         this.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
         this.mainGrid.registerPlugin(new Slick.AutoTooltips());
-        this.filterSelector = '#' + this.gridName + '-filter';
+        this.filterSelector = '#' + this.gridType + '-filter';
 
         /**
          * All events of the file browser will be broadcast via this mock element
          * @type {*}
          */
         this.eventNotifier = $(document.createElement('div'));
-        this.previousRowCacheName = this.gridName + 'previousRows';
+        this.previousRowCacheName = this.gridType + 'previousRows';
     }
 
     /**

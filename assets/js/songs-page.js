@@ -13,7 +13,7 @@ class Grid extends fg.FlexibleGrid {
     init(cls) {
 
         super.init({
-            'grid-name': 'songs-grid',
+            'grid-name': 'sequences',
             'grid-type': 'songs-grid',
             'default-field': 'filename',
             gridOptions

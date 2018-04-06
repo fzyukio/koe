@@ -167,7 +167,6 @@ const _postRun = function () {
     };
 
     window.addEventListener('orientationchange', viewPortChangeCallback);
-    // window.addEventListener('resize', viewPortChangeCallback);
 
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
@@ -176,10 +175,11 @@ const _postRun = function () {
 
     $('.download-xls').click(function () {
         let downloadType = $(this).data('download-type');
+        let gridType = page.grid.gridName;
         let csvContent = createCsv(page.grid.mainGrid, downloadType);
 
         let d = new Date();
-        let filename = `koe-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
+        let filename = `koe-${gridType}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
         let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
         downloadBlob(blob, filename);
     });
