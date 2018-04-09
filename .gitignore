@@ -9,7 +9,6 @@ static/
 user_data
 .venv
 assets/bundles
-yarn.lock
 *.pkl
 *.xls*
 *-stats.json

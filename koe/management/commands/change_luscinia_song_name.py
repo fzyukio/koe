@@ -128,7 +128,7 @@ try:
         try:
             new_name_to_id[corrected_name] = song_name_to_id[original_name]
             id_to_new_name[song_name_to_id[original_name]] = corrected_name
-        except KeyError as e:
+        except KeyError:
             pass
 
     for idx in range(len(rows)):
@@ -143,7 +143,7 @@ try:
             check_corrected_name = id_to_new_name[id]
 
             assert corrected_name == check_corrected_name
-        except KeyError as e:
+        except KeyError:
             pass
 
     """
@@ -159,7 +159,7 @@ try:
             print('update songdata set name=\'%s\' where id=%i' % (corrected_name, id))
             cur.execute('update songdata set name=\'%s\' where id=%i' % (corrected_name, id))
             conn.commit()
-        except KeyError as e:
+        except KeyError:
             pass
 
     for idx in range(len(rows)):
@@ -178,7 +178,7 @@ try:
             print('update wavs set filename=\'%s\' where id=%i' % (corrected_name, wav_id))
             cur.execute('update wavs set filename=\'%s\' where id=%i' % (corrected_name, wav_id))
             conn.commit()
-        except KeyError as e:
+        except KeyError:
             warning('{} or {} not found'.format(original_name, corrected_name))
             pass
     """

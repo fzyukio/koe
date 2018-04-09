@@ -1,11 +1,13 @@
 FROM node:8 as webpack
 
 WORKDIR /code
-COPY package.json /code/
+COPY package.json yarn.lock /code/
 RUN yarn install
+
 # separate installation of dependencies and the actual build into separate layers to speed-up rebuilding if source-code changes
+FROM webpack as wp-build
 COPY . /code
-RUN yarn build-prod
+RUN yarn build-prod-posix
 
 
 # Use an official Python runtime as a base image

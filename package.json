@@ -9,6 +9,7 @@
     "start": "babel-node server.js",
     "build": "node build.js",
     "build-prod": "node build.js production",
+    "build-prod-posix": "NODE_ENV=production && webpack -p --progress --colors --config webpack.prod.config.js --bail",
     "lint": "flake8 && eslint assets"
   },
   "dependencies": {
@@ -66,5 +67,9 @@
   },
   "devDependencies": {
     "react-hot-loader": "^1.3.0"
+  },
+  "resolutions": {
+    "//": "Very important: resolve must be 1.6.0 - there is a bug in 1.7.0",
+    "*/resolve": "1.6.0"
   }
 }

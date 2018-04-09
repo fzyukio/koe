@@ -107,7 +107,7 @@ def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
                 sound = pydub.AudioSegment(
                     data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
                 sound.export(wav_file_path, 'wav')
-        except Exception as e:
+        except Exception:
             fname = '/tmp/{}.pkl'.format(song_id)
             with open(fname, 'wb') as f:
                 pickle.dump(dict(data=data, song=song),

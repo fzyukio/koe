@@ -157,11 +157,11 @@ def import_history(request):
     with zipfile.ZipFile(file, "r") as zip_file:
         try:
             content = zip_file.read('root.extraattrvalue.json')
-        except KeyError as e:
+        except KeyError:
             raise ValueError('This is not a Koe history file')
         try:
             new_entries = json.loads(content)
-        except Exception as e:
+        except Exception:
             raise ValueError('The history content is malformed and cannot be parsed.')
     file.close()
 

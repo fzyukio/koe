@@ -234,7 +234,7 @@ class Command(BaseCommand):
                             try:
                                 c.save()
                                 break
-                            except IntegrityError as e:
+                            except IntegrityError:
                                 i += 1
                                 algorithm_name = '{} #{}'.format(test_name, i)
                                 c.algorithm = algorithm_name
