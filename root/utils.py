@@ -67,10 +67,12 @@ def data_path(prefix, fullname, ext=None, for_url=False):
     _ext = _ext[1:]
     if ext is None:
         ext = _ext
-    url = os.path.join(settings.MEDIA_URL, prefix, '{}.{}'.format(filename, ext))[1:]
+    slashed_url = os.path.join(settings.MEDIA_URL, prefix, '{}.{}'.format(filename, ext))
+    unslashed_url = slashed_url[1:]
+    absolute_url = os.path.join(settings.BASE_DIR, unslashed_url)
     if for_url:
-        return '/' + url
-    return url
+        return slashed_url
+    return absolute_url
 
 
 def pickle_path(fullname, subdir=None, for_url=False):

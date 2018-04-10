@@ -5,7 +5,9 @@ const BundleTracker = require('webpack-bundle-tracker');
 const path = require('path');
 const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 
-baseConfig[1].devtool = '#source-map';
+// Uncomment next line to enable source-map
+// Having source-map in production might not be a good idea - if you're concerned about people stealing your code
+// baseConfig[1].devtool = '#source-map';
 
 baseConfig[1].entry = [
     'bootstrap-loader/extractStyles',

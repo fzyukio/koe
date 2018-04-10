@@ -153,7 +153,8 @@ CACHES = {
         }
     }
 }
-if config('REDIS_PASSWORD'):
+
+if config('REDIS_PASSWORD') != '':
     CACHES['default']['OPTIONS']['PASSWORD'] = config('REDIS_PASSWORD')
 
 DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True

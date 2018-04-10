@@ -33,7 +33,7 @@ services:
       - default
       - web
     environment:
-      - VIRTUAL_HOST=dorsalf.in
+      - VIRTUAL_HOST=koe.io.ac.nz
       - VIRTUAL_PROTO=uwsgi
 # Uncomment below to DELETE and re-create the database from fixtures
 #      - CLEAR_DB=true
@@ -51,6 +51,8 @@ services:
 #      - 8082:80
 #    volumes:
 #      - /sessions
+    volumes:
+      - ./user_data:/code/user_data
   cache:
     image: redis
     container_name: koe_cache

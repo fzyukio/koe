@@ -325,7 +325,7 @@ class HistoryEntry(StandardModel):
         retval = {}
 
         for id, filename in values_list:
-            url = '{}'.format(history_path(filename))
+            url = '{}'.format(history_path(filename, for_url=True))
             retval[id] = '[{}]({})'.format(url, filename)
 
         return retval

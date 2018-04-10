@@ -14,8 +14,6 @@ fi
 
 # Important: This flag must be set for this to work
 export IMPORTING_FIXTURE="true"
-python manage.py makemigrations koe
-python manage.py makemigrations root
 python manage.py migrate
 
 if test "$CLEAR_DB" = "true"; then
