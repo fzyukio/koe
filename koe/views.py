@@ -4,7 +4,6 @@ import json
 import os
 import zipfile
 
-import numpy as np
 import pydub
 from django.conf import settings
 from django.core import serializers
@@ -13,16 +12,13 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
+from koe import wavfile
 from koe.model_utils import get_currents
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence']
-
-# Use this to change the volume of the segment. Audio segment will be increased in volume if its maximum does not
-# reached this level, and vise verse
-normalised_max = pow(2, 31)
 
 
 def match_target_amplitude(sound, loudness):
@@ -109,17 +105,24 @@ def get_segment_audio(request):
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
-        duration_ms = audio_file.length * 1000 / audio_file.fs
-        start = segment.start_time_ms / duration_ms
-        end = segment.end_time_ms / duration_ms
+        start = segment.start_time_ms
+        end = segment.end_time_ms
 
-    file_url = os.path.join(settings.BASE_DIR, audio_file.mp3_path)
+    mp3_url = os.path.join(settings.BASE_DIR, audio_file.mp3_path)
+    wav_url = os.path.join(settings.BASE_DIR, audio_file.file_path)
 
-    song = pydub.AudioSegment.from_mp3(file_url)
-    song_length = len(song)
-    start = int(np.floor(song_length * start))
-    end = int(np.ceil(song_length * end))
-    audio_segment = song[start:end]
+    if os.path.isfile(wav_url):
+        chunk = wavfile.read_segment(wav_url, start, end, mono=True, normalised=False)
+
+        audio_segment = pydub.AudioSegment(
+            chunk.tobytes(),
+            frame_rate=audio_file.fs,
+            sample_width=chunk.dtype.itemsize,
+            channels=1
+        )
+    else:
+        song = pydub.AudioSegment.from_mp3(mp3_url)
+        audio_segment = song[start:end]
 
     audio_segment = match_target_amplitude(audio_segment, -10)
 
