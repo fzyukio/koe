@@ -149,7 +149,10 @@ def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
             chunk_size = end - beg
             current_pos = fid.tell()
 
-            beg = beg + current_pos
+            # Important: must skip the next 4 byte otherwise the audio data will be corrupted
+            # in read() the statement size = struct.unpack('<i', fid.read(4))[0] creates this effect
+            # but in here we don't care about the size so either we call that statement or we must skip 4 bytes
+            beg = beg + current_pos + 4
 
             fid.seek(beg)
 
