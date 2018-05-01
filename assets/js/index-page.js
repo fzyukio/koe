@@ -13,7 +13,7 @@ gridOptions.rowHeight = 50;
 
 
 class SegmentGrid extends fg.FlexibleGrid {
-    init() {
+    init() {``
         super.init({
             'grid-name': 'labelling',
             'grid-type': 'segment-info',
@@ -114,7 +114,14 @@ const playAudio = function (e, args) {
         let segId = args.songId;
         let data = new FormData();
         data.append('segment-id', segId);
-        ah.queryAndPlayAudio(getUrl('send-request', 'koe/get-segment-audio'), data, segId)
+
+        let args = {
+            url: getUrl('send-request', 'koe/get-segment-audio'),
+            cacheKey:segId,
+            postData:data
+        };
+
+        ah.queryAndPlayAudio(args);
     }
 };
 

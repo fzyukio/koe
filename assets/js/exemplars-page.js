@@ -43,10 +43,12 @@ class ExemplarsGrid extends fg.FlexibleGrid {
             let coldef = grid.getColumns()[col];
             let rowElement = $(e.target.parentElement);
             let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {e,
+            self.eventNotifier.trigger(eventType, {
+                e,
                 songId,
                 rowElement,
-                coldef});
+                coldef
+            });
         }
     }
 }
@@ -90,7 +92,13 @@ const playAudio = function (e, args) {
             let segId = match[1];
             let data = new FormData();
             data.append('segment-id', segId);
-            ah.queryAndPlayAudio(getUrl('send-request', 'koe/get-segment-audio'), data, segId);
+
+            let args = {
+                url: getUrl('send-request', 'koe/get-segment-audio'),
+                cacheKey: segId,
+                postData: data
+            };
+            ah.queryAndPlayAudio(args);
         }
     }
 };
@@ -149,8 +157,10 @@ const subscribeSlickEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true,
-        multiSelect: true}, function () {
+    grid.redrawMainGrid({
+        rowMoveable: true,
+        multiSelect: true
+    }, function () {
         subscribeSlickEvents();
     });
 };
@@ -308,9 +318,7 @@ export const run = function () {
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').
-                removeClass('active').
-                addClass('not-active');
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });

@@ -48,8 +48,9 @@ export const initAudioContext = function () {
  * Plays a owner of the audio from begin point to end point
  * @param beginMs see below
  * @param endSecond and beginMs : in millisecond
+ * @param callback
  */
-export const playAudio = function (beginMs = 'start', endSecond = 'end', callback = null) {
+const playAudio = function (beginMs = 'start', endSecond = 'end', callback = null) {
     if (isNull(audioContext) || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
@@ -85,18 +86,30 @@ export const playAudio = function (beginMs = 'start', endSecond = 'end', callbac
     };
 };
 
-
+/**
+ * Convert audio data to audio bugger and then play
+ * @param fullAudioDataArray a Float32Array object
+ * @param sampleRate sampling rate
+ * @param startSecond playback starts at
+ * @param endSecond playback ends at
+ */
 const playAudioDataArray = function (fullAudioDataArray, sampleRate, startSecond = 'start', endSecond = 'end') {
     audioBuffer = audioContext.createBuffer(1, fullAudioDataArray.length, sampleRate);
     audioBuffer.getChannelData(0).set(fullAudioDataArray);
     playAudio(startSecond, endSecond);
 };
 
-
-export const queryAndPlayAudio = function (url, postData, cacheKey) {
+/**
+ * Query, cache a piece of audio, then provide the signal and fs as arguments to the callback function
+ * @param url POST or GET url, depending on the existence of postData
+ * @param postData POST data that contains the id of the song/segment to be downloaded. null to use GET
+ * @param cacheKey key to persist this song/segment in the cache
+ * @param callback
+ */
+export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
     let cached = cachedArrays[cacheKey];
     if (cacheKey && cached) {
-        playAudioDataArray(cached[0], cached[1]);
+        callback(cached[0], cached[1]);
     }
     else {
         const reader = new FileReader();
@@ -108,13 +121,14 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
                 if (cacheKey) {
                     cachedArrays[cacheKey] = [fullAudioDataArray, sampleRate];
                 }
-                debug(`Playing at sampleRate: ${sampleRate}`);
-                playAudioDataArray(fullAudioDataArray, sampleRate);
+                callback(fullAudioDataArray, sampleRate);
             });
         };
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, true);
+        let method = isNull(postData) ? 'GET' : 'POST';
+
+        xhr.open(method, url, true);
         xhr.responseType = 'blob';
 
         xhr.onload = function () {
@@ -126,43 +140,40 @@ export const queryAndPlayAudio = function (url, postData, cacheKey) {
             $.event.trigger('ajaxStop');
         };
         $.event.trigger('ajaxStart');
-        xhr.send(postData)
+        xhr.send(postData);
     }
 };
 
-export const playAudioFromUrl = function (url, startSecond, endSecond) {
-    let cached = cachedArrays[url];
-    if (url && cached) {
-        playAudioDataArray(cached[0], cached[1], startSecond, endSecond);
-    }
-    else {
-        const reader = new FileReader();
-        reader.onload = function () {
-            const arrayBuffer = reader.result;
-            audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
-                let fullAudioDataArray = _audioBuffer.getChannelData(0);
-                let sampleRate = _audioBuffer.sampleRate;
-                if (url) {
-                    cachedArrays[url] = [fullAudioDataArray, sampleRate];
-                }
-                debug(`Playing at sampleRate: ${sampleRate}`);
-                playAudioDataArray(fullAudioDataArray, sampleRate, startSecond, endSecond);
-            });
-        };
+/**
+ * Shortcut to download, cache a song/segment and them play for the specified segment
+ * @param url POST url
+ * @param postData POST data that contains the id of the song/segment to be downloaded
+ * @param cacheKey key to persist this song/segment in the cache
+ * @param startSecond playback starts at
+ * @param endSecond playback ends at
+ */
+export const queryAndPlayAudio = function ({url, postData, cacheKey, startSecond, endSecond}) {
+    let args = {
+        url: url, cacheKey:cacheKey, postData:postData
+    };
+    queryAndHandleAudio(args, function(sig, fs) {
+        playAudioDataArray(sig, fs, startSecond, endSecond);
+    });
+};
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'blob';
-
-        xhr.onload = function () {
-            if (this.status == 200) {
-                reader.readAsArrayBuffer(new Blob([this.response]));
-            }
-        };
-        xhr.onloadend = function () {
-            $.event.trigger('ajaxStop');
-        };
-        $.event.trigger('ajaxStart');
-        xhr.send();
-    }
+/**
+ * Shortcut to download, cache a song from URL, and them play for the specified segment
+ * @param url downloadable URL
+ * @param startSecond playback starts at
+ * @param endSecond playback ends at
+ */
+export const playAudioFromUrl = function ({url, startSecond, endSecond}) {
+    let args = {
+        url: url,
+        cacheKey:url,
+        postData:null
+    };
+    queryAndHandleAudio(args, function(sig, fs) {
+        playAudioDataArray(sig, fs, startSecond, endSecond);
+    });
 };

@@ -82,11 +82,16 @@ const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
     let hasSyllable = cellElement.closest('.syllable');
     if (hasSyllable.length == 1) {
-        let audioUrl = hasSyllable.parent().find('.full-audio').
-            attr('song-url');
+        let audioUrl = hasSyllable.parent().find('.full-audio').attr('song-url');
         let start = parseInt(hasSyllable.attr('start')) / 1000.0;
         let end = parseInt(hasSyllable.attr('end')) / 1000.0;
-        ah.playAudioFromUrl(audioUrl, start, end);
+
+        let args = {
+            url: audioUrl,
+            startSecond: start,
+            endSecond: end
+        };
+        ah.playAudioFromUrl(args);
     }
 };
 
@@ -243,9 +248,7 @@ export const run = function () {
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').
-                removeClass('active').
-                addClass('not-active');
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
