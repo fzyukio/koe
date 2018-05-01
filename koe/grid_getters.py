@@ -232,8 +232,8 @@ def bulk_get_song_sequences(songs, extras):
         if song_id not in songs:
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
-            song_info = dict(filename=filename, url=url, track=track, individual=individual, gender=gender, quality=quality,
-                             date=date, duration=length)
+            song_info = dict(filename=filename, url=url, track=track, individual=individual, gender=gender,
+                             quality=quality, date=date, duration=length)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
         else:

@@ -86,12 +86,12 @@ const playAudio = function (e, args) {
         let start = parseInt(hasSyllable.attr('start')) / 1000.0;
         let end = parseInt(hasSyllable.attr('end')) / 1000.0;
 
-        let args = {
+        let args_ = {
             url: audioUrl,
             startSecond: start,
             endSecond: end
         };
-        ah.playAudioFromUrl(args);
+        ah.playAudioFromUrl(args_);
     }
 };
 

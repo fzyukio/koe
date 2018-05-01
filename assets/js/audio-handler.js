@@ -1,4 +1,4 @@
-import {isNull, debug} from './utils';
+import {isNull} from './utils';
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -154,7 +154,9 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
  */
 export const queryAndPlayAudio = function ({url, postData, cacheKey, startSecond, endSecond}) {
     let args = {
-        url: url, cacheKey:cacheKey, postData:postData
+        url,
+        cacheKey,
+        postData
     };
     queryAndHandleAudio(args, function(sig, fs) {
         playAudioDataArray(sig, fs, startSecond, endSecond);
@@ -169,9 +171,9 @@ export const queryAndPlayAudio = function ({url, postData, cacheKey, startSecond
  */
 export const playAudioFromUrl = function ({url, startSecond, endSecond}) {
     let args = {
-        url: url,
-        cacheKey:url,
-        postData:null
+        url,
+        cacheKey: url,
+        postData: null
     };
     queryAndHandleAudio(args, function(sig, fs) {
         playAudioDataArray(sig, fs, startSecond, endSecond);

@@ -2,7 +2,7 @@ import * as ah from './audio-handler';
 import * as fg from 'flexible-grid';
 import * as vs from 'visualise-d3';
 import {defaultGridOptions} from './flexible-grid';
-import {deepCopy, getUrl, setCache} from "./utils";
+import {deepCopy, getUrl, setCache} from './utils';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -33,7 +33,8 @@ class Grid extends fg.FlexibleGrid {
         let row = cell.row;
         let rowElement = $(e.target.parentElement);
         let songId = dataView.getItem(row).id;
-        self.eventNotifier.trigger(eventType, {songId: songId, rowElement: rowElement});
+        self.eventNotifier.trigger(eventType, {songId,
+            rowElement});
     }
 
     /**
@@ -65,7 +66,7 @@ class Grid extends fg.FlexibleGrid {
                 rowElement.removeClass('highlight');
             }
         }
-    };
+    }
 }
 
 const grid = new Grid();
@@ -78,7 +79,8 @@ const spectrogramId = 'spectrogram';
 const viz = new vs.Visualise();
 
 
-export const visualiseSong = function (fileId, callback) {
+export const visualiseSong = function (callback) {
+
     /*
      * Clear all temporary variables
      */
@@ -150,11 +152,11 @@ export const run = function () {
     ah.initAudioContext();
     grid.init(fileId);
     viz.init(spectrogramId);
-    viz.eventNotifier.on("segment-mouse", function (e, args) {
+    viz.eventNotifier.on('segment-mouse', function (e, args) {
         grid.segmentMouseEventHandler(e, args);
     });
 
-    visualiseSong(fileId, function () {
+    visualiseSong(function () {
         grid.initMainGridHeader({'__extra__file_id': fileId}, function () {
             grid.initMainGridContent({'__extra__file_id': fileId}, function () {
                 let items = grid.mainGrid.getData().getItems();

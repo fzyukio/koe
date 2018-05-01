@@ -93,12 +93,12 @@ const playAudio = function (e, args) {
             let data = new FormData();
             data.append('segment-id', segId);
 
-            let args = {
+            let args_ = {
                 url: getUrl('send-request', 'koe/get-segment-audio'),
                 cacheKey: segId,
                 postData: data
             };
-            ah.queryAndPlayAudio(args);
+            ah.queryAndPlayAudio(args_);
         }
     }
 };

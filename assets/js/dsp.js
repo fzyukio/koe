@@ -1,6 +1,6 @@
 const d3 = require('d3');
 const FFT = require('fft.js');
-import {defaultCm} from "./colour-map";
+import {defaultCm} from './colour-map';
 
 /**
  * Calculate spectrogram from raw data
@@ -69,22 +69,24 @@ const round = Math.round;
  * @param imgData the imageData of the canvas to be written to
  */
 export const spectToCanvas = function (spect, imgData) {
+
     /*
      * Some checking: spect and canvas must have the same size
      */
     let height = spect.length;
     let width = spect[0].length;
 
-    if (height != imgData.height || width != imgData.width)
-        throw new Error('Spect and canvas must have the same size');
+    if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
 
     const spectrumFlatened = spect.reduce(function (p, c) {
         return p.concat(c);
     });
 
     // fill imgData with colors from array
-    let i, k = 0, psd, colourMapIndex;
-    for (i=0; i < spectrumFlatened.length; i++) {
+    let i,
+        k = 0,
+        psd, colourMapIndex;
+    for (i = 0; i < spectrumFlatened.length; i++) {
         psd = spectrumFlatened[i];
         colourMapIndex = round((psd - globalMinSpectPixel) / interval64);
         if (defaultCm[colourMapIndex] === undefined) {
@@ -93,26 +95,10 @@ export const spectToCanvas = function (spect, imgData) {
         imgData.data[k++] = defaultCm[colourMapIndex][0] * 255;
         imgData.data[k++] = defaultCm[colourMapIndex][1] * 255;
         imgData.data[k++] = defaultCm[colourMapIndex][2] * 255;
-        imgData.data[k++] = 255; // Alpha channel
-    }
-};
 
-
-const transpose = function (arr) {
-    let newArray = [],
-        origArrayLength = arr.length,
-        arrayLength = arr[0].length,
-        i;
-    for (i = 0; i < arrayLength; i++) {
-        newArray.push([]);
+        // Alpha channel
+        imgData.data[k++] = 255;
     }
-
-    for (i = 0; i < origArrayLength; i++) {
-        for (let j = 0; j < arrayLength; j++) {
-            newArray[j].push(arr[i][j]);
-        }
-    }
-    return newArray;
 };
 
 export const transposeFlipUD = function (arr) {

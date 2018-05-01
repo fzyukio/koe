@@ -60,7 +60,7 @@ module.exports = {
                 "treatUndefinedAsUnspecified": false
             }
         ],
-        "consistent-this": [2, "self"],
+        "consistent-this": ["error", "self"],
         "curly": "off",
         "default-case": "error",
         "dot-location": "error",
