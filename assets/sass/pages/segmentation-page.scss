@@ -1,0 +1,225 @@
+@import "../variables";
+
+$controller-wrapper-height: 36px;
+$controller-wrapper-child-height: 25px;
+$grid-status-width: 150px;
+$speed-controller-width: 300px;
+
+$spectrogram-height: 200px;
+$scrollbar-height: 10px;
+
+#visualisation {
+  #spectrogram {
+    height: calc(#{$spectrogram-height} + #{$scrollbar-height});
+    width: 100%;
+    position: relative;
+    overflow-y: hidden;
+    overflow-x: visible;
+
+    .control-panel {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: none;
+    }
+
+    &:hover .control-panel {
+      display: inline;
+    }
+
+    .line.polynomial {
+      fill: none;
+      stroke: rgb(164, 0, 255);
+      stroke-width: 5px;
+    }
+  }
+
+  .slider {
+    display: block;
+    float: left;
+    margin-left: 5px;
+  }
+  .slider-horizontal {
+    width: 100px;
+    height: 18px;
+  }
+
+  .w {
+    color: #bbbbbb;
+  }
+
+  .axis {
+    text {
+      font: 10px sans-serif;
+    }
+    path {
+      display: none;
+    }
+    line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    .domain, .tick line {
+      fill: none;
+      stroke: black;
+    }
+  }
+
+  .chart {
+    .line {
+      fill: none;
+      stroke: #d9230f;
+      stroke-width: 1px;
+    }
+    .overlay {
+      stroke-width: 0px;
+      fill-opacity: 0;
+    }
+  }
+
+  .grid-background {
+    fill: #ddd;
+  }
+
+  .grid {
+    line, path {
+      fill: none;
+      stroke: #fff;
+      shape-rendering: crispEdges;
+    }
+    .minor.tick line {
+      stroke-opacity: .5;
+    }
+  }
+
+  .brush .extent {
+    stroke: #000;
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+  }
+
+  .navigator {
+    .data {
+      fill: lightgrey;
+      stroke-width: 0px;
+    }
+    .line {
+      fill: none;
+      stroke: #d9230f;
+      stroke-width: 1px;
+    }
+  }
+
+  .spect-brush .extent,
+  .viewport .extent {
+    stroke: grey;
+    fill: black;
+    fill-opacity: 0.2;
+  }
+
+  .brush-handle {
+    fill: #eee;
+    stroke: #666;
+  }
+
+  #spectrogram .syllable {
+    stroke: black;
+    fill: black;
+    fill-opacity: 0.2;
+    &:hover, &.highlight {
+      stroke: rgb(255, 101, 4);
+      stroke-width: 2px;
+      fill: rgb(255, 101, 4);
+    }
+  }
+
+}
+
+#segments-grid {
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height});
+}
+
+#segments-grid-offset-holder {
+  display: none;
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height});
+}
+
+#controller-wrapper {
+  height: $controller-wrapper-height;
+  & > div {
+    display: inline-block;
+    margin-left: -4px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    & > div {
+      height: $controller-wrapper-child-height;
+      line-height: $controller-wrapper-child-height;
+    }
+  }
+
+  .input-group-addon {
+    padding: 0;
+
+    &.left {
+      padding: 0 10px 0 0;
+    }
+    &.right {
+      padding: 0 0 0 10px;
+    }
+
+  }
+
+  #grid-status {
+    width: $grid-status-width;
+    text-align: left;
+
+    .input-group-addon {
+      text-align: left;
+    }
+  }
+
+  #speed-controller {
+    width: $speed-controller-width;
+
+    #speed-slider-handler .slider-selection {
+      background: #d9230f7a;
+    }
+  }
+
+  #segments-grid-controller {
+    width: calc(100% - #{$grid-status-width} - #{$speed-controller-width});
+  }
+}
+
+#segments-grid-filter {
+  border: 0;
+  padding: 0 !important;
+  box-shadow: none;
+  background-color: inherit;
+  border-bottom: 1px solid;
+  border-bottom-color: red;
+  border-radius: 0;
+}
+
+.modal-dialog {
+  margin: 30vh auto;
+}
+
+#spectrogram-details-tooltip {
+  position: absolute;
+  padding: 10px;
+  background-color: #efefef;
+  border-radius: 10px;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
+  pointer-events: none;
+  z-index: 3;
+  display: block;
+
+  &.hidden {
+    display: none;
+  }
+}

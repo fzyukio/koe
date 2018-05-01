@@ -1,13 +1,14 @@
 import numpy as np
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
+from django.urls import reverse
 
 from koe.model_utils import get_currents
 from koe.models import AudioFile, Segment
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, mp3_path
 
-__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences']
+__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio']
 
 
 def bulk_get_segment_info(segs, extras):
@@ -195,6 +196,7 @@ def bulk_get_song_sequences(songs, extras):
                               'segmentation__audio_file__id',
                               'segmentation__audio_file__quality',
                               'segmentation__audio_file__length',
+                              'segmentation__audio_file__fs',
                               'segmentation__audio_file__track__name',
                               'segmentation__audio_file__track__date',
                               'segmentation__audio_file__individual__name',
@@ -226,10 +228,12 @@ def bulk_get_song_sequences(songs, extras):
     # Bagging song syllables by song name
     songs = {}
 
-    for seg_id, start, end, name, song_id, quality, duration, track, date, individual, gender in values:
+    for seg_id, start, end, filename, song_id, quality, length, fs, track, date, individual, gender in values:
         if song_id not in songs:
-            song_info = dict(filename=name, track=track, individual=individual, gender=gender, quality=quality,
-                             date=date, duration=duration)
+            url = reverse('segmentation', kwargs={'file_id': song_id})
+            url = '[{}]({})'.format(url, filename)
+            song_info = dict(filename=filename, url=url, track=track, individual=individual, gender=gender, quality=quality,
+                             date=date, duration=length)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
         else:
@@ -271,5 +275,24 @@ def bulk_get_song_sequences(songs, extras):
 
         ids.append(song_id)
         rows.append(row)
+
+    return ids, rows
+
+
+def bulk_get_segments_for_audio(segs, extras):
+    """
+    For the segmentation page
+    :param segs: a QuerySet of segments
+    :param extras: must contain 'file_id', which is the ID of the audio
+    :return: the usual stuff
+    """
+    file_id = extras['file_id']
+    segs = segs.filter(segmentation__audio_file=file_id)
+    values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
+    ids = []
+    rows = []
+    for id, start, end in values:
+        ids.append(id)
+        rows.append(dict(id=id, start_time_ms=start, end_time_ms=end))
 
     return ids, rows

@@ -188,8 +188,13 @@ tables = \
             "columns": [
                 {
                     "name": "Filename",
-                    "slug": "filename",
-                    "type": "SHORT_TEXT"
+                    "slug": "url",
+                    "type": "URL"
+                },
+                {
+                    "name": "Duration",
+                    "slug": "duration",
+                    "type": "INTEGER"
                 },
                 {
                     "name": "Date",
@@ -240,7 +245,25 @@ tables = \
                     "css_class": "overflow"
                 }
             ]
-        }
+        },
+        "segments-grid": {
+            "class": "koe.Segment",
+            "getter": "koe.bulk_get_segments_for_audio",
+            "columns": [
+                {
+                    "name": "Start",
+                    "slug": "start_time_ms",
+                    "type": "INTEGER",
+                    "is_attribute": True
+                },
+                {
+                    "name": "End",
+                    "slug": "end_time_ms",
+                    "type": "INTEGER",
+                    "is_attribute": True
+                }
+            ]
+        },
     }
 
 num_exemplars = 10

@@ -29,7 +29,7 @@
                     <ul class="dropdown-menu">
                     {% for subpage in pages.1 %}
                         <li {% if subpage.0 == subpage %}class="active"{% endif %}>
-                            <a href="{% url url %}/{{ subpage.0 }}">{{ subpage.1|title }}</a>
+                            <a href="{% url url %}{{ subpage.0 }}">{{ subpage.1|title }}</a>
                         </li>
                     {% endfor %}
                     </ul>

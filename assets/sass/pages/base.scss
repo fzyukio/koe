@@ -1,4 +1,3 @@
-@import "../../node_modules/selectize/dist/css/selectize.bootstrap3.css";
 @import "../variables";
 
 html, body {
@@ -277,4 +276,12 @@ body.loading #loading-spinner-modal {
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff1da7ee', endColorstr='#ff178ee9', GradientType=0);
   -webkit-box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.no-margin {
+  margin: 0;
+}
+
+.no-padding {
+  padding: 0;
 }

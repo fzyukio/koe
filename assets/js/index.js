@@ -196,16 +196,19 @@ $(document).ready(function () {
     if (pageName === '/') {
         page = require('home-page');
     }
-    else if (pageName === '/label') {
+    else if (pageName === '/label/') {
         page = require('index-page');
     }
-    else if (pageName === '/version') {
+    else if (pageName === '/version/') {
         page = require('version-page');
     }
-    else if (pageName.startsWith('/songs')) {
+    else if (pageName.startsWith('/segmentation/')) {
+        page = require('segmentation-page');
+    }
+    else if (pageName.startsWith('/songs/')) {
         page = require('songs-page');
     }
-    else if (pageName.startsWith('/exemplars')) {
+    else if (pageName.startsWith('/exemplars/')) {
         page = require('exemplars-page');
     }
 

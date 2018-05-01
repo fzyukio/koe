@@ -81,6 +81,7 @@ def get_navbar_urls():
     return {
         'index': 'Label',
         'version': 'Versions',
+        # 'segments-list': 'Songs List'
     }
 
 
@@ -90,9 +91,9 @@ def get_complex_navbar_urls():
         'exemplars': ('Exemplars', [('label', 'By label'),
                                     ('label_family', 'By family'),
                                     ('label_subfamily', 'By subfamily')]),
-        'songs': ('Songs', [('label', 'Using labels'),
-                            ('label_family', 'Using family'),
-                            ('label_subfamily', 'Using subfamily')])
+        'songs': ('Song sequences', [('label', 'Using labels'),
+                                     ('label_family', 'Using family'),
+                                     ('label_subfamily', 'Using subfamily')])
     }
 
 

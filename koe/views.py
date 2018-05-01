@@ -96,12 +96,17 @@ def get_segment_audio(request):
     :return: a binary blob specified as audio/mp3, playable and volume set to -10dB
     """
     segment_id = request.POST.get('segment-id', None)
+    file_id = request.POST.get('file-id', None)
 
-    if segment_id is None:
-        start = float(request.POST['start'])
-        end = float(request.POST['end'])
-        file_id = request.POST['file-id']
+    if segment_id is None and file_id is None:
+        raise Exception('Need segment or file argument')
+    if segment_id is not None and file_id is not None:
+        raise Exception('Can\'t have both segment and file arguments')
+
+    if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
+        start = 0
+        end = audio_file.length
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
@@ -287,4 +292,26 @@ class SongsView(TemplateView):
         context['cls'] = cls
         context['page'] = 'songs'
         context['subpage'] = 'songs/{}'.format(cls)
+        return context
+
+
+class SegmentationView(TemplateView):
+    """
+    The view of song segmentation page
+    """
+
+    template_name = "segmentation.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(SegmentationView, self).get_context_data(**kwargs)
+        # user = self.request.user
+        file_id = kwargs['file_id']
+        audio_file = AudioFile.objects.filter(id=file_id).first()
+        if audio_file is None:
+            raise Exception('No such file')
+
+        context['page'] = 'segmentation'
+        context['file_id'] = file_id
+        context['length'] = audio_file.length
+        context['fs'] = audio_file.fs
         return context
