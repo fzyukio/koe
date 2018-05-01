@@ -1,5 +1,4 @@
 /* global Slick */
-
 require('jquery-ui/ui/widgets/sortable');
 require('slickgrid/lib/jquery.event.drag-2.3.0');
 require('slickgrid/slick.core');
@@ -1550,4 +1549,45 @@ export const downloadBlob = function (blob, filename) {
             document.body.removeChild(link);
         }
     }
+};
+
+/**
+ * Calculate how many segments can be extracted from a signal given the window size and overlap size
+ * @param signalLength length of the signal
+ * @param windowSize window size (number of samples)
+ * @param noverlap overlap size (number of samples)
+ * @param includeTail true to always include the last segment (might be < window), false to exclude it if it's < window
+ * @returns {Array} a two dimensional arrays. Each column is a pair of segments indices
+ *
+ * Example:
+ *  segs = calcSegments(53, 10, 5)
+ *   segs =
+ *     1    10
+ *     6    15
+ *    11    20
+ *    16    25
+ *    21    30
+ *    26    35
+ *    31    40
+ *    36    45
+ *    41    50
+ *    51    53
+ */
+export const calcSegments = function (signalLength, windowSize, noverlap, includeTail = true) {
+    let step = windowSize - noverlap;
+    let segs = [];
+    let startIdx = 0;
+    let endIdx = startIdx + windowSize;
+
+    while (endIdx <= signalLength) {
+        segs.push([startIdx, endIdx]);
+        startIdx += step;
+        endIdx += step;
+    }
+
+    if (includeTail && endIdx > signalLength) {
+        segs.push([startIdx, signalLength]);
+    }
+
+    return segs;
 };
