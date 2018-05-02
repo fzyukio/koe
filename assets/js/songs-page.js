@@ -53,7 +53,7 @@ class Grid extends fg.FlexibleGrid {
 
 export const grid = new Grid();
 let cls = $('#songs-grid').attr('cls');
-
+const inputText = $('<input type="text" class="form-control"/>');
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
 const speedSlider = $('#speed-slider');
@@ -64,6 +64,14 @@ const databaseCombo = $('#database-select-combo');
 const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const databaseClass = databaseCombo.attr('cls');
 
+const uploadSongsBtn = $('#upload-songs-btn');
+const deleteSongsBtn = $('#delete-songs-btn');
+
+const fileUploadForm = $('#file-upload-form');
+const fileUploadInput = fileUploadForm.find('input[type=file]');
+const fileUploadBtn = fileUploadForm.find('input[type=submit]');
+
+let ce;
 
 const initSlider = function () {
     speedSlider.slider();
@@ -126,6 +134,28 @@ const subscribeFlexibleEvents = function () {
         clearSpectrogram(...args);
         showBigSpectrogram(...args);
     });
+
+    /**
+     * When songs are selected, enable delete button
+     */
+    function enableDeleteSongsBtn() {
+        deleteSongsBtn.prop('disabled', false);
+    }
+
+    /**
+     * When songs are removed, if there is songs left, disable the delete button
+     * @param e event
+     * @param grid_ the main SlickGrid
+     */
+    function disableDeleteSongsBtn(e, {grid_}) {
+        if (grid_.getSelectedRows().length == 0) deleteSongsBtn.prop('disabled', true);
+    }
+
+    grid.on('row-added', enableDeleteSongsBtn);
+    grid.on('rows-added', enableDeleteSongsBtn);
+
+    grid.on('row-removed', disableDeleteSongsBtn);
+    grid.on('rows-removed', disableDeleteSongsBtn);
 };
 
 
@@ -217,11 +247,147 @@ const focusOnGridOnInit = function () {
 };
 
 
-export const run = function () {
+/**
+ * When user clicks on the "create new database" button from the drop down menu, show a dialog
+ * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
+ * repeat this process. Only dismiss the dialog if a new database is created.
+ * @param errorMessage to be shown if not undefined
+ */
+const showCreateDatabaseDialog = function (errorMessage) {
+    ce.dialogModalTitle.html('Creating a new database...');
+    ce.dialogModalBody.html('<label>Give it a name</label>');
+    ce.dialogModalBody.append(inputText);
+    if (errorMessage) {
+        ce.dialogModalBody.append(`<p>${errorMessage}</p>`);
+    }
+
+    ce.dialogModal.modal('show');
+
+    ce.dialogModalOkBtn.one('click', function () {
+        ce.dialogModal.modal('hide');
+        let url = getUrl('send-request', 'koe/create-database');
+        let value = inputText.val();
+        inputText.val('');
+
+        $.post(url, {name: value}, function (err) {
+            ce.dialogModal.modal('hide');
+            ce.dialogModal.one('hidden.bs.modal', function () {
+                if (err) {
+                    showCreateDatabaseDialog(err);
+                }
+                else {
+                    location.reload();
+                }
+            });
+        });
+    });
+};
+
+
+/**
+ * Allow user to upload songs
+ */
+const initUploadSongsBtn = function () {
+    let url = getUrl('send-request', 'koe/import-audio-files');
+
+    uploadSongsBtn.click(function () {
+        fileUploadInput.click();
+    });
+
+    fileUploadInput.change(function () {
+        fileUploadBtn.click();
+    });
+
+    const responseHandler = function (response) {
+        let message = 'Files successfully imported. Page will reload shortly.';
+        let alertEl = ce.alertSuccess;
+        if (response != 'ok') {
+            message = `Something's wrong. The server says "${response}". Version not imported.
+                       But good news is your current data is still intact.`;
+            alertEl = ce.alertFailure;
+        }
+        alertEl.html(message);
+        alertEl.fadeIn().delay(4000).fadeOut(400, function () {
+            location.reload();
+        });
+    };
+
+    fileUploadForm.submit(function (e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        $.ajax({
+            url,
+            type: 'POST',
+            data: formData,
+            success: responseHandler,
+            // !IMPORTANT: this tells jquery to not set expectation of the content type.
+            // If not set to false it will not send the file
+            contentType: false,
+
+            // !IMPORTANT: this tells jquery to not convert the form data into string.
+            // If not set to false it will raise "IllegalInvocation" exception
+            processData: false
+        });
+    });
+};
+
+/**
+ * Allows user to remove songs
+ */
+const initDeleteSongsBtn = function () {
+    deleteSongsBtn.click(function () {
+        let url = getUrl('send-request', 'koe/delete-songs');
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let ids = [];
+        let selectedItems = [];
+        let dataView = grid_.getData();
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            ids.push(item.id);
+            selectedItems.push(item);
+        }
+
+        let databaseId = databaseCombo.attr('database');
+
+        ce.dialogModalTitle.html(`Confirm delete ${numRows} song(s)`);
+        ce.dialogModalBody.html(`Are you sure you want to delete these songs and all data associated with it? 
+        Audio files (all formats) are also deleted. This action is not reverseable.`);
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.one('click', function () {
+            ce.dialogModal.modal('hide');
+            $.post(
+                url, {ids: JSON.stringify(ids),
+                    database: databaseId},
+                function (response) {
+                    let message = 'Files successfully deleted. This page will reload';
+                    let alertEl = ce.alertSuccess;
+                    let callback = function () {
+                        location.reload();
+                    };
+                    if (response != 'ok') {
+                        message = `Something's wrong. The server says ${response}. Files might have been deleted.`;
+                        alertEl = ce.alertFailure;
+                        callback = undefined;
+                    }
+                    alertEl.html(message);
+                    alertEl.fadeIn().delay(4000).fadeOut(400, callback);
+                }
+            );
+        })
+    });
+};
+
+
+export const run = function (commonElements) {
+    ce = commonElements;
     ah.initAudioContext();
 
     grid.init(cls);
-    grid.initMainGridHeader({}, function () {
+    grid.initMainGridHeader({multiSelect: true}, function () {
         grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
@@ -248,10 +414,22 @@ export const run = function () {
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
+            $('.database-value').val(databaseId);
             parent.parent().find('li.active').removeClass('active').addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
 
+    $('#create-database-btn').on('click', function (e) {
+        e.preventDefault();
+        showCreateDatabaseDialog();
+    });
+
     initSlider();
+};
+
+export const postRun = function () {
+    subscribeFlexibleEvents();
+    initUploadSongsBtn();
+    initDeleteSongsBtn();
 };

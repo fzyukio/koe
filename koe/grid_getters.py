@@ -176,10 +176,10 @@ def bulk_get_exemplars(objs, extras):
     return ids, rows
 
 
-def bulk_get_song_sequences(songs, extras):
+def bulk_get_song_sequences(all_songs, extras):
     """
     For the song sequence page. For each song, send the sequence of syllables in order of appearance
-    :param segs: a QuerySet list of Segments
+    :param all_songs: a QuerySet list of AudioFile
     :param extras:
     :return:
     """
@@ -187,9 +187,9 @@ def bulk_get_song_sequences(songs, extras):
     user = extras['user']
     _, _, _, current_database = get_currents(user)
 
-    songs = songs.filter(database=current_database)
+    all_songs = all_songs.filter(database=current_database)
 
-    segs = Segment.objects.filter(segmentation__audio_file__in=songs, segmentation__source='user') \
+    segs = Segment.objects.filter(segmentation__audio_file__in=all_songs, segmentation__source='user') \
         .order_by('segmentation__audio_file__name', 'start_time_ms')
     values = segs.values_list('id', 'start_time_ms', 'end_time_ms',
                               'segmentation__audio_file__name',
@@ -202,10 +202,10 @@ def bulk_get_song_sequences(songs, extras):
                               'segmentation__audio_file__individual__name',
                               'segmentation__audio_file__individual__gender')
     seg_ids = segs.values_list('id', flat=True)
-    song_ids = songs.values_list('id', flat=True)
+    song_ids = all_songs.values_list('id', flat=True)
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user)\
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user) \
         .values_list('owner_id', 'value')
 
     seg_id_to_label = {int(x): y for x, y in labels}
@@ -233,7 +233,7 @@ def bulk_get_song_sequences(songs, extras):
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
             song_info = dict(filename=filename, url=url, track=track, individual=individual, gender=gender,
-                             quality=quality, date=date, duration=length)
+                             quality=quality, date=date, duration=length / fs)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
         else:
@@ -272,6 +272,26 @@ def bulk_get_song_sequences(songs, extras):
         extra_attr_dict = extra_attr_values_lookup.get(str(song_id), {})
         for attr in extra_attr_dict:
             row[attr] = extra_attr_dict[attr]
+
+        ids.append(song_id)
+        rows.append(row)
+
+    # Now we have to deal with songs without any segmentation done
+    empty_songs = all_songs.exclude(id__in=songs.keys()).values_list('name', 'id', 'quality', 'length', 'fs',
+                                                                     'track__name', 'track__date', 'individual__name',
+                                                                     'individual__gender')
+    for filename, song_id, quality, length, fs, track, date, individual, gender in empty_songs:
+        url = reverse('segmentation', kwargs={'file_id': song_id})
+        url = '[{}]({})'.format(url, filename)
+        row = dict(id=song_id, filename=filename, url=url, track=track, individual=individual, gender=gender,
+                   quality=quality,
+                   date=date, duration=length / fs)
+        row['sequence'] = ''
+        row['sequence-labels'] = ''
+        row['sequence-starts'] = ''
+        row['sequence-ends'] = ''
+        row['sequence-imgs'] = ''
+        row['song-url'] = mp3_path(filename, for_url=True)
 
         ids.append(song_id)
         rows.append(row)

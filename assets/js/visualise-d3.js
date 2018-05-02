@@ -7,8 +7,8 @@ import * as DSP from './dsp';
 import * as ah from 'audio-handler'
 import * as utils from 'utils'
 
-const nfft = 512;
-const noverlap = nfft / 2;
+const nfft = 256;
+const noverlap = nfft * 3 / 4;
 
 /**
  * Converts segment of a signal into spectrogram and displays it.
@@ -164,7 +164,7 @@ export const Visualise = function () {
             attr('d', resizePath);
     };
 
-    this.visualise = function (fileId, sig, fs) {
+    this.visualise = function (fileId, sig) {
         const viz = this;
         viz.margin = {top: 0,
             right: 0,
@@ -180,8 +180,11 @@ export const Visualise = function () {
         let segs = calcSegments(sig.length, nfft, noverlap);
         let imgWidth = segs.length;
         let imgHeight = nfft / 2;
-        let durationSec = sig.length / fs;
-        let spectXExtent = [0, durationSec];
+        let fileLength = getCache('file-length');
+        let fileFs = getCache('file-fs');
+        let durationMs = fileLength * 1000 / fileFs;
+
+        let spectXExtent = [0, durationMs];
         viz.spectXScale = d3.scale.linear().range([0, imgWidth]).domain(spectXExtent);
         viz.spectYScale = d3.scale.linear().range([0, imgHeight]).domain([0, 1]);
 
@@ -227,19 +230,6 @@ export const Visualise = function () {
     this.displaySegs = function (syllables) {
         let viz = this;
         viz.clearAllSegments();
-        let fileLength = getCache('file-length');
-        let fileFs = getCache('file-fs');
-
-        /*
-         * The way the browser decodes audio content makes its length different from the actual file's duration by a
-         * tiny amount, which we still have to take care of.
-         * So to display something at 33ms (actual) on the spectrogram, we have to convert it to match the browser's
-         * audio duration.
-         * E.g. let actualDurationMs = 1.0 sec, spectrogramDuration = 1.02 sec
-         * displayed 33ms = actual duration (33ms) / 1000 / actualDuration * spectrogramDuration
-         */
-        let actualDuration = fileLength / fileFs;
-        let spectrogramDuration = viz.spectXScale.domain()[1];
 
         for (let sylIdx in syllables) {
             if (Object.prototype.hasOwnProperty.call(syllables, sylIdx)) {
@@ -247,18 +237,18 @@ export const Visualise = function () {
                 let beginMs = syl.start_time_ms;
                 let endMs = syl.end_time_ms;
 
-                let beginSec = beginMs / 1000 / actualDuration * viz.imgWidth;
-                let endSec = endMs / 1000 / actualDuration * viz.imgWidth;
+                let x = viz.spectXScale(beginMs);
+                let width = viz.spectXScale(endMs - beginMs);
 
                 viz.spectrogramSvg.append('rect').
                     attr('class', 'syllable').
                     attr('syl-id', syl.id).
                     attr('begin', beginMs).
                     attr('end', endMs).
-                    attr('x', beginSec).
+                    attr('x', x).
                     attr('y', 0).
                     attr('height', viz.spectHeight).
-                    attr('width', endSec - beginSec);
+                    attr('width', width);
             }
         }
 
@@ -300,16 +290,13 @@ export const Visualise = function () {
                         let syl = utils.getCache('syllables', sylIdx);
                         utils.setCache('resizeable-syl-id', sylIdx);
 
-                        let startSec = syl.start_time_ms / 1000 / actualDuration * spectrogramDuration;
-                        let endSec = syl.end_time_ms / 1000 / actualDuration * spectrogramDuration;
-
                         console.log('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
 
                         // $('#segment-table #' + thisId).addClass('highlight');
 
                         // define our brush extent to be begin and end of the syllable
                         // viz.spectBrush.extent([startSec, endSec]);
-                        viz.spectBrush.extent([startSec, endSec]);
+                        viz.spectBrush.extent([syl.start_time_ms, syl.end_time_ms]);
 
                         // now draw the brush to match our extent
                         viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));

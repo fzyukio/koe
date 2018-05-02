@@ -187,12 +187,18 @@ tables = \
             "getter": "koe.bulk_get_song_sequences",
             "columns": [
                 {
+                    "slug": "_sel",
+                    "editable": False,
+                    "is_addon": True,
+                    "type": "BOOLEAN"
+                },
+                {
                     "name": "Filename",
                     "slug": "url",
                     "type": "URL"
                 },
                 {
-                    "name": "Duration",
+                    "name": "Duration (sec)",
                     "slug": "duration",
                     "type": "INTEGER"
                 },

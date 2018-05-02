@@ -2,13 +2,11 @@
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
 import array
-import contextlib
 import datetime
 import os
 import pickle
 import re
 import sys
-import wave
 from logging import warning
 
 import numpy as np
@@ -25,6 +23,7 @@ from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
+from koe.utils import get_wav_info
 from root.models import ExtraAttr, ValueTypes, User
 from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
 
@@ -56,18 +55,6 @@ if PY3:
 else:
     def str_to_bytes(x):
         return x
-
-
-def get_wav_info(audio_file):
-    """
-    Retuen fs and length of an audio without readng the entire file
-    :param audio_file:
-    :return:
-    """
-    with contextlib.closing(wave.open(audio_file, 'r')) as f:
-        nframes = f.getnframes()
-        rate = f.getframerate()
-    return rate, nframes
 
 
 def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
@@ -597,7 +584,7 @@ class Command(BaseCommand):
         user = User.objects.get(username=username)
         database, _ = Database.objects.get_or_create(name=database_name)
         DatabaseAssignment.objects.get_or_create(
-            user=user, database=database, permission=DatabasePermission.EDIT)
+            user=user, database=database, permission=DatabasePermission.ANNOTATE)
 
         # conns = None
         # try:

@@ -6,9 +6,7 @@
 
         <div id="grid-status">
             <div class="input-group">
-                <span class="input-group-addon left">
-                    Count: <span id="ntotal">0</span>
-                </span>
+                <button id="play-song" type="button" class="btn btn-primary btn-xs">Play</button>
             </div>
         </div>
 
@@ -22,12 +20,11 @@
     </div>
 
     <div id="visualisation">
-{#        <div id="waveform-navigation"></div>#}
-{#        <div id="waveform"></div>#}
         <div id="spectrogram"></div>
     </div>
 
-    <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}" fs="{{ fs }}"></div>
+    <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}"
+         fs="{{ fs }}"></div>
     <div class="offset-holder" id="segments-grid-offset-holder" attr="height"></div>
 
     <div id="spectrogram-details-tooltip" class="hidden">

@@ -45,6 +45,7 @@
                                         </a>
                                     </li>
                                 {% endfor %}
+                                <li><a href="#" id="create-database-btn">Create new database</a></li>
                             </ul>
 
                         </li>
@@ -67,7 +68,7 @@
 {% block modal-button %}
     <div class="btn-group" role="group">
         <button type="button" id="dialog-modal-yes-button" data-action="save" role="button"
-                class="btn btn-primary btn-hover-green">Set
+                class="btn btn-primary btn-hover-green">Yes
         </button>
     </div>
     <div class="btn-group" role="group">
@@ -78,6 +79,21 @@
 
 {% block bottom %}
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
+        {% if db_assignment.can_add_files %}
+        <div class="btn-group" role="group">
+            <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
+                <input type="file" multiple name="files" accept="audio/wav,audio/mp3,audio/flac">
+                <input class="database-value" name="database" type="text" value="{{ current_database.0 }}">
+                <input type="submit">
+            </form>
+            <button id="upload-songs-btn" type="button" class="btn btn-primary" data-download-type="all">Upload songs</button>
+        </div>
+        {% endif %}
+        {% if db_assignment.can_delete_files %}
+        <div class="btn-group" role="group">
+            <button disabled id="delete-songs-btn" type="button" class="btn btn-primary" data-download-type="all">Delete selected</button>
+        </div>
+        {% endif %}
         <div class="btn-group" role="group">
             <button type="button" class="btn btn-primary download-xls" data-download-type="all">Save entire table as
                 CSV

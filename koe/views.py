@@ -14,11 +14,12 @@ from django.views.generic import TemplateView
 
 from koe import wavfile
 from koe.model_utils import get_currents
-from koe.models import AudioFile, Segment, HistoryEntry, Segmentation
+from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, DatabasePermission
 from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import history_path, ensure_parent_folder_exists
+from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path
 
-__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence']
+__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence', 'create_database',
+           'import_audio_files', 'delete_songs']
 
 
 def match_target_amplitude(sound, loudness):
@@ -132,12 +133,12 @@ def get_segment_audio(request):
     audio_segment = match_target_amplitude(audio_segment, -10)
 
     out = io.BytesIO()
-    audio_segment.export(out, format='mp3')
+    audio_segment.export(out, format='flac')
     binary_content = out.getvalue()
 
     response = HttpResponse()
     response.write(binary_content)
-    response['Content-Type'] = 'audio/mp3'
+    response['Content-Type'] = 'audio/flac'
     response['Content-Length'] = len(binary_content)
     return response
 
@@ -189,6 +190,119 @@ def import_history(request):
         return HttpResponse('ok')
 
 
+def import_audio_files(request):
+    """
+    Store uploaded files (only wav, mpe and flac are accepted)
+    :param request: must contain a list of files and the id of the database to be stored against
+    :return:
+    """
+    user = request.user
+    files = request.FILES.getlist('files', None)
+    database_id = request.POST.get('database', None)
+
+    if not files:
+        raise ValueError('No files uploaded. Abort.')
+    if not database_id:
+        raise ValueError('No database specified. Abort.')
+
+    database = Database.objects.filter(id=database_id).first()
+    if not database:
+        raise ValueError('No such database: {}. Abort.'.format(database_id))
+
+    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
+    if db_assignment is None or not db_assignment.can_add_files():
+        raise PermissionError('You don\'t have permission to upload files to this database')
+
+    for f in files:
+        file = File(file=f)
+        fullname = file.name
+        name, ext = os.path.splitext(fullname)
+
+        # Removing the preceeding dot, e.g. ".wav" -> "wav"
+        ext = ext[1:]
+
+        unique_name = fullname
+        is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+        postfix = 0
+        while not is_unique:
+            postfix += 1
+            unique_name = '{}({}).{}'.format(name, postfix, ext)
+            is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+
+        if ext == 'wav':
+            unique_name_wav = wav_path(unique_name)
+            unique_name_flac = audio_path(unique_name, 'flac')
+
+            with open(unique_name_wav, 'wb') as wav_file:
+                wav_file.write(file.read())
+
+            audio = pydub.AudioSegment.from_file(unique_name_wav)
+
+            ensure_parent_folder_exists(unique_name_flac)
+            audio.export(unique_name_flac, format='flac')
+        else:
+            fullpath = audio_path(unique_name, ext)
+            with open(fullpath, 'wb') as file_to_save:
+                file_to_save.write(file.read())
+
+            audio = pydub.AudioSegment.from_file(file_to_save)
+
+        fs = audio.frame_rate
+        length = audio.raw_data.__len__() // audio.frame_width
+        AudioFile.objects.create(name=unique_name, length=length, fs=fs, database=database)
+
+    return HttpResponse('ok')
+
+
+def delete_songs(request):
+    """
+    Delete audio files given ids. Also remove all existing audio files.
+    :param request: must contain a list of ids and the id of the database where these files come from
+    :return:
+    """
+    user = request.user
+    ids = json.loads(request.POST['ids'])
+    database_id = request.POST['database']
+
+    # Check that the user has permission to delete files from this database
+    database = Database.objects.filter(id=database_id).first()
+    if not database:
+        raise ValueError('No such database: {}. Abort.'.format(database_id))
+    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
+    if db_assignment is None or not db_assignment.can_delete_files():
+        raise PermissionError('You don\'t have permission to delete files from this database. '
+                              'Are you messing with Javascript?')
+
+    # Check that the ids to delete actually come from this database
+    audio_files = AudioFile.objects.filter(id__in=ids)
+    audio_files_ids = audio_files.values_list('id', flat=True)
+
+    non_existent_ids = [x for x in ids if x not in audio_files_ids]
+
+    if non_existent_ids:
+        raise PermissionError('You\'re trying to delete files that don\'t belong to database {}. '
+                              'Are you messing with Javascript?'.format(database.name))
+
+    audio_files_names = list(audio_files.values_list('name', flat=True))
+    audio_files.delete()
+
+    fails = []
+    exts = ['wav', 'mp3', 'flac']
+    for name in audio_files_names:
+        try:
+            for ext in exts:
+                file_path = audio_path(name, ext)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+        except Exception:
+            fails.append(name)
+
+    if fails:
+        raise RuntimeError('Unable to remove files: {}'.format('\n'.format(fails)))
+
+    return HttpResponse('ok')
+
+
 def get_sequence(request):
     song_id = request.POST['song-id']
 
@@ -230,6 +344,30 @@ def get_sequence(request):
            'mp3-file-url': audio_file.mp3_path}
 
     return HttpResponse(json.dumps(row))
+
+
+def create_database(request):
+    name = request.POST.get('name', None)
+    user = request.user
+
+    if not name:
+        return HttpResponse('Database name is required.')
+
+    if Database.objects.filter(name=name).exists():
+        return HttpResponse('Database with name {} already exists.'.format(name))
+
+    database = Database(name=name)
+    database.save()
+
+    # Now assign this database to this user, and switch the working database to this new one
+    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ANNOTATE).save()
+
+    extra_attr = ExtraAttr.objects.get(klass=User.__name__, name='current-database')
+    extra_attr_value, _ = ExtraAttrValue.objects.get_or_create(user=user, attr=extra_attr, owner_id=user.id)
+    extra_attr_value.value = database.id
+    extra_attr_value.save()
+
+    return HttpResponse('')
 
 
 class IndexView(TemplateView):
@@ -286,12 +424,14 @@ class SongsView(TemplateView):
         cls = kwargs.get('class', 'label')
 
         _, _, databases, current_database = get_currents(user)
+        db_assignment = DatabaseAssignment.objects.get(database=current_database, user=user)
 
         context['databases'] = databases.values_list('id', 'name')
         context['current_database'] = (current_database.id, current_database.name, User.__name__)
         context['cls'] = cls
         context['page'] = 'songs'
         context['subpage'] = 'songs/{}'.format(cls)
+        context['db_assignment'] = db_assignment
         return context
 
 

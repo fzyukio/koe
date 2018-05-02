@@ -1,6 +1,7 @@
 import base64
 import contextlib
 import re
+import wave
 
 import numpy as np
 from scipy.signal import fftconvolve
@@ -111,6 +112,18 @@ def printoptions(*args, **kwargs):
         yield
     finally:
         np.set_printoptions(**original)
+
+
+def get_wav_info(audio_file):
+    """
+    Return fs and length of an audio without readng the entire file
+    :param audio_file:
+    :return:
+    """
+    with contextlib.closing(wave.open(audio_file, 'r')) as f:
+        nframes = f.getnframes()
+        rate = f.getframerate()
+    return rate, nframes
 
 
 if __name__ == '__main__':

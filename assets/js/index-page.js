@@ -41,10 +41,12 @@ class SegmentGrid extends fg.FlexibleGrid {
             let coldef = grid.getColumns()[col];
             let rowElement = $(e.target.parentElement);
             let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {e,
+            self.eventNotifier.trigger(eventType, {
+                e,
                 songId,
                 rowElement,
-                coldef});
+                coldef
+            });
         }
     }
 
@@ -89,8 +91,7 @@ const generalResponseHandler = function (response) {
         alertEl = ce.alertFailure;
     }
     alertEl.html(message);
-    alertEl.fadeIn().delay(4000).
-        fadeOut(400);
+    alertEl.fadeIn().delay(4000).fadeOut(400);
 };
 
 
@@ -199,10 +200,7 @@ const subscribeFlexibleEvents = function () {
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', clearSpectrogram);
-    grid.on('row-added', resetStatus).
-        on('rows-added', resetStatus).
-        on('row-removed', resetStatus).
-        on('rows-removed', resetStatus);
+    grid.on('row-added', resetStatus).on('rows-added', resetStatus).on('row-removed', resetStatus).on('rows-removed', resetStatus);
 };
 
 
@@ -221,11 +219,7 @@ const subscribeSlickEvents = function () {
 
         contextHandlerDecorator(colDef);
 
-        contextMenu.
-            data('field', field).
-            css('top', e.pageY).
-            css('left', e.pageX).
-            show();
+        contextMenu.data('field', field).css('top', e.pageY).css('left', e.pageX).show();
         $('body').one('click', function () {
             contextMenu.hide();
         });
@@ -244,8 +238,10 @@ const subscribeSlickEvents = function () {
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: true,
-        multiSelect: true}, function () {
+    grid.redrawMainGrid({
+        rowMoveable: true,
+        multiSelect: true
+    }, function () {
         subscribeSlickEvents();
     });
 };
@@ -328,8 +324,10 @@ const playAudioOnKey = function (e) {
             if (!column.editable) {
                 let fakeEvent = {target: activeCellEl};
                 let segId = grid_.getData().getItem(activeCell.row).id;
-                let args = {e: fakeEvent,
-                    songId: segId};
+                let args = {
+                    e: fakeEvent,
+                    songId: segId
+                };
                 playAudio(e, args);
             }
         }
@@ -464,9 +462,7 @@ export const run = function (commonElements) {
 
             /* Update the button */
             similarityCombo.attr('similarity', similarityId);
-            parent.parent().find('li.active').
-                removeClass('active').
-                addClass('not-active');
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
@@ -492,9 +488,7 @@ export const run = function (commonElements) {
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').
-                removeClass('active').
-                addClass('not-active');
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
             parent.removeClass('not-active').addClass('active');
         }
     });
@@ -704,8 +698,7 @@ export const postRun = function () {
                 ce.dialogModal.modal('hide');
                 let message = `History saved to ${filename}. You can download it from the version control page`;
                 ce.alertSuccess.html(message);
-                ce.alertSuccess.fadeIn().delay(4000).
-                    fadeOut(400);
+                ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
             });
         });
     });

@@ -90,6 +90,10 @@ def mp3_path(fullname, for_url=False):
     return data_path('audio/mp3', fullname, 'mp3', for_url)
 
 
+def audio_path(fullname, ext, for_url=False):
+    return data_path('audio/' + ext, fullname, ext, for_url)
+
+
 def history_path(fullname, for_url=False):
     return data_path('history', fullname, 'zip', for_url)
 

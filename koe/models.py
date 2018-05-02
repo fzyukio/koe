@@ -86,7 +86,10 @@ class Database(StandardModel):
 
 class DatabasePermission(MagicChoices):
     VIEW = 1
-    EDIT = 2
+    ANNOTATE = 2
+    ADD_FILES = 3
+    DELETE_FILES = 4
+    ASSIGN_USER = 10
 
 
 class DatabaseAssignment(SimpleModel):
@@ -106,6 +109,21 @@ class DatabaseAssignment(SimpleModel):
     class Meta:
         unique_together = ('user', 'database', 'permission')
         ordering = ('user', 'database', 'permission')
+
+    def can_view(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.VIEW
+
+    def can_annotate(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.ANNOTATE
+
+    def can_add_files(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.ADD_FILES
+
+    def can_delete_files(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.DELETE_FILES
+
+    def can_assign_user(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.ASSIGN_USER
 
 
 class AudioFile(StandardModel):

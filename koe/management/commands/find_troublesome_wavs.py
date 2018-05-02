@@ -4,8 +4,9 @@ import psycopg2
 from django.core.management.base import BaseCommand
 
 from koe.management.commands import utils
-from koe.management.commands.import_luscinia import import_pcm, get_wav_info
+from koe.management.commands.import_luscinia import import_pcm
 from koe.models import AudioFile
+from koe.utils import get_wav_info
 from root.utils import wav_path
 
 PY3 = sys.version_info[0] == 3

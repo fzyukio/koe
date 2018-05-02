@@ -33,8 +33,10 @@ class Grid extends fg.FlexibleGrid {
         let row = cell.row;
         let rowElement = $(e.target.parentElement);
         let songId = dataView.getItem(row).id;
-        self.eventNotifier.trigger(eventType, {songId,
-            rowElement});
+        self.eventNotifier.trigger(eventType, {
+            songId,
+            rowElement
+        });
     }
 
     /**
@@ -97,8 +99,8 @@ export const visualiseSong = function (callback) {
         startSecond: null,
         endSecond: null
     };
-    ah.queryAndHandleAudio(args, function (sig, fs) {
-        viz.visualise(fileId, sig, fs);
+    ah.queryAndHandleAudio(args, function (sig) {
+        viz.visualise(fileId, sig);
         callback();
     });
 };
@@ -121,7 +123,7 @@ export const highlightSegments = function (e, args) {
 };
 
 
-const initSlider = function () {
+const initController = function () {
     speedSlider.slider();
 
     speedSlider.on('slide', function (slideEvt) {
@@ -131,6 +133,17 @@ const initSlider = function () {
     $('.slider').on('click', function () {
         let newValue = $('.tooltip-inner').text();
         ah.changePlaybackSpeed(parseInt(newValue));
+    });
+
+    $('#play-song').click(function () {
+        let data = new FormData();
+        data.append('file-id', fileId);
+        let args = {
+            url: getUrl('send-request', 'koe/get-segment-audio'),
+            postData: data,
+            cacheKey: fileId
+        };
+        ah.queryAndPlayAudio(args);
     });
 };
 
@@ -171,5 +184,5 @@ export const run = function () {
             subscribeFlexibleEvents();
         });
     });
-    initSlider();
+    initController();
 };
