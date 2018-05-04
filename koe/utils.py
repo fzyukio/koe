@@ -1,3 +1,8 @@
+"""
+General utils for the entire project.
+DO NOT import any project-related files here. NO Model, NO form, NO nothing.
+model_utils is there you can import those
+"""
 import base64
 import contextlib
 import re

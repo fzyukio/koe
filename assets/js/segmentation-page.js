@@ -2,11 +2,33 @@ import * as ah from './audio-handler';
 import * as fg from 'flexible-grid';
 import * as vs from 'visualise-d3';
 import {defaultGridOptions} from './flexible-grid';
-import {deepCopy, getUrl, setCache} from './utils';
+import {deepCopy, getUrl, setCache, getCache} from './utils';
 require('bootstrap-slider/dist/bootstrap-slider.js');
-
+const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
+
+let ce;
+
+/**
+ * Display error in the alert box if a request failed, and vice versa
+ * @param response the message from server
+ * @param onSuccess callback if the message is 'ok'
+ * @param onFailure callback if the message is not 'ok'
+ */
+const generalResponseHandler = function (response, onSuccess, onFailure) {
+    let message = 'Success. Page will reload';
+    let alertEl = ce.alertSuccess;
+    let callback = onSuccess;
+    if (response != 'ok') {
+        message = `Something's wrong. The server says "${response}".`;
+        alertEl = ce.alertFailure;
+        callback = onFailure;
+    }
+    alertEl.html(message);
+    alertEl.fadeIn().delay(2000).fadeOut(400, callback);
+};
+
 
 class Grid extends fg.FlexibleGrid {
     init() {
@@ -69,6 +91,28 @@ class Grid extends fg.FlexibleGrid {
             }
         }
     }
+
+    /**
+     * Change the syllable table when a new syllable is drawn or an existing one is adjusted (incl. deletion)
+     * from the spectrogram
+     * @param args
+     */
+    segmentChangeEventHandler(e, args) {
+        const self = this;
+        let eventType = args.type;
+        let target = args.target;
+        let dataView = self.mainGrid.getData();
+
+        saveSegmentationBtn.prop('disabled', false);
+
+        if (eventType === 'segment-created') {
+            dataView.addItem(target);
+        }
+        else if (eventType === 'segment-adjusted') {
+            dataView.updateItem(target.id, target);
+        }
+    }
+
 }
 
 const grid = new Grid();
@@ -79,7 +123,8 @@ const fileFs = gridEl.attr('fs');
 const speedSlider = $('#speed-slider');
 const spectrogramId = 'spectrogram';
 const viz = new vs.Visualise();
-
+const saveSegmentationBtn = $('#save-segmentations-btn');
+const deleteSegmentsBtn = $('#delete-segments-btn');
 
 export const visualiseSong = function (callback) {
 
@@ -88,7 +133,6 @@ export const visualiseSong = function (callback) {
      */
     setCache('resizeable-syl-id', undefined);
     setCache('syllables', {});
-    setCache('next-syl-idx', 0);
 
     let data = new FormData();
     data.append('file-id', fileId);
@@ -145,6 +189,51 @@ const initController = function () {
         };
         ah.queryAndPlayAudio(args);
     });
+
+    saveSegmentationBtn.click(function () {
+        let url = getUrl('send-request', 'koe/save-segmentation');
+        let items = grid.mainGrid.getData().getItems();
+        $.post(
+            url,
+            {
+                items: JSON.stringify(items),
+                'file-id': fileId
+            },
+            function (response) {
+                generalResponseHandler(response, function () {
+                    location.reload();
+                })
+            }
+        );
+    })
+};
+
+
+/**
+ * Allows user to remove songs
+ */
+const initDeleteSegmentsBtn = function () {
+    deleteSegmentsBtn.click(function () {
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let dataView = grid_.getData();
+        let syllables = getCache('syllables');
+        let itemsIds = [];
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            itemsIds.push(item.id);
+        }
+
+        for (let i = 0; i < numRows; i++) {
+            let itemId = itemsIds[i];
+            dataView.deleteItem(itemId);
+            delete syllables[itemId];
+        }
+
+        saveSegmentationBtn.prop('disabled', false);
+        viz.displaySegs(syllables);
+    });
 };
 
 
@@ -154,10 +243,62 @@ const initController = function () {
 const subscribeFlexibleEvents = function () {
     grid.on('mouseenter', highlightSegments);
     grid.on('mouseleave', highlightSegments);
+
+    /**
+     * When segments are selected, enable delete button
+     */
+    function enableDeleteSegmentsBtn() {
+        deleteSegmentsBtn.prop('disabled', false);
+    }
+
+    /**
+     * When segments are removed, if there is songs left, disable the delete button
+     * @param e event
+     * @param args contains 'grid' - the main SlickGrid
+     */
+    function disableDeleteSegmentsBtn(e, args) {
+        let grid_ = args.grid;
+        if (grid_.getSelectedRows().length == 0) deleteSegmentsBtn.prop('disabled', true);
+    }
+
+    grid.on('row-added', enableDeleteSegmentsBtn);
+    grid.on('rows-added', enableDeleteSegmentsBtn);
+
+    grid.on('row-removed', disableDeleteSegmentsBtn);
+    grid.on('rows-removed', disableDeleteSegmentsBtn);
+
+    viz.eventNotifier.on('segment-mouse', function (e, args) {
+        grid.segmentMouseEventHandler(e, args);
+    });
+
+    viz.eventNotifier.on('segment-changed', function (e, args) {
+        grid.segmentChangeEventHandler(e, args);
+    });
 };
 
 
-export const run = function () {
+const initKeyboardHooks = function () {
+    keyboardJS.bind(
+        ['mod', 'ctrl'],
+        function () {
+            let highlighted = getCache('highlighted-syl-id');
+
+            /* Edit mode on and highlighted. Show brush */
+            if (highlighted) {
+                viz.showBrush(highlighted);
+            }
+            viz.editMode = true;
+        }, function () {
+            viz.clearBrush();
+            viz.editMode = false;
+        }
+    );
+};
+
+
+export const run = function (commonElements) {
+    ce = commonElements;
+
     setCache('file-id', fileId);
     setCache('file-length', fileLength);
     setCache('file-fs', fileFs);
@@ -165,12 +306,12 @@ export const run = function () {
     ah.initAudioContext();
     grid.init(fileId);
     viz.init(spectrogramId);
-    viz.eventNotifier.on('segment-mouse', function (e, args) {
-        grid.segmentMouseEventHandler(e, args);
-    });
 
     visualiseSong(function () {
-        grid.initMainGridHeader({'__extra__file_id': fileId}, function () {
+        grid.initMainGridHeader({
+            multiSelect: true,
+            '__extra__file_id': fileId
+        }, function () {
             grid.initMainGridContent({'__extra__file_id': fileId}, function () {
                 let items = grid.mainGrid.getData().getItems();
                 let syllables = {};
@@ -181,8 +322,14 @@ export const run = function () {
                 setCache('syllables', syllables);
                 viz.displaySegs(items);
             });
-            subscribeFlexibleEvents();
         });
     });
     initController();
+    initKeyboardHooks();
+    initDeleteSegmentsBtn()
+};
+
+
+export const postRun = function () {
+    subscribeFlexibleEvents();
 };

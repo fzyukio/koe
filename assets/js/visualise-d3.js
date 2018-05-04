@@ -2,13 +2,15 @@
 let d3 = require('d3/d3.js');
 require('jquery-contextmenu');
 
-import {getUrl, getCache, calcSegments} from './utils';
+import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from './utils';
 import * as DSP from './dsp';
 import * as ah from 'audio-handler'
-import * as utils from 'utils'
 
 const nfft = 256;
 const noverlap = nfft * 3 / 4;
+
+// (200ms per tick)
+const tickInterval = 200;
 
 /**
  * Converts segment of a signal into spectrogram and displays it.
@@ -42,13 +44,7 @@ function displaySpectrogram(viz, sig, segs, offset) {
         // This data URI is a dummy one, use it to trigger onload()
         img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
     }).then(function (dataURI) {
-        viz.spectrogramSpects.
-            append('image').
-            attr('height', viz.imgHeight).
-            attr('width', subImgWidth).
-            attr('x', offset).
-            attr('xlink:href', dataURI).
-            style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
+        viz.spectrogramSpects.append('image').attr('height', viz.imgHeight).attr('width', subImgWidth).attr('x', offset).attr('xlink:href', dataURI).style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
     });
 }
 
@@ -67,6 +63,7 @@ export const Visualise = function () {
         viz.spectXScale = null;
         viz.spectYScale = null;
         viz.scrollbarHeight = 10;
+        viz.axisHeight = 30;
         viz.spectrogramId = '#' + spectId;
         viz.spectBrush = null;
 
@@ -88,10 +85,13 @@ export const Visualise = function () {
                 x = e ? 1 : -1,
                 y = viz.spectHeight / 3;
             return `M${0.5 * x},${y}A6,6 0 0 ${e} ${6.5 * x},${y + 6}V${2 * y - 6}A6,6 0 0 ${e} ${0.5 * x},${2 * y}ZM${2.5 * x},${y + 8}V${2 * y - 8}M${4.5 * x},${y + 8}V${2 * y - 8}`;
+            // let e = Number(d === 'e'),
+            //     x = e ? 1 : -1,
+            //     h = viz.spectHeight;
+            // return `M${0.5 * x} 1 A 6 6 0 0 ${e} ${6.5 * x}, 6 V${h - 6}A6,6 0 0 ${e} ${0.5 * x},${h}ZM${2.5 * x},${8}V${h - 8}M${4.5 * x},${8}V${h - 8}`;
         };
 
-        viz.spectBrush = d3.svg.brush().
-            x(viz.spectXScale).
+        viz.spectBrush = d3.svg.brush().x(viz.spectXScale).
             on('brushstart', function () {
                 console.log('on brushstart');
             }).
@@ -102,74 +102,66 @@ export const Visualise = function () {
                 /*
                  * Remove the brush means that no syllable is currently resizable
                  */
-                    utils.setCache('resizeable-syl-id', undefined);
-                    console.log('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
+                    setCache('resizeable-syl-id', undefined);
+                    debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
                 }
                 else {
                     let endpoints = viz.spectBrush.extent();
-                    let duration = viz.spectXScale.domain()[1];
-                    let start = endpoints[0] / duration;
-                    let end = endpoints[1] / duration;
+                    let start = Math.floor(endpoints[0]);
+                    let end = Math.ceil(endpoints[1]);
 
                     console.log('start= ' + start + ' end=' + end);
 
-                    let syllables = utils.getCache('syllables') || {};
-                    let sylIdx = utils.getCache('resizeable-syl-id');
+                    let syllables = getCache('syllables') || {};
+                    let sylIdx = getCache('resizeable-syl-id');
 
                     if (sylIdx === undefined) {
-                        let newId = utils.getCache('next-syl-idx') || 0;
-                        let newSyllable = {id: newId,
-                            x0: start,
-                            x1: end,
-                            y0: 0,
-                            y1: 1};
+                        let newId = `new:${uuid4()}`;
+                        let newSyllable = {
+                            id: newId,
+                            start,
+                            end,
+                        };
                         syllables[newId] = newSyllable;
 
-                        viz.eventNotifier.trigger('segment-changed', {type: 'segment-created',
-                            target: newSyllable});
+                        viz.eventNotifier.trigger('segment-changed', {
+                            type: 'segment-created',
+                            target: newSyllable
+                        });
 
-                        utils.setCache('syllables', syllables);
-                        window.appCache['next-syl-idx']++;
+                        setCache('syllables', syllables);
 
                         // Clear the brush right away
                         viz.spectBrush.extent([0, 0]);
                         viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
                     }
                     else {
-                        syllables[sylIdx].x0 = start;
-                        syllables[sylIdx].x1 = end;
+                        syllables[sylIdx].start = start;
+                        syllables[sylIdx].end = end;
 
                         viz.eventNotifier.trigger('segment-changed', {
                             type: 'segment-adjusted',
                             target: syllables[sylIdx]
                         });
-
-                    // We don't clear the brush here because it's likely that the user still want to re-adjust the syllable
                     }
 
                     viz.displaySegs(syllables);
                 }
             });
 
-        viz.spectrogramSvg.append('g').
-            attr('class', 'spect-brush').
-            call(viz.spectBrush).
-            selectAll('rect').
-            attr('height', viz.spectHeight);
+        viz.spectrogramSvg.append('g').attr('class', 'spect-brush').call(viz.spectBrush).selectAll('rect').attr('height', viz.spectHeight);
 
-        viz.spectrogramSvg.selectAll('.resize').
-            append('path').
-            attr('class', 'brush-handle').
-            attr('cursor', 'ew-resize').
-            attr('d', resizePath);
+        viz.spectrogramSvg.selectAll('.resize').append('path').attr('class', 'brush-handle').attr('cursor', 'ew-resize').attr('d', resizePath);
     };
 
     this.visualise = function (fileId, sig) {
         const viz = this;
-        viz.margin = {top: 0,
+        viz.margin = {
+            top: 0,
             right: 0,
-            bottom: 0,
-            left: 0};
+            bottom: viz.axisHeight,
+            left: 0
+        };
 
         /*
          * The file can be long so we must generate the spectrogram in chunks.
@@ -192,12 +184,25 @@ export const Visualise = function () {
         viz.imgWidth = imgWidth;
 
         viz.spectWidth = $(viz.spectrogramId).width() - viz.margin.left - viz.margin.right;
-        viz.spectHeight = $(viz.spectrogramId).height() - viz.margin.top - viz.scrollbarHeight;
+        viz.spectHeight = $(viz.spectrogramId).height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
 
         viz.spectrogramSvg = d3.select(viz.spectrogramId).append('svg');
-        viz.spectrogramSvg.
-            attr('height', viz.spectHeight + viz.margin.top + viz.margin.bottom).
-            attr('width', viz.imgWidth + viz.margin.left + viz.margin.right);
+        viz.spectrogramSvg.attr('height', viz.spectHeight + viz.margin.top + viz.margin.bottom);
+        viz.spectrogramSvg.attr('width', viz.imgWidth + viz.margin.left + viz.margin.right);
+
+        /*
+         * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
+         */
+        let numTicks = durationMs / tickInterval;
+        let xAxis = d3.svg.axis().scale(viz.spectXScale).orient('bottom').ticks(numTicks);
+
+        viz.spectrogramAxis = viz.spectrogramSvg.append('g');
+        viz.spectrogramAxis.attr('class', 'x axis');
+        viz.spectrogramAxis.attr('transform', 'translate(0,' + viz.spectHeight + ')');
+        viz.spectrogramAxis.call(xAxis);
+
+        /* Remove the first tick at time = 0 (ugly) */
+        viz.spectrogramAxis.selectAll('.tick').filter((d) => d === 0).remove();
 
         viz.spectrogramSpects = viz.spectrogramSvg.append('g').classed('spects', true);
 
@@ -212,6 +217,10 @@ export const Visualise = function () {
         viz.drawBrush();
     };
 
+    /**
+     * Remove all rect elements on the spectrogram
+     * @param callback
+     */
     this.clearAllSegments = function (callback) {
         let viz = this;
         if (viz.spectrogramSvg) {
@@ -223,9 +232,100 @@ export const Visualise = function () {
     };
 
     /**
+     * Play the syllable where mouse left click was registered
+     * @param event the mouse click event
+     */
+    function playAudio(event) {
+        // Left click
+        let self = this;
+        if (event.which === 1) {
+            let begin = self.getAttribute('begin');
+            let end = self.getAttribute('end');
+
+            let fileId = getCache('file-id');
+            let data = new FormData();
+            data.append('file-id', fileId);
+
+            let args = {
+                url: getUrl('send-request', 'koe/get-segment-audio'),
+                postData: data,
+                cacheKey: fileId,
+                startSecond: begin / 1000,
+                endSecond: end / 1000
+            };
+            ah.queryAndPlayAudio(args);
+        }
+    }
+
+    /**
+     * Show the brush include its resize handles.
+     * @param sylIdx index of the syllable where the brush should appear
+     */
+    this.showBrush = function (sylIdx) {
+        let viz = this;
+        let syl = getCache('syllables', sylIdx);
+        setCache('resizeable-syl-id', sylIdx);
+
+        // define our brush extent to be begin and end of the syllable
+        viz.spectBrush.extent([syl.start, syl.end]);
+
+        // now draw the brush to match our extent
+        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
+    };
+
+    /**
+     * Clear the brush include its resize handles.
+     */
+    this.clearBrush = function () {
+        let viz = this;
+        viz.spectBrush.extent([0, 0]);
+        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
+        setCache('resizeable-syl-id', undefined);
+    };
+
+    /**
+     * When a syllable on spectrogram is on mouseover, highlight the rect element and store its ID on the cache.
+     * If the Ctrl button is being pressed, display the brush to allow user to change the syllable as well
      *
-     * @param syllables an array of dict having these keys: {start_time_ms, end_time_ms, id}
-     * @param eventHandler
+     * @param element the HTML element (rect) where mouse event occurs
+     * @param viz an instance of Visualise
+     */
+    function highlightSpectrogramSegment(element, viz) {
+        let sylIdx = element.getAttribute('syl-id');
+        setCache('highlighted-syl-id', sylIdx);
+
+        if (viz.editMode) {
+            viz.showBrush(sylIdx);
+        }
+        // External process might be interested in this event too
+        viz.eventNotifier.trigger('segment-mouse', {
+            type: 'segment-mouseover',
+            target: element
+        });
+    }
+
+    /**
+     * When a syllable on spectrogram is on mouseleave, clear the highlight and erase its ID from the cache.
+     * But we don't clear the brush. The brush is only cleared when the Ctrl button is unpressed.
+     *
+     * @param element the HTML element (rect) where mouse event occurs
+     * @param viz an instance of Visualise
+     */
+    function clearSpectrogramHighlight(element, viz) {
+        setCache('highlighted-syl-id', undefined);
+        if (viz.editMode) {
+            console.log('Edit mode on and not highlighted. Keep brush');
+        }
+        // External process might be interested in this event too
+        viz.eventNotifier.trigger('segment-mouse', {
+            type: 'segment-mouseleave',
+            target: element
+        });
+    }
+
+    /**
+     *
+     * @param syllables an array of dict having these keys: {start, end, id}
      */
     this.displaySegs = function (syllables) {
         let viz = this;
@@ -234,21 +334,20 @@ export const Visualise = function () {
         for (let sylIdx in syllables) {
             if (Object.prototype.hasOwnProperty.call(syllables, sylIdx)) {
                 let syl = syllables[sylIdx];
-                let beginMs = syl.start_time_ms;
-                let endMs = syl.end_time_ms;
+                let beginMs = syl.start;
+                let endMs = syl.end;
 
                 let x = viz.spectXScale(beginMs);
                 let width = viz.spectXScale(endMs - beginMs);
 
-                viz.spectrogramSvg.append('rect').
-                    attr('class', 'syllable').
-                    attr('syl-id', syl.id).
-                    attr('begin', beginMs).
-                    attr('end', endMs).
-                    attr('x', x).
-                    attr('y', 0).
-                    attr('height', viz.spectHeight).
-                    attr('width', width);
+                let rect = viz.spectrogramSvg.append('rect');
+                rect.attr('class', 'syllable');
+                rect.attr('syl-id', syl.id);
+                rect.attr('begin', beginMs);
+                rect.attr('end', endMs);
+                rect.attr('x', x).attr('y', 0);
+                rect.attr('height', viz.spectHeight);
+                rect.attr('width', width);
             }
         }
 
@@ -262,102 +361,15 @@ export const Visualise = function () {
         $(viz.spectrogramId + ' .syllable').each(function (idx, el) {
             el = $(el);
             if (!el.hasClass('mouse-behaviour-attached')) {
-                el.on('click', function (event) {
-                    // Left click
-                    let self = this;
-                    if (event.which === 1) {
-                        let begin = self.getAttribute('begin');
-                        let end = self.getAttribute('end');
-
-                        let fileId = getCache('file-id');
-                        let data = new FormData();
-                        data.append('file-id', fileId);
-
-                        let args = {
-                            url: getUrl('send-request', 'koe/get-segment-audio'),
-                            postData: data,
-                            cacheKey: fileId,
-                            startSecond: begin / 1000,
-                            endSecond: end / 1000
-                        };
-                        ah.queryAndPlayAudio(args);
-                    }
-                }).
-                    on('mouseover', function () {
-                        console.log('On mouse over');
-                        let self = this;
-                        let sylIdx = self.getAttribute('syl-id');
-                        let syl = utils.getCache('syllables', sylIdx);
-                        utils.setCache('resizeable-syl-id', sylIdx);
-
-                        console.log('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
-
-                        // $('#segment-table #' + thisId).addClass('highlight');
-
-                        // define our brush extent to be begin and end of the syllable
-                        // viz.spectBrush.extent([startSec, endSec]);
-                        viz.spectBrush.extent([syl.start_time_ms, syl.end_time_ms]);
-
-                        // now draw the brush to match our extent
-                        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
-
-                        // External process might be interested in this event too
-                        viz.eventNotifier.trigger('segment-mouse', {type: 'segment-mouseover',
-                            target: this});
-                    }).
-                    on('mouseleave', function (event) {
-                        event.preventDefault();
-                        let bbox = $(viz.spectrogramId)[0].getClientRects()[0];
-
-                        /*
-                     * Only clear the brush if the mouse if over the top or below the bottom.
-                     * Right and left boundary are handled by the reside handlers.
-                     */
-                        let mouseY = event.originalEvent.clientY;
-                        if (mouseY < bbox.top || mouseY > bbox.bottom) {
-                            viz.spectBrush.extent([0, 0]);
-                            viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
-                            utils.setCache('resizeable-syl-id', undefined);
-                            console.log('1Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
-                        }
-
-                        // External process might be interested in this event too
-                        viz.eventNotifier.trigger('segment-mouse', {type: 'segment-mouseleave',
-                            target: this});
-                    });
-                el.addClass('mouse-behaviour-attached');
-            }
-        });
-
-        /*
-         * Attached (once) the following behaviours to each boundary handlers:
-         * + On mouse leave, clear the boundary, and check if the left mouse is clicked (which means the user is dragging
-         *      the boundary to adjust the syllables, in which case do nothing else,
-         *     otherwise this means the user is simply moving away from the current syllable, in which case the syllable's
-         *      index needs to be cleared from the cache.
-         */
-        $('.spect-brush .resize').each(function (idx, el) {
-            el = $(el);
-            if (!el.hasClass('mouse-behaviour-attached')) {
-                el.on('mouseleave', function (event) {
-                    event.preventDefault();
-
-                    // Clear the brush right away
-                    viz.spectBrush.extent([0, 0]);
-                    viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
-
-                    /*
-                     * If the left mouse button is pressed, this is a resize, so keep the index of the resizeable syllable,
-                     * otherwise erase it.
-                     */
-                    if (event.originalEvent.buttons === 0) {
-                        utils.setCache('resizeable-syl-id', undefined);
-                        console.log('2Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
-                    }
+                el.on('click', playAudio);
+                el.on('mouseover', function () {
+                    highlightSpectrogramSegment(this, viz);
+                });
+                el.on('mouseleave', function () {
+                    clearSpectrogramHighlight(this, viz);
                 });
                 el.addClass('mouse-behaviour-attached');
             }
         });
-
     };
 };

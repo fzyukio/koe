@@ -198,7 +198,7 @@ tables = \
                     "type": "URL"
                 },
                 {
-                    "name": "Duration (sec)",
+                    "name": "Duration (msec)",
                     "slug": "duration",
                     "type": "INTEGER"
                 },
@@ -210,6 +210,11 @@ tables = \
                 {
                     "name": "Gender",
                     "slug": "gender",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Species",
+                    "slug": "species",
                     "type": "SHORT_TEXT"
                 },
                 {
@@ -257,14 +262,20 @@ tables = \
             "getter": "koe.bulk_get_segments_for_audio",
             "columns": [
                 {
+                    "slug": "_sel",
+                    "editable": False,
+                    "is_addon": True,
+                    "type": "BOOLEAN"
+                },
+                {
                     "name": "Start",
-                    "slug": "start_time_ms",
+                    "slug": "start",
                     "type": "INTEGER",
                     "is_attribute": True
                 },
                 {
                     "name": "End",
-                    "slug": "end_time_ms",
+                    "slug": "end",
                     "type": "INTEGER",
                     "is_attribute": True
                 }

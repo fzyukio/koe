@@ -7,10 +7,11 @@ $speed-controller-width: 300px;
 
 $spectrogram-height: 200px;
 $scrollbar-height: 10px;
+$axis-height: 30px;
 
 #visualisation {
   #spectrogram {
-    height: calc(#{$spectrogram-height} + #{$scrollbar-height});
+    height: calc(#{$spectrogram-height} + #{$scrollbar-height} + #{$axis-height});
     width: 100%;
     position: relative;
     overflow-y: hidden;
@@ -49,6 +50,7 @@ $scrollbar-height: 10px;
   }
 
   .axis {
+    //height: $axis-height;
     text {
       font: 10px sans-serif;
     }
@@ -137,12 +139,12 @@ $scrollbar-height: 10px;
 }
 
 #segments-grid {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height});
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
 #segments-grid-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height});
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
 #controller-wrapper {

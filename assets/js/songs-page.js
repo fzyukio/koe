@@ -65,11 +65,16 @@ const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const databaseClass = databaseCombo.attr('cls');
 
 const uploadSongsBtn = $('#upload-songs-btn');
+const uploadCsvBtn = $('#upload-csv-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 
-const fileUploadForm = $('#file-upload-form');
-const fileUploadInput = fileUploadForm.find('input[type=file]');
-const fileUploadBtn = fileUploadForm.find('input[type=submit]');
+const audioUploadForm = $('#file-upload-form');
+const audioUploadInput = audioUploadForm.find('input[type=file]');
+const audioUploadSubmitBtn = audioUploadForm.find('input[type=submit]');
+
+const csvUploadForm = $('#csv-upload-form');
+const csvUploadInput = csvUploadForm.find('input[type=file]');
+const csvUploadSubmitBtn = csvUploadForm.find('input[type=submit]');
 
 let ce;
 
@@ -145,9 +150,10 @@ const subscribeFlexibleEvents = function () {
     /**
      * When songs are removed, if there is songs left, disable the delete button
      * @param e event
-     * @param grid_ the main SlickGrid
+     * @param args contains 'grid' - the main SlickGrid
      */
-    function disableDeleteSongsBtn(e, {grid_}) {
+    function disableDeleteSongsBtn(e, args) {
+        let grid_ = args.grid;
         if (grid_.getSelectedRows().length == 0) deleteSongsBtn.prop('disabled', true);
     }
 
@@ -288,14 +294,21 @@ const showCreateDatabaseDialog = function (errorMessage) {
  * Allow user to upload songs
  */
 const initUploadSongsBtn = function () {
-    let url = getUrl('send-request', 'koe/import-audio-files');
 
     uploadSongsBtn.click(function () {
-        fileUploadInput.click();
+        audioUploadInput.click();
     });
 
-    fileUploadInput.change(function () {
-        fileUploadBtn.click();
+    uploadCsvBtn.click(function () {
+        csvUploadInput.click();
+    });
+
+    audioUploadInput.change(function () {
+        audioUploadSubmitBtn.click();
+    });
+
+    csvUploadInput.change(function () {
+        csvUploadSubmitBtn.click();
     });
 
     const responseHandler = function (response) {
@@ -312,11 +325,29 @@ const initUploadSongsBtn = function () {
         });
     };
 
-    fileUploadForm.submit(function (e) {
+    audioUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
         $.ajax({
-            url,
+            url: getUrl('send-request', 'koe/import-audio-files'),
+            type: 'POST',
+            data: formData,
+            success: responseHandler,
+            // !IMPORTANT: this tells jquery to not set expectation of the content type.
+            // If not set to false it will not send the file
+            contentType: false,
+
+            // !IMPORTANT: this tells jquery to not convert the form data into string.
+            // If not set to false it will raise "IllegalInvocation" exception
+            processData: false
+        });
+    });
+
+    csvUploadForm.submit(function (e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        $.ajax({
+            url: getUrl('send-request', 'koe/import-audio-metadata'),
             type: 'POST',
             data: formData,
             success: responseHandler,

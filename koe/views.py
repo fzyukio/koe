@@ -1,3 +1,4 @@
+import csv
 import datetime
 import io
 import json
@@ -5,21 +6,20 @@ import os
 import zipfile
 
 import pydub
-from django.conf import settings
 from django.core import serializers
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
-from koe import wavfile
-from koe.model_utils import get_currents
-from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, DatabasePermission
+from koe.model_utils import get_currents, extract_spectrogram
+from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
+    DatabasePermission, Individual, Species, AudioTrack
 from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path
+from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence', 'create_database',
-           'import_audio_files', 'delete_songs']
+           'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation']
 
 
 def match_target_amplitude(sound, loudness):
@@ -114,23 +114,14 @@ def get_segment_audio(request):
         start = segment.start_time_ms
         end = segment.end_time_ms
 
-    mp3_url = os.path.join(settings.BASE_DIR, audio_file.mp3_path)
-    wav_url = os.path.join(settings.BASE_DIR, audio_file.file_path)
-
-    if os.path.isfile(wav_url):
-        chunk = wavfile.read_segment(wav_url, start, end, mono=True, normalised=False)
-
-        audio_segment = pydub.AudioSegment(
-            chunk.tobytes(),
-            frame_rate=audio_file.fs,
-            sample_width=chunk.dtype.itemsize,
-            channels=1
-        )
-    else:
-        song = pydub.AudioSegment.from_mp3(mp3_url)
-        audio_segment = song[start:end]
-
-    audio_segment = match_target_amplitude(audio_segment, -10)
+    exts = ['flac', 'mp3', 'wav']
+    for ext in exts:
+        file_url = audio_path(audio_file.name, ext, for_url=False)
+        if os.path.isfile(file_url):
+            song = pydub.AudioSegment.from_file(file_url)
+            audio_segment = song[start:end]
+            audio_segment = match_target_amplitude(audio_segment, -10)
+            break
 
     out = io.BytesIO()
     audio_segment.export(out, format='flac')
@@ -254,6 +245,99 @@ def import_audio_files(request):
     return HttpResponse('ok')
 
 
+def import_audio_metadata(request):
+    """
+    Store uploaded files (only wav, mpe and flac are accepted)
+    :param request: must contain a list of files and the id of the database to be stored against
+    :return:
+    """
+    user = request.user
+    file = request.FILES.get('file', None)
+    database_id = request.POST.get('database', None)
+
+    if not file:
+        raise ValueError('No file uploaded. Abort.')
+    if not database_id:
+        raise ValueError('No database specified. Abort.')
+
+    database = Database.objects.filter(id=database_id).first()
+    if not database:
+        raise ValueError('No such database: {}. Abort.'.format(database_id))
+
+    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
+    if db_assignment is None or not db_assignment.can_add_files():
+        raise PermissionError('You don\'t have permission to upload files to this database')
+
+    file_data = file.read().decode("utf-8")
+    reader = csv.DictReader(io.StringIO(file_data))
+
+    supplied_fields = reader.fieldnames
+    required_fields = ['filename', 'genus', 'species', 'quality', 'date', 'individual', 'gender', 'track']
+    missing_fields = [x for x in required_fields if x not in supplied_fields]
+
+    if missing_fields:
+        raise ValueError('Field(s) {} are required but not found in your CSV file'.format(','.join(missing_fields)))
+
+    filename_to_metadata = {}
+
+    existing_individuals = {(x.name, x.species.genus, x.species.species): x for x in Individual.objects.all()
+                            if x.species is not None}
+    existing_species = {(x.genus, x.species): x for x in Species.objects.all()}
+    existing_tracks = {x.name: x for x in AudioTrack.objects.all()}
+
+    for row in reader:
+        filename = row['filename']
+        species_code = row['species']
+        genus = row['genus']
+        quality = row['quality']
+        individual_name = row['individual']
+        gender = row['gender']
+        date_str = row['date']
+        track_name = row['track']
+        date = None
+        if date_str:
+            date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        species_key = (genus, species_code)
+        if species_key in existing_species:
+            species = existing_species[species_key]
+        else:
+            species = Species(genus=genus, species=species_code)
+            species.save()
+            existing_species[species_key] = species
+
+        individual_key = (individual_name, genus, species_code)
+        if individual_key in existing_individuals:
+            individual = existing_individuals[individual_key]
+        else:
+            individual = existing_individuals.get(individual_key, None)
+            if individual is None:
+                individual = Individual(name=individual_name, gender=gender, species=species)
+                individual.save()
+                existing_individuals[individual_key] = individual
+
+        if track_name in existing_tracks:
+            track = existing_tracks[track_name]
+        else:
+            track = AudioTrack(name=track_name, date=date)
+            track.save()
+            existing_tracks[track_name] = track
+
+        filename_to_metadata[filename] = (individual, quality, track)
+
+    existing_audio_files = AudioFile.objects.filter(name__in=filename_to_metadata.keys())
+
+    with transaction.atomic():
+        for audio_file in existing_audio_files:
+            individual, quality, track = filename_to_metadata[audio_file.name]
+            audio_file.individual = individual
+            audio_file.quality = quality
+            audio_file.track = track
+            audio_file.save()
+
+    return HttpResponse('ok')
+
+
 def delete_songs(request):
     """
     Delete audio files given ids. Also remove all existing audio files.
@@ -370,6 +454,70 @@ def create_database(request):
     return HttpResponse('')
 
 
+def save_segmentation(request):
+    """
+    Save the segmentation scheme sent from the client. Compare with the existing segmentation, there are three cases:
+    1. segments that currently exist but not found in the client's scheme - they need to be deleted
+    2. segments that currently exist and found in the client's scheme - they need to be updated
+    3. segments that doesn't currently exist but found in the client's scheme - they need to be created
+
+    Finally, create or update the spectrogram image (not the mask - can't do anything about the mask)
+    :param request:
+    :return:
+    """
+    items = json.loads(request.POST['items'])
+    file_id = request.POST['file-id']
+    audio_file = AudioFile.objects.get(id=file_id)
+    segmentation, _ = Segmentation.objects.get_or_create(audio_file=audio_file, source='user')
+
+    segments = Segment.objects.filter(segmentation=segmentation)
+
+    new_segments = []
+    old_segments = []
+    for item in items:
+        id = item['id']
+        if isinstance(id, str) and id.startswith('new:'):
+            segment = Segment(segmentation=segmentation, start_time_ms=item['start'],
+                              end_time_ms=item['end'])
+            new_segments.append(segment)
+        else:
+            old_segments.append(item)
+
+    id_to_exiting_item = {x['id']: x for x in old_segments}
+
+    to_update = []
+    to_delete = []
+
+    for segment in segments:
+        id = segment.id
+        if id in id_to_exiting_item:
+            item = id_to_exiting_item[id]
+            segment.start_time_ms = item['start']
+            segment.end_time_ms = item['end']
+
+            to_update.append(segment)
+        else:
+            to_delete.append(segment)
+
+    for segment in to_delete:
+        segment_id = segment.id
+        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        if os.path.isfile(seg_spect_path):
+            os.remove(seg_spect_path)
+
+    with transaction.atomic():
+        for segment in to_update:
+            segment.save()
+        for segment in to_delete:
+            segment.delete()
+
+        Segment.objects.bulk_create(new_segments)
+
+    extract_spectrogram(segmentation)
+
+    return HttpResponse('ok')
+
+
 class IndexView(TemplateView):
     """
     The view to index page
@@ -444,14 +592,17 @@ class SegmentationView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(SegmentationView, self).get_context_data(**kwargs)
-        # user = self.request.user
+        user = self.request.user
         file_id = kwargs['file_id']
         audio_file = AudioFile.objects.filter(id=file_id).first()
         if audio_file is None:
             raise Exception('No such file')
 
+        db_assignment = DatabaseAssignment.objects.get(database=audio_file.database, user=user)
+
         context['page'] = 'segmentation'
         context['file_id'] = file_id
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
+        context['db_assignment'] = db_assignment
         return context

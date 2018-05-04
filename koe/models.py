@@ -60,6 +60,14 @@ class AudioTrack(StandardModel):
         return self.name
 
 
+class Species(StandardModel):
+    genus = models.CharField(max_length=32)
+    species = models.CharField(max_length=32)
+
+    class Meta:
+        unique_together = ['species', 'genus']
+
+
 class Individual(StandardModel):
     """
     Represents a bird.
@@ -67,9 +75,13 @@ class Individual(StandardModel):
 
     name = models.CharField(max_length=255)
     gender = models.CharField(max_length=16)
+    species = models.ForeignKey(Species, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        unique_together = ['name', 'species']
 
 
 class Database(StandardModel):

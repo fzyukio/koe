@@ -1,9 +1,24 @@
 import numpy as np
+from PIL import Image
+from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
+from koe.colourmap import cm_red, cm_green, cm_blue
+from koe.management.commands.utils import wav_2_mono
 from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database
 from koe.utils import triu2mat, mat2triu
 from root.models import User, ExtraAttr, ExtraAttrValue
+from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
+
+window_size = 256
+noverlap = 256 * 0.75
+window = signal.get_window('hann', 256)
+low_bound = 800
+scale = window.sum()
+global_min_spect_pixel = -9.421019554138184
+global_max_spect_pixel = 2.8522987365722656
+global_spect_pixel_range = global_max_spect_pixel - global_min_spect_pixel
+interval64 = global_spect_pixel_range / 63
 
 
 def add_node(node, idx_2_seg_id, parent, root_triu):
@@ -203,3 +218,53 @@ def get_currents(user):
         current_similarity = similarities.first()
 
     return similarities, current_similarity, databases, current_database
+
+
+def extract_spectrogram(segmentation):
+    """
+    Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file given the
+    segmentation scheme
+    :param segmentation:
+    :return:
+    """
+    segs_info = Segment.objects.filter(segmentation=segmentation).values_list('id', 'start_time_ms', 'end_time_ms')
+    audio_file = segmentation.audio_file
+    song_name = audio_file.name
+
+    filepath = wav_path(song_name)
+
+    fs, sig = wav_2_mono(filepath)
+    duration_ms = len(sig) * 1000 / fs
+
+    _, _, s = signal.stft(sig, fs=fs, window=window,
+                          noverlap=noverlap, nfft=window_size, return_onesided=True)
+    file_spect = np.abs(s * scale)
+
+    height, width = np.shape(file_spect)
+    file_spect = np.flipud(file_spect)
+
+    file_spect = np.log10(file_spect)
+    file_spect = ((file_spect - global_min_spect_pixel) / interval64)
+    file_spect[np.isinf(file_spect)] = 0
+    file_spect = file_spect.astype(np.int)
+
+    file_spect = file_spect.reshape((width * height,), order='C')
+    file_spect[file_spect >= 64] = 63
+    file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
+    file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape(
+        (height, width)) * 255
+    file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape(
+        (height, width)) * 255
+    file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape(
+        (height, width)) * 255
+
+    for seg_id, start, end in segs_info:
+        roi_start = int(start / duration_ms * width)
+        roi_end = int(np.ceil(end / duration_ms * width))
+
+        seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
+        seg_spect_img = Image.fromarray(seg_spect_rgb)
+        seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+        ensure_parent_folder_exists(seg_spect_path)
+
+        seg_spect_img.save(seg_spect_path, format='PNG')

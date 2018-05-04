@@ -130,7 +130,7 @@ export class FlexibleGrid {
                 item = dataView.getItemById(rowId);
 
                 // Row has been removed
-                if (item._sel === false) {
+                if (item === undefined || item._sel === false) {
                     delete previousRows[rowId];
                     removedRows.push(row);
                     removedItems.push(item);
