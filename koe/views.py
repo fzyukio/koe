@@ -114,7 +114,7 @@ def get_segment_audio(request):
         start = segment.start_time_ms
         end = segment.end_time_ms
 
-    exts = ['flac', 'mp3', 'wav']
+    exts = ['ogg', 'wav']
     for ext in exts:
         file_url = audio_path(audio_file.name, ext, for_url=False)
         if os.path.isfile(file_url):
@@ -124,12 +124,12 @@ def get_segment_audio(request):
             break
 
     out = io.BytesIO()
-    audio_segment.export(out, format='flac')
+    audio_segment.export(out, format='ogg')
     binary_content = out.getvalue()
 
     response = HttpResponse()
     response.write(binary_content)
-    response['Content-Type'] = 'audio/flac'
+    response['Content-Type'] = 'audio/ogg'
     response['Content-Length'] = len(binary_content)
     return response
 
@@ -183,7 +183,7 @@ def import_history(request):
 
 def import_audio_files(request):
     """
-    Store uploaded files (only wav, mpe and flac are accepted)
+    Store uploaded files (only wav, mpe and ogg are accepted)
     :param request: must contain a list of files and the id of the database to be stored against
     :return:
     """
@@ -222,15 +222,15 @@ def import_audio_files(request):
 
         if ext == 'wav':
             unique_name_wav = wav_path(unique_name)
-            unique_name_flac = audio_path(unique_name, 'flac')
+            unique_name_ogg = audio_path(unique_name, 'ogg')
 
             with open(unique_name_wav, 'wb') as wav_file:
                 wav_file.write(file.read())
 
             audio = pydub.AudioSegment.from_file(unique_name_wav)
 
-            ensure_parent_folder_exists(unique_name_flac)
-            audio.export(unique_name_flac, format='flac')
+            ensure_parent_folder_exists(unique_name_ogg)
+            audio.export(unique_name_ogg, format='ogg')
         else:
             fullpath = audio_path(unique_name, ext)
             with open(fullpath, 'wb') as file_to_save:
@@ -247,7 +247,7 @@ def import_audio_files(request):
 
 def import_audio_metadata(request):
     """
-    Store uploaded files (only wav, mpe and flac are accepted)
+    Store uploaded files (only wav, mpe and ogg are accepted)
     :param request: must contain a list of files and the id of the database to be stored against
     :return:
     """
@@ -371,7 +371,7 @@ def delete_songs(request):
     audio_files.delete()
 
     fails = []
-    exts = ['wav', 'mp3', 'flac']
+    exts = ['wav', 'mp3', 'ogg']
     for name in audio_files_names:
         try:
             for ext in exts:

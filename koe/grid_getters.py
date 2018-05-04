@@ -269,7 +269,7 @@ def bulk_get_song_sequences(all_songs, extras):
         if os.path.isfile(song_url):
             song_url = mp3_path(song_info['filename'], for_url=True)
         else:
-            song_url = audio_path(song_info['filename'], 'flac', for_url=True)
+            song_url = audio_path(song_info['filename'], 'ogg', for_url=True)
 
         row = song_info
         row['id'] = song_id

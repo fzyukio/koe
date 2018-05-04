@@ -82,7 +82,7 @@
         {% if db_assignment.can_add_files %}
             <div class="btn-group dropup" role="group">
                 <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
-                    <input type="file" multiple name="files" accept="audio/wav,audio/mp3,audio/flac">
+                    <input type="file" multiple name="files" accept="audio/wav,audio/ogg,audio/flac">
                     <input class="database-value" name="database" type="text" value="{{ current_database.0 }}">
                     <input type="submit">
                 </form>
