@@ -86,10 +86,6 @@ def wav_path(fullname, for_url=False):
     return data_path('audio/wav', fullname, 'wav', for_url)
 
 
-def mp3_path(fullname, for_url=False):
-    return data_path('audio/mp3', fullname, 'mp3', for_url)
-
-
 def audio_path(fullname, ext, for_url=False):
     return data_path('audio/' + ext, fullname, ext, for_url)
 

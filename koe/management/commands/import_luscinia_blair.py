@@ -14,6 +14,7 @@ import psycopg2
 import pydub
 from PIL import Image
 from PIL import ImageOps
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 from scipy import signal
@@ -25,7 +26,7 @@ from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
 from koe.utils import get_wav_info
 from root.models import ExtraAttr, ValueTypes, User
-from root.utils import wav_path, mp3_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
+from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path, audio_path
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
@@ -57,11 +58,11 @@ else:
         return x
 
 
-def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
+def import_pcm(song, cur, song_name, wav_file_path=None, compressed_url=None):
     if wav_file_path is None:
         wav_file_path = wav_path(song_name)
-    if mp3_url is None:
-        mp3_url = mp3_path(song_name)
+    if compressed_url is None:
+        compressed_url = audio_path(song_name, settings.AUDIO_COMPRESSED_FORMAT)
 
     wav_exists = True
 
@@ -105,10 +106,10 @@ def import_pcm(song, cur, song_name, wav_file_path=None, mp3_url=None):
     else:
         fs, length = get_wav_info(wav_file_path)
 
-    if wav_exists and not os.path.isfile(mp3_url):
-        ensure_parent_folder_exists(mp3_url)
+    if wav_exists and not os.path.isfile(compressed_url):
+        ensure_parent_folder_exists(compressed_url)
         sound = pydub.AudioSegment.from_wav(wav_file_path)
-        sound.export(mp3_url, format='mp3')
+        sound.export(compressed_url, format=settings.AUDIO_COMPRESSED_FORMAT)
 
     return fs, length
 
@@ -540,10 +541,10 @@ def compress_data(database):
         bar.next()
 
     for a in audio_files:
-        song_mp3_path = mp3_path(a)
+        compressed_path = audio_path(a, settings.AUDIO_COMPRESSED_FORMAT)
 
-        if os.path.isfile(song_mp3_path):
-            tar.add(song_mp3_path)
+        if os.path.isfile(compressed_path):
+            tar.add(compressed_path)
         bar.next()
 
     tar.close()

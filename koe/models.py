@@ -14,7 +14,7 @@ from koe.utils import base64_to_array, array_to_base64
 from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, \
     AutoSetterGetterMixin, \
     IdSafeModel, ValueTypes, MagicChoices
-from root.utils import wav_path, mp3_path, history_path, ensure_parent_folder_exists, pickle_path
+from root.utils import wav_path, history_path, ensure_parent_folder_exists, pickle_path
 
 
 class NumpyArrayField(models.TextField):
@@ -154,10 +154,6 @@ class AudioFile(StandardModel):
     @property
     def file_path(self):
         return wav_path(self.name)
-
-    @property
-    def mp3_path(self):
-        return mp3_path(self.name)
 
     def __str__(self):
         return self.name

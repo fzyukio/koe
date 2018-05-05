@@ -62,7 +62,7 @@ class Command(BaseCommand):
             dest='fmt',
             required=True,
             type=str,
-            help='Comma separated audio formats to convert, e.g. mp3,mp4,ogg. Not all formats are supported',
+            help='Audio format to convert, e.g. mp3,mp4,ogg. Not all formats are supported',
         )
 
     def handle(self, testfile, fmt, *args, **options):

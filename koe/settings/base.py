@@ -219,3 +219,5 @@ def JSONEncoder_newdefault(self, obj):
 
 
 JSONEncoder.default = JSONEncoder_newdefault
+
+AUDIO_COMPRESSED_FORMAT = 'ogg'

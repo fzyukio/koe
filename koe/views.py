@@ -6,6 +6,7 @@ import os
 import zipfile
 
 import pydub
+from django.conf import settings
 from django.core import serializers
 from django.core.files import File
 from django.db import transaction
@@ -18,7 +19,7 @@ from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database,
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path
 
-__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'get_sequence', 'create_database',
+__all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation']
 
 
@@ -94,7 +95,7 @@ def get_segment_audio(request):
     Return a playable audio segment given the file name and the endpoints (in range [0.0 -> 1.0]) where the segment
     begins and ends
     :param request: must specify segment-id, this is the ID of a Segment object to be played
-    :return: a binary blob specified as audio/mp3, playable and volume set to -10dB
+    :return: a binary blob specified as audio/ogg (or whatever the format is), playable and volume set to -10dB
     """
     segment_id = request.POST.get('segment-id', None)
     file_id = request.POST.get('file-id', None)
@@ -106,30 +107,29 @@ def get_segment_audio(request):
 
     if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
-        start = 0
-        end = audio_file.length
+        with open(audio_file.file_path, 'rb') as f:
+            binary_content = f.read()
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
         start = segment.start_time_ms
         end = segment.end_time_ms
 
-    exts = ['ogg', 'wav']
-    for ext in exts:
-        file_url = audio_path(audio_file.name, ext, for_url=False)
-        if os.path.isfile(file_url):
-            song = pydub.AudioSegment.from_file(file_url)
-            audio_segment = song[start:end]
-            audio_segment = match_target_amplitude(audio_segment, -10)
-            break
+        exts = [settings.AUDIO_COMPRESSED_FORMAT, 'wav']
+        for ext in exts:
+            file_url = audio_path(audio_file.name, ext, for_url=False)
+            if os.path.isfile(file_url):
+                song = pydub.AudioSegment.from_file(file_url)
+                audio_segment = song[start:end]
+                audio_segment = match_target_amplitude(audio_segment, -10)
 
-    out = io.BytesIO()
-    audio_segment.export(out, format='ogg')
-    binary_content = out.getvalue()
+                out = io.BytesIO()
+                audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
+                binary_content = out.getvalue()
 
     response = HttpResponse()
     response.write(binary_content)
-    response['Content-Type'] = 'audio/ogg'
+    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
     response['Content-Length'] = len(binary_content)
     return response
 
@@ -183,7 +183,7 @@ def import_history(request):
 
 def import_audio_files(request):
     """
-    Store uploaded files (only wav, mpe and ogg are accepted)
+    Store uploaded files (only wav is accepted)
     :param request: must contain a list of files and the id of the database to be stored against
     :return:
     """
@@ -220,23 +220,16 @@ def import_audio_files(request):
             unique_name = '{}({}).{}'.format(name, postfix, ext)
             is_unique = not AudioFile.objects.filter(name=unique_name).exists()
 
-        if ext == 'wav':
-            unique_name_wav = wav_path(unique_name)
-            unique_name_ogg = audio_path(unique_name, 'ogg')
+        unique_name_wav = wav_path(unique_name)
+        unique_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
 
-            with open(unique_name_wav, 'wb') as wav_file:
-                wav_file.write(file.read())
+        with open(unique_name_wav, 'wb') as wav_file:
+            wav_file.write(file.read())
 
-            audio = pydub.AudioSegment.from_file(unique_name_wav)
+        audio = pydub.AudioSegment.from_file(unique_name_wav)
 
-            ensure_parent_folder_exists(unique_name_ogg)
-            audio.export(unique_name_ogg, format='ogg')
-        else:
-            fullpath = audio_path(unique_name, ext)
-            with open(fullpath, 'wb') as file_to_save:
-                file_to_save.write(file.read())
-
-            audio = pydub.AudioSegment.from_file(file_to_save)
+        ensure_parent_folder_exists(unique_name_compressed)
+        audio.export(unique_name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
 
         fs = audio.frame_rate
         length = audio.raw_data.__len__() // audio.frame_width
@@ -247,7 +240,7 @@ def import_audio_files(request):
 
 def import_audio_metadata(request):
     """
-    Store uploaded files (only wav, mpe and ogg are accepted)
+    Store uploaded files (csv only)
     :param request: must contain a list of files and the id of the database to be stored against
     :return:
     """
@@ -371,7 +364,7 @@ def delete_songs(request):
     audio_files.delete()
 
     fails = []
-    exts = ['wav', 'mp3', 'ogg']
+    exts = ['wav', settings.AUDIO_COMPRESSED_FORMAT]
     for name in audio_files_names:
         try:
             for ext in exts:
@@ -385,49 +378,6 @@ def delete_songs(request):
         raise RuntimeError('Unable to remove files: {}'.format('\n'.format(fails)))
 
     return HttpResponse('ok')
-
-
-def get_sequence(request):
-    song_id = request.POST['song-id']
-
-    segmentation = Segmentation.objects.filter(source='user', audio_file__pk=song_id).first()
-    if segmentation is None:
-        return HttpResponse()
-
-    segments = Segment.objects.filter(segmentation=segmentation)
-    segment_ids = segments.values_list('id', flat=True)
-    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
-
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=segment_ids, user=request.user) \
-        .values_list('value', flat=True)
-
-    if len(labels) == 0:
-        return HttpResponse()
-
-    gaps = []
-    for i in range(len(segments) - 1):
-        gaps.append(segments[i + 1].start_time_ms - segments[i].end_time_ms)
-
-    symbol_sequence = []
-    label_sequence = []
-    starts = []
-    ends = []
-    segment_ids = []
-
-    for idx, l in enumerate(labels):
-        symbol_sequence.append('{{{}}}'.format(l))
-        label_sequence.append(l)
-        starts.append(segments[idx].start_time_ms)
-        ends.append(segments[idx].end_time_ms)
-        segment_ids.append(segments[idx].id)
-
-    audio_file = segmentation.audio_file
-
-    row = {'_sequence': json.dumps(symbol_sequence), 'label-sequence': json.dumps(label_sequence),
-           'segment-ids': json.dumps(segment_ids), 'starts': json.dumps(starts), 'ends': json.dumps(ends),
-           'mp3-file-url': audio_file.mp3_path}
-
-    return HttpResponse(json.dumps(row))
 
 
 def create_database(request):

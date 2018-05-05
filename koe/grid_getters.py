@@ -1,5 +1,5 @@
-import os
 import numpy as np
+from django.conf import settings
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
@@ -7,7 +7,7 @@ from django.urls import reverse
 from koe.model_utils import get_currents
 from koe.models import AudioFile, Segment
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_mask_path, spect_fft_path, mp3_path, audio_path
+from root.utils import spect_mask_path, spect_fft_path, audio_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio']
 
@@ -265,11 +265,7 @@ def bulk_get_song_sequences(all_songs, extras):
 
         sequence_str = '-'.join('\"{}\"'.format(x) for x in sequence_labels)
 
-        song_url = mp3_path(song_info['filename'], for_url=False)
-        if os.path.isfile(song_url):
-            song_url = mp3_path(song_info['filename'], for_url=True)
-        else:
-            song_url = audio_path(song_info['filename'], 'ogg', for_url=True)
+        song_url = audio_path(song_info['filename'], settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
 
         row = song_info
         row['id'] = song_id
@@ -291,6 +287,7 @@ def bulk_get_song_sequences(all_songs, extras):
     empty_songs = all_songs.exclude(id__in=songs.keys())\
         .values_list('name', 'id', 'quality', 'length', 'fs', 'track__name', 'track__date', 'individual__name',
                      'individual__gender', 'individual__species__genus', 'individual__species__species')
+
     for filename, song_id, quality, length, fs, track, date, indv, gender, genus, species in empty_songs:
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, filename)
@@ -303,7 +300,7 @@ def bulk_get_song_sequences(all_songs, extras):
         row['sequence-starts'] = ''
         row['sequence-ends'] = ''
         row['sequence-imgs'] = ''
-        row['song-url'] = mp3_path(filename, for_url=True)
+        row['song-url'] = audio_path(filename, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
 
         ids.append(song_id)
         rows.append(row)
