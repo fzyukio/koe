@@ -7,7 +7,7 @@ export {
 
 import {isNull, SlickEditors, createCsv, downloadBlob} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
-require("no-going-back");
+require('no-going-back');
 
 let page;
 
