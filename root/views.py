@@ -219,7 +219,7 @@ def get_grid_column_definition(request):
     columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_names,
                     'formatter': 'Action'})
 
-    return HttpResponse(json.dumps(columns))
+    return columns
 
 
 def get_grid_content(request):
@@ -243,7 +243,7 @@ def get_grid_content(request):
     klass = table['class']
     objs = klass.objects.all()
     rows = get_attrs(objs, table, extras)
-    return HttpResponse(json.dumps(rows))
+    return rows
 
 
 def set_property_bulk(request):
@@ -273,7 +273,7 @@ def set_property_bulk(request):
             setter = column['setter']
             setter(objs, value, {'user': request.user})
 
-    return HttpResponse('ok')
+    return True
 
 
 def change_properties(request):
@@ -304,7 +304,7 @@ def change_properties(request):
                 setter = column['setter']
                 setter([obj], val, {'user': request.user})
 
-    return HttpResponse('ok')
+    return True
 
 
 def change_extra_attr_value(request):
@@ -327,7 +327,7 @@ def change_extra_attr_value(request):
     extra_attr_value.value = value
     extra_attr_value.save()
 
-    return HttpResponse('ok')
+    return True
 
 
 def set_action_values(request):
@@ -361,7 +361,7 @@ def set_action_values(request):
                 action_value.user = user
             action_value.value = val2str(value)
             action_value.save()
-    return HttpResponse('ok')
+    return True
 
 
 def reorder_columns_handler(action_name, table_name, user, modified_columns):
@@ -440,10 +440,13 @@ def send_request(request, *args, **kwargs):
         function = globals().get(func_name, None)
         if function:
             try:
-                return function(request)
+                response = function(request)
+                if isinstance(response, HttpResponse):
+                    return response
+                return HttpResponse(json.dumps(dict(success=True, response=response)))
             except Exception as e:
                 opbeat_client.capture_exception()
-                return HttpResponse(e)
+                return HttpResponse(json.dumps(dict(success=False, error=str(e))))
     return HttpResponseNotFound()
 
 

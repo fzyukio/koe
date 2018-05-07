@@ -328,6 +328,9 @@ class HistoryEntry(StandardModel):
     time = models.DateTimeField()
     filename = models.CharField(max_length=255)
 
+    class Meta:
+        ordering = ['-time', 'user']
+
     def save(self, *args, **kwargs):
         """
         Deduce the filename from username and timestamp - so this field always have a uniform format

@@ -51,10 +51,11 @@ const subscribeFlexibleEvents = function () {
  * @param response
  */
 const generalResponseHandler = function (response) {
+    response = JSON.parse(response);
     let message = 'Success';
     let alertEl = ce.alertSuccess;
-    if (response != 'ok') {
-        message = `Something's wrong. The server says "${response}".`;
+    if (! response.success) {
+        message = `Something's wrong. The server says "${response.error}".`;
         alertEl = ce.alertFailure;
     }
     alertEl.html(message);
@@ -86,10 +87,11 @@ const initApplyVersionBtn = function () {
         ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/import-history');
             $.post(url, {'version-id': versionId}, function (response) {
+                response = JSON.parse(response);
                 let message = `Verison ${versionName} successfully imported`;
                 let alertEl = ce.alertSuccess;
-                if (response != 'ok') {
-                    message = `Something's wrong. The server says ${response}. Version not imported.
+                if (! response.success) {
+                    message = `Something's wrong. The server says ${response.error}. Version not imported.
                      But good news is your current data is still intact.`
                     alertEl = ce.alertFailure
                 }
@@ -116,13 +118,14 @@ const initDeleteVersionBtn = function () {
         ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/delete-history');
             $.post(url, {'version-id': versionId}, function (response) {
+                response = JSON.parse(response);
                 let message = `Verison ${versionName} successfully deleted. This page will reload`;
                 let alertEl = ce.alertSuccess;
                 let callback = function () {
                     location.reload();
                 };
-                if (response != 'ok') {
-                    message = `Something's wrong. The server says ${response}. Version might have been deleted.`;
+                if (! response.success) {
+                    message = `Something's wrong. The server says ${response.error}. Version might have been deleted.`;
                     alertEl = ce.alertFailure;
                     callback = undefined;
                 }
@@ -150,10 +153,11 @@ const initImportZipBtn = function () {
     });
 
     const responseHandler = function (response) {
+        response = JSON.parse(response);
         let message = `File ${this.filename} successfully imported`;
         let alertEl = ce.alertSuccess;
-        if (response != 'ok') {
-            message = `Something's wrong. The server says "${response}". Version not imported.
+        if (! response.success) {
+            message = `Something's wrong. The server says "${response.error}". Version not imported.
                        But good news is your current data is still intact.`;
             alertEl = ce.alertFailure;
         }

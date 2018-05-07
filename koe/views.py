@@ -41,27 +41,37 @@ def save_history(request):
     Save a copy of all ExtraAttrValue (labels, notes, ...) in a HistoryEntry
     :param request: must specify a comment to store with this copy
     :return: name of the zip file created
+    :version: 2.0.0
     """
     comment = request.POST['comment']
+    database_id = request.POST['database']
+    user = request.user
+    database = Database.objects.filter(id=database_id).first()
+    if not database:
+        raise ValueError('No such database: {}. Abort.'.format(database_id))
+    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
+    if db_assignment is None or not db_assignment.can_view():
+        raise PermissionError('You don\'t have permission to view from this database. '
+                              'Are you messing with Javascript?')
+
     comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
 
-    _, _, _, current_database = get_currents(request.user)
+    segments_ids = Segment.objects.filter(segmentation__audio_file__database=database, segmentation__source='user') \
+                           .values_list('id', flat=True)
 
-    segments_ids = Segment.objects.filter(segmentation__audio_file__database=current_database) \
-        .values_list('id', flat=True)
+    extra_attr_values = list(ExtraAttrValue.objects.filter(user=user, owner_id__in=segments_ids)
+                             .exclude(attr__klass=User.__name__).values_list('owner_id', 'attr__id', 'value'))
 
-    extra_attr_values = ExtraAttrValue.objects \
-        .filter(user=request.user, owner_id__in=segments_ids) \
-        .exclude(attr__klass=User.__name__)
-
-    retval = serializers.serialize('json', extra_attr_values)
+    meta = dict(database=database_id, user=user.id, version=2)
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_BZIP2, False) as zip_file:
-        zip_file.writestr('root.extraattrvalue.json', retval)
+        zip_file.writestr('meta.json', json.dumps(meta))
+        zip_file.writestr('root.extraattrvalue.json', json.dumps(extra_attr_values))
+
     binary_content = zip_buffer.getvalue()
 
-    he = HistoryEntry.objects.create(user=request.user, time=datetime.datetime.now())
+    he = HistoryEntry.objects.create(user=user, time=datetime.datetime.now())
     ExtraAttrValue.objects.create(owner_id=he.id, user=request.user, value=comment, attr=comment_attr)
 
     filename = he.filename
@@ -71,7 +81,7 @@ def save_history(request):
     with open(filepath, 'wb') as f:
         f.write(binary_content)
 
-    return HttpResponse(filename)
+    return filename
 
 
 def delete_history(request):
@@ -87,7 +97,7 @@ def delete_history(request):
         raise Exception('Only {} can delete this version'.format(creator.username))
 
     he.delete()
-    return HttpResponse('ok')
+    return True
 
 
 def get_segment_audio(request):
@@ -140,10 +150,11 @@ def import_history(request):
     If this operation fails, the database is intact.
     :param request: must specify either : version-id, which is the id of the HistoryEntry object to be imported to
                                           or FILES['zipfile'] which should be created somewhere by Koe for someone
-    :return: 'ok' if everything goes well. Otherwise the error message.
+    :return: True if everything goes well.
     """
     version_id = request.POST.get('version-id', None)
     zip_file = request.FILES.get('zipfile', None)
+    user = request.user
 
     if not (version_id or zip_file):
         raise ValueError('No ID or file provided. Abort.')
@@ -154,31 +165,53 @@ def import_history(request):
     else:
         file = File(file=zip_file)
 
+    filelist = {}
     with zipfile.ZipFile(file, "r") as zip_file:
-        try:
-            content = zip_file.read('root.extraattrvalue.json')
-        except KeyError:
-            raise ValueError('This is not a Koe history file')
-        try:
-            new_entries = json.loads(content)
-        except Exception:
-            raise ValueError('The history content is malformed and cannot be parsed.')
-    file.close()
+        namelist = zip_file.namelist()
+        for name in namelist:
+            filelist[name] = zip_file.read(name)
+
+    version = 1
+    if 'meta.json' in filelist:
+        meta = json.loads(filelist['meta.json'])
+        version = meta['version']
+
+    try:
+        content = filelist['root.extraattrvalue.json']
+    except KeyError:
+        raise ValueError('This is not a Koe history file')
+    try:
+        new_entries = json.loads(content)
+    except Exception:
+        raise ValueError('The history content is malformed and cannot be parsed.')
 
     extra_attr_values = []
+    attrs_to_values = {}
     for entry in new_entries:
-        owner_id = entry['fields']['owner_id']
-        value = entry['fields']['value']
-        attr_id = entry['fields']['attr']
-        extra_attr_value = ExtraAttrValue(owner_id=owner_id, value=value, user=request.user)
+        if version == 1:
+            owner_id = entry['fields']['owner_id']
+            value = entry['fields']['value']
+            attr_id = entry['fields']['attr']
+        else:
+            owner_id, attr_id, value = entry
+
+        if attr_id not in attrs_to_values:
+            attrs_to_values[attr_id] = [owner_id]
+        else:
+            attrs_to_values[attr_id].append(owner_id)
+
+        extra_attr_value = ExtraAttrValue(owner_id=owner_id, value=value, user=user)
         extra_attr_value.attr_id = attr_id
         extra_attr_values.append(extra_attr_value)
 
     # Wrap all DB modification in one transaction to utilise the roll-back ability when things go wrong
     with transaction.atomic():
-        ExtraAttrValue.objects.filter(user=request.user).exclude(attr__klass=User.__name__).delete()
+        # ExtraAttrValue.objects.filter(user=user).exclude(attr__klass=User.__name__).delete()
+        for attr_id, owner_ids in attrs_to_values.items():
+            ExtraAttrValue.objects.filter(user=user, owner_id__in=owner_ids, attr__id=attr_id).delete()
         ExtraAttrValue.objects.bulk_create(extra_attr_values)
-        return HttpResponse('ok')
+
+    return True
 
 
 def import_audio_files(request):
@@ -235,7 +268,7 @@ def import_audio_files(request):
         length = audio.raw_data.__len__() // audio.frame_width
         AudioFile.objects.create(name=unique_name, length=length, fs=fs, database=database)
 
-    return HttpResponse('ok')
+    return True
 
 
 def import_audio_metadata(request):
@@ -328,7 +361,7 @@ def import_audio_metadata(request):
             audio_file.track = track
             audio_file.save()
 
-    return HttpResponse('ok')
+    return True
 
 
 def delete_songs(request):
@@ -377,7 +410,7 @@ def delete_songs(request):
     if fails:
         raise RuntimeError('Unable to remove files: {}'.format('\n'.format(fails)))
 
-    return HttpResponse('ok')
+    return True
 
 
 def create_database(request):
@@ -385,10 +418,10 @@ def create_database(request):
     user = request.user
 
     if not name:
-        return HttpResponse('Database name is required.')
+        raise ValueError('Database name is required.')
 
     if Database.objects.filter(name=name).exists():
-        return HttpResponse('Database with name {} already exists.'.format(name))
+        raise ValueError('Database with name {} already exists.'.format(name))
 
     database = Database(name=name)
     database.save()
@@ -401,7 +434,7 @@ def create_database(request):
     extra_attr_value.value = database.id
     extra_attr_value.save()
 
-    return HttpResponse('')
+    return True
 
 
 def save_segmentation(request):
@@ -465,7 +498,7 @@ def save_segmentation(request):
 
     extract_spectrogram(segmentation)
 
-    return HttpResponse('ok')
+    return True
 
 
 class IndexView(TemplateView):

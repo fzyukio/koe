@@ -282,8 +282,9 @@ export class FlexibleGrid {
         let data = args.data || {};
         data['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('send-request', 'get-grid-column-definition'), data, function (columns) {
-            self.columns = JSON.parse(columns);
+        $.post(utils.getUrl('send-request', 'get-grid-column-definition'), data, function (response) {
+            response = JSON.parse(response);
+            self.columns = response.response;
 
             utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
                 multiSelect: args.multiSelect,
@@ -359,10 +360,11 @@ export class FlexibleGrid {
         let args = utils.deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('send-request', 'get-grid-content'), args, function (rows) {
-            rows = JSON.parse(rows);
+        $.post(utils.getUrl('send-request', 'get-grid-content'), args, function (response) {
+            response = JSON.parse(response);
+            let rows = response.response;
             self.rows = rows;
-            utils.updateSlickGridData(self.mainGrid, self.rows);
+            utils.updateSlickGridData(self.mainGrid, rows);
             self.cacheSelectableOptions();
 
             if (typeof callback == 'function') {

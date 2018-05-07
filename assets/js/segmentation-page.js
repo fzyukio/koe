@@ -13,15 +13,15 @@ let ce;
 /**
  * Display error in the alert box if a request failed, and vice versa
  * @param response the message from server
- * @param onSuccess callback if the message is 'ok'
- * @param onFailure callback if the message is not 'ok'
+ * @param onSuccess callback if the response is successful
+ * @param onFailure callback if the response is unsuccessful
  */
 const generalResponseHandler = function (response, onSuccess, onFailure) {
     let message = 'Success. Page will reload';
     let alertEl = ce.alertSuccess;
     let callback = onSuccess;
-    if (response != 'ok') {
-        message = `Something's wrong. The server says "${response}".`;
+    if (! response.success) {
+        message = `Something's wrong. The server says "${response.error}".`;
         alertEl = ce.alertFailure;
         callback = onFailure;
     }

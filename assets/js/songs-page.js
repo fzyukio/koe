@@ -317,8 +317,8 @@ const initUploadSongsBtn = function () {
     const responseHandler = function (response) {
         let message = 'Files successfully imported. Page will reload shortly.';
         let alertEl = ce.alertSuccess;
-        if (response != 'ok') {
-            message = `Something's wrong. The server says "${response}". Version not imported.
+        if (! response.success) {
+            message = `Something's wrong. The server says "${response.error}". Version not imported.
                        But good news is your current data is still intact.`;
             alertEl = ce.alertFailure;
         }
@@ -404,8 +404,8 @@ const initDeleteSongsBtn = function () {
                     let callback = function () {
                         location.reload();
                     };
-                    if (response != 'ok') {
-                        message = `Something's wrong. The server says ${response}. Files might have been deleted.`;
+                    if (! response.success) {
+                        message = `Something's wrong. The server says ${response.error}. Files might have been deleted.`;
                         alertEl = ce.alertFailure;
                         callback = undefined;
                     }

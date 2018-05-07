@@ -84,10 +84,11 @@ let ce;
  * @param response
  */
 const generalResponseHandler = function (response) {
+    response = JSON.parse(response);
     let message = 'Success';
     let alertEl = ce.alertSuccess;
-    if (response != 'ok') {
-        message = `Something's wrong. The server says "${response}".`;
+    if (! response.success) {
+        message = `Something's wrong. The server says "${response.error}".`;
         alertEl = ce.alertFailure;
     }
     alertEl.html(message);
@@ -690,15 +691,27 @@ export const postRun = function () {
         ce.dialogModalOkBtn.one('click', function () {
             let url = getUrl('send-request', 'koe/save-history');
             let value = inputText.val();
+            let databaseId = databaseCombo.attr('database');
             inputText.val('');
 
             ce.dialogModal.modal('hide');
 
-            $.post(url, {comment: value}, function (filename) {
+            $.post(url, {comment: value, database: databaseId}, function (res) {
+                res = JSON.parse(res);
+                let message, alertEl;
+
+                if (res.success) {
+                    let filename = res.response;
+                    message = `History saved to ${filename}. You can download it from the version control page`;
+                    alertEl = ce.alertSuccess;
+                }
+                else {
+                    message = `Something's wrong, server says ${res.error}. Version not saved.`;
+                    alertEl = ce.alertFailure;
+                }
                 ce.dialogModal.modal('hide');
-                let message = `History saved to ${filename}. You can download it from the version control page`;
-                ce.alertSuccess.html(message);
-                ce.alertSuccess.fadeIn().delay(4000).fadeOut(400);
+                alertEl.html(message);
+                alertEl.fadeIn().delay(4000).fadeOut(400);
             });
         });
     });
