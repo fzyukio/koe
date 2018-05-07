@@ -85,69 +85,63 @@ export const Visualise = function () {
                 x = e ? 1 : -1,
                 y = viz.spectHeight / 3;
             return `M${0.5 * x},${y}A6,6 0 0 ${e} ${6.5 * x},${y + 6}V${2 * y - 6}A6,6 0 0 ${e} ${0.5 * x},${2 * y}ZM${2.5 * x},${y + 8}V${2 * y - 8}M${4.5 * x},${y + 8}V${2 * y - 8}`;
-            // let e = Number(d === 'e'),
-            //     x = e ? 1 : -1,
-            //     h = viz.spectHeight;
-            // return `M${0.5 * x} 1 A 6 6 0 0 ${e} ${6.5 * x}, 6 V${h - 6}A6,6 0 0 ${e} ${0.5 * x},${h}ZM${2.5 * x},${8}V${h - 8}M${4.5 * x},${8}V${h - 8}`;
         };
 
-        viz.spectBrush = d3.svg.brush().x(viz.spectXScale).
-            on('brushstart', function () {
-                console.log('on brushstart');
-            }).
-            on('brushend', function () {
-                console.log('on brushend');
-                if (viz.spectBrush.empty()) {
+        viz.spectBrush = d3.svg.brush().x(viz.spectXScale).on('brushstart', function () {
+            console.log('on brushstart');
+        }).on('brushend', function () {
+            console.log('on brushend');
+            if (viz.spectBrush.empty()) {
 
                 /*
                  * Remove the brush means that no syllable is currently resizable
                  */
-                    setCache('resizeable-syl-id', undefined);
-                    debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
+                setCache('resizeable-syl-id', undefined);
+                debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
+            }
+            else {
+                let endpoints = viz.spectBrush.extent();
+                let start = Math.floor(endpoints[0]);
+                let end = Math.ceil(endpoints[1]);
+
+                console.log('start= ' + start + ' end=' + end);
+
+                let syllables = getCache('syllables') || {};
+                let sylIdx = getCache('resizeable-syl-id');
+
+                if (sylIdx === undefined) {
+                    let newId = `new:${uuid4()}`;
+                    let newSyllable = {
+                        id: newId,
+                        start,
+                        end,
+                    };
+                    syllables[newId] = newSyllable;
+
+                    viz.eventNotifier.trigger('segment-changed', {
+                        type: 'segment-created',
+                        target: newSyllable
+                    });
+
+                    setCache('syllables', syllables);
+
+                    // Clear the brush right away
+                    viz.spectBrush.extent([0, 0]);
+                    viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
                 }
                 else {
-                    let endpoints = viz.spectBrush.extent();
-                    let start = Math.floor(endpoints[0]);
-                    let end = Math.ceil(endpoints[1]);
+                    syllables[sylIdx].start = start;
+                    syllables[sylIdx].end = end;
 
-                    console.log('start= ' + start + ' end=' + end);
-
-                    let syllables = getCache('syllables') || {};
-                    let sylIdx = getCache('resizeable-syl-id');
-
-                    if (sylIdx === undefined) {
-                        let newId = `new:${uuid4()}`;
-                        let newSyllable = {
-                            id: newId,
-                            start,
-                            end,
-                        };
-                        syllables[newId] = newSyllable;
-
-                        viz.eventNotifier.trigger('segment-changed', {
-                            type: 'segment-created',
-                            target: newSyllable
-                        });
-
-                        setCache('syllables', syllables);
-
-                        // Clear the brush right away
-                        viz.spectBrush.extent([0, 0]);
-                        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
-                    }
-                    else {
-                        syllables[sylIdx].start = start;
-                        syllables[sylIdx].end = end;
-
-                        viz.eventNotifier.trigger('segment-changed', {
-                            type: 'segment-adjusted',
-                            target: syllables[sylIdx]
-                        });
-                    }
-
-                    viz.displaySegs(syllables);
+                    viz.eventNotifier.trigger('segment-changed', {
+                        type: 'segment-adjusted',
+                        target: syllables[sylIdx]
+                    });
                 }
-            });
+
+                viz.displaySegs(syllables);
+            }
+        });
 
         viz.spectrogramSvg.append('g').attr('class', 'spect-brush').call(viz.spectBrush).selectAll('rect').attr('height', viz.spectHeight);
 
@@ -206,6 +200,18 @@ export const Visualise = function () {
 
         viz.spectrogramSpects = viz.spectrogramSvg.append('g').classed('spects', true);
 
+
+        viz.playbackIndicator = viz.spectrogramSvg.append('line');
+        viz.playbackTransition = viz.playbackIndicator.transition();
+        viz.playbackIndicator.attr('x1', 0);
+        viz.playbackIndicator.attr('y1', 0);
+        viz.playbackIndicator.attr('x2', 1);
+        viz.playbackIndicator.attr('y2', viz.spectHeight);
+        viz.playbackIndicator.style('stroke-width', 2);
+        viz.playbackIndicator.style('stroke', 'black');
+        viz.playbackIndicator.style('fill', 'none');
+
+
         let chunks = calcSegments(segs.length, viz.spectWidth, 0);
         for (let i = 0; i < chunks.length; i++) {
             let chunk = chunks[i];
@@ -233,29 +239,47 @@ export const Visualise = function () {
 
     /**
      * Play the syllable where mouse left click was registered
-     * @param event the mouse click event
+     * @param begin
+     * @param end
      */
-    function playAudio(event) {
-        // Left click
-        let self = this;
-        if (event.which === 1) {
-            let begin = self.getAttribute('begin');
-            let end = self.getAttribute('end');
+    this.playAudio = function(begin = 0, end = 'end') {
+        let viz = this;
+        let fileId = getCache('file-id');
+        let data = new FormData();
+        data.append('file-id', fileId);
 
-            let fileId = getCache('file-id');
-            let data = new FormData();
-            data.append('file-id', fileId);
-
-            let args = {
-                url: getUrl('send-request', 'koe/get-segment-audio'),
-                postData: data,
-                cacheKey: fileId,
-                startSecond: begin / 1000,
-                endSecond: end / 1000
-            };
-            ah.queryAndPlayAudio(args);
+        let startX = viz.spectXScale(begin);
+        if (end === 'end') {
+            end = viz.spectXScale.domain()[1];
         }
-    }
+
+        let endX = viz.spectXScale(end);
+        let endSec = end / 1000;
+        let durationMs = end - begin;
+
+
+        let args = {
+            url: getUrl('send-request', 'koe/get-segment-audio'),
+            postData: data,
+            cacheKey: fileId,
+            playAudioArgs: {
+                beginSec: begin / 1000,
+                endSec,
+                onStartCallback (playbackSpeed) {
+                    let durationAtSpeed = durationMs * 100 / playbackSpeed;
+
+                    let playbackTransition = viz.playbackIndicator.transition();
+                    viz.playbackIndicator.interrupt();
+                    viz.playbackIndicator.attr('transform', `translate(${startX}, 0)`);
+
+                    playbackTransition.attr('transform', `translate(${endX}, 0)`).
+                        duration(durationAtSpeed).
+                        ease('linear');
+                }
+            }
+        };
+        ah.queryAndPlayAudio(args);
+    };
 
     /**
      * Show the brush include its resize handles.
@@ -361,7 +385,18 @@ export const Visualise = function () {
         $(viz.spectrogramId + ' .syllable').each(function (idx, el) {
             el = $(el);
             if (!el.hasClass('mouse-behaviour-attached')) {
-                el.on('click', playAudio);
+                el.on(
+                    'click',
+                    function (e) {
+                        let self = this;
+                        // Left click
+                        if (e.which === 1) {
+                            let begin = self.getAttribute('begin');
+                            let end = self.getAttribute('end');
+                            viz.playAudio(begin, end);
+                        }
+                    }
+                );
                 el.on('mouseover', function () {
                     highlightSpectrogramSegment(this, viz);
                 });

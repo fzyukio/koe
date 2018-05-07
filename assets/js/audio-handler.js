@@ -46,11 +46,12 @@ export const initAudioContext = function () {
 
 /**
  * Plays a owner of the audio from begin point to end point
- * @param beginMs see below
- * @param endSecond and beginMs : in millisecond
- * @param callback
+ * @param beginSec see below
+ * @param endSec and beginMs : in seconds
+ * @param onStartCallback callback to be called when the audio starts
+ * @param onEndedCallback callback to be called when the audio finishes
  */
-const playAudio = function (beginMs = 'start', endSecond = 'end', callback = null) {
+const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback = null, onEndedCallback = null}) {
     if (isNull(audioContext) || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
@@ -68,20 +69,24 @@ const playAudio = function (beginMs = 'start', endSecond = 'end', callback = nul
     source.playbackRate.setValueAtTime(playbackSpeed / 100.0, 0);
     source.connect(audioContext.destination);
 
-    if (beginMs === 'start') {
-        beginMs = 0
+    if (beginSec === 'start') {
+        beginSec = 0
     }
 
-    if (endSecond === 'end') {
-        endSecond = audioBuffer.duration;
+    if (endSec === 'end') {
+        endSec = audioBuffer.duration;
     }
 
     // For more information, read up AudioBufferSourceNode.start([when][, offset][, duration])
-    source.start(0, beginMs, endSecond - beginMs);
+    if (typeof onStartCallback === 'function') {
+        onStartCallback(playbackSpeed);
+    }
+
+    source.start(0, beginSec, endSec - beginSec);
     source.onended = function () {
         audioContext.close();
-        if (typeof callback === 'function') {
-            callback();
+        if (typeof onEndedCallback === 'function') {
+            onEndedCallback();
         }
     };
 };
@@ -90,13 +95,12 @@ const playAudio = function (beginMs = 'start', endSecond = 'end', callback = nul
  * Convert audio data to audio bugger and then play
  * @param fullAudioDataArray a Float32Array object
  * @param sampleRate sampling rate
- * @param startSecond playback starts at
- * @param endSecond playback ends at
+ * @param playAudioArgs arguments to provide for playAudio
  */
-const playAudioDataArray = function (fullAudioDataArray, sampleRate, startSecond = 'start', endSecond = 'end') {
+const playAudioDataArray = function (fullAudioDataArray, sampleRate, playAudioArgs) {
     audioBuffer = audioContext.createBuffer(1, fullAudioDataArray.length, sampleRate);
     audioBuffer.getChannelData(0).set(fullAudioDataArray);
-    playAudio(startSecond, endSecond);
+    playAudio(playAudioArgs);
 };
 
 /**
@@ -149,33 +153,31 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
  * @param url POST url
  * @param postData POST data that contains the id of the song/segment to be downloaded
  * @param cacheKey key to persist this song/segment in the cache
- * @param startSecond playback starts at
- * @param endSecond playback ends at
+ * @param playAudioArgs arguments to provide for playAudio
  */
-export const queryAndPlayAudio = function ({url, postData, cacheKey, startSecond, endSecond}) {
+export const queryAndPlayAudio = function ({url, postData, cacheKey, playAudioArgs = {}}) {
     let args = {
         url,
         cacheKey,
         postData
     };
-    queryAndHandleAudio(args, function(sig, fs) {
-        playAudioDataArray(sig, fs, startSecond, endSecond);
+    queryAndHandleAudio(args, function (sig, fs) {
+        playAudioDataArray(sig, fs, playAudioArgs);
     });
 };
 
 /**
  * Shortcut to download, cache a song from URL, and them play for the specified segment
  * @param url downloadable URL
- * @param startSecond playback starts at
- * @param endSecond playback ends at
+ * @param playAudioArgs arguments to provide for playAudio
  */
-export const playAudioFromUrl = function ({url, startSecond, endSecond}) {
+export const playAudioFromUrl = function ({url, playAudioArgs = {}}) {
     let args = {
         url,
         cacheKey: url,
         postData: null
     };
-    queryAndHandleAudio(args, function(sig, fs) {
-        playAudioDataArray(sig, fs, startSecond, endSecond);
+    queryAndHandleAudio(args, function (sig, fs) {
+        playAudioDataArray(sig, fs, playAudioArgs);
     });
 };

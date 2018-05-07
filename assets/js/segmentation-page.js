@@ -180,14 +180,7 @@ const initController = function () {
     });
 
     $('#play-song').click(function () {
-        let data = new FormData();
-        data.append('file-id', fileId);
-        let args = {
-            url: getUrl('send-request', 'koe/get-segment-audio'),
-            postData: data,
-            cacheKey: fileId
-        };
-        ah.queryAndPlayAudio(args);
+        viz.playAudio();
     });
 
     saveSegmentationBtn.click(function () {

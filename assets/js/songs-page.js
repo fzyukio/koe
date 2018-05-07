@@ -101,9 +101,12 @@ const playAudio = function (e, args) {
 
         let args_ = {
             url: audioUrl,
-            startSecond: start,
-            endSecond: end
+            playAudioArgs: {
+                beginSec: start,
+                endSec: end
+            }
         };
+
         ah.playAudioFromUrl(args_);
     }
 };
@@ -391,8 +394,10 @@ const initDeleteSongsBtn = function () {
         ce.dialogModalOkBtn.one('click', function () {
             ce.dialogModal.modal('hide');
             $.post(
-                url, {ids: JSON.stringify(ids),
-                    database: databaseId},
+                url, {
+                    ids: JSON.stringify(ids),
+                    database: databaseId
+                },
                 function (response) {
                     let message = 'Files successfully deleted. This page will reload';
                     let alertEl = ce.alertSuccess;
