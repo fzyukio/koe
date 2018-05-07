@@ -3,6 +3,7 @@ import {defaultGridOptions} from './flexible-grid';
 import * as ah from './audio-handler';
 import {log, deepCopy, getUrl, getCache} from 'utils';
 import {setCache} from './utils';
+import {postRequest} from './ajax-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -302,19 +303,16 @@ export const run = function () {
 
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
-            let databaseId = this.getAttribute('database');
 
-            $.post(
-                getUrl('send-request', 'change-extra-attr-value'),
-                {
-                    'attr': currentDatabaseAttr,
-                    'klass': databaseClass,
-                    'value': databaseId
-                },
-                function () {
-                    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
-                }
-            );
+            let databaseId = this.getAttribute('database');
+            let postData = {attr: currentDatabaseAttr,
+                klass: databaseClass,
+                value: databaseId};
+            let onSuccess = function () {
+                grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+            };
+
+            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);

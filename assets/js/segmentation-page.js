@@ -3,32 +3,13 @@ import * as fg from 'flexible-grid';
 import * as vs from 'visualise-d3';
 import {defaultGridOptions} from './flexible-grid';
 import {deepCopy, getUrl, setCache, getCache} from './utils';
+import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 
 let ce;
-
-/**
- * Display error in the alert box if a request failed, and vice versa
- * @param response the message from server
- * @param onSuccess callback if the response is successful
- * @param onFailure callback if the response is unsuccessful
- */
-const generalResponseHandler = function (response, onSuccess, onFailure) {
-    let message = 'Success. Page will reload';
-    let alertEl = ce.alertSuccess;
-    let callback = onSuccess;
-    if (! response.success) {
-        message = `Something's wrong. The server says "${response.error}".`;
-        alertEl = ce.alertFailure;
-        callback = onFailure;
-    }
-    alertEl.html(message);
-    alertEl.fadeIn().delay(2000).fadeOut(400, callback);
-};
-
 
 class Grid extends fg.FlexibleGrid {
     init() {
@@ -184,20 +165,16 @@ const initController = function () {
     });
 
     saveSegmentationBtn.click(function () {
-        let url = getUrl('send-request', 'koe/save-segmentation');
         let items = grid.mainGrid.getData().getItems();
-        $.post(
-            url,
-            {
-                items: JSON.stringify(items),
-                'file-id': fileId
-            },
-            function (response) {
-                generalResponseHandler(response, function () {
-                    location.reload();
-                })
-            }
-        );
+        let postData = {
+            items: JSON.stringify(items),
+            'file-id': fileId
+        };
+        let onSuccess = function () {
+            location.reload();
+        };
+        ce.dialogModal.modal('hide');
+        postRequest('koe/save-segmentation', postData, null, onSuccess, null);
     })
 };
 

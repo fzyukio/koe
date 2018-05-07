@@ -1,5 +1,6 @@
 /* global Slick */
 import * as utils from './utils';
+import {postRequest} from './ajax-handler';
 
 require('slickgrid/plugins/slick.autotooltips');
 
@@ -185,7 +186,7 @@ export class FlexibleGrid {
     }
 
 
-    rowChangeHandler(e, args, callback) {
+    rowChangeHandler(e, args, onSuccess, onFailure) {
         const self = this;
         let item = args.item;
         let selectableColumns = utils.getCache('selectableOptions');
@@ -212,14 +213,12 @@ export class FlexibleGrid {
         postArgs['grid-type'] = self.gridType;
         postArgs.property = JSON.stringify(itemSimplified);
 
-        $.post(
-            utils.getUrl('send-request', 'change-properties'),
-            {
-                'grid-type': self.gridType,
-                'property': JSON.stringify(itemSimplified)
-            },
-            callback
-        );
+        let postData = {
+            'grid-type': self.gridType,
+            'property': JSON.stringify(itemSimplified)
+        };
+
+        postRequest('change-properties', postData, null, onSuccess, onFailure, true);
     }
 
     /**
@@ -282,9 +281,8 @@ export class FlexibleGrid {
         let data = args.data || {};
         data['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('send-request', 'get-grid-column-definition'), data, function (response) {
-            response = JSON.parse(response);
-            self.columns = response.response;
+        let onSuccess = function (columns) {
+            self.columns = columns;
 
             utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
                 multiSelect: args.multiSelect,
@@ -300,7 +298,9 @@ export class FlexibleGrid {
             if (typeof callback == 'function') {
                 callback();
             }
-        });
+        };
+
+        postRequest('get-grid-column-definition', data, null, onSuccess, null, true);
     }
 
     redrawMainGrid(args, callback) {
@@ -360,9 +360,7 @@ export class FlexibleGrid {
         let args = utils.deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
 
-        $.post(utils.getUrl('send-request', 'get-grid-content'), args, function (response) {
-            response = JSON.parse(response);
-            let rows = response.response;
+        let onSuccess = function (rows) {
             self.rows = rows;
             utils.updateSlickGridData(self.mainGrid, rows);
             self.cacheSelectableOptions();
@@ -370,7 +368,9 @@ export class FlexibleGrid {
             if (typeof callback == 'function') {
                 callback();
             }
-        });
+        };
+
+        postRequest('get-grid-content', args, null, onSuccess, null, true);
     }
 
     getSelectedRows() {

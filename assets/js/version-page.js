@@ -1,6 +1,7 @@
 import * as fg from 'flexible-grid';
 import {defaultGridOptions} from './flexible-grid';
-import {getUrl, deepCopy} from './utils';
+import {deepCopy} from './utils';
+import {postRequest, uploadRequest} from './ajax-handler';
 
 const gridOptions = deepCopy(defaultGridOptions);
 
@@ -12,10 +13,6 @@ class SegmentGrid extends fg.FlexibleGrid {
             'default-field': 'label_family',
             gridOptions
         });
-    }
-
-    rowChangeHandler(e, args) {
-        super.rowChangeHandler(e, args, generalResponseHandler);
     }
 }
 
@@ -39,36 +36,19 @@ const subscribeFlexibleEvents = function () {
         let versionId = args.item.id;
         let versionName = args.item.url;
 
-        ce.dialogModal.
-            data('versionId', versionId).
-            data('versionName', versionName);
+        ce.dialogModal.data('versionId', versionId).data('versionName', versionName);
 
     });
-};
-
-/**
- * Display error in the alert box if a request failed, and vice versa
- * @param response
- */
-const generalResponseHandler = function (response) {
-    response = JSON.parse(response);
-    let message = 'Success';
-    let alertEl = ce.alertSuccess;
-    if (! response.success) {
-        message = `Something's wrong. The server says "${response.error}".`;
-        alertEl = ce.alertFailure;
-    }
-    alertEl.html(message);
-    alertEl.fadeIn().delay(4000).
-        fadeOut(400);
 };
 
 /**
  * Redraw the table on orientation changed
  */
 export const orientationChange = function () {
-    grid.redrawMainGrid({rowMoveable: false,
-        radioSelect: true});
+    grid.redrawMainGrid({
+        rowMoveable: false,
+        radioSelect: true
+    });
 };
 
 
@@ -85,21 +65,16 @@ const initApplyVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let url = getUrl('send-request', 'koe/import-history');
-            $.post(url, {'version-id': versionId}, function (response) {
-                response = JSON.parse(response);
-                let message = `Verison ${versionName} successfully imported`;
-                let alertEl = ce.alertSuccess;
-                if (! response.success) {
-                    message = `Something's wrong. The server says ${response.error}. Version not imported.
-                     But good news is your current data is still intact.`
-                    alertEl = ce.alertFailure
-                }
-                alertEl.html(message);
-                alertEl.fadeIn().delay(4000).
-                    fadeOut(400);
-            });
+            let postData = {'version-id': versionId};
+            let msgGen = function (res) {
+                return res.success ?
+                    `Verison ${versionName} successfully imported` :
+                    `Something's wrong. The server says ${res.error}. Version not imported.
+                       But good news is your current data is still intact.`;
+            };
+
             ce.dialogModal.modal('hide');
+            postRequest('koe/import-history', postData, msgGen);
         })
     });
 };
@@ -116,24 +91,17 @@ const initDeleteVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let url = getUrl('send-request', 'koe/delete-history');
-            $.post(url, {'version-id': versionId}, function (response) {
-                response = JSON.parse(response);
-                let message = `Verison ${versionName} successfully deleted. This page will reload`;
-                let alertEl = ce.alertSuccess;
-                let callback = function () {
-                    location.reload();
-                };
-                if (! response.success) {
-                    message = `Something's wrong. The server says ${response.error}. Version might have been deleted.`;
-                    alertEl = ce.alertFailure;
-                    callback = undefined;
-                }
-                alertEl.html(message);
-                alertEl.fadeIn().delay(4000).
-                    fadeOut(400, callback);
-            });
+            let postData = {'version-id': versionId};
+            let msgGen = function (res) {
+                return res.success ?
+                    `Verison ${versionName} successfully deleted. This page will reload` :
+                    `Something's wrong. The server says ${res.error}. Version might have been deleted.`;
+            };
+            let onSuccess = function () {
+                location.reload();
+            };
             ce.dialogModal.modal('hide');
+            postRequest('koe/delete-history', postData, msgGen, onSuccess);
         })
     });
 };
@@ -143,7 +111,6 @@ const initDeleteVersionBtn = function () {
  * On click the user can chose a file that contains the history to upload and replace the current workspace
  */
 const initImportZipBtn = function () {
-    let url = getUrl('send-request', 'koe/import-history');
     importZipBtn.click(function () {
         fileUploadInput.click();
     });
@@ -152,37 +119,19 @@ const initImportZipBtn = function () {
         fileUploadBtn.click();
     });
 
-    const responseHandler = function (response) {
-        response = JSON.parse(response);
-        let message = `File ${this.filename} successfully imported`;
-        let alertEl = ce.alertSuccess;
-        if (! response.success) {
-            message = `Something's wrong. The server says "${response.error}". Version not imported.
-                       But good news is your current data is still intact.`;
-            alertEl = ce.alertFailure;
-        }
-        alertEl.html(message);
-        alertEl.fadeIn().delay(4000).
-            fadeOut(400);
-    };
-
     fileUploadForm.submit(function (e) {
         e.preventDefault();
         let filename = fileUploadInput.val();
         let formData = new FormData(this);
-        $.ajax({
-            url,
-            type: 'POST',
-            data: formData,
-            success: responseHandler.bind({filename}),
-            // !IMPORTANT: this tells jquery to not set expectation of the content type.
-            // If not set to false it will not send the file
-            contentType: false,
 
-            // !IMPORTANT: this tells jquery to not convert the form data into string.
-            // If not set to false it will raise "IllegalInvocation" exception
-            processData: false
-        });
+        let msgGen = function (res) {
+            return res.success ?
+                `File ${filename} successfully imported` :
+                `Something's wrong. The server says "${res.error}". Version not imported. 
+                But good news is your current data is still intact.`;
+        };
+
+        uploadRequest('koe/import-history', formData, msgGen);
     });
 
 };
@@ -191,8 +140,10 @@ export const run = function (commonElements) {
     ce = commonElements;
 
     grid.init();
-    grid.initMainGridHeader({rowMoveable: false,
-        radioSelect: true}, function () {
+    grid.initMainGridHeader({
+        rowMoveable: false,
+        radioSelect: true
+    }, function () {
         grid.initMainGridContent();
     });
 };

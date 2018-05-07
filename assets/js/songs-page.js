@@ -2,6 +2,7 @@ import * as fg from 'flexible-grid';
 import {defaultGridOptions} from './flexible-grid';
 import * as ah from './audio-handler';
 import {log, deepCopy, getUrl} from 'utils';
+import {postRequest, uploadRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -275,17 +276,17 @@ const showCreateDatabaseDialog = function (errorMessage) {
     ce.dialogModalOkBtn.one('click', function () {
         ce.dialogModal.modal('hide');
         let url = getUrl('send-request', 'koe/create-database');
-        let value = inputText.val();
+        let databaseName = inputText.val();
         inputText.val('');
 
-        $.post(url, {name: value}, function (err) {
+        $.post(url, {name: databaseName}, function (res) {
             ce.dialogModal.modal('hide');
             ce.dialogModal.one('hidden.bs.modal', function () {
-                if (err) {
-                    showCreateDatabaseDialog(err);
+                if (res.success) {
+                    location.reload();
                 }
                 else {
-                    location.reload();
+                    showCreateDatabaseDialog(res.error);
                 }
             });
         });
@@ -314,54 +315,16 @@ const initUploadSongsBtn = function () {
         csvUploadSubmitBtn.click();
     });
 
-    const responseHandler = function (response) {
-        let message = 'Files successfully imported. Page will reload shortly.';
-        let alertEl = ce.alertSuccess;
-        if (! response.success) {
-            message = `Something's wrong. The server says "${response.error}". Version not imported.
-                       But good news is your current data is still intact.`;
-            alertEl = ce.alertFailure;
-        }
-        alertEl.html(message);
-        alertEl.fadeIn().delay(4000).fadeOut(400, function () {
-            location.reload();
-        });
-    };
-
     audioUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        $.ajax({
-            url: getUrl('send-request', 'koe/import-audio-files'),
-            type: 'POST',
-            data: formData,
-            success: responseHandler,
-            // !IMPORTANT: this tells jquery to not set expectation of the content type.
-            // If not set to false it will not send the file
-            contentType: false,
-
-            // !IMPORTANT: this tells jquery to not convert the form data into string.
-            // If not set to false it will raise "IllegalInvocation" exception
-            processData: false
-        });
+        uploadRequest('koe/import-audio-files', formData);
     });
 
     csvUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        $.ajax({
-            url: getUrl('send-request', 'koe/import-audio-metadata'),
-            type: 'POST',
-            data: formData,
-            success: responseHandler,
-            // !IMPORTANT: this tells jquery to not set expectation of the content type.
-            // If not set to false it will not send the file
-            contentType: false,
-
-            // !IMPORTANT: this tells jquery to not convert the form data into string.
-            // If not set to false it will raise "IllegalInvocation" exception
-            processData: false
-        });
+        uploadRequest('koe/import-audio-metadata', formData);
     });
 };
 
@@ -370,7 +333,6 @@ const initUploadSongsBtn = function () {
  */
 const initDeleteSongsBtn = function () {
     deleteSongsBtn.click(function () {
-        let url = getUrl('send-request', 'koe/delete-songs');
         let grid_ = grid.mainGrid;
         let selectedRows = grid_.getSelectedRows();
         let numRows = selectedRows.length;
@@ -392,27 +354,20 @@ const initDeleteSongsBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
+            let postData = {
+                ids: JSON.stringify(ids),
+                database: databaseId
+            };
+            let msgGen = function (res) {
+                return res.success ?
+                    'Files successfully deleted. This page will reload' :
+                    `Something's wrong. The server says ${res.error}. Files might have been deleted.`;
+            };
+            let onSuccess = function () {
+                location.reload();
+            };
             ce.dialogModal.modal('hide');
-            $.post(
-                url, {
-                    ids: JSON.stringify(ids),
-                    database: databaseId
-                },
-                function (response) {
-                    let message = 'Files successfully deleted. This page will reload';
-                    let alertEl = ce.alertSuccess;
-                    let callback = function () {
-                        location.reload();
-                    };
-                    if (! response.success) {
-                        message = `Something's wrong. The server says ${response.error}. Files might have been deleted.`;
-                        alertEl = ce.alertFailure;
-                        callback = undefined;
-                    }
-                    alertEl.html(message);
-                    alertEl.fadeIn().delay(4000).fadeOut(400, callback);
-                }
-            );
+            postRequest('koe/delete-songs', postData, msgGen, onSuccess);
         })
     });
 };
@@ -435,18 +390,16 @@ export const run = function (commonElements) {
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
             let databaseId = this.getAttribute('database');
-
-            $.post(
-                getUrl('send-request', 'change-extra-attr-value'),
-                {
-                    'attr': currentDatabaseAttr,
-                    'klass': databaseClass,
-                    'value': databaseId
-                },
-                function () {
-                    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
-                }
-            );
+            let postData = {
+                attr: currentDatabaseAttr,
+                klass: databaseClass,
+                value: databaseId
+            };
+            let onSuccess = function () {
+                grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+            };
+            ce.dialogModal.modal('hide');
+            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);

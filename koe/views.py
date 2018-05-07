@@ -7,7 +7,6 @@ import zipfile
 
 import pydub
 from django.conf import settings
-from django.core import serializers
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
@@ -57,7 +56,7 @@ def save_history(request):
     comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
 
     segments_ids = Segment.objects.filter(segmentation__audio_file__database=database, segmentation__source='user') \
-                           .values_list('id', flat=True)
+        .values_list('id', flat=True)
 
     extra_attr_values = list(ExtraAttrValue.objects.filter(user=user, owner_id__in=segments_ids)
                              .exclude(attr__klass=User.__name__).values_list('owner_id', 'attr__id', 'value'))

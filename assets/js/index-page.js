@@ -4,6 +4,7 @@ import * as ah from './audio-handler';
 import {initSelectize} from './selectize-formatter';
 import {log, deepCopy, getUrl, getCache} from 'utils';
 import {setCache} from './utils';
+import {postRequest} from './ajax-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -49,10 +50,6 @@ class SegmentGrid extends fg.FlexibleGrid {
             });
         }
     }
-
-    rowChangeHandler(e, args) {
-        super.rowChangeHandler(e, args, generalResponseHandler);
-    }
 }
 
 export const grid = new SegmentGrid();
@@ -78,22 +75,6 @@ const similarityClass = similarityCombo.attr('cls');
 const databaseClass = databaseCombo.attr('cls');
 
 let ce;
-
-/**
- * Display error in the alert box if a request failed, and vice versa
- * @param response
- */
-const generalResponseHandler = function (response) {
-    response = JSON.parse(response);
-    let message = 'Success';
-    let alertEl = ce.alertSuccess;
-    if (! response.success) {
-        message = `Something's wrong. The server says "${response.error}".`;
-        alertEl = ce.alertFailure;
-    }
-    alertEl.html(message);
-    alertEl.fadeIn().delay(4000).fadeOut(400);
-};
 
 
 const initSlider = function () {
@@ -447,19 +428,17 @@ export const run = function (commonElements) {
         if (parent.hasClass('not-active')) {
 
             let similarityId = this.getAttribute('similarity');
+            let postData = {
+                attr: currentSimilarityAttr,
+                klass: similarityClass,
+                value: similarityId,
+                owner: similarityCombo.attr('owner-id')
+            };
+            let onSuccess = function () {
+                grid.initMainGridContent({}, focusOnGridOnInit);
+            };
 
-            $.post(
-                getUrl('send-request', 'change-extra-attr-value'),
-                {
-                    'attr': currentSimilarityAttr,
-                    'klass': similarityClass,
-                    'value': similarityId,
-                    'owner': similarityCombo.attr('owner-id')
-                },
-                function () {
-                    grid.initMainGridContent({}, focusOnGridOnInit);
-                }
-            );
+            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
 
             /* Update the button */
             similarityCombo.attr('similarity', similarityId);
@@ -474,18 +453,14 @@ export const run = function (commonElements) {
         let parent = $(this).parent();
         if (parent.hasClass('not-active')) {
             let databaseId = this.getAttribute('database');
+            let postData = {attr: currentDatabaseAttr,
+                klass: databaseClass,
+                value: databaseId};
+            let onSuccess = function () {
+                grid.initMainGridContent({}, focusOnGridOnInit);
+            };
 
-            $.post(
-                getUrl('send-request', 'change-extra-attr-value'),
-                {
-                    'attr': currentDatabaseAttr,
-                    'klass': databaseClass,
-                    'value': databaseId
-                },
-                function () {
-                    grid.initMainGridContent({}, focusOnGridOnInit);
-                }
-            );
+            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
@@ -603,27 +578,24 @@ const setLabel = function (field) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
             }
 
-            $.post(
-                getUrl('send-request', 'set-property-bulk'),
-                {
-                    ids: JSON.stringify(ids),
-                    field,
-                    value,
-                    'grid-type': grid.gridType
-                },
-                function (msg) {
-                    for (let i = 0; i < numRows; i++) {
-                        let row = selectedRows[i];
-                        let item = selectedItems[i];
-                        item[field] = value;
-                        grid_.invalidateRow(row);
-                    }
-                    grid_.render();
-                    ce.dialogModal.modal('hide');
-                    generalResponseHandler(msg);
-                }
-            );
+            let postData = {
+                ids: JSON.stringify(ids),
+                field,
+                value,
+                'grid-type': grid.gridType
+            };
 
+            let onSuccess = function () {
+                for (let i = 0; i < numRows; i++) {
+                    let row = selectedRows[i];
+                    let item = selectedItems[i];
+                    item[field] = value;
+                    grid_.invalidateRow(row);
+                }
+                grid_.render();
+            };
+            ce.dialogModal.modal('hide');
+            postRequest('set-property-bulk', postData, null, onSuccess, null, true);
         })
     }
 };
@@ -689,30 +661,19 @@ export const postRun = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let url = getUrl('send-request', 'koe/save-history');
             let value = inputText.val();
             let databaseId = databaseCombo.attr('database');
             inputText.val('');
 
             ce.dialogModal.modal('hide');
-
-            $.post(url, {comment: value, database: databaseId}, function (res) {
-                res = JSON.parse(res);
-                let message, alertEl;
-
-                if (res.success) {
-                    let filename = res.response;
-                    message = `History saved to ${filename}. You can download it from the version control page`;
-                    alertEl = ce.alertSuccess;
-                }
-                else {
-                    message = `Something's wrong, server says ${res.error}. Version not saved.`;
-                    alertEl = ce.alertFailure;
-                }
-                ce.dialogModal.modal('hide');
-                alertEl.html(message);
-                alertEl.fadeIn().delay(4000).fadeOut(400);
-            });
+            let postData = {comment: value,
+                database: databaseId};
+            let msgGen = function (res) {
+                return res.success ?
+                    `History saved to ${res.response}. You can download it from the version control page` :
+                    `Something's wrong, server says ${res.error}. Version not saved.`;
+            };
+            postRequest('koe/save-history', postData, msgGen);
         });
     });
 };
