@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+from django.conf import settings
 from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
@@ -7,7 +8,7 @@ from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
 from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database
 from koe.utils import triu2mat, mat2triu
-from root.models import User, ExtraAttr, ExtraAttrValue
+from root.models import ExtraAttrValue
 from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
 
 window_size = 256
@@ -196,8 +197,7 @@ def get_currents(user):
     assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id', flat=True)
     databases = Database.objects.filter(id__in=assigned_databases_ids)
 
-    current_database_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-database')
-    current_database_value = ExtraAttrValue.objects.filter(attr=current_database_attr, owner_id=user.id,
+    current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database, owner_id=user.id,
                                                            user=user).first()
 
     if current_database_value:
@@ -207,8 +207,8 @@ def get_currents(user):
         current_database = databases.first()
 
     similarities = Coordinate.objects.filter(database=current_database)
-    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-similarity')
-    current_similarity_value = ExtraAttrValue.objects.filter(attr=current_similarity_attr, user=user,
+
+    current_similarity_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_similarity, user=user,
                                                              owner_id=current_database.id).first()
 
     if current_similarity_value:

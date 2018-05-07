@@ -43,6 +43,7 @@ def save_history(request):
     :return: name of the zip file created
     :version: 2.0.0
     """
+    version = 2
     comment = request.POST['comment']
     database_id = request.POST['database']
     user = request.user
@@ -54,15 +55,13 @@ def save_history(request):
         raise PermissionError('You don\'t have permission to view from this database. '
                               'Are you messing with Javascript?')
 
-    comment_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note').first()
-
     segments_ids = Segment.objects.filter(segmentation__audio_file__database=database, segmentation__source='user') \
         .values_list('id', flat=True)
 
     extra_attr_values = list(ExtraAttrValue.objects.filter(user=user, owner_id__in=segments_ids)
                              .exclude(attr__klass=User.__name__).values_list('owner_id', 'attr__id', 'value'))
 
-    meta = dict(database=database_id, user=user.id, version=2)
+    meta = dict(database=database_id, user=user.id, version=version)
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_BZIP2, False) as zip_file:
@@ -72,7 +71,11 @@ def save_history(request):
     binary_content = zip_buffer.getvalue()
 
     he = HistoryEntry.objects.create(user=user, time=datetime.datetime.now())
-    ExtraAttrValue.objects.create(owner_id=he.id, user=request.user, value=comment, attr=comment_attr)
+    heid = he.id
+
+    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=comment, attr=settings.ATTRS.history.note)
+    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=version, attr=settings.ATTRS.history.version)
+    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=database_id, attr=settings.ATTRS.history.database)
 
     filename = he.filename
     filepath = history_path(filename)

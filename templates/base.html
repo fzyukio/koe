@@ -88,7 +88,7 @@
     </div>
 </div>
 
-{% render_bundle 'main' 'js' 'JQUERY' %}
+{#{% render_bundle 'main' 'js' 'JQUERY' %}#}
 <!-- django-js-reverse -->
 <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
 
@@ -102,7 +102,7 @@
 
     var constants = {{ constants|safe }};
     for (var key in constants) {
-        if (constants.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(constants, key)) {
             window.appCache[key] = Object.freeze(constants[key]);
         }
     }

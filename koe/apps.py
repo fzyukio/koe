@@ -1,6 +1,32 @@
 import os
 
 from django.apps import AppConfig
+from django.conf import settings
+from dotmap import DotMap
+
+
+def get_builtin_attrs():
+    """
+    Query and store some built-in ExtraAttr in settings
+
+    :return: None
+    """
+    from root.models import ExtraAttr, ValueTypes, User
+    from koe.models import HistoryEntry
+
+    heCls = HistoryEntry.__name__
+
+    note_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='note', type=ValueTypes.SHORT_TEXT)
+    version_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='version', type=ValueTypes.INTEGER)
+    database_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='database', type=ValueTypes.SHORT_TEXT)
+
+    current_database_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-database')
+    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-similarity')
+
+    settings.ATTRS = DotMap(
+        history=DotMap(note=note_attr, version=version_attr, database=database_attr),
+        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr)
+    )
 
 
 class KoeConfig(AppConfig):
@@ -30,3 +56,4 @@ class KoeConfig(AppConfig):
             register_app_modules(self.name, 'grid_getters')
 
             init_tables()
+            get_builtin_attrs()

@@ -6,11 +6,12 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 
 from koe.model_utils import get_currents
-from koe.models import AudioFile, Segment
+from koe.models import AudioFile, Segment, Database
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_mask_path, spect_fft_path, audio_path
+from root.utils import spect_mask_path, spect_fft_path, audio_path, history_path
 
-__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio']
+__all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
+           'bulk_get_history_entries']
 
 
 def bulk_get_segment_info(segs, extras):
@@ -341,4 +342,45 @@ def bulk_get_segments_for_audio(segs, extras):
         ids.append(id)
         rows.append(dict(id=id, start=start, end=end))
 
+    return ids, rows
+
+
+def bulk_get_history_entries(hes, extras):
+    if isinstance(hes, QuerySet):
+        values = list(hes.values_list('id', 'filename', 'time', 'user__username', 'user__id'))
+    else:
+        values = list([(x.id, x.filename, x.time, x.user.username, x.user.id) for x in hes])
+
+    ids = list([x[0] for x in values])
+    users = list([x[-1] for x in values])
+
+    extra_attr_values = ExtraAttrValue.objects\
+        .filter(owner_id__in=ids, user__id__in=users, attr__in=settings.ATTRS.history.values()) \
+        .values_list('owner_id', 'attr__name', 'value')
+
+    database_map = {x[0]: x[1] for x in Database.objects.all().values_list('id', 'name')}
+
+    extra_attr_values_lookup = {}
+    for id, attr, value in extra_attr_values:
+        if id not in extra_attr_values_lookup:
+            extra_attr_values_lookup[id] = {}
+        extra_attr_dict = extra_attr_values_lookup[id]
+
+        if attr == 'database':
+            extra_attr_dict[attr] = database_map[value]
+        else:
+            extra_attr_dict[attr] = value
+
+    rows = []
+    for id, filename, time, username, userid in values:
+        ids.append(id)
+        url = '[{}]({})'.format(history_path(filename, for_url=True), filename)
+        row = dict(id=id, url=url, creator=username, time=time)
+
+        extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
+
+        for attr in extra_attr_dict:
+            row[attr] = extra_attr_dict[attr]
+
+        rows.append(row)
     return ids, rows

@@ -145,6 +145,7 @@ tables = \
         },
         "version-grid": {
             "class": "koe.HistoryEntry",
+            "getter": "koe.bulk_get_history_entries",
             "columns": [
                 {
                     "name": "Created by",
@@ -167,6 +168,18 @@ tables = \
                     "slug": "note",
                     "type": "SHORT_TEXT",
                     "editable": True,
+                    "is_extra_attr": True
+                },
+                {
+                    "name": "Format version",
+                    "slug": "version",
+                    "type": "INTEGER",
+                    "is_extra_attr": True
+                },
+                {
+                    "name": "Database",
+                    "slug": "database",
+                    "type": "SHORT_TEXT",
                     "is_extra_attr": True
                 }
             ]

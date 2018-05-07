@@ -3,18 +3,20 @@ import os
 import pickle
 from logging import warning
 
+import django.db.models.options as options
 import numpy as np
 from django.db import models
-from django.db.models.query import QuerySet
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-import django.db.models.options as options
 
 from koe.utils import base64_to_array, array_to_base64
-from root.models import StandardModel, SimpleModel, ExtraAttr, ExtraAttrValue, User, \
-    AutoSetterGetterMixin, \
-    IdSafeModel, ValueTypes, MagicChoices
+from root.models import StandardModel, SimpleModel, User, AutoSetterGetterMixin, \
+    IdSafeModel, MagicChoices
 from root.utils import wav_path, history_path, ensure_parent_folder_exists, pickle_path
+
+
+__all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission',
+           'DatabaseAssignment', 'AudioFile', 'Segment', 'Segmentation', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
 
 
 class NumpyArrayField(models.TextField):
@@ -340,67 +342,6 @@ class HistoryEntry(StandardModel):
         """
         self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S'))
         super(HistoryEntry, self).save(*args, **kwargs)
-
-    @classmethod
-    def get_url(cls, objs, extras):
-        """
-        :return: a dict with key=id and value=the Markdown-styled url
-        """
-        if isinstance(objs, QuerySet):
-            values_list = objs.values_list('id', 'filename')
-        else:
-            values_list = [(x.id, x.filename) for x in objs]
-
-        retval = {}
-
-        for id, filename in values_list:
-            url = '{}'.format(history_path(filename, for_url=True))
-            retval[id] = '[{}]({})'.format(url, filename)
-
-        return retval
-
-    @classmethod
-    def get_creator(cls, objs, extras):
-        """
-        We need this because otherwise the table will display user ID
-        :return: a dict with key=id and value=name of the user.
-        """
-        if isinstance(objs, QuerySet):
-            values_list = objs.values_list('id', 'user__username')
-        else:
-            values_list = [(x.id, x.user.username) for x in objs]
-
-        retval = {}
-
-        for id, username in values_list:
-            retval[id] = username
-
-        return retval
-
-    @classmethod
-    def get_note(cls, objs, extras):
-        if isinstance(objs, QuerySet):
-            values_list = objs.values_list('id', 'user__id')
-        else:
-            values_list = [(x.id, x.user.username) for x in objs]
-
-        id_to_user = {x: y for x, y in values_list}
-
-        ids = list(id_to_user.keys())
-        users = list(id_to_user.values())
-
-        note_attr, _ = ExtraAttr.objects.get_or_create(klass=cls.__name__, name='note', type=ValueTypes.SHORT_TEXT)
-
-        note_attr_values = ExtraAttrValue.objects.filter(owner_id__in=ids, user__id__in=users, attr=note_attr) \
-            .values_list('owner_id', 'user__id', 'value')
-
-        retval = {x: None for x in ids}
-
-        for id, userid, note in note_attr_values:
-            if id_to_user[id] == userid:
-                retval[id] = note
-
-        return retval
 
 
 @receiver(post_delete, sender=HistoryEntry)
