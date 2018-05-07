@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from django.conf import settings
 from django.db.models.functions import Lower
@@ -33,7 +34,10 @@ def bulk_get_segment_info(segs, extras):
                                        'segmentation__audio_file__track__name',
                                        'segmentation__audio_file__track__date',
                                        'segmentation__audio_file__individual__name',
-                                       'segmentation__audio_file__individual__gender'))
+                                       'segmentation__audio_file__individual__gender',
+                                       'segmentation__audio_file__individual__species__genus',
+                                       'segmentation__audio_file__individual__species__species'
+                                       ))
     else:
         values = [(x.id, x.start_time_ms, x.end_time_ms, x.mean_ff, x.min_ff, x.max_ff,
                    x.segmentation.audio_file.name,
@@ -42,7 +46,9 @@ def bulk_get_segment_info(segs, extras):
                    x.segmentation.audio_file.track.name,
                    x.segmentation.audio_file.track.date,
                    x.segmentation.audio_file.individual.name,
-                   x.segmentation.audio_file.individual.gender) for x in segs
+                   x.segmentation.audio_file.individual.gender,
+                   x.segmentation.audio_file.individual.species.genus,
+                   x.segmentation.audio_file.individual.species.species) for x in segs
                   if x.segmentation.audio_file.database == current_database]
 
     segids = [str(x[0]) for x in values]
@@ -83,18 +89,25 @@ def bulk_get_segment_info(segs, extras):
 
     ids = []
     for i in range(nrows):
-        id, start, end, mean_ff, min_ff, max_ff, song, song_id, quality, track, date, individual, gender = \
-            values[i]
+        id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
+            species = values[i]
         ids.append(id)
 
         index = indices[i]
         mask_img = spect_mask_path(str(id), for_url=True)
+
+        if not os.path.isfile('/' + mask_img):
+            mask_img = ''
+
         spect_img = spect_fft_path(str(id), 'syllable', for_url=True)
         duration = end - start
-        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song, signal_mask=mask_img,
+        species_str = '{} {}'.format(genus, species)
+        url = reverse('segmentation', kwargs={'file_id': song_id})
+        url = '[{}]({})'.format(url, song_name)
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url, signal_mask=mask_img,
                    dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
                    song_quality=quality, song_date=date, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
-                   spectrogram=spect_img)
+                   spectrogram=spect_img, species=species_str)
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(str(song_id), {})
 
@@ -168,6 +181,10 @@ def bulk_get_exemplars(objs, extras):
                 else:
                     mask_img = ''
                     spect_img = ''
+
+                if not os.path.isfile('/' + mask_img):
+                    mask_img = ''
+
                 row['exemplar{}_mask'.format(i + 1)] = mask_img
                 row['exemplar{}_spect'.format(i + 1)] = spect_img
 
@@ -284,7 +301,7 @@ def bulk_get_song_sequences(all_songs, extras):
         rows.append(row)
 
     # Now we have to deal with songs without any segmentation done
-    empty_songs = all_songs.exclude(id__in=songs.keys())\
+    empty_songs = all_songs.exclude(id__in=songs.keys()) \
         .values_list('name', 'id', 'quality', 'length', 'fs', 'track__name', 'track__date', 'individual__name',
                      'individual__gender', 'individual__species__genus', 'individual__species__species')
 

@@ -38,6 +38,11 @@ tables = \
                 {
                     "name": "Song",
                     "slug": "song",
+                    "type": "URL"
+                },
+                {
+                    "name": "Species",
+                    "slug": "species",
                     "type": "SHORT_TEXT"
                 },
                 {
