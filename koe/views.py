@@ -120,7 +120,8 @@ def get_segment_audio(request):
 
     if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
-        with open(audio_file.file_path, 'rb') as f:
+        compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
+        with open(compressed_url, 'rb') as f:
             binary_content = f.read()
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
