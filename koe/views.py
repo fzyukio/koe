@@ -12,6 +12,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 
+from koe import wavfile
 from koe.model_utils import get_currents, extract_spectrogram
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack
@@ -124,17 +125,18 @@ def get_segment_audio(request):
         start = segment.start_time_ms
         end = segment.end_time_ms
 
-        exts = [settings.AUDIO_COMPRESSED_FORMAT, 'wav']
-        for ext in exts:
-            file_url = audio_path(audio_file.name, ext, for_url=False)
-            if os.path.isfile(file_url):
-                song = pydub.AudioSegment.from_file(file_url)
-                audio_segment = song[start:end]
-                audio_segment = match_target_amplitude(audio_segment, -10)
+        wav_url = os.path.join(settings.BASE_DIR, audio_file.file_path)
+        chunk = wavfile.read_segment(wav_url, start, end, mono=True, normalised=False)
 
-                out = io.BytesIO()
-                audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
-                binary_content = out.getvalue()
+        audio_segment = pydub.AudioSegment(
+            chunk.tobytes(),
+            frame_rate=audio_file.fs,
+            sample_width=chunk.dtype.itemsize,
+            channels=1
+        )
+        out = io.BytesIO()
+        audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
+        binary_content = out.getvalue()
 
     response = HttpResponse()
     response.write(binary_content)
