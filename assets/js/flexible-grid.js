@@ -218,7 +218,10 @@ export class FlexibleGrid {
             'property': JSON.stringify(itemSimplified)
         };
 
-        postRequest('change-properties', postData, null, onSuccess, onFailure, true);
+        postRequest({requestSlug: 'change-properties',
+            data: postData,
+            onSuccess,
+            onFailure});
     }
 
     /**
@@ -300,7 +303,9 @@ export class FlexibleGrid {
             }
         };
 
-        postRequest('get-grid-column-definition', data, null, onSuccess, null, true);
+        postRequest({requestSlug: 'get-grid-column-definition',
+            data,
+            onSuccess});
     }
 
     redrawMainGrid(args, callback) {
@@ -370,7 +375,9 @@ export class FlexibleGrid {
             }
         };
 
-        postRequest('get-grid-content', args, null, onSuccess, null, true);
+        postRequest({requestSlug: 'get-grid-content',
+            data: args,
+            onSuccess});
     }
 
     getSelectedRows() {

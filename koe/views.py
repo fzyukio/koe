@@ -12,8 +12,10 @@ from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
 from django.views.generic import TemplateView
+from dotmap import DotMap
 
 from koe import wavfile
+from koe.grid_getters import _get_sequence_info_empty_songs, bulk_get_segments_for_audio
 from koe.model_utils import get_currents, extract_spectrogram
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack
@@ -229,11 +231,14 @@ def import_audio_files(request):
     user = request.user
     files = request.FILES.getlist('files', None)
     database_id = request.POST.get('database', None)
+    cls = request.POST.get('cls', None)
 
     if not files:
         raise ValueError('No files uploaded. Abort.')
     if not database_id:
         raise ValueError('No database specified. Abort.')
+    if not cls:
+        raise ValueError('No class specified. Abort.')
 
     database = Database.objects.filter(id=database_id).first()
     if not database:
@@ -242,6 +247,8 @@ def import_audio_files(request):
     db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
     if db_assignment is None or not db_assignment.can_add_files():
         raise PermissionError('You don\'t have permission to upload files to this database')
+
+    added_files = []
 
     for f in files:
         file = File(file=f)
@@ -272,9 +279,11 @@ def import_audio_files(request):
 
         fs = audio.frame_rate
         length = audio.raw_data.__len__() // audio.frame_width
-        AudioFile.objects.create(name=unique_name, length=length, fs=fs, database=database)
+        audio_file = AudioFile.objects.create(name=unique_name, length=length, fs=fs, database=database)
+        added_files.append(audio_file)
 
-    return True
+    _, rows = _get_sequence_info_empty_songs(added_files)
+    return rows
 
 
 def import_audio_metadata(request):
@@ -504,7 +513,9 @@ def save_segmentation(request):
 
     extract_spectrogram(segmentation)
 
-    return True
+    segments = Segment.objects.filter(segmentation=segmentation)
+    _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id))
+    return rows
 
 
 class IndexView(TemplateView):

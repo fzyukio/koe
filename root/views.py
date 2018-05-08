@@ -277,7 +277,7 @@ def set_property_bulk(request):
         attr = column['slug']
         if attr == field:
             setter = column['setter']
-            setter(objs, value, {'user': request.user})
+            setter(objs, value, DotMap(user=request.user))
 
     return True
 
@@ -308,7 +308,7 @@ def change_properties(request):
             val = grid_row[attr]
             if 'setter' in column:
                 setter = column['setter']
-                setter([obj], val, {'user': request.user})
+                setter([obj], val, DotMap(user=request.user))
 
     return True
 

@@ -32,8 +32,21 @@ const delayOnFailure = 4000;
  * @param onFailure
  * @param immediate
  */
-export const postRequest = function (requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false) {
-    ajaxRequest(requestSlug, data, msgGen, 'POST', {}, onSuccess, onFailure, immediate)
+export const postRequest = function ({
+    requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false
+}) {
+    let type = 'POST';
+    let ajaxArgs = {};
+    ajaxRequest({
+        requestSlug,
+        data,
+        msgGen,
+        type,
+        ajaxArgs,
+        onSuccess,
+        onFailure,
+        immediate
+    })
 };
 
 /**
@@ -45,7 +58,9 @@ export const postRequest = function (requestSlug, data, msgGen, onSuccess = null
  * @param onFailure
  * @param immediate
  */
-export const uploadRequest = function (requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false) {
+export const uploadRequest = function ({
+    requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false
+}) {
     let ajaxArgs = {
         // !IMPORTANT: this tells jquery to not set expectation of the content type.
         // If not set to false it will not send the file
@@ -55,7 +70,17 @@ export const uploadRequest = function (requestSlug, data, msgGen, onSuccess = nu
         // If not set to false it will raise "IllegalInvocation" exception
         processData: false
     };
-    ajaxRequest(requestSlug, data, msgGen, 'POST', ajaxArgs, onSuccess, onFailure, immediate)
+    let type = 'POST';
+    ajaxRequest({
+        requestSlug,
+        data,
+        msgGen,
+        type,
+        ajaxArgs,
+        onSuccess,
+        onFailure,
+        immediate
+    })
 };
 
 /**
@@ -69,7 +94,10 @@ export const uploadRequest = function (requestSlug, data, msgGen, onSuccess = nu
  * @param onFailure
  * @param immediate
  */
-const ajaxRequest = function (requestSlug, data, msgGen, type = 'POST', ajaxArgs = {}, onSuccess = null, onFailure = null, immediate = false) {
+const ajaxRequest = function ({
+    requestSlug, data, msgGen, type = 'POST', ajaxArgs = {}, onSuccess = null,
+    onFailure = null, immediate = false
+}) {
     let url = getUrl('send-request', requestSlug);
     msgGen = msgGen || defaultMsgGen;
 

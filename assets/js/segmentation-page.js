@@ -170,11 +170,31 @@ const initController = function () {
             items: JSON.stringify(items),
             'file-id': fileId
         };
-        let onSuccess = function () {
-            location.reload();
+        let onSuccess = function (rows) {
+            grid.deleteAllRows();
+            grid.appendRows(rows);
+
+            let syllables = {};
+            for (let i = 0; i < rows.length; i++) {
+                let item = rows[i];
+                syllables[item.id] = item;
+            }
+            setCache('syllables', syllables);
+            viz.displaySegs(rows);
         };
         ce.dialogModal.modal('hide');
-        postRequest('koe/save-segmentation', postData, null, onSuccess, null);
+        let msgGen = function (res) {
+            return res.success ?
+                'Success' :
+                `Something's wrong. The server says ${res.error}.`;
+        };
+        postRequest({
+            requestSlug: 'koe/save-segmentation',
+            data: postData,
+            onSuccess,
+            msgGen,
+            immediate: true
+        });
     })
 };
 

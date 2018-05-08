@@ -280,6 +280,7 @@ const showCreateDatabaseDialog = function (errorMessage) {
         inputText.val('');
 
         $.post(url, {name: databaseName}, function (res) {
+            res = JSON.parse(res);
             ce.dialogModal.modal('hide');
             ce.dialogModal.one('hidden.bs.modal', function () {
                 if (res.success) {
@@ -318,13 +319,19 @@ const initUploadSongsBtn = function () {
     audioUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        uploadRequest('koe/import-audio-files', formData);
+        let onSuccess = function(rows) {
+            grid.appendRows(rows);
+        };
+        uploadRequest({requestSlug: 'koe/import-audio-files',
+            data: formData,
+            onSuccess});
     });
 
     csvUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        uploadRequest('koe/import-audio-metadata', formData);
+        uploadRequest({requestSlug: 'koe/import-audio-metadata',
+            data: formData});
     });
 };
 
@@ -360,14 +367,20 @@ const initDeleteSongsBtn = function () {
             };
             let msgGen = function (res) {
                 return res.success ?
-                    'Files successfully deleted. This page will reload' :
+                    'Files successfully deleted.' :
                     `Something's wrong. The server says ${res.error}. Files might have been deleted.`;
             };
             let onSuccess = function () {
-                location.reload();
+                for (let i = 0; i < numRows; i++) {
+                    dataView.deleteItem(ids[i]);
+                }
             };
             ce.dialogModal.modal('hide');
-            postRequest('koe/delete-songs', postData, msgGen, onSuccess);
+            postRequest({requestSlug: 'koe/delete-songs',
+                data: postData,
+                msgGen,
+                onSuccess,
+                immediate: true});
         })
     });
 };
@@ -399,7 +412,9 @@ export const run = function (commonElements) {
                 grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
             };
             ce.dialogModal.modal('hide');
-            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
+            postRequest({requestSlug: 'change-extra-attr-value',
+                data: postData,
+                onSuccess});
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);

@@ -368,7 +368,8 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
                   <i class="fa fa-play" aria-hidden="true"></i>
                 </div>`;
 
-    for (let i = 0; i < segLabels.length; i++) {
+    let nLabels = segLabels ? segLabels.length : 0;
+    for (let i = 0; i < nLabels; i++) {
         let start = segStarts[i];
         let end = segEnds[i];
         let segLabel = segLabels[i];

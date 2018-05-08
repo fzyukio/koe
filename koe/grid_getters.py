@@ -98,7 +98,7 @@ def bulk_get_segment_info(segs, extras):
         index = indices[i]
         mask_img = spect_mask_path(str(id), for_url=True)
 
-        if not os.path.isfile('/' + mask_img):
+        if not os.path.isfile(mask_img[1:]):
             mask_img = ''
 
         spect_img = spect_fft_path(str(id), 'syllable', for_url=True)
@@ -184,7 +184,7 @@ def bulk_get_exemplars(objs, extras):
                     mask_img = ''
                     spect_img = ''
 
-                if not os.path.isfile('/' + mask_img):
+                if not os.path.isfile(mask_img[1:]):
                     mask_img = ''
 
                 row['exemplar{}_mask'.format(i + 1)] = mask_img
@@ -192,6 +192,44 @@ def bulk_get_exemplars(objs, extras):
 
             rows.append(row)
             ids.append(cls)
+
+    return ids, rows
+
+
+def _get_sequence_info_empty_songs(empty_songs):
+    rows = []
+    ids = []
+
+    if isinstance(empty_songs, QuerySet):
+        values = empty_songs.values_list('name', 'id', 'quality', 'length', 'fs', 'track__name', 'track__date',
+                                         'individual__name', 'individual__gender', 'individual__species__genus',
+                                         'individual__species__species')
+    else:
+        values = []
+        for x in empty_songs:
+            track = x.track
+            individual = x.individual
+            species = individual.species if individual else None
+            x_value = [x.name, x.id, x.quality, x.length, x.fs,
+                       track.name if track else None,
+                       track.date if track else None,
+                       individual.name if individual else None,
+                       individual.gender if individual else None,
+                       species.genus if species else None,
+                       species.species if species else None]
+            values.append(x_value)
+
+    for filename, song_id, quality, length, fs, track, date, indv, gender, genus, species in values:
+        url = reverse('segmentation', kwargs={'file_id': song_id})
+        url = '[{}]({})'.format(url, filename)
+        duration_ms = round(length * 1000 / fs)
+        species_str = '{} {}'.format(genus, species)
+        row = dict(id=song_id, filename=filename, url=url, track=track, individual=indv, gender=gender,
+                   quality=quality, date=date, duration=duration_ms, species=species_str)
+        row['song-url'] = audio_path(filename, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
+
+        ids.append(song_id)
+        rows.append(row)
 
     return ids, rows
 
@@ -207,7 +245,12 @@ def bulk_get_song_sequences(all_songs, extras):
     user = extras.user
     _, _, _, current_database = get_currents(user)
 
-    all_songs = all_songs.filter(database=current_database)
+    if isinstance(all_songs, QuerySet):
+        all_songs = all_songs.filter(database=current_database)
+        song_ids = all_songs.values_list('id', flat=True)
+    else:
+        all_songs = [x.id for x in all_songs if x.database == current_database]
+        song_ids = all_songs
 
     segs = Segment.objects.filter(segmentation__audio_file__in=all_songs, segmentation__source='user') \
         .order_by('segmentation__audio_file__name', 'start_time_ms')
@@ -224,7 +267,6 @@ def bulk_get_song_sequences(all_songs, extras):
                               'segmentation__audio_file__individual__species__genus',
                               'segmentation__audio_file__individual__species__species')
     seg_ids = segs.values_list('id', flat=True)
-    song_ids = all_songs.values_list('id', flat=True)
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
     labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user) \
@@ -303,26 +345,11 @@ def bulk_get_song_sequences(all_songs, extras):
         rows.append(row)
 
     # Now we have to deal with songs without any segmentation done
-    empty_songs = all_songs.exclude(id__in=songs.keys()) \
-        .values_list('name', 'id', 'quality', 'length', 'fs', 'track__name', 'track__date', 'individual__name',
-                     'individual__gender', 'individual__species__genus', 'individual__species__species')
+    empty_songs = all_songs.exclude(id__in=songs.keys())
 
-    for filename, song_id, quality, length, fs, track, date, indv, gender, genus, species in empty_songs:
-        url = reverse('segmentation', kwargs={'file_id': song_id})
-        url = '[{}]({})'.format(url, filename)
-        duration_ms = round(length * 1000 / fs)
-        species_str = '{} {}'.format(genus, species)
-        row = dict(id=song_id, filename=filename, url=url, track=track, individual=indv, gender=gender,
-                   quality=quality, date=date, duration=duration_ms, species=species_str)
-        row['sequence'] = ''
-        row['sequence-labels'] = ''
-        row['sequence-starts'] = ''
-        row['sequence-ends'] = ''
-        row['sequence-imgs'] = ''
-        row['song-url'] = audio_path(filename, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
-
-        ids.append(song_id)
-        rows.append(row)
+    _ids, _rows = _get_sequence_info_empty_songs(empty_songs)
+    ids += _ids
+    rows += _rows
 
     return ids, rows
 
@@ -356,7 +383,7 @@ def bulk_get_history_entries(hes, extras):
     ids = list([x[0] for x in values])
     users = list([x[-1] for x in values])
 
-    extra_attr_values = ExtraAttrValue.objects\
+    extra_attr_values = ExtraAttrValue.objects \
         .filter(owner_id__in=ids, user__id__in=users, attr__in=settings.ATTRS.history.values()) \
         .values_list('owner_id', 'attr__name', 'value')
 

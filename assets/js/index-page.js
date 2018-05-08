@@ -438,7 +438,9 @@ export const run = function (commonElements) {
                 grid.initMainGridContent({}, focusOnGridOnInit);
             };
 
-            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
+            postRequest({requestSlug: 'change-extra-attr-value',
+                data: postData,
+                onSuccess});
 
             /* Update the button */
             similarityCombo.attr('similarity', similarityId);
@@ -460,7 +462,9 @@ export const run = function (commonElements) {
                 grid.initMainGridContent({}, focusOnGridOnInit);
             };
 
-            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
+            postRequest({requestSlug: 'change-extra-attr-value',
+                data: postData,
+                onSuccess});
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);
@@ -595,7 +599,9 @@ const setLabel = function (field) {
                 grid_.render();
             };
             ce.dialogModal.modal('hide');
-            postRequest('set-property-bulk', postData, null, onSuccess, null, true);
+            postRequest({requestSlug: 'set-property-bulk',
+                data: postData,
+                onSuccess});
         })
     }
 };
@@ -673,7 +679,9 @@ export const postRun = function () {
                     `History saved to ${res.response}. You can download it from the version control page` :
                     `Something's wrong, server says ${res.error}. Version not saved.`;
             };
-            postRequest('koe/save-history', postData, msgGen);
+            postRequest({requestSlug: 'koe/save-history',
+                data: postData,
+                msgGen});
         });
     });
 };

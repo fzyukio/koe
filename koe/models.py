@@ -5,15 +5,15 @@ from logging import warning
 
 import django.db.models.options as options
 import numpy as np
+from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 from koe.utils import base64_to_array, array_to_base64
 from root.models import StandardModel, SimpleModel, User, AutoSetterGetterMixin, \
-    IdSafeModel, MagicChoices
-from root.utils import wav_path, history_path, ensure_parent_folder_exists, pickle_path
-
+    IdSafeModel, MagicChoices, ExtraAttrValue
+from root.utils import wav_path, history_path, ensure_parent_folder_exists, pickle_path, audio_path
 
 __all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission',
            'DatabaseAssignment', 'AudioFile', 'Segment', 'Segmentation', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
@@ -377,3 +377,18 @@ def _mymodel_delete(sender, instance, **kwargs):
             os.remove(filepath)
         else:
             warning('File {} doesnot exist.'.format(filepath))
+
+    if isinstance(instance, AudioFile):
+        wav_file = wav_path(instance.name)
+        compressed_file = audio_path(instance.name, settings.AUDIO_COMPRESSED_FORMAT)
+
+        if os.path.isfile(wav_file):
+            os.remove(wav_file)
+            print('Removed file {}'.format(wav_file))
+        if os.path.isfile(compressed_file):
+            os.remove(compressed_file)
+            print('Removed file {}'.format(compressed_file))
+
+    instance_id = instance.id
+    instance_class = instance.__class__.__name__
+    ExtraAttrValue.objects.filter(attr__klass=instance_class, owner_id=instance_id).delete()

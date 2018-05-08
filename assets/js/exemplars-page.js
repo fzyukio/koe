@@ -312,7 +312,9 @@ export const run = function () {
                 grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
             };
 
-            postRequest('change-extra-attr-value', postData, null, onSuccess, null, true);
+            postRequest({requestSlug: 'change-extra-attr-value',
+                data: postData,
+                onSuccess});
 
             /* Update the button */
             databaseCombo.attr('database', databaseId);

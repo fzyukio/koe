@@ -29,15 +29,9 @@ let ce;
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    grid.on('row-added', function (e, args) {
+    grid.on('row-added', function () {
         applyVersionBtn.prop('disabled', false);
         deleteVersionBtn.prop('disabled', false);
-
-        let versionId = args.item.id;
-        let versionName = args.item.url;
-
-        ce.dialogModal.data('versionId', versionId).data('versionName', versionName);
-
     });
 };
 
@@ -54,27 +48,30 @@ export const orientationChange = function () {
 
 const initApplyVersionBtn = function () {
     applyVersionBtn.click(function () {
-        let versionId = ce.dialogModal.data('versionId');
-        let versionName = ce.dialogModal.data('versionName');
+        let grid_ = grid.mainGrid;
+        let selectedRow = grid_.getSelectedRows()[0];
+        let dataView = grid_.getData();
+        let item = dataView.getItem(selectedRow);
 
         ce.dialogModalTitle.html('Confirm import history');
         ce.dialogModalBody.html(`Importing history from will erase your current data.
              Make sure you have saved the current version before doing this.
-             Are you sure you want to import ${versionName}?`);
+             Are you sure you want to import ${item.url}?`);
 
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let postData = {'version-id': versionId};
+            let postData = {'version-id': item.id};
             let msgGen = function (res) {
                 return res.success ?
-                    `Verison ${versionName} successfully imported` :
+                    `Verison ${item.url} successfully imported` :
                     `Something's wrong. The server says ${res.error}. Version not imported.
                        But good news is your current data is still intact.`;
             };
-
             ce.dialogModal.modal('hide');
-            postRequest('koe/import-history', postData, msgGen);
+            postRequest({requestSlug: 'koe/import-history',
+                data: postData,
+                msgGen});
         })
     });
 };
@@ -82,26 +79,25 @@ const initApplyVersionBtn = function () {
 
 const initDeleteVersionBtn = function () {
     deleteVersionBtn.click(function () {
-        let versionId = ce.dialogModal.data('versionId');
-        let versionName = ce.dialogModal.data('versionName');
+        let grid_ = grid.mainGrid;
+        let selectedRow = grid_.getSelectedRows()[0];
+        let dataView = grid_.getData();
+        let item = dataView.getItem(selectedRow);
 
         ce.dialogModalTitle.html('Confirm delete history');
-        ce.dialogModalBody.html(`Are you sure you want to delete ${versionName}?`);
+        ce.dialogModalBody.html(`Are you sure you want to delete ${item.url}?`);
 
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let postData = {'version-id': versionId};
-            let msgGen = function (res) {
-                return res.success ?
-                    `Verison ${versionName} successfully deleted. This page will reload` :
-                    `Something's wrong. The server says ${res.error}. Version might have been deleted.`;
-            };
+            let postData = {'version-id': item.id};
             let onSuccess = function () {
-                location.reload();
+                dataView.deleteItem(item.id);
             };
             ce.dialogModal.modal('hide');
-            postRequest('koe/delete-history', postData, msgGen, onSuccess);
+            postRequest({requestSlug: 'koe/delete-history',
+                data: postData,
+                onSuccess});
         })
     });
 };
@@ -131,7 +127,9 @@ const initImportZipBtn = function () {
                 But good news is your current data is still intact.`;
         };
 
-        uploadRequest('koe/import-history', formData, msgGen);
+        uploadRequest({requestSlug: 'koe/import-history',
+            data: formData,
+            msgGen});
     });
 
 };
