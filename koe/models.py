@@ -389,6 +389,7 @@ def _mymodel_delete(sender, instance, **kwargs):
             os.remove(compressed_file)
             print('Removed file {}'.format(compressed_file))
 
-    instance_id = instance.id
-    instance_class = instance.__class__.__name__
-    ExtraAttrValue.objects.filter(attr__klass=instance_class, owner_id=instance_id).delete()
+    instance_id = getattr(instance, 'id', None)
+    if instance_id:
+        instance_class = instance.__class__.__name__
+        ExtraAttrValue.objects.filter(attr__klass=instance_class, owner_id=instance_id).delete()

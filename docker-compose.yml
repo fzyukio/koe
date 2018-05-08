@@ -1,13 +1,5 @@
 version: '3.4'
 services:
-#  webpack:
-#    container_name: koe_webpack
-#    build:
-#      context: .
-#      dockerfile: Dockerfile.build
-#      network: host
-#    volumes:
-#      - code-volume:/code
   db:
     container_name: koe_db
     image: mysql
@@ -42,15 +34,6 @@ services:
     restart: unless-stopped
     depends_on:
       - db
-#  phpmyadmin:
-#    image: phpmyadmin/phpmyadmin
-#    environment:
-#      - PMA_ARBITRARY=1
-#    restart: always
-#    ports:
-#      - 8082:80
-#    volumes:
-#      - /sessions
     volumes:
       - ./user_data:/code/user_data
   cache:

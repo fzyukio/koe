@@ -24,10 +24,10 @@ On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
 PACKAGE_NAME=package-`date "+%Y-%m-%d_%H-%M-%S"`.tar.gz
-REMOTE_ADDRESS=ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com
-REMOTE_USER=ubuntu
-WORKSPACE=/home/ubuntu/workspace/koe
-SSH_EXTRA_CREDENTIAL='-i ~/stack/koe.pem'
+REMOTE_ADDRESS=130.123.248.84
+REMOTE_USER=yukio
+WORKSPACE=/www/koe
+SSH_EXTRA_CREDENTIAL=''
 APP_NAME=koe
 
 source ./.venv/bin/activate
@@ -40,9 +40,9 @@ echo -e "${Yellow}${On_Purple}build-prod will compile javascript, sass and give 
 echo -e "${Yellow}${On_Purple} so the files can be served as static${Color_Off}"
 echo -e "${Green}${On_Black}yarn build-prod${Color_Off}"
 yarn build-prod
-echo -e "${Green}${On_Black}DJANGO_SETTINGS_MODULE=$APP_NAME.settings.production python manage.py collectstatic --noinput${Color_Off}"
+echo -e "${Green}${On_Black}python manage.py collectstatic --noinput${Color_Off}"
 
-DJANGO_SETTINGS_MODULE=$APP_NAME.settings.production python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
@@ -66,19 +66,7 @@ else
     exit
 fi
 
-
-RESULT=$?
-if [ $RESULT -eq 0 ]; then
-    echo -e "${Yellow}${On_Purple}Connect to the server and kill the current instance of the website${Color_Off}"
-    echo -e "${Yellow}${On_Purple}(we use gunicorn to run)${Color_Off}"
-    echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"pkill -f gunicorn\"${Color_Off}"
-    ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "pkill -f gunicorn"
-else
-    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
-    exit
-fi
-
-echo -e "${Yellow}${On_Purple}Also remove all old assets from the remote site${Color_Off}"
+echo -e "${Yellow}${On_Purple}Remove all old assets from the remote site${Color_Off}"
 echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"rm -rf $WORKSPACE/assets/bundles $WORKSPACE/static\"${Color_Off}"
 ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "rm -rf $WORKSPACE/assets/bundles $WORKSPACE/static"
 
@@ -98,7 +86,7 @@ fi
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
-    echo -e "${Yellow}${On_Purple}Now, run gunicorn remotely ${Color_Off}"
+    echo -e "${Yellow}${On_Purple}Now, run the app remotely ${Color_Off}"
     echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"$WORKSPACE/post-deploy.sh\"${Color_Off}"
     ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "$WORKSPACE/post-deploy.sh"
 else
@@ -126,5 +114,5 @@ else
     exit
 fi
 
-ssh $SSH_EXTRA_CREDENTIAL -i ~/stack/koe.pem ubuntu@ec2-13-228-71-75.ap-southeast-1.compute.amazonaws.com "rm $WORKSPACE/$PACKAGE_NAME"
+ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "rm $WORKSPACE/$PACKAGE_NAME"
 rm $PACKAGE_NAME

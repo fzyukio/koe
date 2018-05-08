@@ -18,3 +18,4 @@ mossop.db
 *.lprof
 *.db
 help.md
+settings.yaml

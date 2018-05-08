@@ -64,6 +64,7 @@
         "webpack": "^1.15.0",
         "webpack-bundle-tracker": "0.0.93",
         "webpack-dev-server": "^1.16.2",
+        "yamljs": "^0.3.0",
         "d3": "^3.5.17",
         "fft.js": "^4.0.3"
     },

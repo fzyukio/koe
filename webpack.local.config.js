@@ -4,7 +4,10 @@ const BundleTracker = require('webpack-bundle-tracker');
 const path = require('path');
 const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 
-const port = process.env.WEBPACK_SERVER_PORT;
+const yaml = require('yamljs');
+
+const settings = yaml.load('settings.yaml');
+const port = settings.environment_variables.WEBPACK_SERVER_PORT;
 
 baseConfig[1].entry = [
     'webpack-dev-server/client?http://localhost:' + port,
@@ -14,6 +17,7 @@ baseConfig[1].entry = [
 ];
 
 baseConfig[0].output['publicPath'] = 'http://localhost:' + port + '/assets/bundles/';
+baseConfig[0].port = port;
 baseConfig[1].output = {
     path: path.resolve('./assets/bundles/'),
     publicPath: 'http://localhost:' + port + '/assets/bundles/',

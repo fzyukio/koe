@@ -3,7 +3,10 @@ import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
 import config from './webpack.local.config';
 
-const port = process.env.WEBPACK_SERVER_PORT;
+const yaml = require('yamljs');
+
+const settings = yaml.load('settings.yaml');
+const port = config[0].port;
 
 new WebpackDevServer(webpack(config), {
     publicPath: config[1].output.publicPath,

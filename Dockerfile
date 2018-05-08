@@ -1,19 +1,7 @@
-FROM node:8 as webpack
-
-WORKDIR /code
-COPY package.json yarn.lock /code/
-RUN yarn install
-
-# separate installation of dependencies and the actual build into separate layers to speed-up rebuilding if source-code changes
-FROM webpack as wp-build
-COPY . /code
-RUN yarn build-prod-posix
-
-
 # Use an official Python runtime as a base image
-FROM python:3
+FROM python:3 as mainapp
 
-MAINTAINER Andrew Gilman
+MAINTAINER Yukio Fukuzawa
 
 ENV PYTHONUNBUFFERED 1
 
@@ -42,7 +30,7 @@ EXPOSE 8000
 
 WORKDIR /code
 
-COPY --from=wp-build /code .
+COPY . .
 
 ENTRYPOINT ["/bin/bash"]
 CMD ["run_koe_app.sh"]

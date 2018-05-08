@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
 # Reset
 Color_Off='\033[0m'       # Text Reset
 
@@ -24,37 +25,12 @@ On_White='\033[47m'       # White
 
 APP_NAME=koe
 
-DJANGODIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"             # Django project directory
-SOCKFILE=${DJANGODIR}/gunicorn.sock  # we will communicte using this unix socket
-USER=`whoami`                                        # the user to run as
-GROUP=`id -gn`                                     # the group to run as
-NUM_WORKERS=3                                     # how many worker processes should Gunicorn spawn
-DJANGO_SETTINGS_MODULE=$APP_NAME.settings             # which settings file should Django use
-DJANGO_WSGI_MODULE=$APP_NAME.wsgi                     # WSGI module name
+DJANGODIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )"
 
-echo "Starting $APP_NAME as $USER"
+echo "Starting $APP_NAME"
 echo "Current Dir is $DJANGODIR"
 
 cd ${DJANGODIR}
 
-# Activate the virtual environment
-source .venv/bin/activate
-echo -e "${Black}${On_White}Run migrate${Color_Off}"
-.venv/bin/python manage.py migrate --database=default
-
-# Create the run directory if it doesn't exist
-RUNDIR=$(dirname $SOCKFILE)
-test -d $RUNDIR || mkdir -p $RUNDIR
-
-# Start your Django Unicorn
-# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
-echo -e "${Black}${On_White}Run the app${Color_Off}"
-nohup .venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
-  --name $APP_NAME \
-  --workers $NUM_WORKERS \
-  --user=$USER \
-  --group=$GROUP \
-  --bind=unix:$SOCKFILE \
-  --log-level=debug \
-  --log-file=gunicorn.log \
-  > out.log 2> err.log < /dev/null &
+docker-compose build
+docker-compose up -d
