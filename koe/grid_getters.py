@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 from django.conf import settings
 from django.db.models.functions import Lower
@@ -21,7 +22,7 @@ def bulk_get_segment_info(segs, extras):
     :param extras: Must specify the user to get the correct ExtraAttrValue columns
     :return: [row]
     """
-    user = extras['user']
+    user = extras.user
     similarities, current_similarity, databases, current_database = get_currents(user)
 
     rows = []
@@ -132,8 +133,8 @@ def bulk_get_exemplars(objs, extras):
     :param extras: must contain key 'class', value can be one of 'label', 'label_family', 'label_subfamily'
     :return:
     """
-    cls = extras['cls']
-    user = extras['user']
+    cls = extras.cls
+    user = extras.user
     _, _, _, current_database = get_currents(user)
 
     if isinstance(objs, QuerySet):
@@ -202,8 +203,8 @@ def bulk_get_song_sequences(all_songs, extras):
     :param extras:
     :return:
     """
-    cls = extras['cls']
-    user = extras['user']
+    cls = extras.cls
+    user = extras.user
     _, _, _, current_database = get_currents(user)
 
     all_songs = all_songs.filter(database=current_database)
@@ -333,7 +334,7 @@ def bulk_get_segments_for_audio(segs, extras):
     :param extras: must contain 'file_id', which is the ID of the audio
     :return: the usual stuff
     """
-    file_id = extras['file_id']
+    file_id = extras.file_id
     segs = segs.filter(segmentation__audio_file=file_id)
     values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
     ids = []
@@ -346,6 +347,7 @@ def bulk_get_segments_for_audio(segs, extras):
 
 
 def bulk_get_history_entries(hes, extras):
+    tz = extras.tz
     if isinstance(hes, QuerySet):
         values = list(hes.values_list('id', 'filename', 'time', 'user__username', 'user__id'))
     else:
@@ -375,7 +377,11 @@ def bulk_get_history_entries(hes, extras):
     for id, filename, time, username, userid in values:
         ids.append(id)
         url = '[{}]({})'.format(history_path(filename, for_url=True), filename)
-        row = dict(id=id, url=url, creator=username, time=time)
+        tztime = time.astimezone(tz)
+
+        # request.session['detected_tz']
+
+        row = dict(id=id, url=url, creator=username, time=tztime)
 
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
 

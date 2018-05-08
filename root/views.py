@@ -5,12 +5,15 @@ import traceback
 from collections import OrderedDict
 
 from django.conf import settings
+from django.utils import timezone
 from django.db.models.base import ModelBase
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
+from dotmap import DotMap
 from opbeat import Client
+from tz_detect.utils import offset_to_timezone
 
 from koe import jsons
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
@@ -230,8 +233,11 @@ def get_grid_content(request):
     :return:
     """
     today = datetime.date.today()
-    now = datetime.datetime.now()
-    extras = dict(today=today, now=now, user=request.user)
+    now = timezone.now()
+    tz_offset = request.session['detected_tz']
+    tz = offset_to_timezone(tz_offset)
+
+    extras = DotMap(today=today, now=now, user=request.user, tz=tz)
     grid_type = request.POST['grid-type']
     for key in request.POST:
         if key.startswith('__extra__'):

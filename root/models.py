@@ -319,7 +319,7 @@ class AutoSetterGetterMixin:
         :param extras: must contain the user that is associated with these ExtraAttr
         :return: A dict of format {id -> value}
         """
-        user = extras['user']
+        user = extras.user
 
         if isinstance(objs, QuerySet):
             objids = list(objs.values_list('id', flat=True))
@@ -346,7 +346,7 @@ class AutoSetterGetterMixin:
         :param extras: must contain the user that is associated with these ExtraAttr
         :return: None
         """
-        user = extras['user']
+        user = extras.user
 
         if isinstance(objs, QuerySet):
             ids = objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True)

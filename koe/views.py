@@ -7,6 +7,7 @@ import zipfile
 
 import pydub
 from django.conf import settings
+from django.utils import timezone
 from django.core.files import File
 from django.db import transaction
 from django.http import HttpResponse
@@ -70,7 +71,7 @@ def save_history(request):
 
     binary_content = zip_buffer.getvalue()
 
-    he = HistoryEntry.objects.create(user=user, time=datetime.datetime.now())
+    he = HistoryEntry.objects.create(user=user, time=timezone.now())
     heid = he.id
 
     ExtraAttrValue.objects.create(owner_id=heid, user=user, value=comment, attr=settings.ATTRS.history.note)

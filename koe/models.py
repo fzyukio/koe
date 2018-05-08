@@ -340,7 +340,7 @@ class HistoryEntry(StandardModel):
         :param kwargs:
         :return:
         """
-        self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S'))
+        self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S_%Z'))
         super(HistoryEntry, self).save(*args, **kwargs)
 
 

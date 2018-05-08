@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django_js_reverse',
     'webpack_loader',
     'widget_tweaks',
+    'tz_detect',
 
     'wagtail.contrib.forms',
     'wagtail.contrib.redirects',
@@ -67,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tz_detect.middleware.TimezoneMiddleware',
 ]
 
 ROOT_URLCONF = 'koe.urls'
@@ -106,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-nz'
 
-TIME_ZONE = 'Pacific/Auckland'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -210,9 +212,7 @@ def JSONEncoder_newdefault(self, obj):
     :return: the JSONified string
     """
     if isinstance(obj, datetime.datetime):
-        if obj.utcoffset() is not None:
-            obj = obj - obj.utcoffset()
-        return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return obj.strftime('%Y-%m-%d %H:%M:%S %z%Z')
     elif isinstance(obj, datetime.date):
         return obj.strftime('%Y-%m-%d')
     return JSONEncoder_olddefault(self, obj)
@@ -221,3 +221,5 @@ def JSONEncoder_newdefault(self, obj):
 JSONEncoder.default = JSONEncoder_newdefault
 
 AUDIO_COMPRESSED_FORMAT = 'ogg'
+
+TZ_DETECT_COUNTRIES = ('NZ', 'AU', 'GB', 'US', 'CA', 'CN', 'JP', 'FR', 'DE')

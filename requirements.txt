@@ -95,3 +95,4 @@ pydub
 flake8-docstrings
 uwsgi
 django-extensions
+django-tz-detect
