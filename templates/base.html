@@ -1,6 +1,7 @@
 {% load render_bundle from webpack_loader %}
 {% load static %}
 {% load custom_tags %}
+{% load tz_detect %}
 
 <!doctype html>
 <html class="no-js" lang="en">
@@ -104,8 +105,9 @@
             window.appCache[key] = Object.freeze(constants[key]);
         }
     }
-
 </script>
+
+{% tz_detect %}
 
 {% block scripts %}{% endblock %}
 </body>
