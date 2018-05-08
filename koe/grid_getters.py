@@ -403,12 +403,18 @@ def bulk_get_history_entries(hes, extras):
     rows = []
     for id, filename, time, username, userid in values:
         ids.append(id)
-        url = '[{}]({})'.format(history_path(filename, for_url=True), filename)
         tztime = time.astimezone(tz)
 
-        # request.session['detected_tz']
+        url_path = history_path(filename, for_url=True)
+        local_file_path = url_path[1:]
+        if os.path.isfile(local_file_path):
+            file_size = os.path.getsize(local_file_path) / 1024
+            url = '[{}]({})'.format(url_path, filename)
+        else:
+            url = 'File is missing'
+            file_size = 0
 
-        row = dict(id=id, url=url, creator=username, time=tztime)
+        row = dict(id=id, url=url, creator=username, time=tztime, size=file_size)
 
         extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
 

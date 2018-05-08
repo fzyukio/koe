@@ -181,6 +181,12 @@ tables = \
                     "slug": "database",
                     "type": "SHORT_TEXT",
                     "is_extra_attr": True
+                },
+                {
+                    "name": "Size (kb)",
+                    "slug": "size",
+                    "type": "FLOAT",
+                    "is_extra_attr": True
                 }
             ]
         },
