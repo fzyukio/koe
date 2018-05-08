@@ -1,5 +1,7 @@
 {% extends 'base-with-grid-and-footer.html' %}
 
+{% block title %}Sequence{% endblock %}
+
 {% block content-grid %}
 
     <div id="controller-wrapper">
@@ -84,6 +86,7 @@
                 <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
                     <input type="file" multiple name="files" accept="audio/wav">
                     <input class="database-value" name="database" type="text" value="{{ current_database.0 }}">
+                    <input name="cls" type="text" value="{{ cls }}">
                     <input type="submit">
                 </form>
                 <form id="csv-upload-form" method="post" enctype="multipart/form-data" style="display: none">
