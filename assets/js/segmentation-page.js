@@ -4,6 +4,7 @@ import * as vs from 'visualise-d3';
 import {defaultGridOptions} from './flexible-grid';
 import {deepCopy, getUrl, setCache, getCache} from './utils';
 import {postRequest} from './ajax-handler';
+import {visualiseSpectrogram} from './visualise-d3';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
@@ -53,6 +54,7 @@ class Grid extends fg.FlexibleGrid {
         let dataView = self.mainGrid.getData();
         let sylId = target.getAttribute('syl-id');
         let sylIdx = dataView.getIdxById(sylId);
+        let item = dataView.getItemById(sylId);
 
         /*
          * Scroll the table to this position, this is necessary because if the cell is currently overflow, getCellNode()
@@ -71,6 +73,22 @@ class Grid extends fg.FlexibleGrid {
                 rowElement.removeClass('highlight');
             }
         }
+
+
+        let data = new FormData();
+        data.append('file-id', fileId);
+        let args_ = {
+            url: getUrl('send-request', 'koe/get-segment-audio'),
+            postData: data,
+            cacheKey: fileId,
+            startSecond: null,
+            endSecond: null
+        };
+        ah.queryAndHandleAudio(args_, function (sig) {
+            viz.zoomInSyllable(item, sig);
+        });
+
+
     }
 
     /**
@@ -149,7 +167,7 @@ export const highlightSegments = function (e, args) {
 };
 
 
-const redrawSpectrogram = function(contrast) {
+const redrawSpectrogram = function (contrast) {
     let data = new FormData();
     data.append('file-id', fileId);
     let args = {
@@ -160,7 +178,7 @@ const redrawSpectrogram = function(contrast) {
         endSecond: null
     };
     ah.queryAndHandleAudio(args, function (sig) {
-        viz.visualiseSpectrogram(sig, contrast);
+        visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig, contrast);
     });
 };
 
@@ -187,17 +205,6 @@ const initController = function () {
         let newValue = speedSlider.find('.tooltip-inner').text();
         redrawSpectrogram(parseInt(newValue));
     });
-
-    // contrastSlider.on('change', function (slideEvt) {
-    // console.log(slideEvt.value);
-    // redrawSpectrogram(slideEvt.value);
-    // });
-
-    // contrastSlider.find('.slider').on('click', function () {
-    //     let newValue = contrastSlider.find('.tooltip-inner').text();
-    //     redrawSpectrogram(parseInt(newValue));
-    // });
-
 
     $('#play-song').click(function () {
         viz.playAudio();

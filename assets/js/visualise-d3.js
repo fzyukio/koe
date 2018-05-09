@@ -20,14 +20,18 @@ const globalMaxSpectPixel = 43;
  * Converts segment of a signal into spectrogram and displays it.
  * Keep in mind that the spectrogram's SVG contaims multiple images next to each other.
  * This function should be called multiple times to generate the full spectrogram
- * @param viz the Visualisation object
+ * @param spectrogramSpects
+ * @param spectHeight
+ * @param spectWidth
+ * @param imgHeight
+ * @param imgWidth
  * @param sig full audio signal
  * @param segs the segment indices to be turned into spectrogram
  * @param offset where the image starts
  * @param contrast
  * @param callback
  */
-function displaySpectrogram(viz, sig, segs, offset, contrast, callback) {
+function displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth = null, sig, segs, offset, contrast, callback) {
     let subImgWidth = segs.length;
     new Promise(function (resolve) {
         let img = new Image();
@@ -40,9 +44,9 @@ function displaySpectrogram(viz, sig, segs, offset, contrast, callback) {
             }
             let canvas = document.createElement('canvas');
             let context = canvas.getContext('2d');
-            let imgData = context.createImageData(subImgWidth, viz.imgHeight);
+            let imgData = context.createImageData(subImgWidth, imgHeight);
 
-            canvas.height = viz.imgHeight;
+            canvas.height = imgHeight;
             canvas.width = subImgWidth;
 
             spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
@@ -54,12 +58,18 @@ function displaySpectrogram(viz, sig, segs, offset, contrast, callback) {
         // This data URI is a dummy one, use it to trigger onload()
         img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
     }).then(function (dataURI) {
-        let img = viz.spectrogramSpects.append('image');
-        img.attr('height', viz.imgHeight);
+        let img = spectrogramSpects.append('image');
+        img.attr('height', imgHeight);
         img.attr('width', subImgWidth);
         img.attr('x', offset);
         img.attr('xlink:href', dataURI);
-        img.style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
+
+        if (imgWidth) {
+            img.style('transform', `scale(${spectWidth / imgWidth}, ${spectHeight / imgHeight})`);
+        }
+        else {
+            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
+        }
 
         if (typeof callback === 'function') {
             callback();
@@ -116,6 +126,31 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
 };
 
 
+export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, sig, contrast, _noverlap = noverlap) {
+    let segs = calcSegments(sig.length, nfft, _noverlap);
+    let chunks = calcSegments(segs.length, spectWidth, 0);
+
+    spectrogramSpects.selectAll('image').remove();
+
+    let removeLoading = function () {
+        $('body').removeClass('loading');
+    };
+
+    $('body').addClass('loading');
+
+    for (let i = 0; i < chunks.length; i++) {
+        let chunk = chunks[i];
+        let segBeg = chunk[0];
+        let segEnd = chunk[1];
+        let subSegs = segs.slice(segBeg, segEnd);
+
+        let callback = i == chunks.length - 1 ? removeLoading : undefined;
+
+        displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, null, sig, subSegs, segBeg, contrast, callback);
+    }
+};
+
+
 export const Visualise = function () {
     this.init = function (spectId) {
         const viz = this;
@@ -157,111 +192,128 @@ export const Visualise = function () {
         viz.spectBrush = d3.brushX();
         viz.spectBrush.extent([[viz.spectXScale.domain()[0], 0], [viz.spectXScale.domain()[1], viz.spectHeight]]);
 
-        viz.spectBrush.
-            on('start', function () {
-                viz.spectHandle.attr('display', 'unset');
-                if (!d3.event.sourceEvent) return;
-                console.log('on brushstart');
-            }).
-            on('brush', function () {
-                let endpoints = d3.event.selection;
-                if (endpoints === null) return;
+        viz.spectBrush.on('start', function () {
+            viz.spectHandle.attr('display', 'unset');
+            if (!d3.event.sourceEvent) return;
+            console.log('on brushstart');
+        }).on('brush', function () {
+            let endpoints = d3.event.selection;
+            if (endpoints === null) return;
 
-                viz.spectHandle.attr('transform', function (d, i) {
-                    return `translate(${endpoints[i]}, 0)`;
-                });
-            }).
-            on('end', function () {
-                if (!d3.event.sourceEvent) return;
-                console.log('on brushend');
-                if (d3.event.selection === null) {
+            viz.spectHandle.attr('transform', function (d, i) {
+                return `translate(${endpoints[i]}, 0)`;
+            });
+        }).on('end', function () {
+            if (!d3.event.sourceEvent) return;
+            console.log('on brushend');
+            if (d3.event.selection === null) {
 
                 /*
                  * Remove the brush means that no syllable is currently resizable
                  */
-                    setCache('resizeable-syl-id', undefined, undefined);
-                    debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
+                setCache('resizeable-syl-id', undefined, undefined);
+                debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
+            }
+            else {
+                let endpoints = d3.event.selection.map(viz.spectXScale.invert);
+                let start = Math.floor(endpoints[0]);
+                let end = Math.ceil(endpoints[1]);
+
+                console.log('start= ' + start + ' end=' + end);
+
+                let syllables = getCache('syllables') || {};
+                let sylIdx = getCache('resizeable-syl-id');
+
+                if (sylIdx === undefined) {
+                    let newId = `new:${uuid4()}`;
+                    let newSyllable = {
+                        id: newId,
+                        start,
+                        end,
+                    };
+                    syllables[newId] = newSyllable;
+
+                    viz.eventNotifier.trigger('segment-changed', {
+                        type: 'segment-created',
+                        target: newSyllable
+                    });
+
+                    setCache('syllables', undefined, syllables);
+
+                    // Clear the brush right away
+                    viz.clearBrush();
                 }
                 else {
-                    let endpoints = d3.event.selection.map(viz.spectXScale.invert);
-                    let start = Math.floor(endpoints[0]);
-                    let end = Math.ceil(endpoints[1]);
+                    syllables[sylIdx].start = start;
+                    syllables[sylIdx].end = end;
 
-                    console.log('start= ' + start + ' end=' + end);
-
-                    let syllables = getCache('syllables') || {};
-                    let sylIdx = getCache('resizeable-syl-id');
-
-                    if (sylIdx === undefined) {
-                        let newId = `new:${uuid4()}`;
-                        let newSyllable = {
-                            id: newId,
-                            start,
-                            end,
-                        };
-                        syllables[newId] = newSyllable;
-
-                        viz.eventNotifier.trigger('segment-changed', {
-                            type: 'segment-created',
-                            target: newSyllable
-                        });
-
-                        setCache('syllables', undefined, syllables);
-
-                        // Clear the brush right away
-                        viz.clearBrush();
-                    }
-                    else {
-                        syllables[sylIdx].start = start;
-                        syllables[sylIdx].end = end;
-
-                        viz.eventNotifier.trigger('segment-changed', {
-                            type: 'segment-adjusted',
-                            target: syllables[sylIdx]
-                        });
-                    }
-
-                    viz.displaySegs(syllables);
+                    viz.eventNotifier.trigger('segment-changed', {
+                        type: 'segment-adjusted',
+                        target: syllables[sylIdx]
+                    });
                 }
-            });
+
+                viz.displaySegs(syllables);
+            }
+        });
 
         viz.spectBrushEl = viz.spectrogramSvg.append('g').attr('class', 'spect-brush');
         viz.spectBrushEl.call(viz.spectBrush);
 
-        viz.spectHandle = viz.spectBrushEl.selectAll('.brush-handle');
-        viz.spectHandle.data([{type: 'w'}, {type: 'e'}]).enter();
-        viz.spectHandle.append('path');
-        viz.spectHandle.attr('class', 'brush-handle');
-        viz.spectHandle.attr('d', resizePath);
-        viz.spectHandle.attr('cursor', 'ew-resize');
-        viz.spectHandle.attr('cursor', 'ew-resize');
-        viz.spectHandle.attr('display', 'none');
+        viz.spectHandle = viz.spectBrushEl.selectAll('.brush-handle').data([{type: 'w'}, {type: 'e'}]).
+            enter().append('path').attr('class', 'brush-handle').attr('d', resizePath).
+            attr('cursor', 'ew-resize').attr('cursor', 'ew-resize').attr('display', 'none');
 
     };
 
-    this.visualiseSpectrogram = function (sig, contrast) {
+    this.zoomInSyllable = function (item, sig) {
         const viz = this;
-        let segs = calcSegments(sig.length, nfft, noverlap);
-        let chunks = calcSegments(segs.length, viz.spectWidth, 0);
 
-        viz.spectrogramSpects.selectAll('image').remove();
+        let fileLength = getCache('file-length');
+        let fileFs = getCache('file-fs');
+        let durationMs = fileLength * 1000 / fileFs;
+        let itemStartMs = item.start;
+        let itemEndMs = item.end;
+        let itemDurationMs = itemEndMs - itemStartMs;
 
-        let removeLoading = function () {
-            $('body').removeClass('loading');
-        };
 
-        $('body').addClass('loading');
+        let sigStart = Math.ceil(itemStartMs / durationMs * sig.length);
+        let sigEnd = Math.floor(itemEndMs / durationMs * sig.length);
+        let subSig = sig.subarray(sigStart, sigEnd);
 
-        for (let i = 0; i < chunks.length; i++) {
-            let chunk = chunks[i];
-            let segBeg = chunk[0];
-            let segEnd = chunk[1];
-            let subSegs = segs.slice(segBeg, segEnd);
+        let _nfft = nfft;
+        let _noverlap = _nfft * 7 / 8;
 
-            let callback = i == chunks.length - 1 ? removeLoading : undefined;
+        let segs = calcSegments(subSig.length, _nfft, _noverlap);
+        let imgWidth = segs.length;
+        let imgHeight = _nfft / 2;
 
-            displaySpectrogram(viz, sig, subSegs, segBeg, contrast, callback);
-        }
+        let spectXExtent = [itemStartMs, itemEndMs];
+        let spectXScale = d3.scaleLinear().range([0, imgWidth]).domain(spectXExtent);
+
+        d3.select('#spect-zoom').select('svg').remove();
+        let spectZoomSvg = d3.select('#spect-zoom').append('svg');
+
+        let spectWidth = $('#spect-zoom').width() - viz.margin.left - viz.margin.right;
+        let spectHeight = $('#spect-zoom').height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
+
+        spectZoomSvg.attr('height', spectHeight + viz.margin.top + viz.margin.bottom);
+        spectZoomSvg.attr('width', spectWidth + viz.margin.left + viz.margin.right);
+
+        /*
+         * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
+         */
+        let numTicks = itemDurationMs / tickInterval * 3;
+        let xAxis = d3.axisBottom().scale(spectXScale).ticks(numTicks);
+
+        let spectrogramSpects = spectZoomSvg.append('g').classed('spects', true);
+
+        let spectrogramAxis = spectZoomSvg.append('g');
+        spectrogramAxis.attr('class', 'x axis');
+        spectrogramAxis.attr('transform', 'translate(0,' + spectHeight + ')');
+        spectrogramAxis.call(xAxis);
+
+        displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, subSig, segs, 0, 0);
     };
 
     this.visualise = function (fileId, sig) {
@@ -288,7 +340,6 @@ export const Visualise = function () {
 
         let spectXExtent = [0, durationMs];
         viz.spectXScale = d3.scaleLinear().range([0, imgWidth]).domain(spectXExtent);
-        viz.spectYScale = d3.scaleLinear().range([0, imgHeight]).domain([0, 1]);
 
         viz.imgHeight = imgHeight;
         viz.imgWidth = imgWidth;
@@ -326,7 +377,7 @@ export const Visualise = function () {
         viz.playbackIndicator.style('stroke', 'black');
         viz.playbackIndicator.style('fill', 'none');
 
-        viz.visualiseSpectrogram(sig);
+        visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig);
 
         viz.drawBrush()
     };

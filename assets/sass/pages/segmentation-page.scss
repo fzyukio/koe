@@ -9,6 +9,24 @@ $spectrogram-height: 200px;
 $scrollbar-height: 10px;
 $axis-height: 30px;
 
+.axis {
+  text {
+    font: 10px sans-serif;
+  }
+  path {
+    display: none;
+  }
+  line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  .domain, .tick line {
+    fill: none;
+    stroke: black;
+  }
+}
+
 #visualisation {
   #spectrogram {
     height: calc(#{$spectrogram-height} + #{$scrollbar-height} + #{$axis-height});
@@ -50,7 +68,6 @@ $axis-height: 30px;
   }
 
   .axis {
-    //height: $axis-height;
     text {
       font: 10px sans-serif;
     }
@@ -147,6 +164,29 @@ $axis-height: 30px;
   height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
+#spect-zoom {
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
+
+  .axis {
+    text {
+      font: 10px sans-serif;
+    }
+    path {
+      display: none;
+    }
+    line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    .tick line {
+      fill: none;
+      stroke: black;
+    }
+  }
+
+}
+
 #controller-wrapper {
   height: $controller-wrapper-height;
   & > div {
@@ -196,7 +236,6 @@ $axis-height: 30px;
     width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
   }
 }
-
 
 .modal-dialog {
   margin: 30vh auto;
