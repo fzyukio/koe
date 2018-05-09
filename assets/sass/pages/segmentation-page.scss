@@ -95,7 +95,7 @@ $axis-height: 30px;
     }
   }
 
-  .brush .extent {
+  .brush .selection {
     stroke: #000;
     fill-opacity: .125;
     shape-rendering: crispEdges;
@@ -113,8 +113,8 @@ $axis-height: 30px;
     }
   }
 
-  .spect-brush .extent,
-  .viewport .extent {
+  .spect-brush .selection,
+  .viewport .selection {
     stroke: grey;
     fill: black;
     fill-opacity: 0.2;

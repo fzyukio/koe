@@ -1,5 +1,5 @@
 /* eslint consistent-this: off, no-console: off */
-let d3 = require('d3/d3.js');
+import * as d3 from 'd3'
 require('jquery-contextmenu');
 import {defaultCm} from './colour-map';
 
@@ -146,83 +146,107 @@ export const Visualise = function () {
     this.drawBrush = function () {
         const viz = this;
 
-        let resizePath = function (d) {
-            // Style the brush resize handles (copied-pasted code. Don't ask what the variables mean).
-            let e = Number(d === 'e'),
+        let resizePath = function (args) {
+            // Style the brush resize handles (copied-pasted code. Don't ask what the letiables mean).
+            let e = Number(args.type === 'e'),
                 x = e ? 1 : -1,
                 y = viz.spectHeight / 3;
             return `M${0.5 * x},${y}A6,6 0 0 ${e} ${6.5 * x},${y + 6}V${2 * y - 6}A6,6 0 0 ${e} ${0.5 * x},${2 * y}ZM${2.5 * x},${y + 8}V${2 * y - 8}M${4.5 * x},${y + 8}V${2 * y - 8}`;
         };
 
-        viz.spectBrush = d3.svg.brush().x(viz.spectXScale).on('brushstart', function () {
-            console.log('on brushstart');
-        }).on('brushend', function () {
-            console.log('on brushend');
-            if (viz.spectBrush.empty()) {
+        viz.spectBrush = d3.brushX();
+        viz.spectBrush.extent([[viz.spectXScale.domain()[0], 0], [viz.spectXScale.domain()[1], viz.spectHeight]]);
+
+        viz.spectBrush.
+            on('start', function () {
+                viz.spectHandle.attr('display', 'unset');
+                if (!d3.event.sourceEvent) return;
+                console.log('on brushstart');
+            }).
+            on('brush', function () {
+                let endpoints = d3.event.selection;
+                if (endpoints === null) return;
+
+                viz.spectHandle.attr('transform', function (d, i) {
+                    return `translate(${endpoints[i]}, 0)`;
+                });
+            }).
+            on('end', function () {
+                if (!d3.event.sourceEvent) return;
+                console.log('on brushend');
+                if (d3.event.selection === null) {
 
                 /*
                  * Remove the brush means that no syllable is currently resizable
                  */
-                setCache('resizeable-syl-id', undefined, undefined);
-                debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
-            }
-            else {
-                let endpoints = viz.spectBrush.extent();
-                let start = Math.floor(endpoints[0]);
-                let end = Math.ceil(endpoints[1]);
-
-                console.log('start= ' + start + ' end=' + end);
-
-                let syllables = getCache('syllables') || {};
-                let sylIdx = getCache('resizeable-syl-id');
-
-                if (sylIdx === undefined) {
-                    let newId = `new:${uuid4()}`;
-                    let newSyllable = {
-                        id: newId,
-                        start,
-                        end,
-                    };
-                    syllables[newId] = newSyllable;
-
-                    viz.eventNotifier.trigger('segment-changed', {
-                        type: 'segment-created',
-                        target: newSyllable
-                    });
-
-                    setCache('syllables', undefined, syllables);
-
-                    // Clear the brush right away
-                    viz.spectBrush.extent([0, 0]);
-                    viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
+                    setCache('resizeable-syl-id', undefined, undefined);
+                    debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
                 }
                 else {
-                    syllables[sylIdx].start = start;
-                    syllables[sylIdx].end = end;
+                    let endpoints = d3.event.selection.map(viz.spectXScale.invert);
+                    let start = Math.floor(endpoints[0]);
+                    let end = Math.ceil(endpoints[1]);
 
-                    viz.eventNotifier.trigger('segment-changed', {
-                        type: 'segment-adjusted',
-                        target: syllables[sylIdx]
-                    });
+                    console.log('start= ' + start + ' end=' + end);
+
+                    let syllables = getCache('syllables') || {};
+                    let sylIdx = getCache('resizeable-syl-id');
+
+                    if (sylIdx === undefined) {
+                        let newId = `new:${uuid4()}`;
+                        let newSyllable = {
+                            id: newId,
+                            start,
+                            end,
+                        };
+                        syllables[newId] = newSyllable;
+
+                        viz.eventNotifier.trigger('segment-changed', {
+                            type: 'segment-created',
+                            target: newSyllable
+                        });
+
+                        setCache('syllables', undefined, syllables);
+
+                        // Clear the brush right away
+                        viz.clearBrush();
+                    }
+                    else {
+                        syllables[sylIdx].start = start;
+                        syllables[sylIdx].end = end;
+
+                        viz.eventNotifier.trigger('segment-changed', {
+                            type: 'segment-adjusted',
+                            target: syllables[sylIdx]
+                        });
+                    }
+
+                    viz.displaySegs(syllables);
                 }
+            });
 
-                viz.displaySegs(syllables);
-            }
-        });
+        viz.spectBrushEl = viz.spectrogramSvg.append('g').attr('class', 'spect-brush');
+        viz.spectBrushEl.call(viz.spectBrush);
 
-        viz.spectrogramSvg.append('g').attr('class', 'spect-brush').call(viz.spectBrush).selectAll('rect').attr('height', viz.spectHeight);
+        viz.spectHandle = viz.spectBrushEl.selectAll('.brush-handle');
+        viz.spectHandle.data([{type: 'w'}, {type: 'e'}]).enter();
+        viz.spectHandle.append('path');
+        viz.spectHandle.attr('class', 'brush-handle');
+        viz.spectHandle.attr('d', resizePath);
+        viz.spectHandle.attr('cursor', 'ew-resize');
+        viz.spectHandle.attr('cursor', 'ew-resize');
+        viz.spectHandle.attr('display', 'none');
 
-        viz.spectrogramSvg.selectAll('.resize').append('path').attr('class', 'brush-handle').attr('cursor', 'ew-resize').attr('d', resizePath);
     };
 
-    this.visualiseSpectrogram = function(sig, contrast) {
+    this.visualiseSpectrogram = function (sig, contrast) {
         const viz = this;
         let segs = calcSegments(sig.length, nfft, noverlap);
         let chunks = calcSegments(segs.length, viz.spectWidth, 0);
 
         viz.spectrogramSpects.selectAll('image').remove();
 
-        let removeLoading = function() {
+        let removeLoading = function () {
             $('body').removeClass('loading');
         };
 
@@ -263,8 +287,8 @@ export const Visualise = function () {
         let durationMs = fileLength * 1000 / fileFs;
 
         let spectXExtent = [0, durationMs];
-        viz.spectXScale = d3.scale.linear().range([0, imgWidth]).domain(spectXExtent);
-        viz.spectYScale = d3.scale.linear().range([0, imgHeight]).domain([0, 1]);
+        viz.spectXScale = d3.scaleLinear().range([0, imgWidth]).domain(spectXExtent);
+        viz.spectYScale = d3.scaleLinear().range([0, imgHeight]).domain([0, 1]);
 
         viz.imgHeight = imgHeight;
         viz.imgWidth = imgWidth;
@@ -280,7 +304,7 @@ export const Visualise = function () {
          * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
          */
         let numTicks = durationMs / tickInterval;
-        let xAxis = d3.svg.axis().scale(viz.spectXScale).orient('bottom').ticks(numTicks);
+        let xAxis = d3.axisBottom().scale(viz.spectXScale).ticks(numTicks);
 
         viz.spectrogramAxis = viz.spectrogramSvg.append('g');
         viz.spectrogramAxis.attr('class', 'x axis');
@@ -294,7 +318,6 @@ export const Visualise = function () {
 
 
         viz.playbackIndicator = viz.spectrogramSvg.append('line');
-        viz.playbackTransition = viz.playbackIndicator.transition();
         viz.playbackIndicator.attr('x1', 0);
         viz.playbackIndicator.attr('y1', 0);
         viz.playbackIndicator.attr('x2', 1);
@@ -305,7 +328,7 @@ export const Visualise = function () {
 
         viz.visualiseSpectrogram(sig);
 
-        viz.drawBrush();
+        viz.drawBrush()
     };
 
     /**
@@ -327,7 +350,7 @@ export const Visualise = function () {
      * @param begin
      * @param end
      */
-    this.playAudio = function(begin = 0, end = 'end') {
+    this.playAudio = function (begin = 0, end = 'end') {
         let viz = this;
         let fileId = getCache('file-id');
         let data = new FormData();
@@ -353,13 +376,13 @@ export const Visualise = function () {
                 onStartCallback (playbackSpeed) {
                     let durationAtSpeed = durationMs * 100 / playbackSpeed;
 
-                    let playbackTransition = viz.playbackIndicator.transition();
                     viz.playbackIndicator.interrupt();
                     viz.playbackIndicator.attr('transform', `translate(${startX}, 0)`);
 
-                    playbackTransition.attr('transform', `translate(${endX}, 0)`).
-                        duration(durationAtSpeed).
-                        ease('linear');
+                    let transition = viz.playbackIndicator.transition();
+                    transition.attr('transform', `translate(${endX}, 0)`);
+                    transition.duration(durationAtSpeed);
+                    transition.ease(d3.easeLinear);
                 }
             }
         };
@@ -376,10 +399,11 @@ export const Visualise = function () {
         setCache('resizeable-syl-id', undefined, sylIdx);
 
         // define our brush extent to be begin and end of the syllable
-        viz.spectBrush.extent([syl.start, syl.end]);
+        // viz.spectBrush.extent([syl.start, syl.end]);
+        viz.spectBrush.move(viz.spectrogramSvg.select('.spect-brush'), [syl.start, syl.end].map(viz.spectXScale));
 
         // now draw the brush to match our extent
-        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
+        // viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
     };
 
     /**
@@ -387,8 +411,8 @@ export const Visualise = function () {
      */
     this.clearBrush = function () {
         let viz = this;
-        viz.spectBrush.extent([0, 0]);
-        viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
+        viz.spectBrush.move(viz.spectrogramSvg.select('.spect-brush'), null);
+        viz.spectHandle.attr('display', 'none');
         setCache('resizeable-syl-id', undefined, undefined);
     };
 

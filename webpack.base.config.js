@@ -36,7 +36,7 @@ module.exports = [{
         new BundleTracker({
             filename: './jquery-webpack-stats.json',
         })
-    ],
+    ]
 }, {
     context: __dirname,
     entry: [
@@ -88,4 +88,8 @@ module.exports = [{
         modulesDirectories: ['assets/js', 'node_modules', 'bower_components'],
         extensions: ['', '.js', '.jsx'],
     },
+    node: {
+        fs: "empty",
+        child_process: "empty"
+    }
 }];

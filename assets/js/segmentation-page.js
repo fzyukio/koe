@@ -308,7 +308,7 @@ const subscribeFlexibleEvents = function () {
 
 const initKeyboardHooks = function () {
     keyboardJS.bind(
-        ['mod', 'ctrl'],
+        ['shift'],
         function () {
             let highlighted = getCache('highlighted-syl-id');
 
