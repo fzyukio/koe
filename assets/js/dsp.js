@@ -1,6 +1,5 @@
 const d3 = require('d3');
 const FFT = require('fft.js');
-import {defaultCm} from './colour-map';
 
 /**
  * Calculate spectrogram from raw data
@@ -56,49 +55,6 @@ export const spectrogram = function (sig, segs) {
     }
 
     return spect;
-};
-
-const globalMinSpectPixel = -139;
-const globalMaxSpectPixel = 43;
-const interval64 = (globalMaxSpectPixel - globalMinSpectPixel) / 63;
-const round = Math.round;
-
-/**
- * Convert a given a spectrogram (power spectral density 2D array), put it on the canvas
- * @param spect a 2D FloatArray
- * @param imgData the imageData of the canvas to be written to
- */
-export const spectToCanvas = function (spect, imgData) {
-
-    /*
-     * Some checking: spect and canvas must have the same size
-     */
-    let height = spect.length;
-    let width = spect[0].length;
-
-    if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
-
-    const spectrumFlatened = spect.reduce(function (p, c) {
-        return p.concat(c);
-    });
-
-    // fill imgData with colors from array
-    let i,
-        k = 0,
-        psd, colourMapIndex;
-    for (i = 0; i < spectrumFlatened.length; i++) {
-        psd = spectrumFlatened[i];
-        colourMapIndex = round((psd - globalMinSpectPixel) / interval64);
-        if (defaultCm[colourMapIndex] === undefined) {
-            colourMapIndex = 0;
-        }
-        imgData.data[k++] = defaultCm[colourMapIndex][0] * 255;
-        imgData.data[k++] = defaultCm[colourMapIndex][1] * 255;
-        imgData.data[k++] = defaultCm[colourMapIndex][2] * 255;
-
-        // Alpha channel
-        imgData.data[k++] = 255;
-    }
 };
 
 export const transposeFlipUD = function (arr) {

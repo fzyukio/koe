@@ -445,3 +445,33 @@ default_cm = colour_map['jet']
 cm_red = default_cm[:, 0]
 cm_green = default_cm[:, 1]
 cm_blue = default_cm[:, 2]
+
+if __name__ == '__main__':
+
+    _cm = np.array([
+        [1, 1, 1],
+        [0.9098, 0.96341, 0.90459],
+        [0.81961, 0.92678, 0.80914],
+        [0.72941, 0.8902, 0.71373],
+        [0.58627, 0.82941, 0.58039],
+        [0.44314, 0.76863, 0.44706],
+        [0.16863, 0.65098, 0.33333],
+        [0, 0.43137, 0.15294],
+        [0, 0.21569, 0.078431],
+    ])
+
+    nthreshs = 64
+    cm = np.ndarray((nthreshs, 3), dtype=np.float64)
+
+    _nthreshs = len(_cm)
+    step = np.round(nthreshs / _nthreshs)
+
+    idx_range = []
+    current_idx = -1
+    for i in range(nthreshs):
+        if i % step == 0:
+            current_idx += 1
+            if current_idx >= _nthreshs - 1:
+                current_idx = _nthreshs - 1
+        cm[i, :] = _cm[current_idx, :]
+        print('[{}, {}, {}],'.format(_cm[current_idx, 0], _cm[current_idx, 1], _cm[current_idx, 2]))

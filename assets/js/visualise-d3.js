@@ -1,6 +1,7 @@
 /* eslint consistent-this: off, no-console: off */
 let d3 = require('d3/d3.js');
 require('jquery-contextmenu');
+import {defaultCm} from './colour-map';
 
 import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from './utils';
 import * as DSP from './dsp';
@@ -11,6 +12,9 @@ const noverlap = nfft * 3 / 4;
 
 // (200ms per tick)
 const tickInterval = 200;
+const globalMinSpectPixel = -139;
+const globalMaxSpectPixel = 43;
+
 
 /**
  * Converts segment of a signal into spectrogram and displays it.
@@ -20,14 +24,20 @@ const tickInterval = 200;
  * @param sig full audio signal
  * @param segs the segment indices to be turned into spectrogram
  * @param offset where the image starts
+ * @param contrast
+ * @param callback
  */
-function displaySpectrogram(viz, sig, segs, offset) {
+function displaySpectrogram(viz, sig, segs, offset, contrast, callback) {
     let subImgWidth = segs.length;
     new Promise(function (resolve) {
         let img = new Image();
+        let cacheKey = `${segs[0][0]} -- ${segs[segs.length - 1][1]}`;
         img.onload = function () {
-            let spect = DSP.spectrogram(sig, segs);
-            spect = DSP.transposeFlipUD(spect);
+            let spect = getCache('spect', cacheKey);
+            if (spect === undefined) {
+                spect = DSP.transposeFlipUD(DSP.spectrogram(sig, segs));
+                setCache('spect', cacheKey, spect);
+            }
             let canvas = document.createElement('canvas');
             let context = canvas.getContext('2d');
             let imgData = context.createImageData(subImgWidth, viz.imgHeight);
@@ -35,7 +45,7 @@ function displaySpectrogram(viz, sig, segs, offset) {
             canvas.height = viz.imgHeight;
             canvas.width = subImgWidth;
 
-            DSP.spectToCanvas(spect, imgData);
+            spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
             // put data to context at (0, 0)
             context.putImageData(imgData, 0, 0);
             resolve(canvas.toDataURL('image/png'));
@@ -44,9 +54,66 @@ function displaySpectrogram(viz, sig, segs, offset) {
         // This data URI is a dummy one, use it to trigger onload()
         img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
     }).then(function (dataURI) {
-        viz.spectrogramSpects.append('image').attr('height', viz.imgHeight).attr('width', subImgWidth).attr('x', offset).attr('xlink:href', dataURI).style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
+        let img = viz.spectrogramSpects.append('image');
+        img.attr('height', viz.imgHeight);
+        img.attr('width', subImgWidth);
+        img.attr('x', offset);
+        img.attr('xlink:href', dataURI);
+        img.style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
+
+        if (typeof callback === 'function') {
+            callback();
+        }
     });
 }
+
+
+/**
+ * Convert a given a spectrogram (power spectral density 2D array), put it on the canvas
+ * @param spect a 2D FloatArray
+ * @param imgData the imageData of the canvas to be written to
+ * @param dspMin
+ * @param dspMax
+ * @param contrast
+ */
+const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
+
+    /*
+     * Some checking: spect and canvas must have the same size
+     */
+    let height = spect.length;
+    let width = spect[0].length;
+
+    if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
+
+    const interval64 = (dspMax - dspMin) / 63;
+    const contrastValue = dspMin + interval64 * contrast;
+    const round = Math.round;
+
+    const spectrumFlatened = spect.reduce(function (p, c) {
+        return p.concat(c);
+    });
+
+    // fill imgData with colors from array
+    let i,
+        k = 0,
+        psd, colourMapIndex;
+    for (i = 0; i < spectrumFlatened.length; i++) {
+        psd = spectrumFlatened[i];
+        if (isNaN(psd) || psd <= contrastValue) {
+            colourMapIndex = 0;
+        }
+        else {
+            colourMapIndex = Math.min(round(Math.max(0, psd - dspMin) / interval64), 63);
+        }
+        imgData.data[k++] = defaultCm[colourMapIndex][0] * 255;
+        imgData.data[k++] = defaultCm[colourMapIndex][1] * 255;
+        imgData.data[k++] = defaultCm[colourMapIndex][2] * 255;
+
+        // Alpha channel
+        imgData.data[k++] = 255;
+    }
+};
 
 
 export const Visualise = function () {
@@ -96,7 +163,7 @@ export const Visualise = function () {
                 /*
                  * Remove the brush means that no syllable is currently resizable
                  */
-                setCache('resizeable-syl-id', undefined);
+                setCache('resizeable-syl-id', undefined, undefined);
                 debug('Current resizeable syllable index: ' + window.appCache['resizeable-syl-id']);
             }
             else {
@@ -123,7 +190,7 @@ export const Visualise = function () {
                         target: newSyllable
                     });
 
-                    setCache('syllables', syllables);
+                    setCache('syllables', undefined, syllables);
 
                     // Clear the brush right away
                     viz.spectBrush.extent([0, 0]);
@@ -146,6 +213,31 @@ export const Visualise = function () {
         viz.spectrogramSvg.append('g').attr('class', 'spect-brush').call(viz.spectBrush).selectAll('rect').attr('height', viz.spectHeight);
 
         viz.spectrogramSvg.selectAll('.resize').append('path').attr('class', 'brush-handle').attr('cursor', 'ew-resize').attr('d', resizePath);
+    };
+
+    this.visualiseSpectrogram = function(sig, contrast) {
+        const viz = this;
+        let segs = calcSegments(sig.length, nfft, noverlap);
+        let chunks = calcSegments(segs.length, viz.spectWidth, 0);
+
+        viz.spectrogramSpects.selectAll('image').remove();
+
+        let removeLoading = function() {
+            $('body').removeClass('loading');
+        };
+
+        $('body').addClass('loading');
+
+        for (let i = 0; i < chunks.length; i++) {
+            let chunk = chunks[i];
+            let segBeg = chunk[0];
+            let segEnd = chunk[1];
+            let subSegs = segs.slice(segBeg, segEnd);
+
+            let callback = i == chunks.length - 1 ? removeLoading : undefined;
+
+            displaySpectrogram(viz, sig, subSegs, segBeg, contrast, callback);
+        }
     };
 
     this.visualise = function (fileId, sig) {
@@ -211,15 +303,8 @@ export const Visualise = function () {
         viz.playbackIndicator.style('stroke', 'black');
         viz.playbackIndicator.style('fill', 'none');
 
+        viz.visualiseSpectrogram(sig);
 
-        let chunks = calcSegments(segs.length, viz.spectWidth, 0);
-        for (let i = 0; i < chunks.length; i++) {
-            let chunk = chunks[i];
-            let segBeg = chunk[0];
-            let segEnd = chunk[1];
-            let subSegs = segs.slice(segBeg, segEnd);
-            displaySpectrogram(viz, sig, subSegs, segBeg);
-        }
         viz.drawBrush();
     };
 
@@ -288,7 +373,7 @@ export const Visualise = function () {
     this.showBrush = function (sylIdx) {
         let viz = this;
         let syl = getCache('syllables', sylIdx);
-        setCache('resizeable-syl-id', sylIdx);
+        setCache('resizeable-syl-id', undefined, sylIdx);
 
         // define our brush extent to be begin and end of the syllable
         viz.spectBrush.extent([syl.start, syl.end]);
@@ -304,7 +389,7 @@ export const Visualise = function () {
         let viz = this;
         viz.spectBrush.extent([0, 0]);
         viz.spectBrush(viz.spectrogramSvg.select('.spect-brush'));
-        setCache('resizeable-syl-id', undefined);
+        setCache('resizeable-syl-id', undefined, undefined);
     };
 
     /**
@@ -316,7 +401,7 @@ export const Visualise = function () {
      */
     function highlightSpectrogramSegment(element, viz) {
         let sylIdx = element.getAttribute('syl-id');
-        setCache('highlighted-syl-id', sylIdx);
+        setCache('highlighted-syl-id', undefined, sylIdx);
 
         if (viz.editMode) {
             viz.showBrush(sylIdx);
@@ -336,7 +421,7 @@ export const Visualise = function () {
      * @param viz an instance of Visualise
      */
     function clearSpectrogramHighlight(element, viz) {
-        setCache('highlighted-syl-id', undefined);
+        setCache('highlighted-syl-id', undefined, undefined);
         if (viz.editMode) {
             console.log('Edit mode on and not highlighted. Keep brush');
         }

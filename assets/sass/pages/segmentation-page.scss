@@ -3,7 +3,7 @@
 $controller-wrapper-height: 36px;
 $controller-wrapper-child-height: 25px;
 $grid-status-width: 150px;
-$speed-controller-width: 300px;
+$slider-group-width: 300px;
 
 $spectrogram-height: 200px;
 $scrollbar-height: 10px;
@@ -184,44 +184,21 @@ $axis-height: 30px;
     }
   }
 
-  #speed-controller {
-    width: $speed-controller-width;
+  .slider-group {
+    width: $slider-group-width;
 
-    #speed-slider-handler .slider-selection {
+    .slider-selection {
       background: #d9230f7a;
     }
   }
 
   #segments-grid-controller {
-    width: calc(100% - #{$grid-status-width} - #{$speed-controller-width});
+    width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
   }
 }
 
-#segments-grid-filter {
-  border: 0;
-  padding: 0 !important;
-  box-shadow: none;
-  background-color: inherit;
-  border-bottom: 1px solid;
-  border-bottom-color: red;
-  border-radius: 0;
-}
 
 .modal-dialog {
   margin: 30vh auto;
 }
 
-#spectrogram-details-tooltip {
-  position: absolute;
-  padding: 10px;
-  background-color: #efefef;
-  border-radius: 10px;
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
-  pointer-events: none;
-  z-index: 3;
-  display: block;
-
-  &.hidden {
-    display: none;
-  }
-}

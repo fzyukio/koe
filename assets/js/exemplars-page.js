@@ -208,7 +208,7 @@ const showBigSpectrogram = function (e, args) {
         }
         tooltip.css('left', left).css('top', top);
 
-        setCache('current-highlighted-image', originalImage)
+        setCache('current-highlighted-image', undefined, originalImage)
     }
 };
 
@@ -221,7 +221,7 @@ const clearSpectrogram = function () {
     let originalImage = getCache('current-highlighted-image');
     if (originalImage) {
         originalImage.removeClass('highlight');
-        setCache('current-highlighted-image', undefined)
+        setCache('current-highlighted-image', undefined, undefined)
     }
 };
 

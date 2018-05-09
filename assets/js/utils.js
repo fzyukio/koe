@@ -187,8 +187,21 @@ export const getCache = function (cache, key = undefined) {
     }
 };
 
-export const setCache = function (cache, value) {
-    window.appCache[cache] = value;
+export const setCache = function (cache, key, value) {
+    if (key) {
+        let _cache = window.appCache[cache];
+        if (_cache) {
+            _cache[key] = value;
+        }
+        else {
+            _cache = {};
+            _cache[key] = value;
+            window.appCache[cache] = _cache;
+        }
+    }
+    else {
+        window.appCache[cache] = value;
+    }
 };
 
 /**
@@ -849,7 +862,7 @@ export const initFilter = function (inputSelector, grid, cols, defaultField) {
                 filterArgs[param] = filterGenerator(param, filterType, value);
             }
         }
-        setCache('filterArgs', filterArgs);
+        setCache('filterArgs', undefined, filterArgs);
 
 
         dataView.setFilterArgs(filterArgs);

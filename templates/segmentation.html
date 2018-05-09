@@ -12,11 +12,19 @@
             </div>
         </div>
 
-        <div id="speed-controller">
+        <div class="slider-group">
             <div class="input-group">
                 <span class="input-group-addon left">Speed</span>
-                <input id="speed-slider" type="text" data-slider-id='speed-slider-handler'
+                <input id="speed-slider" type="text"
                        data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
+            </div>
+        </div>
+
+        <div class="slider-group">
+            <div class="input-group">
+                <span class="input-group-addon left">Contrast</span>
+                <input id="contrast-slider" type="text"
+                       data-slider-min="0" data-slider-max="63" data-slider-step="1" data-slider-value="0"/>
             </div>
         </div>
     </div>
@@ -25,12 +33,15 @@
         <div id="spectrogram"></div>
     </div>
 
-    <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}"
-         fs="{{ fs }}"></div>
-    <div class="offset-holder" id="segments-grid-offset-holder" attr="height"></div>
+    <div class="row">
+        <div class="col-xs-6">
+            <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}"
+                 fs="{{ fs }}"></div>
+            <div class="offset-holder" id="segments-grid-offset-holder" attr="height"></div>
+        </div>
+        <div class="col-xs-6" style="background-color: red;">
 
-    <div id="spectrogram-details-tooltip" class="hidden">
-        <img src=""/>
+        </div>
     </div>
 
 {% endblock %}
@@ -65,11 +76,11 @@
         </div>
 
         {% if db_assignment.can_annotate %}
-        <div class="btn-group" role="group">
-            <button id="save-segmentations-btn" disabled type="button" class="btn btn-primary">
-                Save segmentation
-            </button>
-        </div>
+            <div class="btn-group" role="group">
+                <button id="save-segmentations-btn" disabled type="button" class="btn btn-primary">
+                    Save segmentation
+                </button>
+            </div>
         {% endif %}
     </div>
 {% endblock %}

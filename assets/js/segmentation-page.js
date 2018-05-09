@@ -102,6 +102,7 @@ const fileId = gridEl.attr('file-id');
 const fileLength = gridEl.attr('length');
 const fileFs = gridEl.attr('fs');
 const speedSlider = $('#speed-slider');
+const contrastSlider = $('#contrast-slider');
 const spectrogramId = 'spectrogram';
 const viz = new vs.Visualise();
 const saveSegmentationBtn = $('#save-segmentations-btn');
@@ -112,8 +113,8 @@ export const visualiseSong = function (callback) {
     /*
      * Clear all temporary variables
      */
-    setCache('resizeable-syl-id', undefined);
-    setCache('syllables', {});
+    setCache('resizeable-syl-id', undefined, undefined);
+    setCache('syllables', undefined, {});
 
     let data = new FormData();
     data.append('file-id', fileId);
@@ -148,17 +149,55 @@ export const highlightSegments = function (e, args) {
 };
 
 
+const redrawSpectrogram = function(contrast) {
+    let data = new FormData();
+    data.append('file-id', fileId);
+    let args = {
+        url: getUrl('send-request', 'koe/get-segment-audio'),
+        postData: data,
+        cacheKey: fileId,
+        startSecond: null,
+        endSecond: null
+    };
+    ah.queryAndHandleAudio(args, function (sig) {
+        viz.visualiseSpectrogram(sig, contrast);
+    });
+};
+
+
 const initController = function () {
     speedSlider.slider();
 
-    speedSlider.on('slide', function (slideEvt) {
+    speedSlider.on('slideStop', function (slideEvt) {
         ah.changePlaybackSpeed(slideEvt.value);
     });
 
-    $('.slider').on('click', function () {
-        let newValue = $('.tooltip-inner').text();
+    speedSlider.find('.slider').on('click', function () {
+        let newValue = speedSlider.find('.tooltip-inner').text();
         ah.changePlaybackSpeed(parseInt(newValue));
     });
+
+    contrastSlider.slider();
+
+    contrastSlider.on('slideStop', function (slideEvt) {
+        redrawSpectrogram(slideEvt.value);
+    });
+
+    contrastSlider.find('.slider').on('click', function () {
+        let newValue = speedSlider.find('.tooltip-inner').text();
+        redrawSpectrogram(parseInt(newValue));
+    });
+
+    // contrastSlider.on('change', function (slideEvt) {
+    // console.log(slideEvt.value);
+    // redrawSpectrogram(slideEvt.value);
+    // });
+
+    // contrastSlider.find('.slider').on('click', function () {
+    //     let newValue = contrastSlider.find('.tooltip-inner').text();
+    //     redrawSpectrogram(parseInt(newValue));
+    // });
+
 
     $('#play-song').click(function () {
         viz.playAudio();
@@ -179,7 +218,7 @@ const initController = function () {
                 let item = rows[i];
                 syllables[item.id] = item;
             }
-            setCache('syllables', syllables);
+            setCache('syllables', undefined, syllables);
             viz.displaySegs(rows);
         };
         ce.dialogModal.modal('hide');
@@ -289,9 +328,9 @@ const initKeyboardHooks = function () {
 export const run = function (commonElements) {
     ce = commonElements;
 
-    setCache('file-id', fileId);
-    setCache('file-length', fileLength);
-    setCache('file-fs', fileFs);
+    setCache('file-id', undefined, fileId);
+    setCache('file-length', undefined, fileLength);
+    setCache('file-fs', undefined, fileFs);
 
     ah.initAudioContext();
     grid.init(fileId);
@@ -309,7 +348,7 @@ export const run = function (commonElements) {
                     let item = items[i];
                     syllables[item.id] = item;
                 }
-                setCache('syllables', syllables);
+                setCache('syllables', undefined, syllables);
                 viz.displaySegs(items);
             });
         });

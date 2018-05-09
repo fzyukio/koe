@@ -3,7 +3,7 @@
 $controller-wrapper-height: 36px;
 $controller-wrapper-child-height: 25px;
 $grid-status-width: 150px;
-$speed-controller-width: 300px;
+$slider-group-width: 300px;
 
 
 #exemplars-grid {
@@ -52,16 +52,16 @@ $speed-controller-width: 300px;
     }
   }
 
-  #speed-controller {
-    width: $speed-controller-width;
+  .slider-group {
+    width: $slider-group-width;
 
-    #speed-slider-handler .slider-selection {
+    .slider-selection {
       background: #d9230f7a;
     }
   }
 
   #exemplars-grid-controller {
-    width: calc(100% - #{$grid-status-width} - #{$speed-controller-width});
+    width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
   }
 }
 
