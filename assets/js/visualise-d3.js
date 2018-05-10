@@ -511,6 +511,12 @@ export const Visualise = function () {
      */
     this.showBrush = function (sylIdx) {
         let viz = this;
+        let resizing = getCache('resizeable-syl-id');
+        if (resizing && viz.editMode) {
+            console.log(`Currently editing another segment, ignore. resizing = ${resizing}`);
+            return;
+        }
+
         let syl = getCache('syllables', sylIdx);
         setCache('resizeable-syl-id', undefined, sylIdx);
 
@@ -561,6 +567,12 @@ export const Visualise = function () {
      * @param viz an instance of Visualise
      */
     function clearSpectrogramHighlight(element, viz) {
+        let resizing = getCache('resizeable-syl-id');
+        if (resizing && viz.editMode) {
+            console.log('Currently editing another segment, ignore');
+            return;
+        }
+
         setCache('highlighted-syl-id', undefined, undefined);
         if (viz.editMode) {
             console.log('Edit mode on and not highlighted. Keep brush');

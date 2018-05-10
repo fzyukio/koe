@@ -48,6 +48,12 @@ class Grid extends FlexibleGrid {
      * @param args indexed array {event: name of the event, target: the element that is being mouseover}
      */
     segmentMouseEventHandler(e, args) {
+        let resizing = getCache('resizeable-syl-id');
+        if (resizing && viz.editMode) {
+            console.log(`Currently editing another segment, ignore. resizing = ${resizing}`);
+            return;
+        }
+
         const self = this;
         let eventType = args.type;
         let target = args.target;
