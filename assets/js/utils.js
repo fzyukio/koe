@@ -15,6 +15,11 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
+const Promise = require('bluebird');
+
+Promise.config({
+    cancellation: true
+});
 
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library
@@ -333,8 +338,8 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
 
     /*
      * Render the URL and reset the value field for searching purpose.
-     * Store the url on an inner variable to be reused later, e.g if the field is 'filename' then
-     *  the variable is _url_filename which will takes the value of the URL, and the variable filename is set to the
+     * Store the url on an inner letiable to be reused later, e.g if the field is 'filename' then
+     *  the letiable is _url_filename which will takes the value of the URL, and the letiable filename is set to the
      *  actual string value
      * Ideally we should keep it intact and the filter should be able to apply to the string part only
      */
@@ -1754,3 +1759,80 @@ function getCssTextRecursive (selector) {
     }
     return text;
 }
+
+
+/**
+ * A do nothing function
+ */
+export const noop = function() {
+    // do nothing.
+};
+
+
+/**
+    Smoothly scroll element to the given target (element.scrollLeft)
+    for the given duration
+
+    Returns a promise that's fulfilled when done, or rejected if
+    interrupted
+ */
+export const smotthScrollTo = function(element, target, duration) {
+    target = Math.round(target);
+    duration = Math.round(duration);
+    if (duration < 0) {
+        return Promise.reject(new Error('bad duration'));
+    }
+    if (duration === 0) {
+        element.scrollLeft = target;
+        return Promise.resolve();
+    }
+
+    let startTime = Date.now();
+    let endTime = startTime + duration;
+
+    let start = element.scrollLeft;
+    let distance = target - start;
+
+    return new Promise(function(resolve, reject, onCancel) {
+        // This is to keep track of where the element's scrollLeft is
+        // supposed to be, based on what we're doing
+        let previous = element.scrollLeft;
+        let timeoutId;
+
+        // This is like a think function from a game loop
+        let scrollFrame = function() {
+            if (element.scrollLeft != previous) {
+                reject(new Error('interrupted'));
+                return;
+            }
+
+            // set the scrollLeft for this frame
+            let now = Date.now();
+            let frameScrollPosition = Math.round(start + (distance * (now - startTime) / (endTime - startTime)));
+            element.scrollLeft = frameScrollPosition;
+
+            // check if we're done!
+            if (now >= endTime) {
+                resolve();
+                return;
+            }
+
+            // If we were supposed to scroll but didn't, then we
+            // probably hit the limit, so consider it done; not
+            // interrupted.
+            if (element.scrollLeft === previous &&
+                element.scrollLeft !== frameScrollPosition) {
+                resolve();
+                return;
+            }
+            previous = element.scrollLeft;
+
+            // schedule next frame for execution
+            timeoutId = setTimeout(scrollFrame, 0);
+        };
+
+        // boostrap the animation process
+        timeoutId = setTimeout(scrollFrame, 0);
+        onCancel(() => clearTimeout(timeoutId));
+    });
+};

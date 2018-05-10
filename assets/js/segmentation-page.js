@@ -1,6 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, initAudioContext, queryAndHandleAudio} from './audio-handler';
-import {deepCopy, getUrl, setCache, getCache} from './utils';
+import {deepCopy, getUrl, setCache, getCache, smotthScrollTo} from './utils';
 import {postRequest} from './ajax-handler';
 import {visualiseSpectrogram, Visualise} from './visualise-d3';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -10,6 +10,7 @@ const gridOptions = deepCopy(defaultGridOptions);
 
 let ce;
 let contrast;
+let scrollingPromise;
 
 class Grid extends FlexibleGrid {
     init() {
@@ -126,6 +127,7 @@ const fileLength = gridEl.attr('length');
 const fileFs = gridEl.attr('fs');
 const speedSlider = $('#speed-slider');
 const contrastSlider = $('#contrast-slider');
+const visualisationContainer = $('#visualisation');
 const spectrogramId = '#spectrogram';
 const oscillogramId = '#oscillogram';
 const viz = new Visualise();
@@ -189,6 +191,32 @@ const redrawSpectrogram = function () {
 };
 
 
+const startScrolling = function (startX, endX, duration) {
+    let visualisationEl = visualisationContainer[0];
+    visualisationEl.scrollLeft = 0;
+    let visualisationWidth = visualisationContainer.width();
+    let distance = endX - startX - visualisationWidth;
+    let speed = duration / (endX - startX);
+    let delayStart = visualisationWidth / 2;
+    let prematureEnd = visualisationWidth / 2;
+
+    let delayStartDuration = delayStart * speed;
+    let prematureEndDuration = prematureEnd * speed;
+    let remainDuration = duration - delayStartDuration - prematureEndDuration;
+
+
+    setTimeout(function () {
+        scrollingPromise = smotthScrollTo(visualisationEl, visualisationEl.scrollLeft + distance, remainDuration);
+    }, delayStartDuration)
+
+};
+
+
+const stopScrolling = function () {
+    scrollingPromise.cancel();
+};
+
+
 const initController = function () {
     speedSlider.slider();
 
@@ -215,11 +243,12 @@ const initController = function () {
     });
 
     $('#play-song').click(function () {
-        viz.playAudio();
+        viz.playAudio(0, 'end', startScrolling, stopScrolling);
     });
 
     $('#stop-song').click(function () {
         viz.stopAudio();
+        stopScrolling();
     });
 
     saveSegmentationBtn.click(function () {

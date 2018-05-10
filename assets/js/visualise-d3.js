@@ -4,7 +4,7 @@ import d3 from './d3-importer';
 import {stopAudio, queryAndPlayAudio} from './audio-handler';
 import {defaultCm} from './colour-map';
 
-import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from './utils';
+import {getUrl, getCache, calcSegments, setCache, uuid4, debug, noop} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
 
 const nfft = 256;
@@ -503,8 +503,10 @@ export const Visualise = function () {
      * Play the syllable where mouse left click was registered
      * @param begin
      * @param end
+     * @param onStartCallback
+     * @param stopScrolling
      */
-    this.playAudio = function (begin = 0, end = 'end') {
+    this.playAudio = function (begin = 0, end = 'end', onStartCallback = noop, stopScrolling = noop) {
         let viz = this;
         let fileId = getCache('file-id');
         let data = new FormData();
@@ -518,7 +520,6 @@ export const Visualise = function () {
         let endX = viz.spectXScale(end);
         let endSec = end / 1000;
         let durationMs = end - begin;
-
 
         let args = {
             url: getUrl('send-request', 'koe/get-segment-audio'),
@@ -537,10 +538,13 @@ export const Visualise = function () {
                     transition.attr('transform', `translate(${endX}, 0)`);
                     transition.duration(durationAtSpeed);
                     transition.ease(d3.easeLinear);
+
+                    onStartCallback(startX, endX, durationAtSpeed);
                 },
                 onEndedCallback () {
                     viz.playbackIndicator.interrupt();
                     viz.playbackIndicator.style('display', 'none');
+                    stopScrolling();
                 }
             }
         };

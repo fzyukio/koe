@@ -1,4 +1,4 @@
-import {getUrl} from './utils';
+import {getUrl, noop} from './utils';
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
@@ -11,13 +11,6 @@ function defaultMsgGen(res) {
     return res.success ?
         null :
         `Something's wrong, server says ${res.error}.`;
-}
-
-/**
- * A do nothing function
- */
-function noop() {
-    // do nothing.
 }
 
 const delayOnSuccess = 500;
