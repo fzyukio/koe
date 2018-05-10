@@ -1,13 +1,10 @@
-const FFT = require('fft.js');
-
 /**
  * Calculate spectrogram from raw data
  * @param sig
  * @param segs
  */
-export const calcSpect = function (sig, segs) {
+export const calcSpect = function (sig, segs, fft) {
     const nfft = segs[0][1] - segs[0][0];
-    const fft = new FFT(nfft);
     const nframes = segs.length;
     const spect = [];
     let fbeg, fend, i, j;

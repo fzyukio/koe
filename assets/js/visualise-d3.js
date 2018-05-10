@@ -1,4 +1,5 @@
 /* eslint consistent-this: off, no-console: off */
+const FFT = require('fft.js');
 import d3 from 'd3-importer';
 import {defaultCm} from 'colour-map';
 
@@ -24,9 +25,10 @@ const standardLength = 0.5 * 48000;
  * @param imgHeight
  * @param sig full audio signal
  * @param segs the segment indices to be turned into spectrogram
+ * @param fft
  * @param contrast
  */
-function displaySpectrogram(imgHeight, sig, segs, contrast) {
+function displaySpectrogram(imgHeight, sig, segs, fft, contrast) {
     let subImgWidth = segs.length;
     return new Promise(function (resolve) {
         let img = new Image();
@@ -34,7 +36,7 @@ function displaySpectrogram(imgHeight, sig, segs, contrast) {
         img.onload = function () {
             let spect = getCache('spect', cacheKey);
             if (spect === undefined) {
-                spect = transposeFlipUD(calcSpect(sig, segs));
+                spect = transposeFlipUD(calcSpect(sig, segs, fft));
                 setCache('spect', cacheKey, spect);
             }
             let canvas = document.createElement('canvas');
@@ -106,6 +108,7 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
 export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, sig, contrast, _noverlap = noverlap) {
     let segs = calcSegments(sig.length, nfft, _noverlap);
     let chunks = calcSegments(segs.length, spectWidth, 0);
+    let fft = new FFT(nfft);
 
     spectrogramSpects.selectAll('image').remove();
 
@@ -122,11 +125,13 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
         let segEnd = chunk[1];
         let subSegs = segs.slice(segBeg, segEnd);
 
-        let promise = displaySpectrogram(imgHeight, sig, subSegs, contrast);
+        let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
         let subImgWidth = subSegs.length;
-        promiseInfo.push({promise,
+        promiseInfo.push({
+            promise,
             subImgWidth,
-            offset: segBeg});
+            offset: segBeg
+        });
     }
 
     for (let i = 0; i < promiseInfo.length; i++) {
@@ -278,6 +283,7 @@ export const Visualise = function () {
 
         let _nfft = nfft;
         let _noverlap = _nfft * 7 / 8;
+        let fft = new FFT(nfft);
 
         let segs = calcSegments(subSig.length, _nfft, _noverlap);
         let imgWidth = segs.length;
@@ -307,7 +313,7 @@ export const Visualise = function () {
         spectrogramAxis.attr('transform', 'translate(0,' + spectHeight + ')');
         spectrogramAxis.call(xAxis);
 
-        let promise = displaySpectrogram(imgHeight, subSig, segs, contrast);
+        let promise = displaySpectrogram(imgHeight, subSig, segs, fft, contrast);
         let subImgWidth = segs.length;
         promise.then(function (dataURI) {
             let img = spectrogramSpects.append('image');
