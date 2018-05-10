@@ -1587,7 +1587,7 @@ export const downloadBlob = function (blob, filename) {
  *    41    50
  *    51    53
  */
-export const calcSegments = function (signalLength, windowSize, noverlap, includeTail = true) {
+export const calcSegments = function (signalLength, windowSize, noverlap, includeTail = false) {
     let step = windowSize - noverlap;
     let segs = [];
     let startIdx = 0;
