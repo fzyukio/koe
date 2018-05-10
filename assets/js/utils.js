@@ -14,8 +14,7 @@ require('rowselectionmodel');
 require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
-
-import * as apa from 'property-actions';
+import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
 
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library
@@ -1164,7 +1163,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     /*
      * Remove the column if there is no visible action (which should be action on click)
      */
-    if (!apa.hasActionsOfType('click', columnActions)) {
+    if (!hasActionsOfType('click', columnActions)) {
         columns.splice(idxOfActionColumn, 1);
     }
 
@@ -1428,32 +1427,32 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
      */
     if (columnActions.length) {
 
-        if (apa.hasActionsOfType('click', columnActions)) {
+        if (hasActionsOfType('click', columnActions)) {
             grid.onClick.subscribe(function (e, args_) {
                 let action = $(e.target).closest('button').attr('action');
-                let handler = apa.actionHandlers[action];
+                let handler = actionHandlers[action];
                 let row = args_.row;
                 let dataView_ = args_.grid.getData();
                 let item = dataView_.getItem(row);
 
-                if (apa.isClickableOnRow(row, item, action)) {
+                if (isClickableOnRow(row, item, action)) {
                     handler(row, grid);
                 }
             });
         }
 
-        if (apa.hasActionsOfType('resize', columnActions)) {
+        if (hasActionsOfType('resize', columnActions)) {
             grid.onColumnsResized.subscribe(function (e, args_) {
-                let handlers = apa.getHandlerOfActionType('resize', columnActions);
+                let handlers = getHandlerOfActionType('resize', columnActions);
                 for (let i = 0; i < handlers.length; i++) {
                     handlers[i](e, args_.grid, gridType);
                 }
             });
         }
 
-        if (apa.hasActionsOfType('reorder', columnActions)) {
+        if (hasActionsOfType('reorder', columnActions)) {
             grid.onColumnsReordered.subscribe(function (e, args_) {
-                let handlers = apa.getHandlerOfActionType('reorder', columnActions);
+                let handlers = getHandlerOfActionType('reorder', columnActions);
                 for (let i = 0; i < handlers.length; i++) {
                     handlers[i](e, args_.grid, gridType);
                 }

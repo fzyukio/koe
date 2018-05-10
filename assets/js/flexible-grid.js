@@ -1,6 +1,8 @@
 /* global Slick */
-import * as utils from './utils';
 import {postRequest} from './ajax-handler';
+import {editabilityAwareFormatter, isNull, getCache, setCache, deepCopy, appendSlickGridData, replaceSlickGridData,
+    renderSlickGrid, gridFilter, initFilter, updateSlickGridData
+} from './utils';
 
 require('slickgrid/plugins/slick.autotooltips');
 
@@ -19,7 +21,7 @@ export const defaultGridOptions = {
     autoEdit: true,
     enableTextSelectionOnCells: true,
     rowHeight: 25,
-    defaultFormatter: utils.editabilityAwareFormatter,
+    defaultFormatter: editabilityAwareFormatter,
 };
 
 
@@ -68,7 +70,7 @@ export class FlexibleGrid {
      */
     subscribe(eventType, callback) {
         let event = this.mainGrid[eventType];
-        if (!utils.isNull(event)) {
+        if (!isNull(event)) {
             event.subscribe(callback);
         }
     }
@@ -81,7 +83,7 @@ export class FlexibleGrid {
      */
     subscribeDv(eventType, callback) {
         let event = this.mainGrid.getData()[eventType];
-        if (!utils.isNull(event)) {
+        if (!isNull(event)) {
             event.subscribe(callback);
         }
     }
@@ -117,7 +119,7 @@ export class FlexibleGrid {
         let grid = args.grid;
         let dataView = grid.getData();
         let rows = args.rows;
-        let previousRows = utils.getCache(self.previousRowCacheName) || {};
+        let previousRows = getCache(self.previousRowCacheName) || {};
         let i, item, row, rowId;
         let removedRows = [];
         let addedItems = [];
@@ -182,14 +184,14 @@ export class FlexibleGrid {
             });
         }
 
-        utils.setCache(self.previousRowCacheName, previousRows);
+        setCache(self.previousRowCacheName, previousRows);
     }
 
 
     rowChangeHandler(e, args, onSuccess, onFailure) {
         const self = this;
         let item = args.item;
-        let selectableColumns = utils.getCache('selectableOptions');
+        let selectableColumns = getCache('selectableOptions');
 
         /* Strip off all irrelevant information */
         let itemSimplified = {id: item.id};
@@ -209,7 +211,7 @@ export class FlexibleGrid {
             }
         }
 
-        let postArgs = utils.deepCopy(self.defaultArgs);
+        let postArgs = deepCopy(self.defaultArgs);
         postArgs['grid-type'] = self.gridType;
         postArgs.property = JSON.stringify(itemSimplified);
 
@@ -229,7 +231,7 @@ export class FlexibleGrid {
      * @param rows
      */
     appendRows(rows) {
-        utils.appendSlickGridData(this.mainGrid, rows);
+        appendSlickGridData(this.mainGrid, rows);
     }
 
     /**
@@ -237,7 +239,7 @@ export class FlexibleGrid {
      * @param rows
      */
     replaceRows(rows) {
-        utils.replaceSlickGridData(this.mainGrid, rows);
+        replaceSlickGridData(this.mainGrid, rows);
     }
 
     /**
@@ -257,7 +259,7 @@ export class FlexibleGrid {
     deleteAllRows() {
         let dataView = this.mainGrid.getData();
         dataView.setItems([]);
-        utils.setCache(this.previousRowCacheName, undefined);
+        setCache(this.previousRowCacheName, undefined);
     }
 
     postMainGridHeader() {
@@ -287,16 +289,16 @@ export class FlexibleGrid {
         let onSuccess = function (columns) {
             self.columns = columns;
 
-            utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
+            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), {
                 multiSelect: args.multiSelect,
                 radioSelect: args.radioSelect,
                 rowMoveable: args.rowMoveable,
                 gridType: self.gridType,
-                filter: args.filter || utils.gridFilter
+                filter: args.filter || gridFilter
             });
 
             self.postMainGridHeader();
-            utils.initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
+            initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
 
             if (typeof callback == 'function') {
                 callback();
@@ -314,21 +316,21 @@ export class FlexibleGrid {
         self.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
         self.mainGrid.registerPlugin(new Slick.AutoTooltips());
 
-        utils.renderSlickGrid(self.mainGridSelector, self.mainGrid, [], utils.deepCopy(self.columns), {
+        renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), {
             multiSelect: args.multiSelect,
             radioSelect: args.radioSelect,
             rowMoveable: args.rowMoveable,
             gridType: self.gridType,
-            filter: args.filter || utils.gridFilter
+            filter: args.filter || gridFilter
         });
         self.postMainGridHeader();
-        utils.initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
+        initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
 
         if (typeof callback == 'function') {
             callback();
         }
 
-        utils.updateSlickGridData(self.mainGrid, self.rows);
+        updateSlickGridData(self.mainGrid, self.rows);
     }
 
     cacheSelectableOptions() {
@@ -356,18 +358,18 @@ export class FlexibleGrid {
                 }
             }
         }
-        utils.setCache('selectableOptions', selectableColumns)
+        setCache('selectableOptions', selectableColumns)
     }
 
     initMainGridContent(defaultArgs, callback) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
-        let args = utils.deepCopy(self.defaultArgs);
+        let args = deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
 
         let onSuccess = function (rows) {
             self.rows = rows;
-            utils.updateSlickGridData(self.mainGrid, rows);
+            updateSlickGridData(self.mainGrid, rows);
             self.cacheSelectableOptions();
 
             if (typeof callback == 'function') {

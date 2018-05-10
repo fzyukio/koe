@@ -1,10 +1,9 @@
-import * as ah from './audio-handler';
-import * as fg from 'flexible-grid';
-import * as vs from 'visualise-d3';
-import {defaultGridOptions} from './flexible-grid';
+import {defaultGridOptions, FlexibleGrid} from 'flexible-grid';
+import {changePlaybackSpeed, initAudioContext} from 'audio-handler';
 import {deepCopy, getUrl, setCache, getCache} from './utils';
 import {postRequest} from './ajax-handler';
-import {visualiseSpectrogram} from './visualise-d3';
+import {visualiseSpectrogram, Visualise} from './visualise-d3';
+import {queryAndHandleAudio} from './audio-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
@@ -13,7 +12,7 @@ const gridOptions = deepCopy(defaultGridOptions);
 let ce;
 let contrast;
 
-class Grid extends fg.FlexibleGrid {
+class Grid extends FlexibleGrid {
     init() {
         super.init({
             'grid-name': 'segments-grid',
@@ -85,7 +84,7 @@ class Grid extends fg.FlexibleGrid {
             startSecond: null,
             endSecond: null
         };
-        ah.queryAndHandleAudio(args_, function (sig) {
+        queryAndHandleAudio(args_, function (sig) {
             viz.zoomInSyllable(item, sig, contrast);
         });
 
@@ -124,7 +123,7 @@ const speedSlider = $('#speed-slider');
 const contrastSlider = $('#contrast-slider');
 const spectrogramId = '#spectrogram';
 const oscillogramId = '#oscillogram';
-const viz = new vs.Visualise();
+const viz = new Visualise();
 const saveSegmentationBtn = $('#save-segmentations-btn');
 const deleteSegmentsBtn = $('#delete-segments-btn');
 
@@ -145,7 +144,7 @@ export const visualiseSong = function (callback) {
         startSecond: null,
         endSecond: null
     };
-    ah.queryAndHandleAudio(args, function (sig) {
+    queryAndHandleAudio(args, function (sig) {
         viz.visualise(fileId, sig);
         callback();
     });
@@ -179,7 +178,7 @@ const redrawSpectrogram = function () {
         startSecond: null,
         endSecond: null
     };
-    ah.queryAndHandleAudio(args, function (sig) {
+    queryAndHandleAudio(args, function (sig) {
         visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig, contrast);
     });
 };
@@ -189,12 +188,12 @@ const initController = function () {
     speedSlider.slider();
 
     speedSlider.on('slideStop', function (slideEvt) {
-        ah.changePlaybackSpeed(slideEvt.value);
+        changePlaybackSpeed(slideEvt.value);
     });
 
     speedSlider.find('.slider').on('click', function () {
         let newValue = speedSlider.find('.tooltip-inner').text();
-        ah.changePlaybackSpeed(parseInt(newValue));
+        changePlaybackSpeed(parseInt(newValue));
     });
 
     contrastSlider.slider();
@@ -343,7 +342,7 @@ export const run = function (commonElements) {
     setCache('file-length', undefined, fileLength);
     setCache('file-fs', undefined, fileFs);
 
-    ah.initAudioContext();
+    initAudioContext();
     grid.init(fileId);
     viz.init(oscillogramId, spectrogramId);
 

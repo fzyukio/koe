@@ -1,10 +1,9 @@
-import * as fg from 'flexible-grid';
-import {defaultGridOptions} from './flexible-grid';
-import * as ah from './audio-handler';
+import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initSelectize} from './selectize-formatter';
 import {log, deepCopy, getUrl, getCache} from 'utils';
 import {setCache} from './utils';
 import {postRequest} from './ajax-handler';
+import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -13,7 +12,7 @@ const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
 
 
-class SegmentGrid extends fg.FlexibleGrid {
+class SegmentGrid extends FlexibleGrid {
     init() {
         super.init({
             'grid-name': 'labelling',
@@ -81,12 +80,12 @@ const initSlider = function () {
     speedSlider.slider();
 
     speedSlider.on('slide', function (slideEvt) {
-        ah.changePlaybackSpeed(slideEvt.value);
+        changePlaybackSpeed(slideEvt.value);
     });
 
     $('.slider').on('click', function () {
         let newvalue = $('.tooltip-inner').text();
-        ah.changePlaybackSpeed(parseInt(newvalue));
+        changePlaybackSpeed(parseInt(newvalue));
     });
 };
 
@@ -104,7 +103,7 @@ const playAudio = function (e, args) {
             postData: data
         };
 
-        ah.queryAndPlayAudio(args_);
+        queryAndPlayAudio(args_);
     }
 };
 
@@ -412,7 +411,7 @@ const focusOnGridOnInit = function () {
 export const run = function (commonElements) {
     ce = commonElements;
 
-    ah.initAudioContext();
+    initAudioContext();
 
     grid.init();
     grid.initMainGridHeader({multiSelect: true}, function () {

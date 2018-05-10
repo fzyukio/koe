@@ -1,6 +1,5 @@
-import * as fg from 'flexible-grid';
-import {defaultGridOptions} from './flexible-grid';
-import * as ah from './audio-handler';
+import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
+import {changePlaybackSpeed, playAudioFromUrl, initAudioContext} from './audio-handler';
 import {log, deepCopy, getUrl} from 'utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -10,7 +9,7 @@ const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
 
 
-class Grid extends fg.FlexibleGrid {
+class Grid extends FlexibleGrid {
     init(cls) {
 
         super.init({
@@ -83,12 +82,12 @@ const initSlider = function () {
     speedSlider.slider();
 
     speedSlider.on('slide', function (slideEvt) {
-        ah.changePlaybackSpeed(slideEvt.value);
+        changePlaybackSpeed(slideEvt.value);
     });
 
     $('.slider').on('click', function () {
         let newvalue = $('.tooltip-inner').text();
-        ah.changePlaybackSpeed(parseInt(newvalue));
+        changePlaybackSpeed(parseInt(newvalue));
     });
 };
 
@@ -108,7 +107,7 @@ const playAudio = function (e, args) {
             }
         };
 
-        ah.playAudioFromUrl(args_);
+        playAudioFromUrl(args_);
     }
 };
 
@@ -388,7 +387,7 @@ const initDeleteSongsBtn = function () {
 
 export const run = function (commonElements) {
     ce = commonElements;
-    ah.initAudioContext();
+    initAudioContext();
 
     grid.init(cls);
     grid.initMainGridHeader({multiSelect: true}, function () {

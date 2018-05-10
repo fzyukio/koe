@@ -1,25 +1,4 @@
-import * as utils from 'utils'
-
-export const actionIcons = {
-    'delete-property': {'_default': 'fa fa-trash'},
-    'hide-property': {'_default': 'fa fa-eye-slash',
-        false: 'fa fa-eye-slash',
-        true: 'fa fa-eye'},
-};
-
-export const actionTitles = {
-    'delete-property': {'_default': 'Delete'},
-    'hide-property': {'_default': 'Hide',
-        false: 'Hide',
-        true: 'Show'},
-};
-
-export const actionButtonStyles = {
-    'delete-property': {'_default': 'btn-danger'},
-    'hide-property': {'_default': 'btn-warning',
-        false: 'btn-warning',
-        true: 'btn-primary'},
-};
+import {getUrl} from './utils';
 
 export const actionRequirements = {
 
@@ -96,7 +75,7 @@ const setColumnWidth = function (e, grid, gridType) {
     }
 
     $.post(
-        utils.getUrl('send-request', 'set-action-values'),
+        getUrl('send-request', 'set-action-values'),
         {'column-ids-action-values': JSON.stringify(colIdsWidths),
             'grid-type': gridType}
     );
@@ -117,7 +96,7 @@ const reorderColumn = function (e, grid, gridType) {
     }
 
     $.post(
-        utils.getUrl('send-request', 'set-action-values'),
+        getUrl('send-request', 'set-action-values'),
         {'column-ids-action-values': JSON.stringify(colIdToIdx),
             'grid-type': gridType}
     );

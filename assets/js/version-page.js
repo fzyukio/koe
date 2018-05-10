@@ -1,11 +1,10 @@
-import * as fg from 'flexible-grid';
-import {defaultGridOptions} from './flexible-grid';
+import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {deepCopy} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 
 const gridOptions = deepCopy(defaultGridOptions);
 
-class SegmentGrid extends fg.FlexibleGrid {
+class SegmentGrid extends FlexibleGrid {
     init() {
         super.init({
             'grid-name': 'versions',
