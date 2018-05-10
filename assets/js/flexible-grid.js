@@ -358,7 +358,7 @@ export class FlexibleGrid {
                 }
             }
         }
-        setCache('selectableOptions', selectableColumns)
+        setCache('selectableOptions', undefined, selectableColumns)
     }
 
     initMainGridContent(defaultArgs, callback) {
