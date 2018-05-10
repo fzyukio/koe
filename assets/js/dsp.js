@@ -1,4 +1,3 @@
-const d3 = require('d3');
 const FFT = require('fft.js');
 
 /**
@@ -6,7 +5,7 @@ const FFT = require('fft.js');
  * @param sig
  * @param segs
  */
-export const spectrogram = function (sig, segs) {
+export const calcSpect = function (sig, segs) {
     const nfft = segs[0][1] - segs[0][0];
     const fft = new FFT(nfft);
     const nframes = segs.length;
@@ -72,16 +71,4 @@ export const transposeFlipUD = function (arr) {
         }
     }
     return newArray;
-};
-
-export const maxIgnoreNaN = function (arr) {
-    return d3.max(arr.filter(function (val) {
-        return isFinite(val);
-    }));
-};
-
-export const minIgnoreNaN = function (arr) {
-    return d3.min(arr.filter(function (val) {
-        return isFinite(val);
-    }));
 };

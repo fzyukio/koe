@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* global Slick */
 require('jquery-ui/ui/widgets/sortable');
 require('slickgrid/lib/jquery.event.drag-2.3.0');
@@ -1658,3 +1659,99 @@ export const uuid4 = function () {
     return id.join('');
 };
 /* eslint-enable no-bitwise */
+
+
+/**
+ * Convert an SVG object into string
+ * @param svgNode the SVG object
+ * @param css css to insert
+ * @returns {string}
+ */
+function getSVGString(svgNode, css) {
+    svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+    appendCSS(css, svgNode);
+
+    let serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgNode);
+    svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink=');
+    svgString = svgString.replace(/NS\d+:href/g, 'xlink:href');
+
+    return svgString;
+}
+
+/**
+ * Append css rule to element
+ * @param cssText
+ * @param element
+ */
+function appendCSS(cssText, element) {
+    let styleElement = document.createElement('style');
+    styleElement.setAttribute('type', 'text/css');
+    styleElement.innerHTML = cssText;
+    let refNode = element.hasChildNodes() ? element.children[0] : null;
+    element.insertBefore(styleElement, refNode);
+}
+
+
+/**
+ * Convert SVG string into data URI
+ *
+ * @param svgString the svg string
+ * @param width width of the image
+ * @param height height of the image
+ * @returns {Promise} on resolved, provides the data URI
+ */
+function svgString2Image(svgString, width, height) {
+    return new Promise(function (resolve) {
+        let imgsrc = 'data:image/svg+xml;base64,' + btoa(svgString);
+        let canvas = document.createElement('canvas');
+        let context = canvas.getContext('2d');
+
+        canvas.width = width;
+        canvas.height = height;
+
+        let image = new Image();
+        image.onload = function () {
+            context.clearRect(0, 0, width, height);
+            context.drawImage(image, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/png'));
+        };
+
+        image.src = imgsrc;
+    });
+}
+
+
+/**
+ * Find all CSS rules of this selector and all of its children
+ * @param selector selector of the element
+ * @returns {Array.<*>}
+ */
+function findClassRules(selector) {
+    // combine all rules from all stylesheets to a single array
+    const allRules = [].concat(...Array.from(document.styleSheets).map(({cssRules}) => Array.from(cssRules)));
+
+    // filter the rules by their selectorText
+    return allRules.filter(({selectorText}) => selectorText && selectorText.includes(selector));
+}
+
+/**
+ * Find all CSS rules of this selector and all of its children and export the rule as text
+ * @param selector selector selector of the element
+ * @returns {string} valid CSS rule set for the selector and all children
+ */
+function getCssTextRecursive (selector) {
+    let rules = findClassRules(selector);
+    if (rules.length == 0) return '';
+    let selectorText = rules[0].selectorText;
+    let ruleStartIdx = selectorText.length;
+    let text = '';
+
+    for (let i = 0; i < rules.length; i++) {
+        let rule = rules[i];
+        let fullCssText = rule.cssText;
+        let trimmedCssText = fullCssText.substr(ruleStartIdx).trim();
+        text += `${selector} ${trimmedCssText}`;
+    }
+    return text;
+}

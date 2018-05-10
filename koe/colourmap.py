@@ -448,7 +448,7 @@ cm_blue = default_cm[:, 2]
 
 if __name__ == '__main__':
 
-    _cm = np.array([
+    _cm = np.round(np.array([
         [1, 1, 1],
         [0.9098, 0.96341, 0.90459],
         [0.81961, 0.92678, 0.80914],
@@ -458,10 +458,10 @@ if __name__ == '__main__':
         [0.16863, 0.65098, 0.33333],
         [0, 0.43137, 0.15294],
         [0, 0.21569, 0.078431],
-    ])
+    ]) * 255)
 
     nthreshs = 64
-    cm = np.ndarray((nthreshs, 3), dtype=np.float64)
+    cm = np.ndarray((nthreshs, 3), dtype=np.uint8)
 
     _nthreshs = len(_cm)
     step = np.round(nthreshs / _nthreshs)
@@ -474,4 +474,4 @@ if __name__ == '__main__':
             if current_idx >= _nthreshs - 1:
                 current_idx = _nthreshs - 1
         cm[i, :] = _cm[current_idx, :]
-        print('[{}, {}, {}],'.format(_cm[current_idx, 0], _cm[current_idx, 1], _cm[current_idx, 2]))
+        print('[{}, {}, {}],'.format(cm[i, 0], cm[i, 1], cm[i, 2]))

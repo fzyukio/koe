@@ -6,8 +6,10 @@ $grid-status-width: 150px;
 $slider-group-width: 300px;
 
 $spectrogram-height: 200px;
-$scrollbar-height: 10px;
-$axis-height: 30px;
+$oscillogram-height: 100px;
+$visualisation-height: 300px;
+$scrollbar-height: 15px;
+$axis-height: 20px;
 
 .axis {
   text {
@@ -28,163 +30,60 @@ $axis-height: 30px;
 }
 
 #visualisation {
-  #spectrogram {
-    height: calc(#{$spectrogram-height} + #{$scrollbar-height} + #{$axis-height});
-    width: 100%;
-    position: relative;
+  height: calc(#{$visualisation-height} + #{$axis-height} + #{$scrollbar-height});
+  overflow-y: hidden;
+  overflow-x: visible;
+
+  #oscillogram {
+    height: #{$oscillogram-height};
     overflow-y: hidden;
-    overflow-x: visible;
 
-    .control-panel {
-      position: absolute;
-      right: 0;
-      top: 0;
-      display: none;
-    }
-
-    &:hover .control-panel {
-      display: inline;
-    }
-
-    .line.polynomial {
+    .line {
       fill: none;
-      stroke: rgb(164, 0, 255);
-      stroke-width: 5px;
+      stroke: #007627;
+      stroke-width: 1px;
     }
   }
 
-  .slider {
-    display: block;
-    float: left;
-    margin-left: 5px;
-  }
-  .slider-horizontal {
-    width: 100px;
-    height: 18px;
-  }
+  #spectrogram {
+    height: calc(#{$spectrogram-height} + #{$axis-height});
+    overflow-y: hidden;
 
-  .w {
-    color: #bbbbbb;
-  }
+    .brush-handle {
+      fill: #eee;
+      stroke: #666;
+    }
 
-  .axis {
-    text {
-      font: 10px sans-serif;
-    }
-    path {
-      display: none;
-    }
-    line {
-      fill: none;
-      stroke: #000;
-      shape-rendering: crispEdges;
-    }
-    .domain, .tick line {
-      fill: none;
+    .syllable {
       stroke: black;
+      fill: black;
+      fill-opacity: 0.2;
+      &:hover, &.highlight {
+        stroke: rgb(255, 101, 4);
+        stroke-width: 2px;
+        fill: rgb(255, 101, 4);
+      }
     }
-  }
 
-  .chart {
-    .line {
-      fill: none;
-      stroke: #d9230f;
-      stroke-width: 1px;
-    }
-    .overlay {
-      stroke-width: 0px;
-      fill-opacity: 0;
-    }
-  }
-
-  .grid-background {
-    fill: #ddd;
-  }
-
-  .grid {
-    line, path {
-      fill: none;
-      stroke: #fff;
+    .brush .selection {
+      stroke: #000;
+      fill-opacity: .125;
       shape-rendering: crispEdges;
     }
-    .minor.tick line {
-      stroke-opacity: .5;
-    }
   }
-
-  .brush .selection {
-    stroke: #000;
-    fill-opacity: .125;
-    shape-rendering: crispEdges;
-  }
-
-  .navigator {
-    .data {
-      fill: lightgrey;
-      stroke-width: 0px;
-    }
-    .line {
-      fill: none;
-      stroke: #d9230f;
-      stroke-width: 1px;
-    }
-  }
-
-  .spect-brush .selection,
-  .viewport .selection {
-    stroke: grey;
-    fill: black;
-    fill-opacity: 0.2;
-  }
-
-  .brush-handle {
-    fill: #eee;
-    stroke: #666;
-  }
-
-  #spectrogram .syllable {
-    stroke: black;
-    fill: black;
-    fill-opacity: 0.2;
-    &:hover, &.highlight {
-      stroke: rgb(255, 101, 4);
-      stroke-width: 2px;
-      fill: rgb(255, 101, 4);
-    }
-  }
-
 }
 
 #segments-grid {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
 #segments-grid-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
 #spect-zoom {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$spectrogram-height} - #{$scrollbar-height} - #{$axis-height});
-
-  .axis {
-    text {
-      font: 10px sans-serif;
-    }
-    path {
-      display: none;
-    }
-    line {
-      fill: none;
-      stroke: #000;
-      shape-rendering: crispEdges;
-    }
-    .tick line {
-      fill: none;
-      stroke: black;
-    }
-  }
-
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
 #controller-wrapper {

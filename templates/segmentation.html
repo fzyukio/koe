@@ -30,16 +30,17 @@
     </div>
 
     <div id="visualisation">
-        <div id="spectrogram"></div>
+        <svg id="oscillogram"></svg>
+        <svg id="spectrogram"></svg>
     </div>
 
     <div class="row no-margin">
-        <div class="col-xs-6">
+        <div class="col-xs-6 no-padding">
             <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}"
                  fs="{{ fs }}"></div>
             <div class="offset-holder" id="segments-grid-offset-holder" attr="height"></div>
         </div>
-        <div class="col-xs-6">
+        <div class="col-xs-6 no-padding">
             <div id="spect-zoom"></div>
         </div>
     </div>

@@ -1,11 +1,10 @@
 /* eslint consistent-this: off, no-console: off */
-import * as d3 from 'd3'
-require('jquery-contextmenu');
-import {defaultCm} from './colour-map';
+import d3 from 'd3-importer';
+import {defaultCm} from 'colour-map';
 
-import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from './utils';
-import * as DSP from './dsp';
-import * as ah from 'audio-handler'
+import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from 'utils';
+import {transposeFlipUD, calcSpect} from 'dsp';
+import {queryAndPlayAudio} from 'audio-handler';
 
 const nfft = 256;
 const noverlap = nfft * 3 / 4;
@@ -14,6 +13,8 @@ const noverlap = nfft * 3 / 4;
 const tickInterval = 200;
 const globalMinSpectPixel = -139;
 const globalMaxSpectPixel = 43;
+const {rPixelValues, gPixelValues, bPixelValues} = defaultCm;
+const standardLength = 0.5 * 48000;
 
 
 /**
@@ -33,7 +34,7 @@ function displaySpectrogram(imgHeight, sig, segs, contrast) {
         img.onload = function () {
             let spect = getCache('spect', cacheKey);
             if (spect === undefined) {
-                spect = DSP.transposeFlipUD(DSP.spectrogram(sig, segs));
+                spect = transposeFlipUD(calcSpect(sig, segs));
                 setCache('spect', cacheKey, spect);
             }
             let canvas = document.createElement('canvas');
@@ -92,9 +93,9 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
         else {
             colourMapIndex = Math.min(round(Math.max(0, psd - dspMin) / interval64), 63);
         }
-        imgData.data[k++] = defaultCm[colourMapIndex][0] * 255;
-        imgData.data[k++] = defaultCm[colourMapIndex][1] * 255;
-        imgData.data[k++] = defaultCm[colourMapIndex][2] * 255;
+        imgData.data[k++] = rPixelValues[colourMapIndex];
+        imgData.data[k++] = gPixelValues[colourMapIndex];
+        imgData.data[k++] = bPixelValues[colourMapIndex];
 
         // Alpha channel
         imgData.data[k++] = 255;
@@ -123,7 +124,9 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
 
         let promise = displaySpectrogram(imgHeight, sig, subSegs, contrast);
         let subImgWidth = subSegs.length;
-        promiseInfo.push({promise, subImgWidth, offset: segBeg});
+        promiseInfo.push({promise,
+            subImgWidth,
+            offset: segBeg});
     }
 
     for (let i = 0; i < promiseInfo.length; i++) {
@@ -136,7 +139,7 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
             img.attr('x', offset);
             img.attr('xlink:href', dataURI);
             img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-            if (i==promiseInfo.length-1) {
+            if (i == promiseInfo.length - 1) {
                 removeLoading();
             }
         });
@@ -145,7 +148,7 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
 
 
 export const Visualise = function () {
-    this.init = function (spectId) {
+    this.init = function (oscillogramId, spectrogramId) {
         const viz = this;
         // Handlers of the D3JS objects
         viz.spectrogramGroup = null;
@@ -157,9 +160,10 @@ export const Visualise = function () {
         viz.width = null;
         viz.spectXScale = null;
         viz.spectYScale = null;
-        viz.scrollbarHeight = 10;
-        viz.axisHeight = 30;
-        viz.spectrogramId = '#' + spectId;
+        viz.scrollbarHeight = 0;
+        viz.axisHeight = 20;
+        viz.spectrogramId = spectrogramId;
+        viz.oscillogramId = oscillogramId;
         viz.spectBrush = null;
 
         /**
@@ -316,6 +320,47 @@ export const Visualise = function () {
 
     };
 
+    this.showOscillogram = function (sig, fs) {
+        let viz = this;
+        let length = sig.length;
+        let data = [];
+        let resampleFactor = Math.max(1, Math.min(50, Math.round(length / standardLength)));
+        console.log(`resampleFactor = ${resampleFactor}`);
+        // let resampleFactor = 20;
+        let minY = 99999;
+        let maxY = -99999;
+        let y;
+        for (let i = 0; i < length; i += resampleFactor) {
+            y = sig[i];
+            data.push({
+                x: i / fs,
+                y
+            });
+            if (minY > y) minY = y;
+            if (maxY < y) maxY = y;
+        }
+
+        viz.oscilloWidth = $(viz.oscillogramId).width() - viz.margin.left - viz.margin.right;
+        viz.oscilloHeight = $(viz.oscillogramId).height() - viz.margin.top;
+
+        viz.oscillogramSvg = d3.select(viz.oscillogramId);
+        viz.oscillogramSvg.attr('width', viz.imgWidth);
+        viz.oscillogramSvg.attr('height', viz.oscilloHeight);
+
+        let xScale = d3.scaleLinear().range([0, viz.imgWidth]).domain([0, length / fs]);
+        let yScale = d3.scaleLinear().domain([minY, maxY]).nice().range([viz.oscilloHeight, 0]);
+
+        let plotLine = d3.line().
+            x(function (d) {
+                return xScale(d.x);
+            }).
+            y(function (d) {
+                return yScale(d.y);
+            });
+
+        viz.oscillogramSvg.append('path').attr('class', 'line').attr('d', plotLine(data));
+    };
+
     this.visualise = function (fileId, sig) {
         const viz = this;
         viz.margin = {
@@ -347,7 +392,9 @@ export const Visualise = function () {
         viz.spectWidth = $(viz.spectrogramId).width() - viz.margin.left - viz.margin.right;
         viz.spectHeight = $(viz.spectrogramId).height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
 
-        viz.spectrogramSvg = d3.select(viz.spectrogramId).append('svg');
+        viz.showOscillogram(sig, fileFs);
+
+        viz.spectrogramSvg = d3.select(viz.spectrogramId);
         viz.spectrogramSvg.attr('height', viz.spectHeight + viz.margin.top + viz.margin.bottom);
         viz.spectrogramSvg.attr('width', viz.imgWidth + viz.margin.left + viz.margin.right);
 
@@ -368,14 +415,23 @@ export const Visualise = function () {
         viz.spectrogramSpects = viz.spectrogramSvg.append('g').classed('spects', true);
 
 
-        viz.playbackIndicator = viz.spectrogramSvg.append('line');
-        viz.playbackIndicator.attr('x1', 0);
-        viz.playbackIndicator.attr('y1', 0);
-        viz.playbackIndicator.attr('x2', 1);
-        viz.playbackIndicator.attr('y2', viz.spectHeight);
-        viz.playbackIndicator.style('stroke-width', 2);
-        viz.playbackIndicator.style('stroke', 'black');
-        viz.playbackIndicator.style('fill', 'none');
+        viz.spectrogramSvg.append('line').attr('class', 'playback-indicator').
+            attr('x1', 0).attr('y1', 0).
+            attr('x2', 1).
+            attr('y2', viz.spectHeight).
+            style('stroke-width', 2).
+            style('stroke', 'black').
+            style('fill', 'none');
+
+        viz.oscillogramSvg.append('line').attr('class', 'playback-indicator').
+            attr('x1', 0).attr('y1', 0).
+            attr('x2', 1).
+            attr('y2', viz.oscilloHeight).
+            style('stroke-width', 2).
+            style('stroke', 'black').
+            style('fill', 'none');
+
+        viz.playbackIndicator = d3.selectAll('.playback-indicator');
 
         visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig);
 
@@ -437,7 +493,7 @@ export const Visualise = function () {
                 }
             }
         };
-        ah.queryAndPlayAudio(args);
+        queryAndPlayAudio(args);
     };
 
     /**

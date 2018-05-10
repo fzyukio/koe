@@ -122,7 +122,8 @@ const fileLength = gridEl.attr('length');
 const fileFs = gridEl.attr('fs');
 const speedSlider = $('#speed-slider');
 const contrastSlider = $('#contrast-slider');
-const spectrogramId = 'spectrogram';
+const spectrogramId = '#spectrogram';
+const oscillogramId = '#oscillogram';
 const viz = new vs.Visualise();
 const saveSegmentationBtn = $('#save-segmentations-btn');
 const deleteSegmentsBtn = $('#delete-segments-btn');
@@ -155,7 +156,7 @@ export const highlightSegments = function (e, args) {
     let songId = args.songId;
     let segmentsGridRowElement = args.rowElement;
 
-    let spectrogramSegment = $('#' + spectrogramId + ' rect.syllable[syl-id="' + songId + '"]');
+    let spectrogramSegment = $(`${spectrogramId} rect.syllable[syl-id="${songId}"]`);
 
     if (eventType === 'mouseenter') {
         segmentsGridRowElement.addClass('highlight');
@@ -168,7 +169,7 @@ export const highlightSegments = function (e, args) {
 };
 
 
-const redrawSpectrogram = function (contrast) {
+const redrawSpectrogram = function () {
     let data = new FormData();
     data.append('file-id', fileId);
     let args = {
@@ -200,13 +201,13 @@ const initController = function () {
 
     contrastSlider.on('slideStop', function (slideEvt) {
         contrast = slideEvt.value;
-        redrawSpectrogram(contrast);
+        redrawSpectrogram();
     });
 
     contrastSlider.find('.slider').on('click', function () {
         let newValue = speedSlider.find('.tooltip-inner').text();
         contrast = parseInt(newValue);
-        redrawSpectrogram(contrast);
+        redrawSpectrogram();
     });
 
     $('#play-song').click(function () {
@@ -344,7 +345,7 @@ export const run = function (commonElements) {
 
     ah.initAudioContext();
     grid.init(fileId);
-    viz.init(spectrogramId);
+    viz.init(oscillogramId, spectrogramId);
 
     visualiseSong(function () {
         grid.initMainGridHeader({
