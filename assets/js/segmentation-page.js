@@ -236,6 +236,7 @@ const initController = function () {
             }
             setCache('syllables', undefined, syllables);
             viz.displaySegs(rows);
+            saveSegmentationBtn.prop('disabled', true);
         };
         ce.dialogModal.modal('hide');
         let msgGen = function (res) {
