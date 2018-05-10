@@ -50,7 +50,7 @@ class Grid extends FlexibleGrid {
     segmentMouseEventHandler(e, args) {
         let resizing = getCache('resizeable-syl-id');
         if (resizing && viz.editMode) {
-            console.log(`Currently editing another segment, ignore. resizing = ${resizing}`);
+            // Currently editing another segment, ignore.
             return;
         }
 

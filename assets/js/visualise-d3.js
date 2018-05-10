@@ -76,10 +76,9 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
     if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
 
     const colouredInterval = 64;
-    const colouredIntervalMax = 63;
-    const nIntervals = colouredInterval + contrast;
+    const nIntervals = colouredInterval + contrast - 1;
 
-    const dspBinValue = (dspMax - dspMin) / (nIntervals-1);
+    const dspBinValue = (dspMax - dspMin) / (nIntervals - 1);
     const round = Math.round;
 
     const spectrumFlatened = spect.reduce(function (p, c) {
