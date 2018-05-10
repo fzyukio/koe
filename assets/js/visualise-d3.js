@@ -75,8 +75,11 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
 
     if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
 
-    const interval64 = (dspMax - dspMin) / 63;
-    const contrastValue = dspMin + interval64 * contrast;
+    const colouredInterval = 64;
+    const colouredIntervalMax = 63;
+    const nIntervals = colouredInterval + contrast;
+
+    const dspBinValue = (dspMax - dspMin) / (nIntervals-1);
     const round = Math.round;
 
     const spectrumFlatened = spect.reduce(function (p, c) {
@@ -89,11 +92,12 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
         psd, colourMapIndex;
     for (i = 0; i < spectrumFlatened.length; i++) {
         psd = spectrumFlatened[i];
-        if (isNaN(psd) || psd <= contrastValue) {
+        if (isNaN(psd)) {
             colourMapIndex = 0;
         }
         else {
-            colourMapIndex = Math.min(round(Math.max(0, psd - dspMin) / interval64), 63);
+            colourMapIndex = round(Math.max(0, psd - dspMin) / dspBinValue) - contrast;
+            if (colourMapIndex < 0) colourMapIndex = 0;
         }
         imgData.data[k++] = rPixelValues[colourMapIndex];
         imgData.data[k++] = gPixelValues[colourMapIndex];
