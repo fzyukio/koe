@@ -1,7 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initSelectize} from './selectize-formatter';
-import {log, deepCopy, getUrl, getCache} from 'utils';
-import {setCache} from './utils';
+import {log, deepCopy, getUrl, getCache, setCache} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');

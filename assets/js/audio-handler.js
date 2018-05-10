@@ -91,6 +91,18 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
     };
 };
 
+
+/**
+ * Stop the audio if it is playing
+ */
+export const stopAudio = function() {
+    if (!isNull(audioContext) && audioContext.state === 'running') {
+        audioContext.close();
+        audioContext = new AudioContext();
+    }
+};
+
+
 /**
  * Convert audio data to audio bugger and then play
  * @param fullAudioDataArray a Float32Array object

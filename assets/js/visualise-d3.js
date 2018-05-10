@@ -1,11 +1,11 @@
 /* eslint consistent-this: off, no-console: off */
 const FFT = require('fft.js');
-import d3 from 'd3-importer';
-import {defaultCm} from 'colour-map';
+import d3 from './d3-importer';
+import {stopAudio, queryAndPlayAudio} from './audio-handler';
+import {defaultCm} from './colour-map';
 
-import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from 'utils';
-import {transposeFlipUD, calcSpect} from 'dsp';
-import {queryAndPlayAudio} from 'audio-handler';
+import {getUrl, getCache, calcSegments, setCache, uuid4, debug} from './utils';
+import {transposeFlipUD, calcSpect} from './dsp';
 
 const nfft = 256;
 const noverlap = nfft * 3 / 4;
@@ -15,7 +15,7 @@ const tickInterval = 200;
 const globalMinSpectPixel = -139;
 const globalMaxSpectPixel = 43;
 const {rPixelValues, gPixelValues, bPixelValues} = defaultCm;
-const standardLength = 0.5 * 48000;
+const standardLength = 0.3 * 48000;
 
 
 /**
@@ -48,7 +48,7 @@ function displaySpectrogram(imgHeight, sig, segs, fft, contrast) {
 
             spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
             context.putImageData(imgData, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
+            resolve(canvas.toDataURL('image/webp', 1));
         };
 
         // This data URI is a dummy one, use it to trigger onload()
@@ -284,6 +284,8 @@ export const Visualise = function () {
         let sigEnd = Math.floor(itemEndMs / durationMs * sig.length);
         let subSig = sig.subarray(sigStart, sigEnd);
 
+        viz.showZoomedOscillogram(subSig, fileFs);
+
         let _nfft = nfft;
         let _noverlap = _nfft * 7 / 8;
         let fft = new FFT(nfft);
@@ -292,11 +294,11 @@ export const Visualise = function () {
         let imgWidth = segs.length;
         let imgHeight = _nfft / 2;
 
-        d3.select('#spect-zoom').select('svg').remove();
-        let spectZoomSvg = d3.select('#spect-zoom').append('svg');
+        let spectZoomSvg = d3.select('#spectrogram-zoomed');
+        spectZoomSvg.selectAll('g').remove();
 
-        let spectWidth = $('#spect-zoom').width() - viz.margin.left - viz.margin.right;
-        let spectHeight = $('#spect-zoom').height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
+        let spectWidth = $('#spectrogram-zoomed').width() - viz.margin.left - viz.margin.right;
+        let spectHeight = $('#spectrogram-zoomed').height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
 
         spectZoomSvg.attr('height', spectHeight + viz.margin.top + viz.margin.bottom);
         spectZoomSvg.attr('width', spectWidth + viz.margin.left + viz.margin.right);
@@ -326,14 +328,51 @@ export const Visualise = function () {
             img.attr('xlink:href', dataURI);
             img.style('transform', `scale(${spectWidth / imgWidth}, ${spectHeight / imgHeight})`);
         });
+    };
 
+    this.showZoomedOscillogram = function (sig, fs) {
+        let viz = this;
+        let length = sig.length;
+        let data = [];
+        let minY = 99999;
+        let maxY = -99999;
+        let y;
+        for (let i = 0; i < length; i++) {
+            y = sig[i];
+            data.push({
+                x: i / fs,
+                y
+            });
+            if (minY > y) minY = y;
+            if (maxY < y) maxY = y;
+        }
+
+        let elId = viz.oscillogramId + '-zoomed';
+
+        let oscilloWidth = $(elId).width() - viz.margin.left - viz.margin.right;
+        let oscilloHeight = $(elId).height() - viz.margin.top;
+
+        let oscillogramSvg = d3.select(elId);
+        oscillogramSvg.attr('width', oscilloWidth);
+        oscillogramSvg.attr('height', oscilloHeight);
+
+        let xScale = d3.scaleLinear().range([0, oscilloWidth]).domain([0, length / fs]);
+        let yScale = d3.scaleLinear().domain([minY, maxY]).nice().range([oscilloHeight, 0]);
+
+        let plotLine = d3.line().x(function (d) {
+            return xScale(d.x);
+        }).y(function (d) {
+            return yScale(d.y);
+        });
+        oscillogramSvg.selectAll('path').remove();
+        oscillogramSvg.append('path').attr('class', 'line').attr('d', plotLine(data));
     };
 
     this.showOscillogram = function (sig, fs) {
         let viz = this;
         let length = sig.length;
         let data = [];
-        let resampleFactor = Math.max(1, Math.min(40, Math.round(length / standardLength)));
+        let resampleFactor = Math.max(1, Math.min(80, Math.round(length / standardLength)));
         console.log(`resampleFactor = ${resampleFactor}`);
         let minY = 99999;
         let maxY = -99999;
@@ -502,6 +541,17 @@ export const Visualise = function () {
             }
         };
         queryAndPlayAudio(args);
+    };
+
+    /**
+     * Play the syllable where mouse left click was registered
+     * @param begin
+     * @param end
+     */
+    this.stopAudio = function () {
+        let viz = this;
+        viz.playbackIndicator.interrupt();
+        stopAudio();
     };
 
     /**

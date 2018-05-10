@@ -1,9 +1,8 @@
-import {defaultGridOptions, FlexibleGrid} from 'flexible-grid';
-import {changePlaybackSpeed, initAudioContext} from 'audio-handler';
+import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
+import {changePlaybackSpeed, initAudioContext, queryAndHandleAudio} from './audio-handler';
 import {deepCopy, getUrl, setCache, getCache} from './utils';
 import {postRequest} from './ajax-handler';
 import {visualiseSpectrogram, Visualise} from './visualise-d3';
-import {queryAndHandleAudio} from './audio-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
@@ -217,6 +216,10 @@ const initController = function () {
 
     $('#play-song').click(function () {
         viz.playAudio();
+    });
+
+    $('#stop-song').click(function () {
+        viz.stopAudio();
     });
 
     saveSegmentationBtn.click(function () {

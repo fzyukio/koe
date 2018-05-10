@@ -8,6 +8,11 @@ $slider-group-width: 300px;
 $spectrogram-height: 200px;
 $oscillogram-height: 100px;
 $visualisation-height: 300px;
+
+$spectrogram-zoomed-height: 400px;
+$oscillogram-zoomed-height: 200px;
+$zoomed-height: 600px;
+
 $scrollbar-height: 15px;
 $axis-height: 20px;
 
@@ -37,12 +42,6 @@ $axis-height: 20px;
   #oscillogram {
     height: #{$oscillogram-height};
     overflow-y: hidden;
-
-    .line {
-      fill: none;
-      stroke: #007627;
-      stroke-width: 1px;
-    }
   }
 
   #spectrogram {
@@ -73,6 +72,30 @@ $axis-height: 20px;
   }
 }
 
+#zoomed {
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
+  overflow-y: hidden;
+  overflow-x: visible;
+
+  #oscillogram-zoomed {
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height}) / 3 - #{$axis-height} - 5px);
+    width: 100%;
+  }
+
+  #spectrogram-zoomed {
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height}) * 2 / 3 + #{$axis-height});
+    width: 100%;
+  }
+}
+
+#oscillogram, #oscillogram-zoomed {
+  .line {
+    fill: none;
+    stroke: #007627;
+    stroke-width: 1px;
+  }
+}
+
 #segments-grid {
   max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
 }
@@ -82,58 +105,26 @@ $axis-height: 20px;
   height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
 }
 
-#spect-zoom {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$scrollbar-height} - #{$axis-height});
+.controller-item {
+  padding-top: 10px;
+  display: inline-block;
+
+  & > div {
+    height: $controller-wrapper-child-height;
+    line-height: $controller-wrapper-child-height;
+  }
 }
 
-#controller-wrapper {
-  height: $controller-wrapper-height;
-  & > div {
-    display: inline-block;
-    margin-left: -4px;
+.slider-group {
+  width: 100%;
 
-    &:first-child {
-      margin-left: 0;
-    }
-
-    & > div {
-      height: $controller-wrapper-child-height;
-      line-height: $controller-wrapper-child-height;
-    }
+  .slider-selection {
+    background: #d9230f7a;
   }
+}
 
-  .input-group-addon {
-    padding: 0;
-
-    &.left {
-      padding: 0 10px 0 0;
-    }
-    &.right {
-      padding: 0 0 0 10px;
-    }
-
-  }
-
-  #grid-status {
-    width: $grid-status-width;
-    text-align: left;
-
-    .input-group-addon {
-      text-align: left;
-    }
-  }
-
-  .slider-group {
-    width: $slider-group-width;
-
-    .slider-selection {
-      background: #d9230f7a;
-    }
-  }
-
-  #segments-grid-controller {
-    width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
-  }
+.slider.slider-horizontal {
+  width: 100%;
 }
 
 .modal-dialog {
