@@ -324,9 +324,8 @@ export const Visualise = function () {
         let viz = this;
         let length = sig.length;
         let data = [];
-        let resampleFactor = Math.max(1, Math.min(50, Math.round(length / standardLength)));
+        let resampleFactor = Math.max(1, Math.min(40, Math.round(length / standardLength)));
         console.log(`resampleFactor = ${resampleFactor}`);
-        // let resampleFactor = 20;
         let minY = 99999;
         let maxY = -99999;
         let y;
