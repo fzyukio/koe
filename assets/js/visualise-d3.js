@@ -397,13 +397,11 @@ export const Visualise = function () {
         let xScale = d3.scaleLinear().range([0, viz.imgWidth]).domain([0, length / fs]);
         let yScale = d3.scaleLinear().domain([minY, maxY]).nice().range([viz.oscilloHeight, 0]);
 
-        let plotLine = d3.line().
-            x(function (d) {
-                return xScale(d.x);
-            }).
-            y(function (d) {
-                return yScale(d.y);
-            });
+        let plotLine = d3.line().x(function (d) {
+            return xScale(d.x);
+        }).y(function (d) {
+            return yScale(d.y);
+        });
 
         viz.oscillogramSvg.append('path').attr('class', 'line').attr('d', plotLine(data));
     };
@@ -468,7 +466,8 @@ export const Visualise = function () {
             attr('y2', viz.spectHeight).
             style('stroke-width', 2).
             style('stroke', 'black').
-            style('fill', 'none');
+            style('fill', 'none').
+            style('display', 'none');
 
         viz.oscillogramSvg.append('line').attr('class', 'playback-indicator').
             attr('x1', 0).attr('y1', 0).
@@ -476,7 +475,8 @@ export const Visualise = function () {
             attr('y2', viz.oscilloHeight).
             style('stroke-width', 2).
             style('stroke', 'black').
-            style('fill', 'none');
+            style('fill', 'none').
+            style('display', 'none');
 
         viz.playbackIndicator = d3.selectAll('.playback-indicator');
 
@@ -531,12 +531,16 @@ export const Visualise = function () {
                     let durationAtSpeed = durationMs * 100 / playbackSpeed;
 
                     viz.playbackIndicator.interrupt();
-                    viz.playbackIndicator.attr('transform', `translate(${startX}, 0)`);
+                    viz.playbackIndicator.style('display', 'unset').attr('transform', `translate(${startX}, 0)`);
 
                     let transition = viz.playbackIndicator.transition();
                     transition.attr('transform', `translate(${endX}, 0)`);
                     transition.duration(durationAtSpeed);
                     transition.ease(d3.easeLinear);
+                },
+                onEndedCallback () {
+                    viz.playbackIndicator.interrupt();
+                    viz.playbackIndicator.style('display', 'none');
                 }
             }
         };
