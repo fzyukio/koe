@@ -110,7 +110,7 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
 
 export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, sig, contrast, _noverlap = noverlap) {
     let segs = calcSegments(sig.length, nfft, _noverlap);
-    let chunks = calcSegments(segs.length, spectWidth, 0);
+    let chunks = calcSegments(segs.length, spectWidth, 0, true);
     let fft = new FFT(nfft);
 
     spectrogramSpects.selectAll('image').remove();
