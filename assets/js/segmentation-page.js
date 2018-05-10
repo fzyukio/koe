@@ -11,6 +11,7 @@ const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 const gridOptions = deepCopy(defaultGridOptions);
 
 let ce;
+let contrast;
 
 class Grid extends fg.FlexibleGrid {
     init() {
@@ -85,7 +86,7 @@ class Grid extends fg.FlexibleGrid {
             endSecond: null
         };
         ah.queryAndHandleAudio(args_, function (sig) {
-            viz.zoomInSyllable(item, sig);
+            viz.zoomInSyllable(item, sig, contrast);
         });
 
 
@@ -198,12 +199,14 @@ const initController = function () {
     contrastSlider.slider();
 
     contrastSlider.on('slideStop', function (slideEvt) {
-        redrawSpectrogram(slideEvt.value);
+        contrast = slideEvt.value;
+        redrawSpectrogram(contrast);
     });
 
     contrastSlider.find('.slider').on('click', function () {
         let newValue = speedSlider.find('.tooltip-inner').text();
-        redrawSpectrogram(parseInt(newValue));
+        contrast = parseInt(newValue);
+        redrawSpectrogram(contrast);
     });
 
     $('#play-song').click(function () {

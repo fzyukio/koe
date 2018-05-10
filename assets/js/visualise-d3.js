@@ -20,20 +20,14 @@ const globalMaxSpectPixel = 43;
  * Converts segment of a signal into spectrogram and displays it.
  * Keep in mind that the spectrogram's SVG contaims multiple images next to each other.
  * This function should be called multiple times to generate the full spectrogram
- * @param spectrogramSpects
- * @param spectHeight
- * @param spectWidth
  * @param imgHeight
- * @param imgWidth
  * @param sig full audio signal
  * @param segs the segment indices to be turned into spectrogram
- * @param offset where the image starts
  * @param contrast
- * @param callback
  */
-function displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth = null, sig, segs, offset, contrast, callback) {
+function displaySpectrogram(imgHeight, sig, segs, contrast) {
     let subImgWidth = segs.length;
-    new Promise(function (resolve) {
+    return new Promise(function (resolve) {
         let img = new Image();
         let cacheKey = `${segs[0][0]} -- ${segs[segs.length - 1][1]}`;
         img.onload = function () {
@@ -50,30 +44,12 @@ function displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeigh
             canvas.width = subImgWidth;
 
             spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
-            // put data to context at (0, 0)
             context.putImageData(imgData, 0, 0);
             resolve(canvas.toDataURL('image/png'));
         };
 
         // This data URI is a dummy one, use it to trigger onload()
         img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
-    }).then(function (dataURI) {
-        let img = spectrogramSpects.append('image');
-        img.attr('height', imgHeight);
-        img.attr('width', subImgWidth);
-        img.attr('x', offset);
-        img.attr('xlink:href', dataURI);
-
-        if (imgWidth) {
-            img.style('transform', `scale(${spectWidth / imgWidth}, ${spectHeight / imgHeight})`);
-        }
-        else {
-            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-        }
-
-        if (typeof callback === 'function') {
-            callback();
-        }
     });
 }
 
@@ -137,6 +113,7 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
     };
 
     $('body').addClass('loading');
+    let promiseInfo = [];
 
     for (let i = 0; i < chunks.length; i++) {
         let chunk = chunks[i];
@@ -144,9 +121,25 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
         let segEnd = chunk[1];
         let subSegs = segs.slice(segBeg, segEnd);
 
-        let callback = i == chunks.length - 1 ? removeLoading : undefined;
+        let promise = displaySpectrogram(imgHeight, sig, subSegs, contrast);
+        let subImgWidth = subSegs.length;
+        promiseInfo.push({promise, subImgWidth, offset: segBeg});
+    }
 
-        displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, null, sig, subSegs, segBeg, contrast, callback);
+    for (let i = 0; i < promiseInfo.length; i++) {
+        let {promise, subImgWidth, offset} = promiseInfo[i];
+
+        promise.then(function (dataURI) {
+            let img = spectrogramSpects.append('image');
+            img.attr('height', imgHeight);
+            img.attr('width', subImgWidth);
+            img.attr('x', offset);
+            img.attr('xlink:href', dataURI);
+            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
+            if (i==promiseInfo.length-1) {
+                removeLoading();
+            }
+        });
     }
 };
 
@@ -260,13 +253,11 @@ export const Visualise = function () {
         viz.spectBrushEl = viz.spectrogramSvg.append('g').attr('class', 'spect-brush');
         viz.spectBrushEl.call(viz.spectBrush);
 
-        viz.spectHandle = viz.spectBrushEl.selectAll('.brush-handle').data([{type: 'w'}, {type: 'e'}]).
-            enter().append('path').attr('class', 'brush-handle').attr('d', resizePath).
-            attr('cursor', 'ew-resize').attr('cursor', 'ew-resize').attr('display', 'none');
+        viz.spectHandle = viz.spectBrushEl.selectAll('.brush-handle').data([{type: 'w'}, {type: 'e'}]).enter().append('path').attr('class', 'brush-handle').attr('d', resizePath).attr('cursor', 'ew-resize').attr('cursor', 'ew-resize').attr('display', 'none');
 
     };
 
-    this.zoomInSyllable = function (item, sig) {
+    this.zoomInSyllable = function (item, sig, contrast) {
         const viz = this;
 
         let fileLength = getCache('file-length');
@@ -288,9 +279,6 @@ export const Visualise = function () {
         let imgWidth = segs.length;
         let imgHeight = _nfft / 2;
 
-        let spectXExtent = [itemStartMs, itemEndMs];
-        let spectXScale = d3.scaleLinear().range([0, imgWidth]).domain(spectXExtent);
-
         d3.select('#spect-zoom').select('svg').remove();
         let spectZoomSvg = d3.select('#spect-zoom').append('svg');
 
@@ -303,6 +291,8 @@ export const Visualise = function () {
         /*
          * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
          */
+        let spectXExtent = [itemStartMs, itemEndMs];
+        let spectXScale = d3.scaleLinear().range([0, spectWidth]).domain(spectXExtent);
         let numTicks = itemDurationMs / tickInterval * 3;
         let xAxis = d3.axisBottom().scale(spectXScale).ticks(numTicks);
 
@@ -313,7 +303,17 @@ export const Visualise = function () {
         spectrogramAxis.attr('transform', 'translate(0,' + spectHeight + ')');
         spectrogramAxis.call(xAxis);
 
-        displaySpectrogram(spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, subSig, segs, 0, 0);
+        let promise = displaySpectrogram(imgHeight, subSig, segs, contrast);
+        let subImgWidth = segs.length;
+        promise.then(function (dataURI) {
+            let img = spectrogramSpects.append('image');
+            img.attr('height', imgHeight);
+            img.attr('width', subImgWidth);
+            img.attr('x', 0);
+            img.attr('xlink:href', dataURI);
+            img.style('transform', `scale(${spectWidth / imgWidth}, ${spectHeight / imgHeight})`);
+        });
+
     };
 
     this.visualise = function (fileId, sig) {
