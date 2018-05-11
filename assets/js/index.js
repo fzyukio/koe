@@ -5,6 +5,19 @@ export {
     Urls,
 };
 
+const Promise = require('bluebird');
+
+Promise.config({
+    cancellation: true
+});
+
+/**
+ * Replace native Promise with BlueBird's Promise. BB's has cancellation capability and it is also much faster.
+ * See https://softwareengineering.stackexchange.com/a/279003 and
+ * https://github.com/petkaantonov/bluebird/tree/master/benchmark
+ */
+window.Promise = Promise;
+
 import {isNull, SlickEditors, createCsv, downloadBlob} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 require('no-going-back');

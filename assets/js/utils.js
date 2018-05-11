@@ -15,11 +15,6 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
-const Promise = require('bluebird');
-
-Promise.config({
-    cancellation: true
-});
 
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library
