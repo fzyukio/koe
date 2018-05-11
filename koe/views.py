@@ -14,7 +14,6 @@ from django.http import HttpResponse
 from django.views.generic import TemplateView
 from dotmap import DotMap
 
-from koe import wavfile
 from koe.grid_getters import _get_sequence_info_empty_songs, bulk_get_segments_for_audio
 from koe.model_utils import get_currents, extract_spectrogram
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
@@ -124,23 +123,30 @@ def get_segment_audio(request):
     if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
         compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
-        with open(compressed_url, 'rb') as f:
-            binary_content = f.read()
+        if os.path.isfile(compressed_url):
+            with open(compressed_url, 'rb') as f:
+                binary_content = f.read()
+        else:
+            wav_url = wav_path(audio_file.name)
+            song = pydub.AudioSegment.from_file(wav_url)
+            out = io.BytesIO()
+            song.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
+            binary_content = out.getvalue()
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
         start = segment.start_time_ms
         end = segment.end_time_ms
 
-        wav_url = os.path.join(settings.BASE_DIR, audio_file.file_path)
-        chunk = wavfile.read_segment(wav_url, start, end, mono=True, normalised=False)
+        compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
+        if os.path.isfile(compressed_url):
+            valid_path = compressed_url
+        else:
+            valid_path = wav_path(audio_file.name)
 
-        audio_segment = pydub.AudioSegment(
-            chunk.tobytes(),
-            frame_rate=audio_file.fs,
-            sample_width=chunk.dtype.itemsize,
-            channels=1
-        )
+        song = pydub.AudioSegment.from_file(valid_path)
+        audio_segment = song[start:end]
+
         out = io.BytesIO()
         audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
         binary_content = out.getvalue()
