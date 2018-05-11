@@ -1,6 +1,5 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {log, deepCopy, getUrl, getCache, setCache} from './utils';
-import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');

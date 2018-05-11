@@ -15,14 +15,15 @@ from django.views.generic import TemplateView
 from dotmap import DotMap
 
 from koe.grid_getters import _get_sequence_info_empty_songs, bulk_get_segments_for_audio
-from koe.model_utils import get_currents, extract_spectrogram
+from koe.model_utils import get_user_databases, extract_spectrogram, get_current_similarity
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
-    DatabasePermission, Individual, Species, AudioTrack
+    DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
-           'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation']
+           'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',
+           'request_database_access', 'approve_database_access']
 
 
 def match_target_amplitude(sound, loudness):
@@ -448,7 +449,7 @@ def create_database(request):
     database.save()
 
     # Now assign this database to this user, and switch the working database to this new one
-    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ANNOTATE).save()
+    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER).save()
 
     extra_attr = ExtraAttr.objects.get(klass=User.__name__, name='current-database')
     extra_attr_value, _ = ExtraAttrValue.objects.get_or_create(user=user, attr=extra_attr, owner_id=user.id)
@@ -524,6 +525,99 @@ def save_segmentation(request):
     return rows
 
 
+def request_database_access(request):
+    user = request.user
+    database_id = request.POST.get('database-id', None)
+    if not database_id:
+        raise ValueError('No database is specified.')
+
+    database = Database.objects.filter(id=database_id).first()
+    if database is None:
+        raise ValueError('No such database exists.')
+
+    requested_permission = DatabasePermission.ANNOTATE
+    already_granted = DatabaseAssignment.objects\
+        .filter(user=user, database=database, permission__gte=requested_permission).exists()
+
+    if already_granted:
+        raise ValueError('You\'re already granted equal or greater permission.')
+
+    access_request = AccessRequest.objects.filter(user=user, database=database).first()
+    if access_request and access_request.permission >= requested_permission:
+        raise ValueError('You\'ve already requested equal or greater permission.')
+
+    if access_request is None:
+        access_request = AccessRequest(user=user, database=database)
+
+    access_request.permission = requested_permission
+    access_request.save()
+    return True
+
+
+def approve_database_access(request):
+    you = request.user
+    request_id = request.POST.get('request-id', None)
+    if not request_id:
+        raise ValueError('No request is specified.')
+
+    access_request = AccessRequest.objects.filter(id=request_id).first()
+    if access_request is None:
+        raise ValueError('No such request exists.')
+
+    person_asking_for_access = access_request.user
+    permission_to_grant = access_request.permission
+    database = access_request.database
+
+    has_grant_privilege = DatabaseAssignment.objects \
+        .filter(user=you, database=database, permission__gte=DatabasePermission.ASSIGN_USER).exists()
+
+    if not has_grant_privilege:
+        raise ValueError('You don\'t have permission to grant access on this database.')
+
+    database_assignment = DatabaseAssignment.objects.filter(user=person_asking_for_access, database=database).first()
+
+    if database_assignment and database_assignment.permission >= permission_to_grant:
+        access_request.resolved = True
+        access_request.save()
+        raise ValueError('User\'s already granted equal or greater permission.')
+
+    if database_assignment is None:
+        database_assignment = DatabaseAssignment(user=person_asking_for_access, database=database)
+
+    with transaction.atomic():
+        database_assignment.permission = permission_to_grant
+        database_assignment.save()
+        access_request.resolved = True
+        access_request.save()
+
+    return True
+
+
+def populate_context(context, user, with_similarity=False):
+    databases, current_database = get_user_databases(user)
+    db_assignment = DatabaseAssignment.objects.get(database=current_database, user=user)
+    inaccessible_databases = Database.objects.exclude(id__in=databases)
+
+    databases_own = DatabaseAssignment.objects\
+        .filter(user=user, permission__gte=DatabasePermission.ASSIGN_USER).values_list('database', flat=True)
+
+    pending_requests = AccessRequest.objects.filter(database__in=databases_own, resolved=False)
+
+    context['databases'] = databases
+    context['current_database'] = current_database
+    context['current_database_owner_class'] = User.__name__
+    context['inaccessible_databases'] = inaccessible_databases
+    context['db_assignment'] = db_assignment
+    context['pending_requests'] = pending_requests
+
+    if with_similarity:
+        similarities, current_similarity = get_current_similarity(user, current_database)
+        context['similarities'] = similarities.values_list('id', 'algorithm')
+
+        if current_similarity:
+            context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
+
+
 class IndexView(TemplateView):
     """
     The view to index page
@@ -535,13 +629,8 @@ class IndexView(TemplateView):
         context = super(IndexView, self).get_context_data(**kwargs)
         user = self.request.user
 
-        similarities, current_similarity, databases, current_database = get_currents(user)
+        populate_context(context, user, True)
 
-        context['similarities'] = similarities.values_list('id', 'algorithm')
-        context['databases'] = databases.values_list('id', 'name')
-        context['current_database'] = (current_database.id, current_database.name, User.__name__)
-        if current_similarity:
-            context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
         context['page'] = 'index'
         return context
 
@@ -554,10 +643,8 @@ class ExemplarsView(TemplateView):
         user = self.request.user
         cls = kwargs.get('class', 'label')
 
-        _, _, databases, current_database = get_currents(user)
+        populate_context(context, user)
 
-        context['databases'] = databases.values_list('id', 'name')
-        context['current_database'] = (current_database.id, current_database.name, User.__name__)
         context['cls'] = cls
         context['page'] = 'exemplars'
         context['subpage'] = 'exemplars/{}'.format(cls)
@@ -577,15 +664,11 @@ class SongsView(TemplateView):
         user = self.request.user
         cls = kwargs.get('class', 'label')
 
-        _, _, databases, current_database = get_currents(user)
-        db_assignment = DatabaseAssignment.objects.get(database=current_database, user=user)
+        populate_context(context, user)
 
-        context['databases'] = databases.values_list('id', 'name')
-        context['current_database'] = (current_database.id, current_database.name, User.__name__)
         context['cls'] = cls
         context['page'] = 'songs'
         context['subpage'] = 'songs/{}'.format(cls)
-        context['db_assignment'] = db_assignment
         return context
 
 

@@ -6,7 +6,7 @@ from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
 
-from koe.model_utils import get_currents
+from koe.model_utils import get_user_databases
 from koe.models import AudioFile, Segment, Database
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, audio_path, history_path
@@ -23,7 +23,7 @@ def bulk_get_segment_info(segs, extras):
     :return: [row]
     """
     user = extras.user
-    similarities, current_similarity, databases, current_database = get_currents(user)
+    similarities, current_similarity, databases, current_database = get_user_databases(user)
 
     rows = []
 
@@ -135,7 +135,7 @@ def bulk_get_exemplars(objs, extras):
     """
     cls = extras.cls
     user = extras.user
-    _, _, _, current_database = get_currents(user)
+    _, current_database = get_user_databases(user)
 
     if isinstance(objs, QuerySet):
         ids = objs.filter(segmentation__audio_file__database=current_database).values_list('id', flat=True)
@@ -243,7 +243,7 @@ def bulk_get_song_sequences(all_songs, extras):
     """
     cls = extras.cls
     user = extras.user
-    _, _, _, current_database = get_currents(user)
+    _, current_database = get_user_databases(user)
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)

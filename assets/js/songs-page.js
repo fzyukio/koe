@@ -1,6 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, playAudioFromUrl, initAudioContext} from './audio-handler';
-import {log, deepCopy, getUrl} from './utils';
+import {log, deepCopy} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 

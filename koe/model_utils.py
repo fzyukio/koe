@@ -188,7 +188,7 @@ def natural_order(tree):
     return branches[-1][0]
 
 
-def get_currents(user):
+def get_user_databases(user):
     """
     Return user's current database and the database's current similarity matrix
     :param user:
@@ -206,10 +206,20 @@ def get_currents(user):
     else:
         current_database = databases.first()
 
+    return databases, current_database
+
+
+def get_current_similarity(user, current_database):
+    """
+    Return user's current database and the database's current similarity matrix
+    :param current_database:
+    :param user:
+    :return:
+    """
     similarities = Coordinate.objects.filter(database=current_database)
 
-    current_similarity_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_similarity, user=user,
-                                                             owner_id=current_database.id).first()
+    current_similarity_value = ExtraAttrValue.objects\
+        .filter(attr=settings.ATTRS.user.current_similarity, user=user, owner_id=current_database.id).first()
 
     if current_similarity_value:
         current_similarity_id = current_similarity_value.value
@@ -217,7 +227,7 @@ def get_currents(user):
     else:
         current_similarity = similarities.first()
 
-    return similarities, current_similarity, databases, current_database
+    return similarities, current_similarity
 
 
 def extract_spectrogram(segmentation):

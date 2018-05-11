@@ -344,6 +344,26 @@ class HistoryEntry(StandardModel):
         super(HistoryEntry, self).save(*args, **kwargs)
 
 
+class AccessRequest(StandardModel):
+    """
+    Record a database access request from user so that a database admin can response
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
+    permission = models.IntegerField(choices=DatabasePermission.as_choices(), default=DatabasePermission.VIEW)
+    resolved = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ['user', 'database']
+
+    def __str__(self):
+        resolved_or_not = '[RESOLVED] ' if self.resolved else ''
+        return '{}{} requested {} permission on {}'.format(
+            resolved_or_not, self.user.username, self.get_permission_display(), self.database.name
+        )
+
+
 @receiver(post_delete, sender=HistoryEntry)
 def _history_delete(sender, instance, **kwargs):
     """

@@ -22,6 +22,40 @@
                 {% endfor %}
                 <li class="divider"></li>
                 {% endif %}
+                {% if inaccessible_databases %}
+                <li class="dropdown-submenu">
+                    <a href="#">Request acess</a>
+                    <ul class="dropdown-menu">
+                        {% for database in inaccessible_databases %}
+                            <li>
+                                <a href="#" class="request-database" database="{{ database.id }}">
+                                    {{ database.name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                    <li class="divider"></li>
+                {% endif %}
+
+                {% if pending_requests %}
+                <li class="dropdown-submenu">
+                    <a href="#">Approve Request</a>
+                    <ul class="dropdown-menu">
+                        {% for request in pending_requests %}
+                            <li>
+                                <a href="#" class="approve-request" request="{{ request.id }}">
+                                    <strong>{{ request.user.username }}</strong> requested
+                                    <strong>{{ request.get_permission_display | upper}} </strong>
+                                    permission database <strong>{{ request.database.name }}</strong>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li class="divider"></li>
+                {% endif %}
+
                 <li><a href="#" id="create-database-btn">Create new database</a></li>
             </ul>
         </li>

@@ -18,8 +18,8 @@ Promise.config({
  */
 window.Promise = Promise;
 
-import {isNull, SlickEditors, createCsv, downloadBlob} from './utils';
-import {postRequest} from "./ajax-handler";
+import {isNull, SlickEditors, createCsv, downloadBlob, getUrl} from './utils';
+import {postRequest} from './ajax-handler';
 import {SelectizeEditor} from './selectize-formatter';
 require('no-going-back');
 
@@ -244,6 +244,43 @@ const initDatabaseButtons = function () {
     $('#create-database-btn').on('click', function (e) {
         e.preventDefault();
         showCreateDatabaseDialog();
+    });
+
+    $('.request-database').on('click', function (e) {
+        e.preventDefault();
+        let databaseId = this.getAttribute('database');
+
+        let postData = {
+            'database-id': databaseId
+        };
+
+        let msgGen = function (res) {
+            return res.success ?
+                'Requested has been posted. A database admin will response to your request.' :
+                null;
+        };
+
+        postRequest({
+            requestSlug: 'koe/request-database-access',
+            data: postData,
+            msgGen,
+            immediate: false
+        });
+    });
+
+    $('.approve-request').on('click', function (e) {
+        e.preventDefault();
+        let requestId = this.getAttribute('request');
+
+        let postData = {
+            'request-id': requestId
+        };
+
+        postRequest({
+            requestSlug: 'koe/approve-database-access',
+            data: postData,
+            immediate: false
+        });
     });
 };
 
