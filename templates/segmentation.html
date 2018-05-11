@@ -5,7 +5,7 @@
 {% block content-grid %}
 
     <div class="row no-margin">
-        <div class="col-xs-2 no-padding-left">
+        <div class="col-xs-4 col-sm-3 col-md-2 no-padding-left">
             <div class="btn-group btn-group-justified" role="group" aria-label="...">
                 <div class="btn-group btn-group-sm" role="group">
                     <button id="play-song" type="button" class="btn btn-primary">Play</button>
@@ -35,7 +35,7 @@
 
             </div>
         </div>
-        <div class="col-xs-10 no-padding">
+        <div class="col-xs-8 col-sm-9 col-md-10 no-padding">
             <div id="visualisation">
                 <div class="row no-margin">
                     <svg id="oscillogram"></svg>
@@ -48,21 +48,24 @@
     </div>
 
     <div class="row no-margin">
-        <div class="col-xs-2 no-padding">
+        <div class="col-xs-4 col-sm-3 col-md-2 no-padding">
             <div class="vh-offset has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}"
                  fs="{{ fs }}"></div>
             <div class="offset-holder" id="segments-grid-offset-holder" attr="height"></div>
         </div>
 
-        <div class="col-xs-10 no-padding">
-            <div id="zoomed">
+        <div class="col-xs-8 col-sm-9 col-md-10 no-padding">
+            <div class="vh-offset" id="zoomed">
                 <div class="row no-margin">
-                    <svg id="oscillogram-zoomed"></svg>
+                    <svg class="vh-offset" id="oscillogram-zoomed"></svg>
+                    <div class="offset-holder" id="oscillogram-zoomed-offset-holder" attr="height" divide="3"></div>
                 </div>
                 <div class="row no-margin">
-                    <svg id="spectrogram-zoomed"></svg>
+                    <svg class="vh-offset" id="spectrogram-zoomed"></svg>
+                    <div class="offset-holder" id="spectrogram-zoomed-offset-holder" attr="height" divide="1.5"></div>
                 </div>
             </div>
+            <div class="offset-holder" id="zoomed-offset-holder" attr="height"></div>
         </div>
     </div>
 
@@ -82,27 +85,19 @@
 
 {% block bottom %}
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-primary download-xls" data-download-type="all">Save entire table as
-                CSV
-            </button>
-        </div>
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-primary download-xls" data-download-type="visible-rows-only">Save
-                visible rows as CSV
-            </button>
-        </div>
-
-        <div class="btn-group" role="group">
-            <button disabled id="delete-segments-btn" type="button" class="btn btn-primary">Delete selected</button>
-        </div>
-
         {% if db_assignment.can_annotate %}
+            <div class="btn-group" role="group">
+                <button disabled id="delete-segments-btn" type="button" class="btn btn-primary">
+                    Delete selected
+                </button>
+            </div>
             <div class="btn-group" role="group">
                 <button id="save-segmentations-btn" disabled type="button" class="btn btn-primary">
                     Save segmentation
                 </button>
             </div>
         {% endif %}
+
+        {% include "partials/download-csv-btns.html" %}
     </div>
 {% endblock %}

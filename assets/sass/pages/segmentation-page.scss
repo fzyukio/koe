@@ -2,8 +2,6 @@
 
 $controller-wrapper-height: 36px;
 $controller-wrapper-child-height: 25px;
-$grid-status-width: 150px;
-$slider-group-width: 300px;
 
 $spectrogram-height: 200px;
 $oscillogram-height: 100px;
@@ -74,19 +72,26 @@ $axis-height: 20px;
 }
 
 #zoomed {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
+  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height}) / 3 - #{$axis-height} - 5px);
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height}) / 3);
     width: 100%;
   }
 
   #spectrogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height}) * 2 / 3 + #{$axis-height});
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height}) * 2 / 3);
     width: 100%;
   }
+}
+
+#oscillogram-zoomed-offset-holder,
+#spectrogram-zoomed-offset-holder,
+#zoomed-offset-holder {
+  display: none;
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height});
 }
 
 #oscillogram, #oscillogram-zoomed {

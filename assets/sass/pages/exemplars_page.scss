@@ -2,8 +2,6 @@
 
 $controller-wrapper-height: 36px;
 $controller-wrapper-child-height: 25px;
-$grid-status-width: 150px;
-$slider-group-width: 300px;
 
 
 #exemplars-grid {
@@ -62,6 +60,7 @@ $slider-group-width: 300px;
 
   #exemplars-grid-controller {
     width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
+    padding-left: 20px;
   }
 }
 

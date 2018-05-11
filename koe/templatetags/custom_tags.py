@@ -80,20 +80,19 @@ def get_server_constants():
 def get_navbar_urls():
     return {
         'index': 'Label',
-        'version': 'Versions',
-        # 'segments-list': 'Songs List'
+        'version': 'History',
     }
 
 
 @register.simple_tag
-def get_complex_navbar_urls():
+def get_page_subpage_urls():
     return {
         'exemplars': ('Exemplars', [('label', 'By label'),
                                     ('label_family', 'By family'),
                                     ('label_subfamily', 'By subfamily')]),
-        'songs': ('Song sequences', [('label', 'Using labels'),
-                                     ('label_family', 'Using family'),
-                                     ('label_subfamily', 'Using subfamily')])
+        'songs': ('Sequences', [('label', 'Using labels'),
+                                ('label_family', 'Using family'),
+                                ('label_subfamily', 'Using subfamily')])
     }
 
 
@@ -106,3 +105,14 @@ def get_pages():
     home_page_root = HomePage.objects.first()
     home_page_children = home_page_root.get_children().filter(live__exact=True)
     return home_page_children
+
+
+@register.filter
+def get_default_url(page):
+    """
+    Return the url according to the default site.
+    The method url() provided by Page class doesn't work correctly when called without argument from the template
+    :param page:
+    :return:
+    """
+    return page.relative_url(page.get_site())

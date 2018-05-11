@@ -22,7 +22,7 @@
                 {% endif %}
             {% endfor %}
 
-            {% get_complex_navbar_urls as urls %}
+            {% get_page_subpage_urls as urls %}
             {% for url, pages in urls.items %}
                 <li class="dropdown {% if page == url %}active{% endif %}">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ pages.0 }}<span class="caret"></span></a>
@@ -38,7 +38,7 @@
 
             <!--Display all child pages of the Welcome page (from the CMS system) -->
             <li class="dropdown {% if page.is_cms_page %}active{% endif %}">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Other pages<span class="caret"></span></a>
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Blog<span class="caret"></span></a>
                 <ul class="dropdown-menu">
                 {% get_pages as pages %}
                  <!-- We must use page_ to not shadow the page variable that is given by the view -->
@@ -46,7 +46,7 @@
                     {% if page.slug == page_.slug %}
                         <li class="active"><a href="{{ page_.url }}">{{ page_.slug|title }}</a></li>
                     {% else %}
-                        <li><a href="{{ page_.url }}">{{ page_.slug|title }}</a></li>
+                        <li><a href="{{ page_ | get_default_url }}">{{ page_.slug|title }}</a></li>
                     {% endif %}
                 {% endfor %}
                 </ul>
@@ -64,7 +64,7 @@
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-user"></span> 
                         <strong>{{ user.username }}</strong>
-                        <span class="glyphicon glyphicon-chevron-down"></span>
+                        <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
                         <li>
@@ -93,7 +93,7 @@
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-user"></span> 
                         <strong>Guest</strong>
-                        <span class="glyphicon glyphicon-chevron-down"></span>
+                        <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
                         <li>
