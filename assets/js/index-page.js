@@ -65,12 +65,9 @@ const gridStatusNSelceted = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const similarityCombo = $('#similarity-sort-combo');
-const databaseCombo = $('#database-select-combo');
 
 const currentSimilarityAttr = similarityCombo.attr('current-attr');
-const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const similarityClass = similarityCombo.attr('cls');
-const databaseClass = databaseCombo.attr('cls');
 
 let ce;
 
@@ -447,30 +444,6 @@ export const run = function (commonElements) {
         }
     });
 
-    $('.select-database').on('click', function (e) {
-        e.preventDefault();
-
-        let parent = $(this).parent();
-        if (parent.hasClass('not-active')) {
-            let databaseId = this.getAttribute('database');
-            let postData = {attr: currentDatabaseAttr,
-                klass: databaseClass,
-                value: databaseId};
-            let onSuccess = function () {
-                grid.initMainGridContent({}, focusOnGridOnInit);
-            };
-
-            postRequest({requestSlug: 'change-extra-attr-value',
-                data: postData,
-                onSuccess});
-
-            /* Update the button */
-            databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
-            parent.removeClass('not-active').addClass('active');
-        }
-    });
-
     contextMenu.click(function (e) {
         if (!$(e.target).is('a')) {
             return;
@@ -666,12 +639,14 @@ export const postRun = function () {
 
         ce.dialogModalOkBtn.one('click', function () {
             let value = inputText.val();
-            let databaseId = databaseCombo.attr('database');
+            let databaseId = ce.databaseCombo.attr('database');
             inputText.val('');
 
             ce.dialogModal.modal('hide');
-            let postData = {comment: value,
-                database: databaseId};
+            let postData = {
+                comment: value,
+                database: databaseId
+            };
             let msgGen = function (res) {
                 return res.success ?
                     `History saved to ${res.response}. You can download it from the version control page` :
@@ -682,4 +657,8 @@ export const postRun = function () {
                 msgGen});
         });
     });
+};
+
+export const handleDatabaseChange = function() {
+    grid.initMainGridContent({}, focusOnGridOnInit);
 };

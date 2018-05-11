@@ -7,10 +7,6 @@ $spectrogram-height: 200px;
 $oscillogram-height: 100px;
 $visualisation-height: 300px;
 
-$spectrogram-zoomed-height: 400px;
-$oscillogram-zoomed-height: 200px;
-$zoomed-height: 600px;
-
 $scrollbar-height: 15px;
 $axis-height: 20px;
 
@@ -87,11 +83,23 @@ $axis-height: 20px;
   }
 }
 
-#oscillogram-zoomed-offset-holder,
-#spectrogram-zoomed-offset-holder,
 #zoomed-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height});
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
+}
+
+#oscillogram-zoomed-offset-holder,
+#spectrogram-zoomed-offset-holder {
+  display: none;
+  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height})
+}
+
+#oscillogram-zoomed-offset-holder {
+  minus-height: $axis-height;
+}
+
+#spectrogram-zoomed-offset-holder {
+  add-height: $axis-height;
 }
 
 #oscillogram, #oscillogram-zoomed {

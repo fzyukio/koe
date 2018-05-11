@@ -19,11 +19,13 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, SlickEditors, createCsv, downloadBlob} from './utils';
+import {postRequest} from "./ajax-handler";
 import {SelectizeEditor} from './selectize-formatter';
 require('no-going-back');
 
 let page;
 
+const inputText = $('<input type="text" class="form-control"/>');
 const dialogModal = $('#dialog-modal');
 const dialogModalTitle = dialogModal.find('.modal-title');
 const dialogModalBody = dialogModal.find('.modal-body');
@@ -31,13 +33,18 @@ const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
+const databaseCombo = $('#database-select-combo');
+const currentDatabaseAttr = databaseCombo.attr('current-attr');
+const databaseClass = databaseCombo.attr('cls');
+
 const commonElements = {
     dialogModal,
     dialogModalTitle,
     dialogModalBody,
     dialogModalOkBtn,
     alertSuccess,
-    alertFailure
+    alertFailure,
+    databaseCombo
 };
 
 
@@ -149,8 +156,8 @@ const countDown = function () {
  * This script will calculate the width of the submenu and set the css attribute accordingly.
  */
 const subMenuOpenRight = function () {
-    $('.dropdown-menu-right .dropdown-submenu').on('mouseover', function () {
-        let submenu = $(this).find('.dropdown-menu');
+    $('.dropdown-menu-right .dropdown-submenu').on('mouseover click', function () {
+        let submenu = $(this).find('.dropdown-menu').first();
         let width = submenu.width();
 
         /*
@@ -162,6 +169,81 @@ const subMenuOpenRight = function () {
     }).on('mouseleave', function () {
         $(this).find('.dropdown-menu').css('display', 'none');
         return false;
+    });
+};
+
+
+/**
+ * When user clicks on the "create new database" button from the drop down menu, show a dialog
+ * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
+ * repeat this process. Only dismiss the dialog if a new database is created.
+ * @param errorMessage to be shown if not undefined
+ */
+const showCreateDatabaseDialog = function (errorMessage) {
+    dialogModalTitle.html('Creating a new database...');
+    dialogModalBody.html('<label>Give it a name</label>');
+    dialogModalBody.append(inputText);
+    if (errorMessage) {
+        dialogModalBody.append(`<p>${errorMessage}</p>`);
+    }
+
+    dialogModal.modal('show');
+
+    dialogModalOkBtn.one('click', function () {
+        dialogModal.modal('hide');
+        let url = getUrl('send-request', 'koe/create-database');
+        let databaseName = inputText.val();
+        inputText.val('');
+
+        $.post(url, {name: databaseName}, function (res) {
+            res = JSON.parse(res);
+            dialogModal.modal('hide');
+            dialogModal.one('hidden.bs.modal', function () {
+                if (res.success) {
+                    location.reload();
+                }
+                else {
+                    showCreateDatabaseDialog(res.error);
+                }
+            });
+        });
+    });
+};
+
+
+const initDatabaseButtons = function () {
+    $('.select-database').on('click', function (e) {
+        e.preventDefault();
+
+        let parent = $(this).parent();
+        if (parent.hasClass('not-active')) {
+            let databaseId = this.getAttribute('database');
+            let postData = {
+                attr: currentDatabaseAttr,
+                klass: databaseClass,
+                value: databaseId
+            };
+            let onSuccess = function () {
+                page.handleDatabaseChange();
+            };
+
+            postRequest({
+                requestSlug: 'change-extra-attr-value',
+                data: postData,
+                onSuccess
+            });
+
+            /* Update the button */
+            databaseCombo.attr('database', databaseId);
+            $('.database-value').val(databaseId);
+            parent.parent().find('li.active').removeClass('active').addClass('not-active');
+            parent.removeClass('not-active').addClass('active');
+        }
+    });
+
+    $('#create-database-btn').on('click', function (e) {
+        e.preventDefault();
+        showCreateDatabaseDialog();
     });
 };
 
@@ -200,6 +282,7 @@ const _postRun = function () {
 
     countDown();
     subMenuOpenRight();
+    initDatabaseButtons();
 };
 
 /**

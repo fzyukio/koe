@@ -1,0 +1,46 @@
+<span class="input-group-addon right dropdown">
+    <button class="btn btn-primary btn-xs dropdown-toggle" type="button"
+            id="features-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+        <span rel="tooltip" data-toggle="tooltip" data-trigger="hover" data-animation="false"
+              data-placement="top" title="" class="fa fa-cogs">
+        </span>&nbsp
+        <span class="caret"></span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu">
+        <li class="dropdown-submenu">
+            <a id="database-select-combo" data-toggle="dropdown" database="{{ current_database.id }}"
+               cls="{{ current_database_owner_class }}" current-attr="current-database">Database</a>
+            <ul class="dropdown-menu">
+                {% if databases %}
+                {% for database in databases %}
+                <li class="{% if current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                    <a href="#" class="select-database" database="{{ database.id }}">
+                        {{ database.name }}
+                    </a>
+                </li>
+                {% endfor %}
+                <li class="divider"></li>
+                {% endif %}
+                <li><a href="#" id="create-database-btn">Create new database</a></li>
+            </ul>
+        </li>
+        {% if similarities %}
+            <li class="dropdown-submenu">
+            <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.0 }}"
+               cls="{{ current_similarity.2 }}" current-attr="current-similarity"
+               owner-id="{{ current_database.0 }}">Sort algorithm</a>
+            <ul class="dropdown-menu">
+                {% for similarity in similarities %}
+                    <li class="{% if current_similarity.0 == similarity.0 %}active{% else %}not-active{% endif %}">
+                        <a class="select-similarity" href="#" similarity="{{ similarity.0 }}">
+                            {{ similarity.1 }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+
+        </li>
+        {% endif %}
+    </ul>
+</span>

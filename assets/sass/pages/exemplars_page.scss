@@ -57,11 +57,6 @@ $controller-wrapper-child-height: 25px;
       background: #d9230f7a;
     }
   }
-
-  #exemplars-grid-controller {
-    width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
-    padding-left: 20px;
-  }
 }
 
 #exemplars-grid-filter {

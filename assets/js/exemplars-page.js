@@ -61,10 +61,6 @@ const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
-const databaseCombo = $('#database-select-combo');
-const currentDatabaseAttr = databaseCombo.attr('current-attr');
-const databaseClass = databaseCombo.attr('cls');
-
 
 const initSlider = function () {
     speedSlider.slider();
@@ -296,32 +292,12 @@ export const run = function () {
         subscribeFlexibleEvents();
     });
 
-    $('.select-database').on('click', function (e) {
-        e.preventDefault();
-
-        let parent = $(this).parent();
-        if (parent.hasClass('not-active')) {
-
-            let databaseId = this.getAttribute('database');
-            let postData = {attr: currentDatabaseAttr,
-                klass: databaseClass,
-                value: databaseId};
-            let onSuccess = function () {
-                grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
-            };
-
-            postRequest({requestSlug: 'change-extra-attr-value',
-                data: postData,
-                onSuccess});
-
-            /* Update the button */
-            databaseCombo.attr('database', databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
-            parent.removeClass('not-active').addClass('active');
-        }
-    });
-
     keyboardJS.bind(['space'], playAudioOnKey);
 
     initSlider();
 };
+
+export const handleDatabaseChange = function() {
+    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+};
+

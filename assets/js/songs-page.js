@@ -53,16 +53,11 @@ class Grid extends FlexibleGrid {
 
 export const grid = new Grid();
 let cls = $('#songs-grid').attr('cls');
-const inputText = $('<input type="text" class="form-control"/>');
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
 const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
-
-const databaseCombo = $('#database-select-combo');
-const currentDatabaseAttr = databaseCombo.attr('current-attr');
-const databaseClass = databaseCombo.attr('cls');
 
 const uploadSongsBtn = $('#upload-songs-btn');
 const uploadCsvBtn = $('#upload-csv-btn');
@@ -257,44 +252,6 @@ const focusOnGridOnInit = function () {
 
 
 /**
- * When user clicks on the "create new database" button from the drop down menu, show a dialog
- * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
- * repeat this process. Only dismiss the dialog if a new database is created.
- * @param errorMessage to be shown if not undefined
- */
-const showCreateDatabaseDialog = function (errorMessage) {
-    ce.dialogModalTitle.html('Creating a new database...');
-    ce.dialogModalBody.html('<label>Give it a name</label>');
-    ce.dialogModalBody.append(inputText);
-    if (errorMessage) {
-        ce.dialogModalBody.append(`<p>${errorMessage}</p>`);
-    }
-
-    ce.dialogModal.modal('show');
-
-    ce.dialogModalOkBtn.one('click', function () {
-        ce.dialogModal.modal('hide');
-        let url = getUrl('send-request', 'koe/create-database');
-        let databaseName = inputText.val();
-        inputText.val('');
-
-        $.post(url, {name: databaseName}, function (res) {
-            res = JSON.parse(res);
-            ce.dialogModal.modal('hide');
-            ce.dialogModal.one('hidden.bs.modal', function () {
-                if (res.success) {
-                    location.reload();
-                }
-                else {
-                    showCreateDatabaseDialog(res.error);
-                }
-            });
-        });
-    });
-};
-
-
-/**
  * Allow user to upload songs
  */
 const initUploadSongsBtn = function () {
@@ -351,7 +308,7 @@ const initDeleteSongsBtn = function () {
             selectedItems.push(item);
         }
 
-        let databaseId = databaseCombo.attr('database');
+        let databaseId = ce.databaseCombo.attr('database');
 
         ce.dialogModalTitle.html(`Confirm delete ${numRows} song(s)`);
         ce.dialogModalBody.html(`Are you sure you want to delete these songs and all data associated with it? 
@@ -396,38 +353,6 @@ export const run = function (commonElements) {
         subscribeFlexibleEvents();
     });
 
-    $('.select-database').on('click', function (e) {
-        e.preventDefault();
-
-        let parent = $(this).parent();
-        if (parent.hasClass('not-active')) {
-            let databaseId = this.getAttribute('database');
-            let postData = {
-                attr: currentDatabaseAttr,
-                klass: databaseClass,
-                value: databaseId
-            };
-            let onSuccess = function () {
-                grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
-            };
-            ce.dialogModal.modal('hide');
-            postRequest({requestSlug: 'change-extra-attr-value',
-                data: postData,
-                onSuccess});
-
-            /* Update the button */
-            databaseCombo.attr('database', databaseId);
-            $('.database-value').val(databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
-            parent.removeClass('not-active').addClass('active');
-        }
-    });
-
-    $('#create-database-btn').on('click', function (e) {
-        e.preventDefault();
-        showCreateDatabaseDialog();
-    });
-
     initSlider();
 };
 
@@ -435,4 +360,8 @@ export const postRun = function () {
     subscribeFlexibleEvents();
     initUploadSongsBtn();
     initDeleteSongsBtn();
+};
+
+export const handleDatabaseChange = function() {
+    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
 };

@@ -88,16 +88,15 @@ export const uploadRequest = function ({
  * @param immediate
  */
 const ajaxRequest = function ({
-    requestSlug, data, msgGen, type = 'POST', ajaxArgs = {}, onSuccess = null,
+    requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = null,
     onFailure = null, immediate = false
 }) {
     let url = getUrl('send-request', requestSlug);
-    msgGen = msgGen || defaultMsgGen;
 
     let responseHandler = function (res) {
         res = JSON.parse(res);
         let alertEl, callback, delay, callbackArg;
-        let message = msgGen(res);
+        let message = msgGen(res) || defaultMsgGen(res);
 
         if (res.success) {
             alertEl = alertSuccess;

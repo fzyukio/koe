@@ -1760,7 +1760,7 @@ function getCssTextRecursive (selector) {
  * A do nothing function
  */
 export const noop = function() {
-    // do nothing.
+    return undefined;
 };
 
 
