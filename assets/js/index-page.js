@@ -501,9 +501,6 @@ const addFilter = function (field) {
     filterInput[0].focus();
 };
 
-const inputText = $('<input type="text" class="form-control"/>');
-const inputSelect = $('<select class="selectize" ></select>');
-
 const setLabel = function (field) {
     let grid_ = grid.mainGrid;
     let selectedRows = grid_.getSelectedRows();
@@ -524,7 +521,7 @@ const setLabel = function (field) {
         let selectableOptions = selectableColumns[field];
 
         const isSelectize = Boolean(selectableOptions);
-        let inputEl = isSelectize ? inputSelect : inputText;
+        let inputEl = isSelectize ? ce.inputSelect : ce.inputText;
         ce.dialogModalBody.children().remove();
         ce.dialogModalBody.append(inputEl);
         let defaultValue = inputEl.val();
@@ -629,18 +626,18 @@ const contextHandlerDecorator = function (colDef) {
 
 export const postRun = function () {
     $('#save-data-btn').click(function () {
-        inputText.val('');
+        ce.inputText.val('');
 
         ce.dialogModalTitle.html('Backing up your data...');
         ce.dialogModalBody.html('<label>Give it a comment (optional)</label>');
-        ce.dialogModalBody.append(inputText);
+        ce.dialogModalBody.append(ce.inputText);
 
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let value = inputText.val();
+            let value = ce.inputText.val();
             let databaseId = ce.databaseCombo.attr('database');
-            inputText.val('');
+            ce.inputText.val('');
 
             ce.dialogModal.modal('hide');
             let postData = {

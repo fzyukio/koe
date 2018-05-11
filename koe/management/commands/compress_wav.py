@@ -68,7 +68,7 @@ class Command(BaseCommand):
     def handle(self, testfile, fmt, *args, **options):
 
         if testfile is None:
-            audio_file_names = AudioFile.objects.all().values_list('name', flat=True)
+            audio_file_names = AudioFile.objects.filter(original=None).values_list('name', flat=True)
 
             conversion_list = []
 

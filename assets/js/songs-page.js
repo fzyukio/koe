@@ -62,6 +62,7 @@ const gridStatusNTotal = gridStatus.find('#ntotal');
 const uploadSongsBtn = $('#upload-songs-btn');
 const uploadCsvBtn = $('#upload-csv-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
+const copySongsBtn = $('#copy-songs-btn');
 
 const audioUploadForm = $('#file-upload-form');
 const audioUploadInput = audioUploadForm.find('input[type=file]');
@@ -139,10 +140,11 @@ const subscribeFlexibleEvents = function () {
     });
 
     /**
-     * When songs are selected, enable delete button
+     * When songs are selected, enable delete and copy button
      */
-    function enableDeleteSongsBtn() {
+    function onSongsAdded() {
         deleteSongsBtn.prop('disabled', false);
+        copySongsBtn.prop('disabled', false);
     }
 
     /**
@@ -150,16 +152,19 @@ const subscribeFlexibleEvents = function () {
      * @param e event
      * @param args contains 'grid' - the main SlickGrid
      */
-    function disableDeleteSongsBtn(e, args) {
+    function onSongsRemoved(e, args) {
         let grid_ = args.grid;
-        if (grid_.getSelectedRows().length == 0) deleteSongsBtn.prop('disabled', true);
+        if (grid_.getSelectedRows().length == 0) {
+            deleteSongsBtn.prop('disabled', true);
+            copySongsBtn.prop('disabled', true);
+        }
     }
 
-    grid.on('row-added', enableDeleteSongsBtn);
-    grid.on('rows-added', enableDeleteSongsBtn);
+    grid.on('row-added', onSongsAdded);
+    grid.on('rows-added', onSongsAdded);
 
-    grid.on('row-removed', disableDeleteSongsBtn);
-    grid.on('rows-removed', disableDeleteSongsBtn);
+    grid.on('row-removed', onSongsRemoved);
+    grid.on('rows-removed', onSongsRemoved);
 };
 
 
@@ -275,19 +280,23 @@ const initUploadSongsBtn = function () {
     audioUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        let onSuccess = function(rows) {
+        let onSuccess = function (rows) {
             grid.appendRows(rows);
         };
-        uploadRequest({requestSlug: 'koe/import-audio-files',
+        uploadRequest({
+            requestSlug: 'koe/import-audio-files',
             data: formData,
-            onSuccess});
+            onSuccess
+        });
     });
 
     csvUploadForm.submit(function (e) {
         e.preventDefault();
         let formData = new FormData(this);
-        uploadRequest({requestSlug: 'koe/import-audio-metadata',
-            data: formData});
+        uploadRequest({
+            requestSlug: 'koe/import-audio-metadata',
+            data: formData
+        });
     });
 };
 
@@ -332,12 +341,73 @@ const initDeleteSongsBtn = function () {
                 }
             };
             ce.dialogModal.modal('hide');
-            postRequest({requestSlug: 'koe/delete-songs',
+            postRequest({
+                requestSlug: 'koe/delete-songs',
                 data: postData,
                 msgGen,
                 onSuccess,
-                immediate: true});
+                immediate: true
+            });
         })
+    });
+};
+
+
+/**
+ * Allows user to copy songs to a different database
+ */
+const initCopySongsBtn = function () {
+    copySongsBtn.click(function () {
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let ids = [];
+        let selectedItems = [];
+        let dataView = grid_.getData();
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            ids.push(item.id);
+            selectedItems.push(item);
+        }
+
+        let databaseId = ce.databaseCombo.attr('database');
+
+        ce.dialogModalTitle.html(`Copy ${numRows} song(s) to a database`);
+        ce.dialogModalBody.html(`Please provide the name of the target database for these files to be copied to. 
+        Make sure you have permission to add files to this database.`);
+
+        let inputEl = ce.inputText;
+        ce.dialogModalBody.append(inputEl);
+
+        ce.dialogModal.on('shown.bs.modal', function () {
+            inputEl.focus();
+        });
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.off('click').one('click', function () {
+            let databaseName = inputEl.val();
+
+            let postData = {
+                ids: JSON.stringify(ids),
+                'target-database-name': databaseName,
+                'source-database-id': databaseId
+            };
+
+            let msgGen = function (res) {
+                return res.success ?
+                    `Success. ${numRows} file(s) copied to database ${databaseName}. 
+                    You can view these files by switching to database ${databaseName}` :
+                    null;
+            };
+
+            ce.dialogModal.modal('hide');
+            postRequest({
+                requestSlug: 'koe/copy-files',
+                data: postData,
+                msgGen
+            });
+        });
     });
 };
 
@@ -360,8 +430,9 @@ export const postRun = function () {
     subscribeFlexibleEvents();
     initUploadSongsBtn();
     initDeleteSongsBtn();
+    initCopySongsBtn();
 };
 
-export const handleDatabaseChange = function() {
+export const handleDatabaseChange = function () {
     grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
 };

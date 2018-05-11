@@ -26,6 +26,8 @@ require('no-going-back');
 let page;
 
 const inputText = $('<input type="text" class="form-control"/>');
+const inputSelect = $('<select class="selectize" ></select>');
+
 const dialogModal = $('#dialog-modal');
 const dialogModalTitle = dialogModal.find('.modal-title');
 const dialogModalBody = dialogModal.find('.modal-body');
@@ -38,6 +40,8 @@ const currentDatabaseAttr = databaseCombo.attr('current-attr');
 const databaseClass = databaseCombo.attr('cls');
 
 const commonElements = {
+    inputText,
+    inputSelect,
     dialogModal,
     dialogModalTitle,
     dialogModalBody,

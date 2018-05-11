@@ -101,8 +101,9 @@ class Database(StandardModel):
 class DatabasePermission(MagicChoices):
     VIEW = 1
     ANNOTATE = 2
-    ADD_FILES = 3
-    DELETE_FILES = 4
+    COPY_FILES = 3
+    ADD_FILES = 4
+    DELETE_FILES = 5
     ASSIGN_USER = 10
 
 
@@ -130,6 +131,9 @@ class DatabaseAssignment(SimpleModel):
     def can_annotate(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.ANNOTATE
 
+    def can_copy_files(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.COPY_FILES
+
     def can_add_files(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.ADD_FILES
 
@@ -147,18 +151,28 @@ class AudioFile(StandardModel):
 
     fs = models.IntegerField()
     length = models.IntegerField()
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     track = models.ForeignKey(AudioTrack, null=True, blank=True, on_delete=models.SET_NULL)
     individual = models.ForeignKey(Individual, null=True, blank=True, on_delete=models.SET_NULL)
     quality = models.CharField(max_length=2, null=True, blank=True)
     database = models.ForeignKey(Database, on_delete=models.CASCADE)
 
-    @property
-    def file_path(self):
-        return wav_path(self.name)
+    # To facilitate copying database - when an AudioFile object is copied, another object is created
+    # with the same name but different database, and reference this object as its original
+    original = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ['name', 'database']
 
     def __str__(self):
         return self.name
+
+    def is_original(self):
+        """
+        An AudioFile object is original if it doesn't reference any one
+        :return: True if it is original
+        """
+        return self.original is None
 
 
 class Segment(SimpleModel):
@@ -399,15 +413,31 @@ def _mymodel_delete(sender, instance, **kwargs):
             warning('File {} doesnot exist.'.format(filepath))
 
     if isinstance(instance, AudioFile):
-        wav_file = wav_path(instance.name)
-        compressed_file = audio_path(instance.name, settings.AUDIO_COMPRESSED_FORMAT)
 
-        if os.path.isfile(wav_file):
-            os.remove(wav_file)
-            print('Removed file {}'.format(wav_file))
-        if os.path.isfile(compressed_file):
-            os.remove(compressed_file)
-            print('Removed file {}'.format(compressed_file))
+        # Only delete actual files if this instance is the only one referencing it
+        # If there is duplicate - don't delete the file.
+        # Remember - if there is no duplicate the next statement returns empty because at this point the object
+        # has already been deleted from the DB.
+        duplicates = AudioFile.objects.filter(name=instance.name)
+
+        if not duplicates:
+            wav_file = wav_path(instance.name)
+            compressed_file = audio_path(instance.name, settings.AUDIO_COMPRESSED_FORMAT)
+
+            if os.path.isfile(wav_file):
+                os.remove(wav_file)
+                print('Removed file {}'.format(wav_file))
+            if os.path.isfile(compressed_file):
+                os.remove(compressed_file)
+                print('Removed file {}'.format(compressed_file))
+
+        # In case the original owner is deleting their file, we need to transfer ownership of the audio file to
+        # one of the duplicates.
+        elif instance.is_original():
+            first_duplicate = duplicates.first()
+            duplicates.update(original=first_duplicate)
+            first_duplicate.original = None
+            first_duplicate.save()
 
     instance_id = getattr(instance, 'id', None)
     if instance_id:

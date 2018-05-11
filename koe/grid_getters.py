@@ -6,7 +6,7 @@ from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
 
-from koe.model_utils import get_user_databases
+from koe.model_utils import get_user_databases, get_current_similarity
 from koe.models import AudioFile, Segment, Database
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, audio_path, history_path
@@ -23,7 +23,8 @@ def bulk_get_segment_info(segs, extras):
     :return: [row]
     """
     user = extras.user
-    similarities, current_similarity, databases, current_database = get_user_databases(user)
+    databases, current_database = get_user_databases(user)
+    similarities, current_similarity = get_current_similarity(user, current_database)
 
     rows = []
 

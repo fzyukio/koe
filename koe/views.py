@@ -23,7 +23,7 @@ from root.utils import history_path, ensure_parent_folder_exists, wav_path, audi
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',
-           'request_database_access', 'approve_database_access']
+           'request_database_access', 'approve_database_access', 'copy_files']
 
 
 def match_target_amplitude(sound, loudness):
@@ -373,7 +373,7 @@ def import_audio_metadata(request):
 
         filename_to_metadata[filename] = (individual, quality, track)
 
-    existing_audio_files = AudioFile.objects.filter(name__in=filename_to_metadata.keys())
+    existing_audio_files = AudioFile.objects.filter(name__in=filename_to_metadata.keys(), database=database)
 
     with transaction.atomic():
         for audio_file in existing_audio_files:
@@ -415,23 +415,7 @@ def delete_songs(request):
         raise PermissionError('You\'re trying to delete files that don\'t belong to database {}. '
                               'Are you messing with Javascript?'.format(database.name))
 
-    audio_files_names = list(audio_files.values_list('name', flat=True))
     audio_files.delete()
-
-    fails = []
-    exts = ['wav', settings.AUDIO_COMPRESSED_FORMAT]
-    for name in audio_files_names:
-        try:
-            for ext in exts:
-                file_path = audio_path(name, ext)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-        except Exception:
-            fails.append(name)
-
-    if fails:
-        raise RuntimeError('Unable to remove files: {}'.format('\n'.format(fails)))
-
     return True
 
 
@@ -589,6 +573,165 @@ def approve_database_access(request):
         database_assignment.save()
         access_request.resolved = True
         access_request.save()
+
+    return True
+
+
+def copy_files(request):
+    """
+    Copy files from the source database to the target database, not copying the actual files, but everything database-
+    wise is copied, so the copies don't affect the original.
+    :param request:
+    :return:
+    """
+    user = request.user
+    ids = json.loads(request.POST.get('ids', '{}'))
+
+    if not ids:
+        raise ValueError('No song IDs specified.')
+
+    target_database_name = request.POST.get('target-database-name', None)
+    if target_database_name is None:
+        raise ValueError('No target database name specified.')
+
+    source_database_id = request.POST.get('source-database-id', None)
+    if source_database_id is None:
+        raise ValueError('No source database specified.')
+
+    target_database = Database.objects.filter(name=target_database_name).first()
+    if target_database is None:
+        raise ValueError('Target database {} doesn\'t exist.'.format(target_database_name))
+
+    source_database = Database.objects.filter(id=source_database_id).first()
+    if source_database is None:
+        raise ValueError('Source database doesn\'t exist.')
+
+    has_copy_privilege = DatabaseAssignment.objects\
+        .filter(user=user, database=source_database, permission__gte=DatabasePermission.COPY_FILES).first()
+
+    if not has_copy_privilege:
+        raise ValueError('You don\'t have permission to copy files from the source database')
+
+    has_add_files_privilege = DatabaseAssignment.objects \
+        .filter(user=user, database=target_database, permission__gte=DatabasePermission.ADD_FILES).first()
+
+    if not has_add_files_privilege:
+        raise ValueError('You don\'t have permission to copy files to the target database')
+
+    # Make sure all those IDs belong to the source database
+    source_audio_files = AudioFile.objects.filter(id__in=ids, database=source_database)
+    if len(source_audio_files) != len(ids):
+        raise ValueError('There\'s a mismatch between the song IDs you provided and the actual songs in the database')
+
+    song_values = source_audio_files\
+        .values_list('id', 'fs', 'length', 'name', 'track', 'individual', 'quality', 'original')
+    old_song_id_to_name = {x[0]: x[3] for x in song_values}
+    old_song_names = old_song_id_to_name.values()
+    old_song_ids = old_song_id_to_name.keys()
+
+    # Make sure there is no duplication:
+    duplicate_audio_files = AudioFile.objects.filter(id__in=ids, database=target_database, name__in=old_song_names)
+    if duplicate_audio_files:
+        raise ValueError('Some file(s) you\'re trying to copy already exist in {}'.format(target_database_name))
+
+    song_segmentation_values = Segmentation.objects\
+        .filter(audio_file__in=source_audio_files).values_list('id', 'audio_file')
+
+    # not all AudioFiles have Segmentation - so this is to keep track of which Segmentations need to be copied
+    song_old_id_to_segmentation_old_id = {x[1]: x[0] for x in song_segmentation_values}
+
+    # We need this to get all Segments that need to be copied - again, because not all AudioFiles have Segmentation
+    segmentations_old_ids = song_old_id_to_segmentation_old_id.values()
+
+    # We need to map old and new IDs of AudioFiles so that we can copy their ExtraAttrValue later
+    songs_old_id_to_new_id = {}
+
+    # We need to map old and new IDs of Segmentation so that we can bulk create new Segments for the new Segmentation
+    # based on the old Segments of the old Segmentation
+    segmentation_old_id_to_new_id = {}
+
+    # We need this to query back the Segments after they have been bulk created (bulk-creation doesn't return the actual
+    # IDs)
+    new_segmentation_ids = []
+
+    # Create Song and Segmentation objects one by one because they can't be bulk created
+    for old_id, fs, length, name, track, individual, quality, original in song_values:
+        # Make sure that we always point to the true original. E.g if AudioFile #2 is a copy of #1 and someone makes
+        # a copy of AudioFile #2, the new AudioFile must still reference #1 as its original
+
+        original_id = old_id if original is None else original
+
+        audio_file = AudioFile.objects.create(fs=fs, length=length, name=name, track_id=track, individual_id=individual,
+                                              quality=quality, original_id=original_id, database=target_database)
+
+        old_segmentation_id = song_old_id_to_segmentation_old_id.get(old_id, None)
+        if old_segmentation_id:
+            segmentation = Segmentation.objects.create(source='user', audio_file=audio_file)
+            segmentation_old_id_to_new_id[old_segmentation_id] = segmentation.id
+            new_segmentation_ids.append(segmentation.id)
+
+        songs_old_id_to_new_id[old_id] = audio_file.id
+
+    segments = Segment.objects.filter(segmentation__source='user', segmentation__in=segmentations_old_ids)
+    segments_values = segments.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
+                                           'segmentation__audio_file__name', 'segmentation__id')
+
+    # We need this to map old and new IDs of Segments so that we can copy their ExtraAttrValue later
+    # The only reliable way to map new to old Segments is through the pair (start_time_ms, end_time_ms) since they are
+    # constrained to be unique
+    segments_old_id_to_start_end = {x[0]: (x[1], x[2]) for x in segments_values}
+
+    new_segmentations_info = {}
+    for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, old_segmentation_id in segments_values:
+        segment_info = (seg_id, start, end, mean_ff, min_ff, max_ff)
+        if old_segmentation_id not in new_segmentations_info:
+            new_segmentations_info[old_segmentation_id] = [segment_info]
+        else:
+            new_segmentations_info[old_segmentation_id].append(segment_info)
+
+    segments_to_copy = []
+    for old_segmentation_id, segment_info in new_segmentations_info.items():
+        for seg_id, start, end, mean_ff, min_ff, max_ff in segment_info:
+            segmentation_id = segmentation_old_id_to_new_id[old_segmentation_id]
+
+            segment = Segment(start_time_ms=start, end_time_ms=end, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
+                              segmentation_id=segmentation_id)
+            segments_to_copy.append(segment)
+
+    Segment.objects.bulk_create(segments_to_copy)
+
+    copied_segments = Segment.objects.filter(segmentation__in=new_segmentation_ids)
+    copied_segments_values = copied_segments.values_list('id', 'start_time_ms', 'end_time_ms')
+    segments_new_start_end_to_new_id = {(x[1], x[2]): x[0] for x in copied_segments_values}
+
+    # Based on two maps: from new segment (start,end) key to their ID and old segment's ID to (start,end) key
+    # we can now map Segment new IDs -> old IDs
+    segments_old_id_to_new_id = {}
+    for old_segment_id, segment_start_end in segments_old_id_to_start_end.items():
+        new_segment_id = segments_new_start_end_to_new_id[segment_start_end]
+        segments_old_id_to_new_id[old_segment_id] = new_segment_id
+
+    # Query all ExtraAttrValue of Songs, and make duplicate by replacing old song IDs by new song IDs
+    old_song_extra_attrs = ExtraAttrValue.objects\
+        .filter(owner_id__in=old_song_ids, user=user).values_list('owner_id', 'attr', 'value')
+    new_song_extra_attrs = []
+    for old_song_id, attr_id, value in old_song_extra_attrs:
+        new_song_id = songs_old_id_to_new_id[old_song_id]
+        new_song_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_song_id))
+
+    old_segment_ids = segments_old_id_to_start_end.keys()
+
+    # Query all ExtraAttrValue of Segments, and make duplicate by replacing old IDs by new IDs
+    old_segment_extra_attrs = ExtraAttrValue.objects \
+        .filter(owner_id__in=old_segment_ids, user=user).values_list('owner_id', 'attr', 'value')
+    new_segment_extra_attrs = []
+    for old_segment_id, attr_id, value in old_segment_extra_attrs:
+        new_segment_id = segments_old_id_to_new_id[int(old_segment_id)]
+        new_segment_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_segment_id))
+
+    # Now bulk create
+    ExtraAttrValue.objects.bulk_create(new_song_extra_attrs)
+    ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)
 
     return True
 
