@@ -1,0 +1,12 @@
+{% if page.is_single %}
+    {% include "partials/navbar-item.html" with page=page current_page=current_page %}
+{% else %}
+    <li class="dropdown {% if current_page == page.url %}active{% endif %}">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ page.text }}<span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            {% for subpage in page.subpages %}
+                {% include "partials/navbar-item.html" with page=subpage current_page=current_subpage%}
+            {% endfor %}
+        </ul>
+    </li>
+{% endif %}

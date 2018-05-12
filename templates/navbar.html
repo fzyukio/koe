@@ -13,27 +13,9 @@
     </div>
     <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
-            {% get_navbar_urls as urls %}
-            {% for url, text in urls.items %}
-                {% if page == url %}
-                    <li class="active"><a href="#">{{ text }}</a></li>
-                {% else %}
-                    <li><a href="{% url url %}">{{ text }}</a></li>
-                {% endif %}
-            {% endfor %}
-
-            {% get_page_subpage_urls as urls %}
-            {% for url, pages in urls.items %}
-                <li class="dropdown {% if page == url %}active{% endif %}">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">{{ pages.0 }}<span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                    {% for subpage in pages.1 %}
-                        <li {% if subpage.0 == subpage %}class="active"{% endif %}>
-                            <a href="{% url url %}{{ subpage.0 }}">{{ subpage.1|title }}</a>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                </li>
+            {% get_navbar_urls as pages %}
+            {% for page_ in pages %}
+                {% include "partials/navbar-menu.html" with page=page_ current_page=page current_subpage=subpage%}
             {% endfor %}
 
             <!--Display all child pages of the Welcome page (from the CMS system) -->
@@ -49,12 +31,6 @@
                         <li><a href="{{ page_ | get_default_url }}">{{ page_.slug|title }}</a></li>
                     {% endif %}
                 {% endfor %}
-                </ul>
-            </li>
-
-            <li class="dropdown">
-                <ul class="dropdown-menu">
-                    <li><a href="#">Link 2</a></li>
                 </ul>
             </li>
         </ul>

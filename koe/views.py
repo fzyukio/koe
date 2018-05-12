@@ -826,7 +826,7 @@ class SyllablesView(TemplateView):
 
         populate_context(context, user, True)
 
-        context['page'] = 'syllables'
+        context['page'] = '/syllables/'
         return context
 
 
@@ -841,8 +841,8 @@ class ExemplarsView(TemplateView):
         populate_context(context, user)
 
         context['cls'] = cls
-        context['page'] = 'exemplars'
-        context['subpage'] = 'exemplars/{}'.format(cls)
+        context['page'] = '/exemplars/'
+        context['subpage'] = '/exemplars/{}/'.format(cls)
 
         return context
 
@@ -862,8 +862,8 @@ class SongsView(TemplateView):
         populate_context(context, user)
 
         context['cls'] = cls
-        context['page'] = 'songs'
-        context['subpage'] = 'songs/{}'.format(cls)
+        context['page'] = '/songs/'
+        context['subpage'] = '/songs/{}/'.format(cls)
         return context
 
 

@@ -1,0 +1,5 @@
+{% if current_page == page.url %}
+    <li class="active"><a href="#">{{ page.text }}</a></li>
+{% else %}
+    <li><a href="{{ page.url }}">{{ page.text }}</a></li>
+{% endif %}

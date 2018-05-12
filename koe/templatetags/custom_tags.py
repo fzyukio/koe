@@ -78,22 +78,24 @@ def get_server_constants():
 
 @register.simple_tag
 def get_navbar_urls():
-    return {
-        'syllables': 'Syllables',
-        'version': 'History',
-    }
+    pages = [
+        dict(text='Syllables', is_single=False, url=reverse('syllables'), subpages=[
+            dict(text='Label them', is_single=True, url=reverse('syllables')),
+            dict(text='Restore a saved', is_single=True, url=reverse('version')),
+        ]),
+        dict(text='Exemplars', is_single=False, url=reverse('exemplars'), subpages=[
+            dict(text='By label', is_single=True, url=reverse('exemplars', args=['label'])),
+            dict(text='By family', is_single=True, url=reverse('exemplars', args=['label_family'])),
+            dict(text='By subfamily', is_single=True, url=reverse('exemplars', args=['label_subfamily'])),
+        ]),
+        dict(text='Songs', is_single=False, url=reverse('songs'), subpages=[
+            dict(text='Using label', is_single=True, url=reverse('songs', args=['label'])),
+            dict(text='Using family', is_single=True, url=reverse('songs', args=['label_family'])),
+            dict(text='Using subfamily', is_single=True, url=reverse('songs', args=['label_subfamily'])),
+        ]),
+    ]
 
-
-@register.simple_tag
-def get_page_subpage_urls():
-    return {
-        'exemplars': ('Exemplars', [('label', 'By label'),
-                                    ('label_family', 'By family'),
-                                    ('label_subfamily', 'By subfamily')]),
-        'songs': ('Songs', [('label', 'Using labels'),
-                            ('label_family', 'Using family'),
-                            ('label_subfamily', 'Using subfamily')])
-    }
+    return pages
 
 
 @register.simple_tag
