@@ -113,45 +113,34 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
     let chunks = calcSegments(segs.length, spectWidth, 0, true);
     let fft = new FFT(nfft);
 
-    spectrogramSpects.selectAll('image').remove();
+    chunks.forEach(function (chunk) {
+        if (spectrogramSpects.select(`image.offset${chunk[0]}`).empty())
+            spectrogramSpects.append('image').attr('class', `offset${chunk[0]}`);
+    });
 
-    let removeLoading = function () {
-        $('body').removeClass('loading');
-    };
-
-    $('body').addClass('loading');
-    let promiseInfo = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-        let chunk = chunks[i];
-        let segBeg = chunk[0];
-        let segEnd = chunk[1];
-        let subSegs = segs.slice(segBeg, segEnd);
-
-        let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
-        let subImgWidth = subSegs.length;
-        promiseInfo.push({
-            promise,
-            subImgWidth,
-            offset: segBeg
-        });
-    }
-
-    for (let i = 0; i < promiseInfo.length; i++) {
-        let {promise, subImgWidth, offset} = promiseInfo[i];
-
-        promise.then(function (dataURI) {
-            let img = spectrogramSpects.append('image');
-            img.attr('height', imgHeight);
-            img.attr('width', subImgWidth);
-            img.attr('x', offset);
-            img.attr('xlink:href', dataURI);
-            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-            if (i == promiseInfo.length - 1) {
-                removeLoading();
-            }
-        });
-    }
+    chunks.reduce(
+        function (promiseChain, chunk) {
+            let nextPromise = promiseChain.then(
+                function () {
+                    let segBeg = chunk[0];
+                    let segEnd = chunk[1];
+                    let subSegs = segs.slice(segBeg, segEnd);
+                    let subImgWidth = subSegs.length;
+                    let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
+                    promise.then(function (dataURI) {
+                        let img = spectrogramSpects.select(`image.offset${segBeg}`);
+                        img.attr('height', imgHeight);
+                        img.attr('width', subImgWidth);
+                        img.attr('x', segBeg);
+                        img.attr('xlink:href', dataURI);
+                        img.style('transform', `scaleY(${spectHeight / imgHeight})`);
+                    });
+                }
+            );
+            return (nextPromise);
+        },
+        Promise.resolve()
+    );
 };
 
 
