@@ -114,33 +114,29 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
     let fft = new FFT(nfft);
 
     chunks.forEach(function (chunk) {
-        if (spectrogramSpects.select(`image.offset${chunk[0]}`).empty())
+        if (spectrogramSpects.select(`image.offset${chunk[0]}`).empty()) {
             spectrogramSpects.append('image').attr('class', `offset${chunk[0]}`);
+        }
     });
 
-    chunks.reduce(
-        function (promiseChain, chunk) {
-            let nextPromise = promiseChain.then(
-                function () {
-                    let segBeg = chunk[0];
-                    let segEnd = chunk[1];
-                    let subSegs = segs.slice(segBeg, segEnd);
-                    let subImgWidth = subSegs.length;
-                    let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
-                    promise.then(function (dataURI) {
-                        let img = spectrogramSpects.select(`image.offset${segBeg}`);
-                        img.attr('height', imgHeight);
-                        img.attr('width', subImgWidth);
-                        img.attr('x', segBeg);
-                        img.attr('xlink:href', dataURI);
-                        img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-                    });
-                }
-            );
-            return (nextPromise);
-        },
-        Promise.resolve()
-    );
+    chunks.reduce(function (promiseChain, chunk) {
+        let nextPromise = promiseChain.then(function () {
+            let segBeg = chunk[0];
+            let segEnd = chunk[1];
+            let subSegs = segs.slice(segBeg, segEnd);
+            let subImgWidth = subSegs.length;
+            let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
+            promise.then(function (dataURI) {
+                let img = spectrogramSpects.select(`image.offset${segBeg}`);
+                img.attr('height', imgHeight);
+                img.attr('width', subImgWidth);
+                img.attr('x', segBeg);
+                img.attr('xlink:href', dataURI);
+                img.style('transform', `scaleY(${spectHeight / imgHeight})`);
+            });
+        });
+        return (nextPromise);
+    }, Promise.resolve());
 };
 
 

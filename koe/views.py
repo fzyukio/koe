@@ -806,13 +806,14 @@ def populate_context(context, user, with_similarity=False):
 
     if with_similarity:
         similarities, current_similarity = get_current_similarity(user, current_database)
-        context['similarities'] = similarities.values_list('id', 'algorithm')
+        context['similarities'] = similarities
 
         if current_similarity:
-            context['current_similarity'] = (current_similarity.id, current_similarity.algorithm, User.__name__)
+            context['current_similarity_owner_class'] = User.__name__
+            context['current_similarity'] = current_similarity
 
 
-class IndexView(TemplateView):
+class SyllablesView(TemplateView):
     """
     The view to index page
     """
@@ -820,12 +821,12 @@ class IndexView(TemplateView):
     template_name = 'index.html'
 
     def get_context_data(self, **kwargs):
-        context = super(IndexView, self).get_context_data(**kwargs)
+        context = super(SyllablesView, self).get_context_data(**kwargs)
         user = self.request.user
 
         populate_context(context, user, True)
 
-        context['page'] = 'index'
+        context['page'] = 'syllables'
         return context
 
 

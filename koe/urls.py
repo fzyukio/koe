@@ -18,7 +18,7 @@ urlpatterns = [] + root_urls.urlpatterns
 urlpatterns += [
     url(r'^admin/', admin.site.urls),
     url(r'^version/$', login_required(root_views.get_view('version')), name='version'),
-    url(r'^label/$', login_required(views.IndexView.as_view()), name='index'),
+    url(r'^syllables/$', login_required(views.SyllablesView.as_view()), name='syllables'),
     url(r'^songs/$', login_required(views.SongsView.as_view()), name='songs'),
     url(r'^songs/(?P<class>[0-9a-z-_]+)/$', login_required(views.SongsView.as_view()), name='songs'),
     url(r'^segmentation/(?P<file_id>[0-9a-z-_]+)/$', login_required(views.SegmentationView.as_view()),

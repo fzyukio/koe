@@ -61,14 +61,14 @@
         </li>
         {% if similarities %}
             <li class="dropdown-submenu">
-            <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.0 }}"
-               cls="{{ current_similarity.2 }}" current-attr="current-similarity"
-               owner-id="{{ current_database.0 }}">Sort algorithm</a>
+            <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.id }}"
+               cls="{{ current_similarity_owner_class }}" current-attr="current-similarity"
+               owner-id="{{ current_database_owner_class }}">Sort algorithm</a>
             <ul class="dropdown-menu">
                 {% for similarity in similarities %}
-                    <li class="{% if current_similarity.0 == similarity.0 %}active{% else %}not-active{% endif %}">
-                        <a class="select-similarity" href="#" similarity="{{ similarity.0 }}">
-                            {{ similarity.1 }}
+                    <li class="{% if current_similarity == similarity %}active{% else %}not-active{% endif %}">
+                        <a class="select-similarity" href="#" similarity="{{ similarity.id }}">
+                            {{ similarity.algorithm }}
                         </a>
                     </li>
                 {% endfor %}

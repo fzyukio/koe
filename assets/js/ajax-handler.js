@@ -9,7 +9,7 @@ const alertFailure = $('.alert-danger');
  */
 function defaultMsgGen(res) {
     return res.success ?
-        'Success' :
+        null :
         `Something's wrong, server says ${res.error}.`;
 }
 

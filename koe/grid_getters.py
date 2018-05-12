@@ -27,6 +27,9 @@ def bulk_get_segment_info(segs, extras):
     similarities, current_similarity = get_current_similarity(user, current_database)
 
     rows = []
+    ids = []
+    if current_database is None:
+        return ids, rows
 
     if isinstance(segs, QuerySet):
         segs = segs.filter(segmentation__audio_file__database=current_database.id)
@@ -90,11 +93,9 @@ def bulk_get_segment_info(segs, extras):
         sorted_order = current_similarity.order
         indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
 
-    ids = []
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
             species = values[i]
-        ids.append(id)
 
         index = indices[i]
         mask_img = spect_mask_path(str(id), for_url=True)

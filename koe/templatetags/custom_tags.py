@@ -79,7 +79,7 @@ def get_server_constants():
 @register.simple_tag
 def get_navbar_urls():
     return {
-        'index': 'Syllable',
+        'syllables': 'Syllables',
         'version': 'History',
     }
 
@@ -91,8 +91,8 @@ def get_page_subpage_urls():
                                     ('label_family', 'By family'),
                                     ('label_subfamily', 'By subfamily')]),
         'songs': ('Songs', [('label', 'Using labels'),
-                                ('label_family', 'Using family'),
-                                ('label_subfamily', 'Using subfamily')])
+                            ('label_family', 'Using family'),
+                            ('label_subfamily', 'Using subfamily')])
     }
 
 

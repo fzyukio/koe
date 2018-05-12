@@ -216,7 +216,10 @@ def get_current_similarity(user, current_database):
     :param user:
     :return:
     """
-    similarities = Coordinate.objects.filter(database=current_database)
+    similarities = Coordinate.objects.filter(database=current_database).first()
+
+    if similarities is None:
+        return None, None
 
     current_similarity_value = ExtraAttrValue.objects\
         .filter(attr=settings.ATTRS.user.current_similarity, user=user, owner_id=current_database.id).first()

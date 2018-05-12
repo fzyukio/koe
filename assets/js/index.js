@@ -334,13 +334,13 @@ $(document).ready(function () {
     if (pageName === '/') {
         page = require('home-page');
     }
-    else if (pageName === '/label/') {
-        page = require('index-page');
+    else if (pageName === '/syllables/') {
+        page = require('syllables-page');
     }
     else if (pageName === '/version/') {
         page = require('version-page');
     }
-    else if (pageName.startsWith('/segmentation/')) {
+    else if (pageName.startsWith('/segmentaftion/')) {
         page = require('segmentation-page');
     }
     else if (pageName.startsWith('/songs/')) {
