@@ -18,6 +18,7 @@ from tz_detect.utils import offset_to_timezone
 from koe import jsons
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
     ColumnActionValue, get_bulk_id
+from root.utils import CustomAssertionError
 
 opbeat_client = None
 if hasattr(settings, 'OPBEAT'):
@@ -271,7 +272,7 @@ def set_property_bulk(request):
     if has_field(klass, 'user'):
         user_ids = list(klass.objects.values_list('user__id', flat=True).distinct())
         if len(user_ids) == 0 or len(user_ids) > 1 or user_ids[0] != request.user.id:
-            raise Exception('You don\' have permission to change data that doesn\'t belong to you')
+            raise CustomAssertionError('You don\' have permission to change data that doesn\'t belong to you')
 
     for column in columns:
         attr = column['slug']
@@ -299,7 +300,7 @@ def change_properties(request):
 
     if has_field(klass, 'user'):
         if obj.user != request.user:
-            raise Exception('You don\' have permission to change data that doesn\'t belong to you')
+            raise CustomAssertionError('You don\' have permission to change data that doesn\'t belong to you')
 
     for column in columns:
         attr = column['slug']

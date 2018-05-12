@@ -16,11 +16,13 @@ from django.views.generic import TemplateView
 from dotmap import DotMap
 
 from koe.grid_getters import _get_sequence_info_empty_songs, bulk_get_segments_for_audio
-from koe.model_utils import get_user_databases, extract_spectrogram, get_current_similarity
+from koe.model_utils import get_user_databases, extract_spectrogram, get_current_similarity, assert_permission, \
+    get_or_error
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path, spect_mask_path
+from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path, \
+    spect_mask_path, CustomAssertionError
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',
@@ -48,16 +50,12 @@ def save_history(request):
     :version: 2.0.0
     """
     version = 2
-    comment = request.POST['comment']
-    database_id = request.POST['database']
     user = request.user
-    database = Database.objects.filter(id=database_id).first()
-    if not database:
-        raise ValueError('No such database: {}. Abort.'.format(database_id))
-    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
-    if db_assignment is None or not db_assignment.can_view():
-        raise PermissionError('You don\'t have permission to view from this database. '
-                              'Are you messing with Javascript?')
+
+    comment = get_or_error(request.POST, 'comment')
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.VIEW)
 
     segments_ids = Segment.objects.filter(segmentation__audio_file__database=database, segmentation__source='user') \
         .values_list('id', flat=True)
@@ -97,11 +95,11 @@ def delete_history(request):
     :param request: must specify version-id
     :return:
     """
-    version_id = request.POST['version-id']
+    version_id = get_or_error(request.POST, 'version-id')
     he = HistoryEntry.objects.get(id=version_id)
     creator = he.user
     if creator != request.user:
-        raise Exception('Only {} can delete this version'.format(creator.username))
+        raise CustomAssertionError('Only {} can delete this version'.format(creator.username))
 
     he.delete()
     return True
@@ -119,18 +117,13 @@ def get_segment_audio(request):
     user = request.user
 
     if segment_id is None and file_id is None:
-        raise Exception('Need segment or file argument')
+        raise CustomAssertionError('Need segment or file argument')
     if segment_id is not None and file_id is not None:
-        raise Exception('Can\'t have both segment and file arguments')
+        raise CustomAssertionError('Can\'t have both segment and file arguments')
 
     if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
-        database = audio_file.database
-        has_access_privilege = DatabaseAssignment.objects\
-            .filter(database=database, user=user, permission__gte=DatabasePermission.VIEW).exists()
-
-        if not has_access_privilege:
-            raise Exception('You don\' have permission to view this database')
+        assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
         compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
         if os.path.isfile(compressed_url):
@@ -145,12 +138,7 @@ def get_segment_audio(request):
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
-        database = audio_file.database
-        has_access_privilege = DatabaseAssignment.objects \
-            .filter(database=database, user=user, permission__gte=DatabasePermission.VIEW).exists()
-
-        if not has_access_privilege:
-            raise Exception('You don\' have permission to view this database')
+        assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
         start = segment.start_time_ms
         end = segment.end_time_ms
@@ -188,7 +176,7 @@ def import_history(request):
     user = request.user
 
     if not (version_id or zip_file):
-        raise ValueError('No ID or file provided. Abort.')
+        raise CustomAssertionError('No ID or file provided. Abort.')
 
     if version_id:
         he = HistoryEntry.objects.get(id=version_id)
@@ -210,11 +198,11 @@ def import_history(request):
     try:
         content = filelist['root.extraattrvalue.json']
     except KeyError:
-        raise ValueError('This is not a Koe history file')
+        raise CustomAssertionError('This is not a Koe history file')
     try:
         new_entries = json.loads(content)
     except Exception:
-        raise ValueError('The history content is malformed and cannot be parsed.')
+        raise CustomAssertionError('The history content is malformed and cannot be parsed.')
 
     extra_attr_values = []
     attrs_to_values = {}
@@ -253,23 +241,10 @@ def import_audio_files(request):
     """
     user = request.user
     files = request.FILES.getlist('files', None)
-    database_id = request.POST.get('database', None)
-    cls = request.POST.get('cls', None)
 
-    if not files:
-        raise ValueError('No files uploaded. Abort.')
-    if not database_id:
-        raise ValueError('No database specified. Abort.')
-    if not cls:
-        raise ValueError('No class specified. Abort.')
-
-    database = Database.objects.filter(id=database_id).first()
-    if not database:
-        raise ValueError('No such database: {}. Abort.'.format(database_id))
-
-    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
-    if db_assignment is None or not db_assignment.can_add_files():
-        raise PermissionError('You don\'t have permission to upload files to this database')
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.ADD_FILES)
 
     added_files = []
 
@@ -316,21 +291,11 @@ def import_audio_metadata(request):
     :return:
     """
     user = request.user
-    file = request.FILES.get('file', None)
-    database_id = request.POST.get('database', None)
 
-    if not file:
-        raise ValueError('No file uploaded. Abort.')
-    if not database_id:
-        raise ValueError('No database specified. Abort.')
-
-    database = Database.objects.filter(id=database_id).first()
-    if not database:
-        raise ValueError('No such database: {}. Abort.'.format(database_id))
-
-    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
-    if db_assignment is None or not db_assignment.can_add_files():
-        raise PermissionError('You don\'t have permission to upload files to this database')
+    file = get_or_error(request.FILES, 'file')
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.ADD_FILES)
 
     file_data = file.read().decode("utf-8")
     reader = csv.DictReader(io.StringIO(file_data))
@@ -340,7 +305,8 @@ def import_audio_metadata(request):
     missing_fields = [x for x in required_fields if x not in supplied_fields]
 
     if missing_fields:
-        raise ValueError('Field(s) {} are required but not found in your CSV file'.format(','.join(missing_fields)))
+        raise CustomAssertionError(
+            'Field(s) {} are required but not found in your CSV file'.format(','.join(missing_fields)))
 
     filename_to_metadata = {}
 
@@ -409,17 +375,10 @@ def delete_songs(request):
     :return:
     """
     user = request.user
-    ids = json.loads(request.POST['ids'])
-    database_id = request.POST['database']
-
-    # Check that the user has permission to delete files from this database
-    database = Database.objects.filter(id=database_id).first()
-    if not database:
-        raise ValueError('No such database: {}. Abort.'.format(database_id))
-    db_assignment = DatabaseAssignment.objects.filter(user=user, database=database).first()
-    if db_assignment is None or not db_assignment.can_delete_files():
-        raise PermissionError('You don\'t have permission to delete files from this database. '
-                              'Are you messing with Javascript?')
+    ids = json.loads(get_or_error(request.POST, 'ids'))
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.DELETE_FILES)
 
     # Check that the ids to delete actually come from this database
     audio_files = AudioFile.objects.filter(id__in=ids)
@@ -428,22 +387,19 @@ def delete_songs(request):
     non_existent_ids = [x for x in ids if x not in audio_files_ids]
 
     if non_existent_ids:
-        raise PermissionError('You\'re trying to delete files that don\'t belong to database {}. '
-                              'Are you messing with Javascript?'.format(database.name))
+        raise CustomAssertionError('You\'re trying to delete files that don\'t belong to database {}. '
+                                   'Are you messing with Javascript?'.format(database.name))
 
     audio_files.delete()
     return True
 
 
 def create_database(request):
-    name = request.POST.get('name', None)
     user = request.user
-
-    if not name:
-        raise ValueError('Database name is required.')
+    name = get_or_error(request.POST, 'name')
 
     if Database.objects.filter(name=name).exists():
-        raise ValueError('Database with name {} already exists.'.format(name))
+        raise CustomAssertionError('Database with name {} already exists.'.format(name))
 
     database = Database(name=name)
     database.save()
@@ -470,9 +426,10 @@ def save_segmentation(request):
     :param request:
     :return:
     """
-    items = json.loads(request.POST['items'])
-    file_id = request.POST['file-id']
-    audio_file = AudioFile.objects.get(id=file_id)
+    items = json.loads(get_or_error(request.POST, 'items'))
+    file_id = get_or_error(request.POST, 'file-id')
+    audio_file = get_or_error(AudioFile, dict(id=file_id))
+
     segmentation, _ = Segmentation.objects.get_or_create(audio_file=audio_file, source='user')
 
     segments = Segment.objects.filter(segmentation=segmentation)
@@ -527,24 +484,20 @@ def save_segmentation(request):
 
 def request_database_access(request):
     user = request.user
-    database_id = request.POST.get('database-id', None)
-    if not database_id:
-        raise ValueError('No database is specified.')
 
-    database = Database.objects.filter(id=database_id).first()
-    if database is None:
-        raise ValueError('No such database exists.')
+    database_id = get_or_error(request.POST, 'database-id')
+    database = get_or_error(Database, dict(id=database_id))
 
     requested_permission = DatabasePermission.ANNOTATE
-    already_granted = DatabaseAssignment.objects\
+    already_granted = DatabaseAssignment.objects \
         .filter(user=user, database=database, permission__gte=requested_permission).exists()
 
     if already_granted:
-        raise ValueError('You\'re already granted equal or greater permission.')
+        raise CustomAssertionError('You\'re already granted equal or greater permission.')
 
     access_request = AccessRequest.objects.filter(user=user, database=database).first()
     if access_request and access_request.permission >= requested_permission:
-        raise ValueError('You\'ve already requested equal or greater permission.')
+        raise CustomAssertionError('You\'ve already requested equal or greater permission.')
 
     if access_request is None:
         access_request = AccessRequest(user=user, database=database)
@@ -556,30 +509,22 @@ def request_database_access(request):
 
 def approve_database_access(request):
     you = request.user
-    request_id = request.POST.get('request-id', None)
-    if not request_id:
-        raise ValueError('No request is specified.')
 
-    access_request = AccessRequest.objects.filter(id=request_id).first()
-    if access_request is None:
-        raise ValueError('No such request exists.')
+    request_id = get_or_error(request.POST, 'request-id')
+    access_request = get_or_error(AccessRequest, dict(id=request_id))
 
     person_asking_for_access = access_request.user
     permission_to_grant = access_request.permission
     database = access_request.database
 
-    has_grant_privilege = DatabaseAssignment.objects \
-        .filter(user=you, database=database, permission__gte=DatabasePermission.ASSIGN_USER).exists()
-
-    if not has_grant_privilege:
-        raise ValueError('You don\'t have permission to grant access on this database.')
+    assert_permission(you, database, DatabasePermission.ASSIGN_USER)
 
     database_assignment = DatabaseAssignment.objects.filter(user=person_asking_for_access, database=database).first()
 
     if database_assignment and database_assignment.permission >= permission_to_grant:
         access_request.resolved = True
         access_request.save()
-        raise ValueError('User\'s already granted equal or greater permission.')
+        raise CustomAssertionError('User\'s already granted equal or greater permission.')
 
     if database_assignment is None:
         database_assignment = DatabaseAssignment(user=person_asking_for_access, database=database)
@@ -601,45 +546,21 @@ def copy_files(request):
     :return:
     """
     user = request.user
-    ids = json.loads(request.POST.get('ids', '{}'))
-
-    if not ids:
-        raise ValueError('No song IDs specified.')
-
-    target_database_name = request.POST.get('target-database-name', None)
-    if target_database_name is None:
-        raise ValueError('No target database name specified.')
-
-    source_database_id = request.POST.get('source-database-id', None)
-    if source_database_id is None:
-        raise ValueError('No source database specified.')
-
-    target_database = Database.objects.filter(name=target_database_name).first()
-    if target_database is None:
-        raise ValueError('Target database {} doesn\'t exist.'.format(target_database_name))
-
-    source_database = Database.objects.filter(id=source_database_id).first()
-    if source_database is None:
-        raise ValueError('Source database doesn\'t exist.')
-
-    has_copy_privilege = DatabaseAssignment.objects\
-        .filter(user=user, database=source_database, permission__gte=DatabasePermission.COPY_FILES).first()
-
-    if not has_copy_privilege:
-        raise ValueError('You don\'t have permission to copy files from the source database')
-
-    has_add_files_privilege = DatabaseAssignment.objects \
-        .filter(user=user, database=target_database, permission__gte=DatabasePermission.ADD_FILES).first()
-
-    if not has_add_files_privilege:
-        raise ValueError('You don\'t have permission to copy files to the target database')
+    ids = json.loads(get_or_error(request.POST, 'ids'))
+    target_database_name = get_or_error(request.POST, 'target-database-name')
+    source_database_id = get_or_error(request.POST, 'source-database-id')
+    target_database = get_or_error(Database, dict(name=target_database_name))
+    source_database = get_or_error(Database, dict(id=source_database_id))
+    assert_permission(user, source_database, DatabasePermission.COPY_FILES)
+    assert_permission(user, target_database, DatabasePermission.ADD_FILES)
 
     # Make sure all those IDs belong to the source database
     source_audio_files = AudioFile.objects.filter(id__in=ids, database=source_database)
     if len(source_audio_files) != len(ids):
-        raise ValueError('There\'s a mismatch between the song IDs you provided and the actual songs in the database')
+        raise CustomAssertionError(
+            'There\'s a mismatch between the song IDs you provided and the actual songs in the database')
 
-    song_values = source_audio_files\
+    song_values = source_audio_files \
         .values_list('id', 'fs', 'length', 'name', 'track', 'individual', 'quality', 'original')
     old_song_id_to_name = {x[0]: x[3] for x in song_values}
     old_song_names = old_song_id_to_name.values()
@@ -648,9 +569,10 @@ def copy_files(request):
     # Make sure there is no duplication:
     duplicate_audio_files = AudioFile.objects.filter(database=target_database, name__in=old_song_names)
     if duplicate_audio_files:
-        raise ValueError('Some file(s) you\'re trying to copy already exist in {}'.format(target_database_name))
+        raise CustomAssertionError(
+            'Some file(s) you\'re trying to copy already exist in {}'.format(target_database_name))
 
-    song_segmentation_values = Segmentation.objects\
+    song_segmentation_values = Segmentation.objects \
         .filter(audio_file__in=source_audio_files).values_list('id', 'audio_file')
 
     # not all AudioFiles have Segmentation - so this is to keep track of which Segmentations need to be copied
@@ -741,7 +663,7 @@ def copy_files(request):
             copyfile(old_spect_img, new_spect_img)
 
     # Query all ExtraAttrValue of Songs, and make duplicate by replacing old song IDs by new song IDs
-    old_song_extra_attrs = ExtraAttrValue.objects\
+    old_song_extra_attrs = ExtraAttrValue.objects \
         .filter(owner_id__in=old_song_ids, user=user).values_list('owner_id', 'attr', 'value')
     new_song_extra_attrs = []
     for old_song_id, attr_id, value in old_song_extra_attrs:
@@ -767,24 +689,10 @@ def copy_files(request):
 
 def delete_segments(request):
     user = request.user
-    ids = json.loads(request.POST.get('ids', '{}'))
-
-    if not ids:
-        raise ValueError('No segments IDs specified.')
-
-    database_id = request.POST.get('database-id', None)
-    if database_id is None:
-        raise ValueError('No database specified.')
-
-    database = Database.objects.filter(id=database_id).first()
-    if database is None:
-        raise ValueError('Database doesn\'t exist.')
-
-    has_privilege = DatabaseAssignment.objects \
-        .filter(user=user, database=database, permission__gte=DatabasePermission.MODIFY_SEGMENTS).exists()
-
-    if not has_privilege:
-        raise ValueError('You don\'t have permission to modify segments from this database')
+    ids = json.loads(get_or_error(request.POST, 'ids'))
+    database_id = get_or_error(request.POST, 'database_id')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
 
     segments = Segment.objects.filter(id__in=ids, segmentation__audio_file__database=database)
     ids = segments.values_list('id', flat=True)
@@ -807,7 +715,7 @@ def populate_context(context, user, with_similarity=False):
     db_assignment = DatabaseAssignment.objects.filter(database=current_database, user=user).first()
     inaccessible_databases = Database.objects.exclude(id__in=databases)
 
-    databases_own = DatabaseAssignment.objects\
+    databases_own = DatabaseAssignment.objects \
         .filter(user=user, permission__gte=DatabasePermission.ASSIGN_USER).values_list('database', flat=True)
 
     pending_requests = AccessRequest.objects.filter(database__in=databases_own, resolved=False)
@@ -894,15 +802,10 @@ class SegmentationView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SegmentationView, self).get_context_data(**kwargs)
         user = self.request.user
-        file_id = kwargs['file_id']
-        audio_file = AudioFile.objects.filter(id=file_id).first()
-        if audio_file is None:
-            raise Exception('No such file')
 
-        db_assignment = DatabaseAssignment.objects.filter(database=audio_file.database, user=user).first()
-
-        if db_assignment is None or db_assignment.permission < DatabasePermission.VIEW:
-            raise Exception('You don\' have permission to view this database')
+        file_id = get_or_error(kwargs, 'file_id')
+        audio_file = get_or_error(AudioFile, dict(id=file_id))
+        db_assignment = assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
         context['page'] = 'segmentation'
         context['file_id'] = file_id

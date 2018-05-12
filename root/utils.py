@@ -129,3 +129,11 @@ def ensure_parent_folder_exists(file_path):
         except OSError as exc:  # Guard against race condition
             if exc.errno != errno.EEXIST:
                 raise
+
+
+class CustomAssertionError(Exception):
+    """
+    To throw when an expected error occurs because of user's fault.
+    """
+
+    pass

@@ -10,7 +10,7 @@ const alertFailure = $('.alert-danger');
 function defaultMsgGen(res) {
     return res.success ?
         null :
-        `Something's wrong, server says ${res.error}.`;
+        `Something's wrong, server says <strong><i>"${res.error}"</i></strong>.`;
 }
 
 const delayOnSuccess = 500;
@@ -113,7 +113,7 @@ const ajaxRequest = function ({
 
         if (message) {
             alertEl.html(message);
-            alertEl.fadeIn().delay(delay).fadeOut(100, function () {
+            alertEl.fadeIn().delay(delay).fadeOut(delay, function () {
                 if (!immediate) callback(callbackArg);
             });
         }

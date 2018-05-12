@@ -6,10 +6,12 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
-from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database
+from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database, DatabasePermission
 from koe.utils import triu2mat, mat2triu
+
+from django.db import models
 from root.models import ExtraAttrValue
-from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
+from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists, CustomAssertionError
 
 window_size = 256
 noverlap = 256 * 0.75
@@ -221,7 +223,7 @@ def get_current_similarity(user, current_database):
     if not similarities:
         return None, None
 
-    current_similarity_value = ExtraAttrValue.objects\
+    current_similarity_value = ExtraAttrValue.objects \
         .filter(attr=settings.ATTRS.user.current_similarity, user=user, owner_id=current_database.id).first()
 
     if current_similarity_value:
@@ -281,3 +283,45 @@ def extract_spectrogram(segmentation):
         ensure_parent_folder_exists(seg_spect_path)
 
         seg_spect_img.save(seg_spect_path, format='PNG')
+
+
+def assert_permission(user, database, required_level):
+    """
+    Assert that user has enough permission
+    :param user:
+    :param database:
+    :param required_level:
+    :return: if user does have permission, return the database assignment
+    """
+    db_assignment = DatabaseAssignment.objects \
+        .filter(user=user, database=database, permission__gte=required_level).first()
+    if db_assignment is None or db_assignment.permission < required_level:
+        raise CustomAssertionError('You ({}) don\'t have permission to {} database {}'.format(
+            user.username, DatabasePermission.get_name(required_level).lower(), database.name
+        ))
+
+    return db_assignment
+
+
+def get_or_error(obj, key):
+    """
+    Get key or filter Model for given attributes. If None found, error
+    :param obj: can be dict, Model class name, or a generic object
+    :param key: can be a string or a dict containing query filters
+    :return: the value or object if found
+    """
+    if isinstance(obj, dict):
+        value = obj.get(key, None)
+    elif issubclass(obj, models.Model):
+        value = obj.objects.filter(**key).first()
+    else:
+        value = getattr(obj, key, None)
+    if value is None:
+        if isinstance(key, dict):
+            error = 'No {} with {} exists'.format(
+                obj.__name__.lower(), ', '.join(['{}={}'.format(k, v) for k, v in key.items()])
+            )
+            raise CustomAssertionError(error)
+        raise CustomAssertionError('{} doesn\'t exist'.format(key))
+
+    return value

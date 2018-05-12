@@ -280,10 +280,15 @@ const initDatabaseButtons = function () {
             'request-id': requestId
         };
 
+        let msgGen = function (res) {
+            return res.success ? 'Success' : null;
+        };
+
         postRequest({
             requestSlug: 'koe/approve-database-access',
             data: postData,
-            immediate: false
+            immediate: false,
+            msgGen
         });
     });
 };

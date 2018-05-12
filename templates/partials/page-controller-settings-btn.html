@@ -45,9 +45,9 @@
                         {% for request in pending_requests %}
                             <li>
                                 <a href="#" class="approve-request" request="{{ request.id }}">
-                                    <strong>{{ request.user.username }}</strong> requested
-                                    <strong>{{ request.get_permission_display | upper}} </strong>
-                                    permission database <strong>{{ request.database.name }}</strong>
+                                    <strong>{{ request.user.username }}</strong> requested permission to
+                                    <strong>{{ request.get_permission_display | lower }} </strong>
+                                    database <strong>{{ request.database.name }}</strong>. Click to approve.
                                 </a>
                             </li>
                         {% endfor %}
