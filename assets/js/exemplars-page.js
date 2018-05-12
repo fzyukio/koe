@@ -10,7 +10,7 @@ gridOptions.rowHeight = 50;
 
 
 class ExemplarsGrid extends FlexibleGrid {
-    init(cls) {
+    init() {
 
         super.init({
             'grid-name': 'exemplars',
@@ -18,8 +18,6 @@ class ExemplarsGrid extends FlexibleGrid {
             'default-field': 'cls',
             gridOptions
         });
-
-        this.cls = cls;
     }
 
     /**
@@ -53,6 +51,7 @@ class ExemplarsGrid extends FlexibleGrid {
 
 const grid = new ExemplarsGrid();
 let cls = $('#exemplars-grid').attr('cls');
+let fromUser = $('#exemplars-grid').attr('from_user');
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
@@ -284,9 +283,12 @@ export const run = function () {
 
     initAudioContext();
 
-    grid.init(cls);
+    grid.init();
     grid.initMainGridHeader({}, function () {
-        grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+        grid.initMainGridContent({
+            '__extra__cls': cls,
+            '__extra__from_user': fromUser
+        }, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -297,6 +299,9 @@ export const run = function () {
 };
 
 export const handleDatabaseChange = function() {
-    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+    grid.initMainGridContent({
+        '__extra__cls': cls,
+        '__extra__from_user': fromUser
+    }, focusOnGridOnInit);
 };
 

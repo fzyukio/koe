@@ -837,10 +837,12 @@ class ExemplarsView(TemplateView):
         context = super(ExemplarsView, self).get_context_data(**kwargs)
         user = self.request.user
         cls = kwargs.get('class', 'label')
+        from_user = kwargs.get('from_user', user.username)
 
         populate_context(context, user)
 
         context['cls'] = cls
+        context['from_user'] = from_user
         context['page'] = '/exemplars/'
         context['subpage'] = '/exemplars/{}/'.format(cls)
 

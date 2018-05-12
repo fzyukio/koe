@@ -136,6 +136,7 @@ def bulk_get_exemplars(objs, extras):
     :return:
     """
     cls = extras.cls
+    from_user = extras.from_user
     user = extras.user
     _, current_database = get_user_databases(user)
 
@@ -144,7 +145,8 @@ def bulk_get_exemplars(objs, extras):
     else:
         ids = [x.id for x in objs if x.segmentation.audio_file.database == current_database]
 
-    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids, user=user) \
+    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids,
+                                           user__username=from_user) \
         .order_by(Lower('value'), 'owner_id').values_list('value', 'owner_id')
 
     class_to_exemplars = []

@@ -1,6 +1,9 @@
 {% extends 'base-with-grid-and-footer.html' %}
 
-{% block title %}Exemplars{% endblock %}
+{% block title %}
+    Exemplars
+    {% if from_user != user.username %} by {{ from_user }}{% endif %}
+{% endblock %}
 
 {% block content-grid %}
 
@@ -31,7 +34,7 @@
         </div>
     </div>
 
-    <div class="vh-offset has-grid" id="exemplars-grid" cls="{{ cls }}"></div>
+    <div class="vh-offset has-grid" id="exemplars-grid" cls="{{ cls }}" from_user="{{ from_user }}"></div>
     <div class="offset-holder" id="exemplars-grid-offset-holder" attr="height"></div>
 
     <div id="spectrogram-details-tooltip" class="hidden">
