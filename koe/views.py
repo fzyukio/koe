@@ -4,6 +4,7 @@ import io
 import json
 import os
 import zipfile
+from shutil import copyfile
 
 import pydub
 from django.conf import settings
@@ -19,7 +20,7 @@ from koe.model_utils import get_user_databases, extract_spectrogram, get_current
 from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path
+from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path, spect_mask_path
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',
@@ -630,7 +631,7 @@ def copy_files(request):
     old_song_ids = old_song_id_to_name.keys()
 
     # Make sure there is no duplication:
-    duplicate_audio_files = AudioFile.objects.filter(id__in=ids, database=target_database, name__in=old_song_names)
+    duplicate_audio_files = AudioFile.objects.filter(database=target_database, name__in=old_song_names)
     if duplicate_audio_files:
         raise ValueError('Some file(s) you\'re trying to copy already exist in {}'.format(target_database_name))
 
@@ -710,6 +711,19 @@ def copy_files(request):
     for old_segment_id, segment_start_end in segments_old_id_to_start_end.items():
         new_segment_id = segments_new_start_end_to_new_id[segment_start_end]
         segments_old_id_to_new_id[old_segment_id] = new_segment_id
+
+        # Copy spectrograms / signal masks:
+        new_mask_img = spect_mask_path(str(new_segment_id))
+        new_spect_img = spect_fft_path(str(new_segment_id), 'syllable')
+
+        old_mask_img = spect_mask_path(str(old_segment_id))
+        old_spect_img = spect_fft_path(str(old_segment_id), 'syllable')
+
+        if os.path.isfile(old_mask_img):
+            copyfile(old_mask_img, new_mask_img)
+
+        if os.path.isfile(old_spect_img):
+            copyfile(old_spect_img, new_spect_img)
 
     # Query all ExtraAttrValue of Songs, and make duplicate by replacing old song IDs by new song IDs
     old_song_extra_attrs = ExtraAttrValue.objects\
