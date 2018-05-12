@@ -404,7 +404,7 @@ export const run = function (commonElements) {
     });
     initController();
     initKeyboardHooks();
-    initDeleteSegmentsBtn()
+    initDeleteSegmentsBtn();
 };
 
 

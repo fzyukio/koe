@@ -68,6 +68,7 @@ const similarityCombo = $('#similarity-sort-combo');
 
 const currentSimilarityAttr = similarityCombo.attr('current-attr');
 const similarityClass = similarityCombo.attr('cls');
+const deleteSegmentsBtn = $('#delete-segments-btn');
 
 let ce;
 
@@ -163,6 +164,28 @@ const resetStatus = function (e, args) {
 
 
 /**
+ * When segments are selected, enable delete button
+ */
+function onRowsAdded(e, args) {
+    resetStatus(e, args);
+    deleteSegmentsBtn.prop('disabled', false);
+}
+
+/**
+ * When segments are removed, if there is songs left, disable the delete button
+ * @param e event
+ * @param args contains 'grid' - the main SlickGrid
+ */
+function onRowsRemoved(e, args) {
+    resetStatus(e, args);
+    let grid_ = args.grid;
+    if (grid_.getSelectedRows().length == 0) {
+        deleteSegmentsBtn.prop('disabled', true);
+    }
+}
+
+
+/**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
@@ -177,7 +200,10 @@ const subscribeFlexibleEvents = function () {
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', clearSpectrogram);
-    grid.on('row-added', resetStatus).on('rows-added', resetStatus).on('row-removed', resetStatus).on('rows-removed', resetStatus);
+    grid.on('row-added', onRowsAdded);
+    grid.on('rows-added', onRowsAdded);
+    grid.on('row-removed', onRowsRemoved);
+    grid.on('rows-removed', onRowsRemoved);
 };
 
 
@@ -433,9 +459,11 @@ export const run = function (commonElements) {
                 grid.initMainGridContent({}, focusOnGridOnInit);
             };
 
-            postRequest({requestSlug: 'change-extra-attr-value',
+            postRequest({
+                requestSlug: 'change-extra-attr-value',
                 data: postData,
-                onSuccess});
+                onSuccess
+            });
 
             /* Update the button */
             similarityCombo.attr('similarity', similarityId);
@@ -567,9 +595,11 @@ const setLabel = function (field) {
                 grid_.render();
             };
             ce.dialogModal.modal('hide');
-            postRequest({requestSlug: 'set-property-bulk',
+            postRequest({
+                requestSlug: 'set-property-bulk',
                 data: postData,
-                onSuccess});
+                onSuccess
+            });
         })
     }
 };
@@ -624,6 +654,53 @@ const contextHandlerDecorator = function (colDef) {
     }
 };
 
+/**
+ * Allows user to remove songs
+ */
+const initDeleteSegmentsBtn = function () {
+    deleteSegmentsBtn.click(function () {
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let dataView = grid_.getData();
+        let itemsIds = [];
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            itemsIds.push(item.id);
+        }
+
+        let databaseId = ce.databaseCombo.attr('database');
+
+        ce.dialogModalTitle.html(`Deleting ${numRows} syllable(s)`);
+        ce.dialogModalBody.html(`Are you sure you want to delete these syllables and all data associated with it? 
+        This action is not reverseable.`);
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.off('click').one('click', function () {
+            let postData = {
+                ids: JSON.stringify(itemsIds),
+                'database-id': databaseId
+            };
+
+            let onSuccess = function () {
+                for (let i = 0; i < numRows; i++) {
+                    let itemId = itemsIds[i];
+                    dataView.deleteItem(itemId);
+                }
+            };
+            ce.dialogModal.modal('hide');
+            postRequest({
+                requestSlug: 'koe/delete-segments',
+                data: postData,
+                onSuccess,
+                immediate: true
+            });
+        });
+    });
+};
+
+
 export const postRun = function () {
     $('#save-data-btn').click(function () {
         ce.inputText.val('');
@@ -649,13 +726,17 @@ export const postRun = function () {
                     `History saved to ${res.response}. You can download it from the version control page` :
                     `Something's wrong, server says ${res.error}. Version not saved.`;
             };
-            postRequest({requestSlug: 'koe/save-history',
+            postRequest({
+                requestSlug: 'koe/save-history',
                 data: postData,
-                msgGen});
+                msgGen
+            });
         });
     });
+
+    initDeleteSegmentsBtn();
 };
 
-export const handleDatabaseChange = function() {
+export const handleDatabaseChange = function () {
     grid.initMainGridContent({}, focusOnGridOnInit);
 };

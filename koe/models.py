@@ -103,7 +103,8 @@ class DatabasePermission(MagicChoices):
     ANNOTATE = 2
     COPY_FILES = 3
     ADD_FILES = 4
-    DELETE_FILES = 5
+    MODIFY_SEGMENTS = 5
+    DELETE_FILES = 6
     ASSIGN_USER = 10
 
 
@@ -136,6 +137,9 @@ class DatabaseAssignment(SimpleModel):
 
     def can_add_files(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.ADD_FILES
+
+    def can_modify_segments(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.MODIFY_SEGMENTS
 
     def can_delete_files(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.DELETE_FILES

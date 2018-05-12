@@ -24,7 +24,7 @@ from root.utils import history_path, ensure_parent_folder_exists, wav_path, audi
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',
-           'request_database_access', 'approve_database_access', 'copy_files']
+           'request_database_access', 'approve_database_access', 'copy_files', 'delete_segments']
 
 
 def match_target_amplitude(sound, loudness):
@@ -747,6 +747,43 @@ def copy_files(request):
     ExtraAttrValue.objects.bulk_create(new_song_extra_attrs)
     ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)
 
+    return True
+
+
+def delete_segments(request):
+    user = request.user
+    ids = json.loads(request.POST.get('ids', '{}'))
+
+    if not ids:
+        raise ValueError('No segments IDs specified.')
+
+    database_id = request.POST.get('database-id', None)
+    if database_id is None:
+        raise ValueError('No database specified.')
+
+    database = Database.objects.filter(id=database_id).first()
+    if database is None:
+        raise ValueError('Database doesn\'t exist.')
+
+    has_privilege = DatabaseAssignment.objects \
+        .filter(user=user, database=database, permission__gte=DatabasePermission.MODIFY_SEGMENTS).exists()
+
+    if not has_privilege:
+        raise ValueError('You don\'t have permission to modify segments from this database')
+
+    segments = Segment.objects.filter(id__in=ids, segmentation__audio_file__database=database)
+    ids = segments.values_list('id', flat=True)
+
+    for segment_id in ids:
+        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        if os.path.isfile(seg_spect_path):
+            os.remove(seg_spect_path)
+
+        seg_mask_path = spect_mask_path(str(segment_id))
+        if os.path.isfile(seg_mask_path):
+            os.remove(seg_mask_path)
+
+    segments.delete()
     return True
 
 
