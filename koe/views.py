@@ -752,7 +752,7 @@ def copy_files(request):
 
 def populate_context(context, user, with_similarity=False):
     databases, current_database = get_user_databases(user)
-    db_assignment = DatabaseAssignment.objects.get(database=current_database, user=user)
+    db_assignment = DatabaseAssignment.objects.filter(database=current_database, user=user).first()
     inaccessible_databases = Database.objects.exclude(id__in=databases)
 
     databases_own = DatabaseAssignment.objects\
