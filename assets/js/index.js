@@ -340,7 +340,7 @@ $(document).ready(function () {
     else if (pageName === '/version/') {
         page = require('version-page');
     }
-    else if (pageName.startsWith('/segmentaftion/')) {
+    else if (pageName.startsWith('/segmentation/')) {
         page = require('segmentation-page');
     }
     else if (pageName.startsWith('/songs/')) {

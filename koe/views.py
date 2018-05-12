@@ -116,6 +116,7 @@ def get_segment_audio(request):
     """
     segment_id = request.POST.get('segment-id', None)
     file_id = request.POST.get('file-id', None)
+    user = request.user
 
     if segment_id is None and file_id is None:
         raise Exception('Need segment or file argument')
@@ -124,6 +125,13 @@ def get_segment_audio(request):
 
     if file_id:
         audio_file = AudioFile.objects.filter(pk=file_id).first()
+        database = audio_file.database
+        has_access_privilege = DatabaseAssignment.objects\
+            .filter(database=database, user=user, permission__gte=DatabasePermission.VIEW).exists()
+
+        if not has_access_privilege:
+            raise Exception('You don\' have permission to view this database')
+
         compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
         if os.path.isfile(compressed_url):
             with open(compressed_url, 'rb') as f:
@@ -137,6 +145,13 @@ def get_segment_audio(request):
     else:
         segment = Segment.objects.filter(pk=segment_id).first()
         audio_file = segment.segmentation.audio_file
+        database = audio_file.database
+        has_access_privilege = DatabaseAssignment.objects \
+            .filter(database=database, user=user, permission__gte=DatabasePermission.VIEW).exists()
+
+        if not has_access_privilege:
+            raise Exception('You don\' have permission to view this database')
+
         start = segment.start_time_ms
         end = segment.end_time_ms
 
@@ -884,7 +899,10 @@ class SegmentationView(TemplateView):
         if audio_file is None:
             raise Exception('No such file')
 
-        db_assignment = DatabaseAssignment.objects.get(database=audio_file.database, user=user)
+        db_assignment = DatabaseAssignment.objects.filter(database=audio_file.database, user=user).first()
+
+        if db_assignment is None or db_assignment.permission < DatabasePermission.VIEW:
+            raise Exception('You don\' have permission to view this database')
 
         context['page'] = 'segmentation'
         context['file_id'] = file_id

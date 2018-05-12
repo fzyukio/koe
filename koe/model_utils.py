@@ -216,9 +216,9 @@ def get_current_similarity(user, current_database):
     :param user:
     :return:
     """
-    similarities = Coordinate.objects.filter(database=current_database).first()
+    similarities = Coordinate.objects.filter(database=current_database)
 
-    if similarities is None:
+    if not similarities:
         return None, None
 
     current_similarity_value = ExtraAttrValue.objects\
