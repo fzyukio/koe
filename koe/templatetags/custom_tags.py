@@ -118,3 +118,12 @@ def get_default_url(page):
     :return:
     """
     return page.relative_url(page.get_site())
+
+
+@register.simple_tag
+def debug_mode():
+    """
+    Whether or not the website is running in debug mode
+    :return:
+    """
+    return settings.DEBUG

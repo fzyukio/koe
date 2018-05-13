@@ -87,7 +87,10 @@
     </div>
 </div>
 
+{% debug_mode as is_in_debug_mode %}
+{% if user.is_superuser or is_in_debug_mode %}
 {% render_bundle 'main' 'js' 'JQUERY' %}
+{% endif %}
 <!-- django-js-reverse -->
 <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
 
