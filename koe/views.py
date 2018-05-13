@@ -22,7 +22,8 @@ from koe.models import AudioFile, Segment, HistoryEntry, Segmentation, Database,
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import history_path, ensure_parent_folder_exists, wav_path, audio_path, spect_fft_path, \
-    spect_mask_path, CustomAssertionError
+    spect_mask_path
+from root.exceptions import CustomAssertionError
 
 __all__ = ['get_segment_audio', 'save_history', 'import_history', 'delete_history', 'create_database',
            'import_audio_files', 'import_audio_metadata', 'delete_songs', 'save_segmentation',

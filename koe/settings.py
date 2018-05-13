@@ -69,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'tz_detect.middleware.TimezoneMiddleware',
+    'root.exception_handlers.HandleBusinessExceptionMiddleware'
 ]
 
 ROOT_URLCONF = 'koe.urls'
@@ -214,8 +215,6 @@ CSRF_TRUSTED_ORIGINS = envconf['csrf_trusted_origin']
 
 # For local run:
 if DEBUG:
-
-    DEBUG = True
 
     HOST = 'http://localhost:8000'
 

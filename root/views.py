@@ -5,10 +5,10 @@ import traceback
 from collections import OrderedDict
 
 from django.conf import settings
-from django.utils import timezone
 from django.db.models.base import ModelBase
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from dotmap import DotMap
@@ -16,9 +16,9 @@ from opbeat import Client
 from tz_detect.utils import offset_to_timezone
 
 from koe import jsons
+from root.exceptions import CustomAssertionError
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
     ColumnActionValue, get_bulk_id
-from root.utils import CustomAssertionError
 
 opbeat_client = None
 if hasattr(settings, 'OPBEAT'):

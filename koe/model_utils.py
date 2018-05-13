@@ -11,7 +11,8 @@ from koe.utils import triu2mat, mat2triu
 
 from django.db import models
 from root.models import ExtraAttrValue
-from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists, CustomAssertionError
+from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
+from root.exceptions import CustomAssertionError
 
 window_size = 256
 noverlap = 256 * 0.75
