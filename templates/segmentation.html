@@ -85,7 +85,7 @@
 
 {% block bottom %}
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        {% if db_assignment.can_annotate %}
+        {% if db_assignment.can_modify_segments %}
             <div class="btn-group" role="group">
                 <button disabled id="delete-segments-btn" type="button" class="btn btn-primary">
                     Delete selected

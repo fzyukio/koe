@@ -297,8 +297,8 @@ def assert_permission(user, database, required_level):
     db_assignment = DatabaseAssignment.objects \
         .filter(user=user, database=database, permission__gte=required_level).first()
     if db_assignment is None or db_assignment.permission < required_level:
-        raise CustomAssertionError('You ({}) don\'t have permission to {} database {}'.format(
-            user.username, DatabasePermission.get_name(required_level).lower(), database.name
+        raise CustomAssertionError('On database {} you ({}) don\'t have permission to {}'.format(
+            database.name, user.username, DatabasePermission.get_name(required_level).lower()
         ))
 
     return db_assignment

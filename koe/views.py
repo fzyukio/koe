@@ -427,9 +427,11 @@ def save_segmentation(request):
     :param request:
     :return:
     """
+    user = request.user
     items = json.loads(get_or_error(request.POST, 'items'))
     file_id = get_or_error(request.POST, 'file-id')
     audio_file = get_or_error(AudioFile, dict(id=file_id))
+    assert_permission(user, audio_file.database, DatabasePermission.MODIFY_SEGMENTS)
 
     segmentation, _ = Segmentation.objects.get_or_create(audio_file=audio_file, source='user')
 
