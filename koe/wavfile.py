@@ -123,6 +123,47 @@ def _read_riff_chunk(fid):
     return fsize
 
 
+def nearest_multiple(from_number, factor):
+    """
+    Return the nearest (but smaller) multiple of a factor from a given number
+    E.g. nearest multiple of 7 from 20 is 14
+    :param from_number:
+    :param factor:
+    :return:
+    """
+    residual = from_number % factor
+    return from_number - residual
+
+
+def read_wav_info(file):
+    """
+    Return info of a wav file
+    :param file: a file object or path to a file
+    :return:
+    """
+    if hasattr(file, 'read'):
+        fid = file
+    else:
+        fid = open(file, 'rb')
+    _read_riff_chunk(fid)
+
+    # read the next chunk
+    fid.read(4)
+    size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
+    if bits == 8 or bits == 24:
+        dtype = 'u1'
+        bytes = 1
+    else:
+        bytes = bits // 8
+        dtype = '<i%d' % bytes
+
+    if bits == 32 and _ieee:
+        dtype = 'float32'
+
+    fid.close()
+    return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
+
+
 def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
@@ -136,57 +177,65 @@ def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
         fid = file
     else:
         fid = open(file, 'rb')
-    fsize = _read_riff_chunk(fid)
+    _read_riff_chunk(fid)
 
-    while fid.tell() < fsize:
-        # read the next chunk
-        chunk_id = fid.read(4)
-        if chunk_id == b'fmt ':
-            size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
-        elif chunk_id == b'data':
-            beg = int(beg_ms * rate * ba / 1000)
-            end = int(end_ms * rate * ba / 1000)
-            chunk_size = end - beg
-            current_pos = fid.tell()
+    # the next four bytes is the ID of the next chunk - which is always fmt. We MUST read pass this 4 bytes
+    fid.read(4)
 
-            # Important: must skip the next 4 byte otherwise the audio data will be corrupted
-            # in read() the statement size = struct.unpack('<i', fid.read(4))[0] creates this effect
-            # but in here we don't care about the size so either we call that statement or we must skip 4 bytes
-            beg = beg + current_pos + 4
+    size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
 
-            fid.seek(beg)
+    # the next four bytes is the ID of the next chunk - which is always data. We MUST read pass this 4 bytes
+    fid.read(4)
 
-            if bits == 8 or bits == 24:
-                dtype = 'u1'
-                bytes = 1
-            else:
-                bytes = bits // 8
-                dtype = '<i%d' % bytes
+    if bits == 8 or bits == 24:
+        dtype = 'u1'
+        bytes = 1
+    else:
+        bytes = bits // 8
+        dtype = '<i%d' % bytes
 
-            if bits == 32 and _ieee:
-                dtype = 'float32'
+    if bits == 32 and _ieee:
+        dtype = 'float32'
 
-            data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+    beg = int(beg_ms * rate * ba / 1000)
+    end = int(end_ms * rate * ba / 1000)
 
-            if bits == 24:
-                a = numpy.empty((len(data) // 3, 4), dtype='u1')
-                a[:, :3] = data.reshape((-1, 3))
-                a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
-                data = a.view('<i4').reshape(a.shape[:-1])
+    chunk_size = end - beg
+    current_pos = fid.tell()
 
-            if noc > 1:
-                data = data.reshape(-1, noc)
-                if mono:
-                    data = data[:, 0]
+    # Important: must skip the next 4 byte otherwise the audio data will be corrupted
+    # in read() the statement size = struct.unpack('<i', fid.read(4))[0] creates this effect
+    # but in here we don't care about the size so either we call that statement or we must skip 4 bytes
+    beg = beg + current_pos + 4
 
-            if normalised:
-                normfactor = 1.0 / (2 ** (bits - 1))
-                data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
-            else:
-                data = numpy.ascontiguousarray(data, dtype=data.dtype)
+    # Important #2: beg must be at the beginning of a frame
+    # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
+    #      for 24-bit audio (bytes = 1), beg must be divisible by 1
+    #      for 32-bit audio (bytes = 4), beg must be divisible by 4
+    beg = nearest_multiple(beg, bytes)
+    fid.seek(beg)
 
-            return data
-    return numpy.empty((0,))
+    data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+
+    fid.close()
+
+    if bits == 24:
+        a = numpy.empty((len(data) // 3, 4), dtype='u1')
+        a[:, :3] = data.reshape((-1, 3))
+        a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
+        data = a.view('<i4').reshape(a.shape[:-1])
+
+    if noc > 1:
+        data = data.reshape(-1, noc)
+        if mono:
+            data = data[:, 0]
+
+    if normalised:
+        normfactor = 1.0 / (2 ** (bits - 1))
+        data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
+    else:
+        data = numpy.ascontiguousarray(data, dtype=data.dtype)
+    return data
 
 
 def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False, readloops=False, readpitch=False,

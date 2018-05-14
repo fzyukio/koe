@@ -16,7 +16,7 @@ from root.utils import ensure_parent_folder_exists, wav_path, audio_path
 __all__ = ['get_file_audio_data', 'get_segment_audio_data', 'import_audio_files']
 
 
-def _match_target_amplitude(sound, loudness):
+def _match_target_amplitude(sound, loudness=-10):
     """
     Set the volume of an AudioSegment object to be a certain loudness
     :param sound: an AudioSegment object
@@ -70,13 +70,16 @@ def get_segment_audio_data(request):
     start = segment.start_time_ms
     end = segment.end_time_ms
 
-    compressed_url = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
-    if os.path.isfile(compressed_url):
-        valid_path = compressed_url
-    else:
-        valid_path = wav_path(audio_file.name)
-    song = pydub.AudioSegment.from_file(valid_path)
-    audio_segment = song[start:end]
+    wav_file_path = wav_path(audio_file.name)
+    chunk = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=False)
+    audio_segment = pydub.AudioSegment(
+        chunk.tobytes(),
+        frame_rate=audio_file.fs,
+        sample_width=chunk.dtype.itemsize,
+        channels=1
+    )
+
+    audio_segment = _match_target_amplitude(audio_segment)
 
     out = io.BytesIO()
     audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
