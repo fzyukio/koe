@@ -507,7 +507,7 @@ export const Visualise = function () {
         let durationMs = end - begin;
 
         let args = {
-            url: getUrl('send-request', 'koe/get-segment-audio'),
+            url: getUrl('send-request', 'koe/get-file-audio-data'),
             postData: data,
             cacheKey: fileId,
             playAudioArgs: {

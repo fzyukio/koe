@@ -84,7 +84,7 @@ class Grid extends FlexibleGrid {
         let data = new FormData();
         data.append('file-id', fileId);
         let args_ = {
-            url: getUrl('send-request', 'koe/get-segment-audio'),
+            url: getUrl('send-request', 'koe/get-file-audio-data'),
             postData: data,
             cacheKey: fileId,
             startSecond: null,
@@ -145,7 +145,7 @@ export const visualiseSong = function (callback) {
     let data = new FormData();
     data.append('file-id', fileId);
     let args = {
-        url: getUrl('send-request', 'koe/get-segment-audio'),
+        url: getUrl('send-request', 'koe/get-file-audio-data'),
         postData: data,
         cacheKey: fileId,
         startSecond: null,
@@ -179,7 +179,7 @@ const redrawSpectrogram = function () {
     let data = new FormData();
     data.append('file-id', fileId);
     let args = {
-        url: getUrl('send-request', 'koe/get-segment-audio'),
+        url: getUrl('send-request', 'koe/get-file-audio-data'),
         postData: data,
         cacheKey: fileId,
         startSecond: null,

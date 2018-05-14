@@ -87,7 +87,7 @@ const playAudio = function (e, args) {
             data.append('segment-id', segId);
 
             let args_ = {
-                url: getUrl('send-request', 'koe/get-segment-audio'),
+                url: getUrl('send-request', 'koe/get-segment-audio-data'),
                 cacheKey: segId,
                 postData: data
             };

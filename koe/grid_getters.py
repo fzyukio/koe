@@ -200,7 +200,7 @@ def bulk_get_exemplars(objs, extras):
     return ids, rows
 
 
-def _get_sequence_info_empty_songs(empty_songs):
+def get_sequence_info_empty_songs(empty_songs):
     rows = []
     ids = []
 
@@ -351,7 +351,7 @@ def bulk_get_song_sequences(all_songs, extras):
     # Now we have to deal with songs without any segmentation done
     empty_songs = all_songs.exclude(id__in=songs.keys())
 
-    _ids, _rows = _get_sequence_info_empty_songs(empty_songs)
+    _ids, _rows = get_sequence_info_empty_songs(empty_songs)
     ids += _ids
     rows += _rows
 

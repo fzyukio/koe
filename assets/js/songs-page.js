@@ -342,7 +342,7 @@ const initDeleteSongsBtn = function () {
             };
             ce.dialogModal.modal('hide');
             postRequest({
-                requestSlug: 'koe/delete-songs',
+                requestSlug: 'koe/delete-audio-files',
                 data: postData,
                 msgGen,
                 onSuccess,
@@ -403,7 +403,7 @@ const initCopySongsBtn = function () {
 
             ce.dialogModal.modal('hide');
             postRequest({
-                requestSlug: 'koe/copy-files',
+                requestSlug: 'koe/copy-audio-files',
                 data: postData,
                 msgGen
             });

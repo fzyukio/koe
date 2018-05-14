@@ -51,7 +51,9 @@ class KoeConfig(AppConfig):
         if not is_importing_fixture:
             from root.views import register_app_modules, init_tables
 
-            register_app_modules(self.name, 'views')
+            register_app_modules(self.name, 'request_handlers.history')
+            register_app_modules(self.name, 'request_handlers.audio')
+            register_app_modules(self.name, 'request_handlers.database')
             register_app_modules(self.name, 'models')
             register_app_modules(self.name, 'grid_getters')
 
