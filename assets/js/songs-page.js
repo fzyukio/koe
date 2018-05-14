@@ -330,10 +330,10 @@ const initDeleteSongsBtn = function () {
                 ids: JSON.stringify(ids),
                 database: databaseId
             };
-            let msgGen = function (res) {
-                return res.success ?
+            let msgGen = function (isSuccess, response) {
+                return isSuccess ?
                     'Files successfully deleted.' :
-                    `Something's wrong. The server says ${res.error}. Files might have been deleted.`;
+                    `Something's wrong. The server says ${response}. Files might have been deleted.`;
             };
             let onSuccess = function () {
                 for (let i = 0; i < numRows; i++) {
@@ -394,8 +394,8 @@ const initCopySongsBtn = function () {
                 'source-database-id': databaseId
             };
 
-            let msgGen = function (res) {
-                return res.success ?
+            let msgGen = function (isSuccess) {
+                return isSuccess ?
                     `Success. ${numRows} file(s) copied to database ${databaseName}. 
                     You can view these files by switching to database ${databaseName}` :
                     null;

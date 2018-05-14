@@ -81,8 +81,7 @@ class Grid extends FlexibleGrid {
         }
 
 
-        let data = new FormData();
-        data.append('file-id', fileId);
+        let data = {'file-id': fileId};
         let args_ = {
             url: getUrl('send-request', 'koe/get-file-audio-data'),
             postData: data,
@@ -142,8 +141,7 @@ export const visualiseSong = function (callback) {
     setCache('resizeable-syl-id', undefined, undefined);
     setCache('syllables', undefined, {});
 
-    let data = new FormData();
-    data.append('file-id', fileId);
+    let data = {'file-id': fileId};
     let args = {
         url: getUrl('send-request', 'koe/get-file-audio-data'),
         postData: data,
@@ -176,11 +174,9 @@ export const highlightSegments = function (e, args) {
 
 
 const redrawSpectrogram = function () {
-    let data = new FormData();
-    data.append('file-id', fileId);
     let args = {
         url: getUrl('send-request', 'koe/get-file-audio-data'),
-        postData: data,
+        postData: {'file-id': fileId},
         cacheKey: fileId,
         startSecond: null,
         endSecond: null
@@ -271,10 +267,8 @@ const initController = function () {
             saveSegmentationBtn.prop('disabled', true);
         };
         ce.dialogModal.modal('hide');
-        let msgGen = function (res) {
-            return res.success ?
-                'Success' :
-                `Something's wrong. The server says ${res.error}.`;
+        let msgGen = function (isSuccess) {
+            return isSuccess ? 'Success' : null;
         };
         postRequest({
             requestSlug: 'koe/save-segmentation',

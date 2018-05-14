@@ -254,19 +254,15 @@ const initDatabaseButtons = function () {
         e.preventDefault();
         let databaseId = this.getAttribute('database');
 
-        let postData = {
-            'database-id': databaseId
-        };
-
-        let msgGen = function (res) {
-            return res.success ?
+        let msgGen = function (isSuccess) {
+            return isSuccess ?
                 'Requested has been posted. A database admin will response to your request.' :
                 null;
         };
 
         postRequest({
             requestSlug: 'koe/request-database-access',
-            data: postData,
+            data: {'database-id': databaseId},
             msgGen,
             immediate: false
         });
@@ -276,17 +272,13 @@ const initDatabaseButtons = function () {
         e.preventDefault();
         let requestId = this.getAttribute('request');
 
-        let postData = {
-            'request-id': requestId
-        };
-
-        let msgGen = function (res) {
-            return res.success ? 'Success' : null;
+        let msgGen = function (isSuccess) {
+            return isSuccess ? 'Success' : null;
         };
 
         postRequest({
             requestSlug: 'koe/approve-database-access',
-            data: postData,
+            data: {'request-id': requestId},
             immediate: false,
             msgGen
         });

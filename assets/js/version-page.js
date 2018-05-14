@@ -60,16 +60,15 @@ const initApplyVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let postData = {'version-id': item.id};
-            let msgGen = function (res) {
-                return res.success ?
+            let msgGen = function (isSuccess, response) {
+                return isSuccess ?
                     `Verison ${item.url} successfully imported` :
-                    `Something's wrong. The server says ${res.error}. Version not imported.
+                    `Something's wrong. The server says ${response}. Version not imported.
                        But good news is your current data is still intact.`;
             };
             ce.dialogModal.modal('hide');
             postRequest({requestSlug: 'koe/import-history',
-                data: postData,
+                data: {'version-id': item.id},
                 msgGen});
         })
     });
@@ -89,13 +88,12 @@ const initDeleteVersionBtn = function () {
         ce.dialogModal.modal('show');
 
         ce.dialogModalOkBtn.one('click', function () {
-            let postData = {'version-id': item.id};
             let onSuccess = function () {
                 dataView.deleteItem(item.id);
             };
             ce.dialogModal.modal('hide');
             postRequest({requestSlug: 'koe/delete-history',
-                data: postData,
+                data: {'version-id': item.id},
                 onSuccess});
         })
     });
@@ -119,10 +117,10 @@ const initImportZipBtn = function () {
         let filename = fileUploadInput.val();
         let formData = new FormData(this);
 
-        let msgGen = function (res) {
-            return res.success ?
+        let msgGen = function (isSuccess, response) {
+            return isSuccess ?
                 `File ${filename} successfully imported` :
-                `Something's wrong. The server says "${res.error}". Version not imported. 
+                `Something's wrong. The server says "${response}". Version not imported. 
                 But good news is your current data is still intact.`;
         };
 

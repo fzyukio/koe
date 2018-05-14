@@ -1,4 +1,5 @@
 import {isNull} from './utils';
+import {handleResponse} from './ajax-handler';
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -95,7 +96,7 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
 /**
  * Stop the audio if it is playing
  */
-export const stopAudio = function() {
+export const stopAudio = function () {
     if (!isNull(audioContext) && audioContext.state === 'running') {
         audioContext.close();
         audioContext = new AudioContext();
@@ -114,6 +115,29 @@ const playAudioDataArray = function (fullAudioDataArray, sampleRate, playAudioAr
     audioBuffer.getChannelData(0).set(fullAudioDataArray);
     playAudio(playAudioArgs);
 };
+
+
+/**
+ * Convert a dict to a FormData object, with the same key-value pairs
+ * @param data
+ * @returns {FormData}
+ */
+const convertToFormData = function(data) {
+    let formData;
+    if (data instanceof FormData) {
+        formData = data;
+    }
+    else {
+        formData = new FormData();
+        for (let key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                formData.append(key, data[key]);
+            }
+        }
+    }
+    return formData;
+};
+
 
 /**
  * Query, cache a piece of audio, then provide the signal and fs as arguments to the callback function
@@ -134,29 +158,84 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
             audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
                 let fullAudioDataArray = _audioBuffer.getChannelData(0);
                 let sampleRate = _audioBuffer.sampleRate;
-                if (cacheKey) {
+                if (cacheKey && !window.noCache) {
                     cachedArrays[cacheKey] = [fullAudioDataArray, sampleRate];
                 }
                 callback(fullAudioDataArray, sampleRate);
             });
         };
+        let formData = convertToFormData(postData);
 
-        const xhr = new XMLHttpRequest();
         let method = isNull(postData) ? 'GET' : 'POST';
 
+        const xhr = new XMLHttpRequest();
         xhr.open(method, url, true);
-        xhr.responseType = 'blob';
-
-        xhr.onload = function () {
-            if (this.status == 200) {
-                reader.readAsArrayBuffer(new Blob([this.response]));
-            }
-        };
         xhr.onloadend = function () {
             $.event.trigger('ajaxStop');
         };
+
+        // We expect the response to be audio/mp4 when success, and text when failure.
+        // So we need this to change the response type accordingly
+        xhr.onreadystatechange = function () {
+
+            // When request finishes, handle success/failure according to the status
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    reader.readAsArrayBuffer(this.response);
+                }
+                else {
+
+                    handleResponse({
+                        response: this.responseText,
+                        isSuccess: false,
+                    })
+
+                }
+            }
+            // When request is received, check if it is successful/failed and set the response type
+            else if (this.readyState == 2) {
+                if (this.status == 200) {
+                    this.responseType = 'blob';
+                }
+                else {
+                    this.responseType = 'text';
+                }
+            }
+        };
+
         $.event.trigger('ajaxStart');
-        xhr.send(postData);
+        xhr.send(formData);
+
+        /*
+        // This is kind of how to do it in jQuery
+
+        $.ajax({
+            url: url,
+            data: postData,
+            method: method,
+            processData: true,
+            xhrFields:{
+                responseType: 'blob'
+            },
+            success: function (data, textStatus, xhr) {
+                reader.readAsArrayBuffer(new Blob([data], {type : xhr.getResponseHeader("content-type")}));
+            },
+            error: function (data, textStatus, xhr) {
+                console.log(data);
+                console.log(textStatus);
+                console.log(xhr);
+            },
+            state2: function (context,data,status,xhr) {
+                console.log('state2');
+            },
+            state3: function (context,data,status,xhr) {
+                console.log('state3');
+            },
+            complete: function (context,data,status,xhr){
+                console.log('complete');
+            },
+        });
+        */
     }
 };
 

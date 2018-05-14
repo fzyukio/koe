@@ -494,8 +494,6 @@ export const Visualise = function () {
     this.playAudio = function (begin = 0, end = 'end', onStartCallback = noop, stopScrolling = noop) {
         let viz = this;
         let fileId = getCache('file-id');
-        let data = new FormData();
-        data.append('file-id', fileId);
 
         let startX = viz.spectXScale(begin);
         if (end === 'end') {
@@ -508,7 +506,7 @@ export const Visualise = function () {
 
         let args = {
             url: getUrl('send-request', 'koe/get-file-audio-data'),
-            postData: data,
+            postData: {'file-id': fileId},
             cacheKey: fileId,
             playAudioArgs: {
                 beginSec: begin / 1000,

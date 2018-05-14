@@ -6,8 +6,9 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models.base import ModelBase
-from django.http import HttpResponse
-from django.http import HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
+from django.http import HttpResponseServerError
+from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
@@ -450,10 +451,15 @@ def send_request(request, *args, **kwargs):
                 response = function(request)
                 if isinstance(response, HttpResponse):
                     return response
-                return HttpResponse(json.dumps(dict(success=True, response=response)))
+                return JsonResponse(response, safe=False)
             except Exception as e:
                 opbeat_client.capture_exception()
-                return HttpResponse(json.dumps(dict(success=False, error=str(e))))
+
+                if isinstance(e, CustomAssertionError):
+                    return HttpResponseBadRequest(str(e))
+
+                return HttpResponseServerError(str(e))
+
     return HttpResponseNotFound()
 
 

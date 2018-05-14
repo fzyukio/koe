@@ -91,8 +91,7 @@ const playAudio = function (e, args) {
     let hasImage = cellElement.closest('.has-image');
     if (hasImage.length == 1) {
         let segId = args.songId;
-        let data = new FormData();
-        data.append('segment-id', segId);
+        let data = {'segment-id': segId};
 
         let args_ = {
             url: getUrl('send-request', 'koe/get-segment-audio-data'),
@@ -721,10 +720,10 @@ export const postRun = function () {
                 comment: value,
                 database: databaseId
             };
-            let msgGen = function (res) {
-                return res.success ?
-                    `History saved to ${res.response}. You can download it from the version control page` :
-                    `Something's wrong, server says ${res.error}. Version not saved.`;
+            let msgGen = function (isSuccess, response) {
+                return isSuccess ?
+                    `History saved to ${response}. You can download it from the version control page` :
+                    `Something's wrong, server says ${response}. Version not saved.`;
             };
             postRequest({
                 requestSlug: 'koe/save-history',

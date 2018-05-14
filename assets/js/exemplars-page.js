@@ -83,13 +83,10 @@ const playAudio = function (e, args) {
         let match = imgRegex.exec(imgSrc);
         if (match) {
             let segId = match[1];
-            let data = new FormData();
-            data.append('segment-id', segId);
-
             let args_ = {
                 url: getUrl('send-request', 'koe/get-segment-audio-data'),
                 cacheKey: segId,
-                postData: data
+                postData: {'segment-id': segId}
             };
             queryAndPlayAudio(args_);
         }

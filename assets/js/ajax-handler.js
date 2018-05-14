@@ -4,13 +4,14 @@ const alertFailure = $('.alert-danger');
 
 /**
  * Generate default message given the response
- * @param res server response
  * @returns {*} the default message
+ * @param isSuccess
+ * @param response
  */
-function defaultMsgGen(res) {
-    return res.success ?
+function defaultMsgGen(isSuccess, response) {
+    return isSuccess ?
         null :
-        `Something's wrong, server says <strong><i>"${res.error}"</i></strong>.`;
+        `Something's wrong, server says <strong><i>"${response}"</i></strong>.`;
 }
 
 const delayOnSuccess = 500;
@@ -18,15 +19,15 @@ const delayOnFailure = 4000;
 
 /**
  * Shortcut to call ajaxRequest for normal POST requests
- * @param requestSlug
- * @param data
- * @param msgGen
- * @param onSuccess
- * @param onFailure
- * @param immediate
+ * @param requestSlug second part of a send-request/ url
+ * @param data data
+ * @param msgGen function to generate notification message
+ * @param onSuccess callback when success
+ * @param onFailure callback when failure
+ * @param immediate whether or not to call callback right after showing the notification
  */
 export const postRequest = function ({
-    requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false
+    requestSlug, data, msgGen, onSuccess = noop, onFailure = noop, immediate = false
 }) {
     let type = 'POST';
     let ajaxArgs = {};
@@ -44,15 +45,15 @@ export const postRequest = function ({
 
 /**
  * Shortcut to call ajaxRequest for file upload
- * @param requestSlug
- * @param data
- * @param msgGen
- * @param onSuccess
- * @param onFailure
- * @param immediate
+ * @param requestSlug second part of a send-request/ url
+ * @param data data
+ * @param msgGen function to generate notification message
+ * @param onSuccess callback when success
+ * @param onFailure callback when failure
+ * @param immediate whether or not to call callback right after showing the notification
  */
 export const uploadRequest = function ({
-    requestSlug, data, msgGen, onSuccess = null, onFailure = null, immediate = false
+    requestSlug, data, msgGen, onSuccess = noop, onFailure = noop, immediate = false
 }) {
     let ajaxArgs = {
         // !IMPORTANT: this tells jquery to not set expectation of the content type.
@@ -77,56 +78,76 @@ export const uploadRequest = function ({
 };
 
 /**
+ * Show notification corresponding to the response, and pass it on the the callback
+ * @param response response body
+ * @param msgGen function to generate notification message
+ * @param isSuccess true if response is success
+ * @param callback
+ * @param immediate whether or not to call callback right after showing the notification
+ */
+export const handleResponse = function ({
+    response, msgGen = noop, isSuccess = true, callback = noop, immediate = false
+}) {
+    let alertEl, delay;
+    let message = msgGen(isSuccess, response) || defaultMsgGen(isSuccess, response);
+
+    if (isSuccess) {
+        alertEl = alertSuccess;
+        delay = delayOnSuccess;
+    }
+    else {
+        alertEl = alertFailure;
+        delay = delayOnFailure;
+    }
+
+    if (message) {
+        alertEl.html(message);
+        alertEl.fadeIn().delay(delay).fadeOut(delay, function () {
+            if (!immediate) callback(response);
+        });
+    }
+    else {
+        immediate = true;
+    }
+    if (immediate) callback(response);
+};
+
+/**
  *
- * @param requestSlug
- * @param data
- * @param msgGen
- * @param type
- * @param ajaxArgs
- * @param onSuccess
- * @param onFailure
- * @param immediate
+ * @param requestSlug second part of a send-request/ url
+ * @param data data
+ * @param msgGen function to generate notification message
+ * @param type POST or GET
+ * @param ajaxArgs extra arguments for the AJAX call
+ * @param onSuccess callback when success
+ * @param onFailure callback when failure
+ * @param immediate whether or not to call callback right after showing the notification
  */
 const ajaxRequest = function ({
-    requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = null,
-    onFailure = null, immediate = false
+    requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = noop,
+    onFailure = noop, immediate = false
 }) {
-    let url = getUrl('send-request', requestSlug);
-
-    let responseHandler = function (res) {
-        res = JSON.parse(res);
-        let alertEl, callback, delay, callbackArg;
-        let message = msgGen(res) || defaultMsgGen(res);
-
-        if (res.success) {
-            alertEl = alertSuccess;
-            callback = onSuccess || noop;
-            delay = delayOnSuccess;
-            callbackArg = res.response;
-        }
-        else {
-            alertEl = alertFailure;
-            callback = onFailure || noop;
-            delay = delayOnFailure;
-            callbackArg = undefined;
-        }
-
-        if (message) {
-            alertEl.html(message);
-            alertEl.fadeIn().delay(delay).fadeOut(delay, function () {
-                if (!immediate) callback(callbackArg);
-            });
-        }
-        else {
-            immediate = true;
-        }
-        if (immediate) callback(callbackArg);
-    };
-
-    ajaxArgs.url = url;
+    ajaxArgs.url = getUrl('send-request', requestSlug);
     ajaxArgs.type = type;
     ajaxArgs.data = data;
-    ajaxArgs.success = responseHandler;
+    ajaxArgs.success = function (response) {
+        handleResponse({
+            response,
+            msgGen,
+            isSuccess: true,
+            callback: onSuccess,
+            immediate
+        })
+    };
+    ajaxArgs.error = function (response) {
+        handleResponse({
+            response: response.responseText,
+            msgGen,
+            isSuccess: false,
+            callback: onFailure,
+            immediate
+        })
+    };
 
     $.ajax(ajaxArgs);
 };
