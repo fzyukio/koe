@@ -107,6 +107,8 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
     }
 };
 
+// Grab the head of the promise chain for cancellation purpose
+let visualisationPromiseChainHead;
 
 export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, sig, contrast, _noverlap = noverlap) {
     let segs = calcSegments(sig.length, nfft, _noverlap);
@@ -119,23 +121,31 @@ export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, sp
         }
     });
 
-    chunks.reduce(function (promiseChain, chunk) {
-        let nextPromise = promiseChain.then(function () {
-            let segBeg = chunk[0];
-            let segEnd = chunk[1];
-            let subSegs = segs.slice(segBeg, segEnd);
-            let subImgWidth = subSegs.length;
-            let promise = displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
-            promise.then(function (dataURI) {
-                let img = spectrogramSpects.select(`image.offset${segBeg}`);
-                img.attr('height', imgHeight);
-                img.attr('width', subImgWidth);
-                img.attr('x', segBeg);
-                img.attr('xlink:href', dataURI);
-                img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-            });
+    // Cancel all pending visualisation promises
+    if (visualisationPromiseChainHead) {
+        visualisationPromiseChainHead.cancel();
+    }
+
+    visualisationPromiseChainHead = chunks.reduce(function (promiseChain, chunk, index) {
+        let segBeg = chunk[0];
+        let segEnd = chunk[1];
+        let subSegs = segs.slice(segBeg, segEnd);
+        let subImgWidth = subSegs.length;
+
+        return promiseChain.then(function () {
+            return displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
+        }).then(function (dataURI) {
+            debug(`Displaying chunk: ${index}`);
+            if (index == chunks.length - 1) {
+                debug('end');
+            }
+            let img = spectrogramSpects.select(`image.offset${segBeg}`);
+            img.attr('height', imgHeight);
+            img.attr('width', subImgWidth);
+            img.attr('x', segBeg);
+            img.attr('xlink:href', dataURI);
+            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
         });
-        return (nextPromise);
     }, Promise.resolve());
 };
 
