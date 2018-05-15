@@ -230,8 +230,6 @@ def get_sequence_info_empty_songs(empty_songs):
         species_str = '{} {}'.format(genus, species)
         row = dict(id=song_id, filename=filename, url=url, track=track, individual=indv, gender=gender,
                    quality=quality, date=date, duration=duration_ms, species=species_str)
-        row['song-url'] = audio_path(filename, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
-
         ids.append(song_id)
         rows.append(row)
 
@@ -330,8 +328,6 @@ def bulk_get_song_sequences(all_songs, extras):
 
         sequence_str = '-'.join('\"{}\"'.format(x) for x in sequence_labels)
 
-        song_url = audio_path(song_info['filename'], settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
-
         row = song_info
         row['id'] = song_id
         row['sequence'] = sequence_str
@@ -339,7 +335,6 @@ def bulk_get_song_sequences(all_songs, extras):
         row['sequence-starts'] = sequence_starts
         row['sequence-ends'] = sequence_ends
         row['sequence-imgs'] = sequence_masks
-        row['song-url'] = song_url
 
         extra_attr_dict = extra_attr_values_lookup.get(str(song_id), {})
         for attr in extra_attr_dict:

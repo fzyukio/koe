@@ -373,14 +373,12 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
  */
 const SequenceFormatter = function (row, cell, value, columnDef, song) {
     let duration = song.duration;
-    let songUrl = song['song-url'];
     let segLabels = song['sequence-labels'];
     let segStarts = song['sequence-starts'];
     let segEnds = song['sequence-ends'];
     let imgSrcs = song['sequence-imgs'];
 
-
-    let retval = `<div class="syllable start full-audio" song-url="${songUrl}" start=0 end=${duration}>
+    let retval = `<div class="syllable start full-audio" start=0 end=${duration}>
                   <i class="fa fa-play" aria-hidden="true"></i>
                 </div>`;
 

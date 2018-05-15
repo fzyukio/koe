@@ -80,14 +80,10 @@ class Grid extends FlexibleGrid {
             }
         }
 
-
-        let data = {'file-id': fileId};
         let args_ = {
             url: getUrl('send-request', 'koe/get-file-audio-data'),
-            postData: data,
-            cacheKey: fileId,
-            startSecond: null,
-            endSecond: null
+            postData: {'file-id': fileId},
+            cacheKey: fileId
         };
         queryAndHandleAudio(args_, function (sig) {
             viz.zoomInSyllable(item, sig, contrast);
@@ -177,9 +173,7 @@ const redrawSpectrogram = function () {
     let args = {
         url: getUrl('send-request', 'koe/get-file-audio-data'),
         postData: {'file-id': fileId},
-        cacheKey: fileId,
-        startSecond: null,
-        endSecond: null
+        cacheKey: fileId
     };
     queryAndHandleAudio(args, function (sig) {
         visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig, contrast);

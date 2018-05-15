@@ -1,6 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, playAudioFromUrl, initAudioContext} from './audio-handler';
-import {debug, deepCopy} from './utils';
+import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {debug, deepCopy, getUrl} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -91,19 +91,21 @@ const playAudio = function (e, args) {
     let cellElement = $(args.e.target);
     let hasSyllable = cellElement.closest('.syllable');
     if (hasSyllable.length == 1) {
-        let audioUrl = hasSyllable.parent().find('.full-audio').attr('song-url');
+        let fileId = args.songId;
         let start = parseInt(hasSyllable.attr('start')) / 1000.0;
         let end = parseInt(hasSyllable.attr('end')) / 1000.0;
 
         let args_ = {
-            url: audioUrl,
+            url: getUrl('send-request', 'koe/get-file-audio-data'),
+            postData: {'file-id': fileId},
+            cacheKey: fileId,
             playAudioArgs: {
                 beginSec: start,
                 endSec: end
             }
         };
 
-        playAudioFromUrl(args_);
+        queryAndPlayAudio(args_);
     }
 };
 
@@ -427,7 +429,6 @@ export const run = function (commonElements) {
 };
 
 export const postRun = function () {
-    subscribeFlexibleEvents();
     initUploadSongsBtn();
     initDeleteSongsBtn();
     initCopySongsBtn();

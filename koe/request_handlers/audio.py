@@ -13,7 +13,7 @@ from koe.model_utils import assert_permission, \
 from koe.models import AudioFile, Segment, Database, DatabasePermission
 from root.utils import ensure_parent_folder_exists, wav_path, audio_path
 
-__all__ = ['get_file_audio_data', 'get_segment_audio_data', 'import_audio_files']
+__all__ = ['get_segment_audio_data', 'import_audio_files', 'get_audio_file_url']
 
 
 def _match_target_amplitude(sound, loudness=-10):
@@ -27,31 +27,6 @@ def _match_target_amplitude(sound, loudness=-10):
     if change_in_dBFS > 0:
         return sound.apply_gain(change_in_dBFS)
     return sound
-
-
-def get_file_audio_data(request):
-    """
-    Return a playable audio file given the file id
-    :param request: must specify file-id, this is the ID of a AudioFile object to be played
-    :return: a binary blob specified as audio/ogg (or whatever the format is), playable and volume set to -10dB
-    """
-    user = request.user
-
-    file_id = get_or_error(request.POST, 'file-id')
-    audio_file = get_or_error(AudioFile, dict(id=file_id))
-    assert_permission(user, audio_file.database, DatabasePermission.VIEW)
-
-    file_path = audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT)
-    song = pydub.AudioSegment.from_file(file_path)
-    out = io.BytesIO()
-    song.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
-    binary_content = out.getvalue()
-
-    response = HttpResponse()
-    response.write(binary_content)
-    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
-    response['Content-Length'] = len(binary_content)
-    return response
 
 
 def get_segment_audio_data(request):
@@ -141,3 +116,13 @@ def import_audio_files(request):
 
     _, rows = get_sequence_info_empty_songs(added_files)
     return rows
+
+
+def get_audio_file_url(request):
+    user = request.user
+
+    file_id = get_or_error(request.POST, 'file-id')
+    audio_file = get_or_error(AudioFile, dict(id=file_id))
+    assert_permission(user, audio_file.database, DatabasePermission.VIEW)
+
+    return audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
