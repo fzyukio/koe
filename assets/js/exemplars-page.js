@@ -1,5 +1,5 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {log, deepCopy, getUrl, getCache, setCache} from './utils';
+import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -115,7 +115,7 @@ const selectTextForCopy = function (e, args) {
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    log('subscribeFlexibleEvents called');
+    debug('subscribeFlexibleEvents called');
     grid.on('click', function (...args) {
         let e = args[0];
         e.preventDefault();

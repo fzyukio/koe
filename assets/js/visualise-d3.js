@@ -195,7 +195,7 @@ export const Visualise = function () {
         viz.spectBrush.on('start', function () {
             viz.spectHandle.attr('display', 'unset');
             if (!d3.event.sourceEvent) return;
-            console.log('on brushstart');
+            debug('on brushstart');
         }).on('brush', function () {
             let endpoints = d3.event.selection;
             if (endpoints === null) return;
@@ -205,7 +205,7 @@ export const Visualise = function () {
             });
         }).on('end', function () {
             if (!d3.event.sourceEvent) return;
-            console.log('on brushend');
+            debug('on brushend');
             if (d3.event.selection === null) {
 
                 /*
@@ -219,7 +219,7 @@ export const Visualise = function () {
                 let start = Math.floor(endpoints[0]);
                 let end = Math.ceil(endpoints[1]);
 
-                console.log('start= ' + start + ' end=' + end);
+                debug('start= ' + start + ' end=' + end);
 
                 let syllables = getCache('syllables') || {};
                 let sylIdx = getCache('resizeable-syl-id');
@@ -371,7 +371,7 @@ export const Visualise = function () {
         let length = sig.length;
         let data = [];
         let resampleFactor = Math.max(1, Math.min(80, Math.round(length / standardLength)));
-        console.log(`resampleFactor = ${resampleFactor}`);
+        debug(`resampleFactor = ${resampleFactor}`);
         let minY = 99999;
         let maxY = -99999;
         let y;
@@ -569,7 +569,7 @@ export const Visualise = function () {
         let viz = this;
         let resizing = getCache('resizeable-syl-id');
         if (resizing && viz.editMode) {
-            console.log(`Currently editing another segment, ignore. resizing = ${resizing}`);
+            debug(`Currently editing another segment, ignore. resizing = ${resizing}`);
             return;
         }
 
@@ -625,13 +625,13 @@ export const Visualise = function () {
     function clearSpectrogramHighlight(element, viz) {
         let resizing = getCache('resizeable-syl-id');
         if (resizing && viz.editMode) {
-            console.log('Currently editing another segment, ignore');
+            debug('Currently editing another segment, ignore');
             return;
         }
 
         setCache('highlighted-syl-id', undefined, undefined);
         if (viz.editMode) {
-            console.log('Edit mode on and not highlighted. Keep brush');
+            debug('Edit mode on and not highlighted. Keep brush');
         }
         // External process might be interested in this event too
         viz.eventNotifier.trigger('segment-mouse', {

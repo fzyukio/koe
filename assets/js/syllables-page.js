@@ -1,6 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initSelectize} from './selectize-formatter';
-import {log, deepCopy, getUrl, getCache, setCache} from './utils';
+import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
@@ -188,7 +188,7 @@ function onRowsRemoved(e, args) {
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    log('subscribeFlexibleEvents called');
+    debug('subscribeFlexibleEvents called');
     grid.on('click', function (...args) {
         let e = args[0];
         e.preventDefault();
@@ -211,7 +211,7 @@ const subscribeFlexibleEvents = function () {
  * screen orientation or size
  */
 const subscribeSlickEvents = function () {
-    log('subscribeSlickEvents called');
+    debug('subscribeSlickEvents called');
     grid.subscribe('onContextMenu', function (e, args) {
         e.preventDefault();
         let grid_ = args.grid;

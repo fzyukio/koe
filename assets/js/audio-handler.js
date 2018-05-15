@@ -205,37 +205,6 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
 
         $.event.trigger('ajaxStart');
         xhr.send(formData);
-
-        /*
-        // This is kind of how to do it in jQuery
-
-        $.ajax({
-            url: url,
-            data: postData,
-            method: method,
-            processData: true,
-            xhrFields:{
-                responseType: 'blob'
-            },
-            success: function (data, textStatus, xhr) {
-                reader.readAsArrayBuffer(new Blob([data], {type : xhr.getResponseHeader("content-type")}));
-            },
-            error: function (data, textStatus, xhr) {
-                console.log(data);
-                console.log(textStatus);
-                console.log(xhr);
-            },
-            state2: function (context,data,status,xhr) {
-                console.log('state2');
-            },
-            state3: function (context,data,status,xhr) {
-                console.log('state3');
-            },
-            complete: function (context,data,status,xhr){
-                console.log('complete');
-            },
-        });
-        */
     }
 };
 

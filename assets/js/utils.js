@@ -14,6 +14,7 @@ require('rowselectionmodel');
 require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
+require('devtools-detect');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
 
 /**
@@ -40,15 +41,17 @@ if ($.ui.keyCode === undefined) {
     };
 }
 
-export const log = function (str) {
-    // eslint-disable-next-line
-    console.log(str)
-};
-
 export const debug = function (str) {
-    if (window.APP_DEBUG) {
+    if (window.PRINT_DEBUG) {
+
+        // Get the origin of the call. To print out the devtool window for make it easy to jump right to the caller
+        let stack = new Error().stack;
+
+        // Why 2? The first line is always "Error", the second line is this debug function, the third is the caller.
+        let where = stack.split('\n')[2];
+
         // eslint-disable-next-line
-        console.log(str);
+        console.log(`${str}\n${where}`);
     }
 };
 
@@ -1739,7 +1742,7 @@ function findClassRules(selector) {
  * @param selector selector selector of the element
  * @returns {string} valid CSS rule set for the selector and all children
  */
-function getCssTextRecursive (selector) {
+function getCssTextRecursive(selector) {
     let rules = findClassRules(selector);
     if (rules.length == 0) return '';
     let selectorText = rules[0].selectorText;
@@ -1759,19 +1762,19 @@ function getCssTextRecursive (selector) {
 /**
  * A do nothing function
  */
-export const noop = function() {
+export const noop = function () {
     return undefined;
 };
 
 
 /**
-    Smoothly scroll element to the given target (element.scrollLeft)
-    for the given duration
+ Smoothly scroll element to the given target (element.scrollLeft)
+ for the given duration
 
-    Returns a promise that's fulfilled when done, or rejected if
-    interrupted
+ Returns a promise that's fulfilled when done, or rejected if
+ interrupted
  */
-export const smotthScrollTo = function(element, target, duration) {
+export const smotthScrollTo = function (element, target, duration) {
     target = Math.round(target);
     duration = Math.round(duration);
     if (duration < 0) {
@@ -1788,14 +1791,14 @@ export const smotthScrollTo = function(element, target, duration) {
     let start = element.scrollLeft;
     let distance = target - start;
 
-    return new Promise(function(resolve, reject, onCancel) {
+    return new Promise(function (resolve, reject, onCancel) {
         // This is to keep track of where the element's scrollLeft is
         // supposed to be, based on what we're doing
         let previous = element.scrollLeft;
         let timeoutId;
 
         // This is like a think function from a game loop
-        let scrollFrame = function() {
+        let scrollFrame = function () {
             if (element.scrollLeft != previous) {
                 reject(new Error('interrupted'));
                 return;
