@@ -285,6 +285,9 @@ export const Visualise = function () {
         let spectWidth = $('#spectrogram-zoomed').width() - viz.margin.left - viz.margin.right;
         let spectHeight = $('#spectrogram-zoomed').height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
 
+        spectWidth = Math.round(spectWidth);
+        spectHeight = Math.round(spectHeight);
+
         spectZoomSvg.attr('height', spectHeight + viz.margin.top + viz.margin.bottom);
         spectZoomSvg.attr('width', spectWidth + viz.margin.left + viz.margin.right);
 
@@ -419,8 +422,11 @@ export const Visualise = function () {
         viz.imgHeight = imgHeight;
         viz.imgWidth = imgWidth;
 
-        viz.spectWidth = $(viz.spectrogramId).width() - viz.margin.left - viz.margin.right;
+        viz.spectWidth = $(viz.spectrogramId).height() - viz.margin.left - viz.margin.right;
         viz.spectHeight = $(viz.spectrogramId).height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
+
+        viz.spectWidth = Math.round(viz.spectWidth);
+        viz.spectWidth = Math.round(viz.spectWidth);
 
         viz.showOscillogram(sig, fileFs);
 
