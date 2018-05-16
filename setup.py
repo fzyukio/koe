@@ -215,11 +215,13 @@ if __name__ == '__main__':
     import dj_database_url
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--clear-database', dest='clear_db', action='store_true', default=False)
+    parser.add_argument('--reset-database', dest='reset_db', action='store_true', default=False)
+    parser.add_argument('--empty-database', dest='empty_db', action='store_true', default=False)
     args = parser.parse_args()
-    clear_db = args.clear_db
+    reset_db = args.reset_db
+    empty_db = args.empty_db
 
-    if clear_db:
+    if reset_db or empty_db:
         colorama_init()
 
         db_config = dj_database_url.parse(config['database_url'])
@@ -234,6 +236,7 @@ if __name__ == '__main__':
         elif db_engine == 'django.db.backends.mysql':
             reset_mysql(db_config)
 
+    if reset_db:
         os.environ['IMPORTING_FIXTURE'] = 'true'
 
         talk_to_user('Now I\'m recreating all the tables')

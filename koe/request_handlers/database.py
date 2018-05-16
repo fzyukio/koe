@@ -5,7 +5,7 @@ import json
 import os
 from shutil import copyfile
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from dotmap import DotMap
 
 from koe.grid_getters import bulk_get_segments_for_audio
@@ -128,6 +128,21 @@ def delete_audio_files(request):
         raise CustomAssertionError('You\'re trying to delete files that don\'t belong to database {}. '
                                    'Are you messing with Javascript?'.format(database.name))
 
+    associated_segments_ids = Segment.objects.filter(segmentation__audio_file__in=audio_files_ids)\
+        .values_list('id', flat=True)
+
+    for segment_id in associated_segments_ids:
+        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        if os.path.isfile(seg_spect_path):
+            os.remove(seg_spect_path)
+
+        seg_mask_path = spect_mask_path(str(segment_id))
+        if os.path.isfile(seg_mask_path):
+            os.remove(seg_mask_path)
+
+    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=associated_segments_ids).delete()
+
+    ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__, owner_id__in=audio_files_ids).delete()
     audio_files.delete()
     return True
 
@@ -201,11 +216,15 @@ def save_segmentation(request):
         else:
             to_delete.append(segment)
 
+    to_delete_segment_ids = []
     for segment in to_delete:
         segment_id = segment.id
+        to_delete_segment_ids.append(segment_id)
         seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
         if os.path.isfile(seg_spect_path):
             os.remove(seg_spect_path)
+
+    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=to_delete_segment_ids).delete()
 
     with transaction.atomic():
         for segment in to_update:
@@ -355,9 +374,9 @@ def copy_audio_files(request):
                                            'segmentation__audio_file__name', 'segmentation__id')
 
     # We need this to map old and new IDs of Segments so that we can copy their ExtraAttrValue later
-    # The only reliable way to map new to old Segments is through the pair (start_time_ms, end_time_ms) since they are
-    # constrained to be unique
-    segments_old_id_to_start_end = {x[0]: (x[1], x[2]) for x in segments_values}
+    # The only reliable way to map new to old Segments is through the pair (start_time_ms, end_time_ms, song_name)
+    # since they are guaranteed to be unique
+    segments_old_id_to_start_end = {x[0]: (x[1], x[2], x[6]) for x in segments_values}
 
     new_segmentations_info = {}
     for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, old_segmentation_id in segments_values:
@@ -379,16 +398,56 @@ def copy_audio_files(request):
     Segment.objects.bulk_create(segments_to_copy)
 
     copied_segments = Segment.objects.filter(segmentation__in=new_segmentation_ids)
-    copied_segments_values = copied_segments.values_list('id', 'start_time_ms', 'end_time_ms')
-    segments_new_start_end_to_new_id = {(x[1], x[2]): x[0] for x in copied_segments_values}
+    copied_segments_values = copied_segments.values_list('id', 'start_time_ms', 'end_time_ms',
+                                                         'segmentation__audio_file__name')
+    segments_new_start_end_to_new_id = {(x[1], x[2], x[3]): x[0] for x in copied_segments_values}
 
     # Based on two maps: from new segment (start,end) key to their ID and old segment's ID to (start,end) key
     # we can now map Segment new IDs -> old IDs
     segments_old_id_to_new_id = {}
     for old_segment_id, segment_start_end in segments_old_id_to_start_end.items():
         new_segment_id = segments_new_start_end_to_new_id[segment_start_end]
+        old_segment_id = int(old_segment_id)
+        new_segment_id = int(new_segment_id)
         segments_old_id_to_new_id[old_segment_id] = new_segment_id
 
+    # Query all ExtraAttrValue of Songs, and make duplicate by replacing old song IDs by new song IDs
+    song_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
+    old_song_extra_attrs = ExtraAttrValue.objects \
+        .filter(owner_id__in=old_song_ids, user=user, attr__in=song_attrs).values_list('owner_id', 'attr', 'value')
+    new_song_extra_attrs = []
+    for old_song_id, attr_id, value in old_song_extra_attrs:
+        new_song_id = songs_old_id_to_new_id[old_song_id]
+        new_song_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_song_id))
+
+    old_segment_ids = segments_old_id_to_start_end.keys()
+
+    # Query all ExtraAttrValue of Segments, and make duplicate by replacing old IDs by new IDs
+    segment_attrs = ExtraAttr.objects.filter(klass=Segment.__name__)
+    old_segment_extra_attrs = ExtraAttrValue.objects \
+        .filter(owner_id__in=old_segment_ids, user=user, attr__in=segment_attrs)\
+        .values_list('owner_id', 'attr', 'value')
+    new_segment_extra_attrs = []
+    for old_segment_id, attr_id, value in old_segment_extra_attrs:
+        new_segment_id = segments_old_id_to_new_id[int(old_segment_id)]
+        new_segment_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_segment_id))
+
+    # Now bulk create
+    ExtraAttrValue.objects.filter(owner_id__in=songs_old_id_to_new_id.values(), attr__in=song_attrs).delete()
+
+    try:
+        ExtraAttrValue.objects.bulk_create(new_song_extra_attrs)
+    except IntegrityError as e:
+        raise CustomAssertionError(e)
+
+    ExtraAttrValue.objects.filter(owner_id__in=segments_old_id_to_new_id.values(), attr__in=segment_attrs).delete()
+
+    try:
+        ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)
+    except IntegrityError as e:
+        raise CustomAssertionError(e)
+
+    for old_segment_id, new_segment_id in segments_old_id_to_new_id.items():
         # Copy spectrograms / signal masks:
         new_mask_img = spect_mask_path(str(new_segment_id))
         new_spect_img = spect_fft_path(str(new_segment_id), 'syllable')
@@ -402,35 +461,13 @@ def copy_audio_files(request):
         if os.path.isfile(old_spect_img):
             copyfile(old_spect_img, new_spect_img)
 
-    # Query all ExtraAttrValue of Songs, and make duplicate by replacing old song IDs by new song IDs
-    old_song_extra_attrs = ExtraAttrValue.objects \
-        .filter(owner_id__in=old_song_ids, user=user).values_list('owner_id', 'attr', 'value')
-    new_song_extra_attrs = []
-    for old_song_id, attr_id, value in old_song_extra_attrs:
-        new_song_id = songs_old_id_to_new_id[old_song_id]
-        new_song_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_song_id))
-
-    old_segment_ids = segments_old_id_to_start_end.keys()
-
-    # Query all ExtraAttrValue of Segments, and make duplicate by replacing old IDs by new IDs
-    old_segment_extra_attrs = ExtraAttrValue.objects \
-        .filter(owner_id__in=old_segment_ids, user=user).values_list('owner_id', 'attr', 'value')
-    new_segment_extra_attrs = []
-    for old_segment_id, attr_id, value in old_segment_extra_attrs:
-        new_segment_id = segments_old_id_to_new_id[int(old_segment_id)]
-        new_segment_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_segment_id))
-
-    # Now bulk create
-    ExtraAttrValue.objects.bulk_create(new_song_extra_attrs)
-    ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)
-
     return True
 
 
 def delete_segments(request):
     user = request.user
     ids = json.loads(get_or_error(request.POST, 'ids'))
-    database_id = get_or_error(request.POST, 'database_id')
+    database_id = get_or_error(request.POST, 'database-id')
     database = get_or_error(Database, dict(id=database_id))
     assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
 
@@ -446,5 +483,6 @@ def delete_segments(request):
         if os.path.isfile(seg_mask_path):
             os.remove(seg_mask_path)
 
+    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=ids).delete()
     segments.delete()
     return True

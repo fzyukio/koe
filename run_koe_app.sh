@@ -6,7 +6,7 @@ unset https_proxy
 cd /code
 
 if test "$CLEAR_DB" = "true"; then
-    python setup.py --clear-database
+    python setup.py --reset-database
 fi
 
 # Important: This flag must be set for this to work
