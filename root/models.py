@@ -457,10 +457,24 @@ class SimpleModel(models.Model, AutoSetterGetterMixin):
         abstract = True
 
 
+class InvitationCode(IdSafeModel):
+    """
+    Tie a user to an invitation code for managing purpose
+    """
+
+    code = models.CharField(max_length=255, unique=True)
+    expiry = models.DateTimeField()
+
+    def __str__(self):
+        return 'Code: {} expiry {}'.format(self.code, self.expiry)
+
+
 class User(AbstractUser, StandardModel):
     """
     A simple User model that uses safe ID
     """
+
+    invitation_code = models.ForeignKey(InvitationCode, on_delete=models.SET_NULL, null=True, blank=True)
 
     def get_avatar(self):
         return "https://api.adorable.io/avatars/200/" + self.email

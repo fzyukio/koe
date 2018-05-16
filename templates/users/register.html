@@ -12,13 +12,13 @@
             {% csrf_token %}
 
             <div class="form-group">
-                <label for="{{ form.secret.id_for_label }}" class="cols-sm-2 control-label">What is the secret</label>
+                <label for="{{ form.code.id_for_label }}" class="cols-sm-2 control-label">Invitation code</label>
                 <div class="cols-sm-10">
                     <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
-                        {{ form.secret|add_error_class:"has-error"|add_class:"form-control"}}
+                        <span class="input-group-addon"><i class="fa fa-code fa" aria-hidden="true"></i></span>
+                        {{ form.code|add_error_class:"has-error"|add_class:"form-control"}}
                     </div>
-                    {{ form.secret.errors }}
+                    {{ form.code.errors }}
                 </div>
             </div>
 
@@ -26,7 +26,7 @@
                 <label for="{{ form.username.id_for_label }}" class="cols-sm-2 control-label">Pick a username</label>
                 <div class="cols-sm-10">
                     <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
+                        <span class="input-group-addon"><i class="fa fa-user fa" aria-hidden="true"></i></span>
                         {{ form.username|add_error_class:"has-error"|add_class:"form-control"}}
                     </div>
                     {{ form.username.errors }}

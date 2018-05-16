@@ -9,7 +9,7 @@ from django.urls import reverse
 from koe.model_utils import get_user_databases, get_current_similarity
 from koe.models import AudioFile, Segment, Database
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_mask_path, spect_fft_path, audio_path, history_path
+from root.utils import spect_mask_path, spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries']

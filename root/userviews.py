@@ -1,4 +1,4 @@
-from django.conf import settings
+from django.utils import timezone
 from django.contrib import auth
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -6,7 +6,7 @@ from django.views.generic import FormView
 from django.views.generic.edit import ProcessFormView
 
 from root.forms import UserSignInForm, UserRegistrationForm, UserResetPasswordForm, UserForgetPasswordForm
-from root.models import User
+from root.models import User, InvitationCode
 from root.utils import forget_password_handler
 
 
@@ -83,21 +83,27 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
     def form_valid(self, form):
         form_data = form.cleaned_data
         has_error = False
+        now = timezone.now()
 
-        secret = form_data['secret']
+        code = form_data['code']
         email = form_data['email']
         password = form_data['password']
         re_password = form_data['re_password']
         username = form_data['username']
 
-        if secret != settings.SIGN_UP_SECRET:
-            form.add_error('secret', 'Invalid secret.')
+        invitation_code = InvitationCode.objects.filter(code=code, expiry__gte=now).first()
+
+        if invitation_code is None:
+            form.add_error('code', 'Invitation code doesn\'t exist or has expired')
             has_error = True
-        user = User.objects.filter(email__iexact=email).first()
-        if user is None:
-            user = User.objects.filter(username__iexact=username).first()
-        if user is not None:
-            form.add_error('email', 'A user with this email or username already exists.')
+        duplicate_email = User.objects.filter(email__iexact=email).exists()
+        duplicate_username = User.objects.filter(username__iexact=username).exists()
+
+        if duplicate_email:
+            form.add_error('email', 'A user with this email already exists.')
+            has_error = True
+        if duplicate_username:
+            form.add_error('username', 'A user with this username already exists.')
             has_error = True
         if len(username) > 10:
             form.add_error('username', 'Username needs to be 10 or less characters.')
@@ -114,7 +120,7 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
             context['form'] = form
             return self.render_to_response(context)
 
-        user = User.objects.create_user(username, email, password)
+        user = User.objects.create_user(username, email, password, invitation_code=invitation_code)
         user.save()
 
         authenticated_user = auth.authenticate(username=user.username, password=password)

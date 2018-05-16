@@ -42,13 +42,13 @@ class UserSignInForm(ErrorMixin, forms.Form):
 
 
 class UserRegistrationForm(ErrorMixin, forms.Form):
-    secret = forms.CharField(
+    code = forms.CharField(
         required=True,
         max_length=10,
         error_messages={
             'required': 'This field is required'
         },
-        widget=forms.TextInput(attrs={'placeholder': 'You need a secret password to sign up'})
+        widget=forms.TextInput()
     )
 
     username = forms.CharField(
@@ -60,7 +60,7 @@ class UserRegistrationForm(ErrorMixin, forms.Form):
         widget=forms.TextInput(attrs={'placeholder': 'Username, 10 characters or less'})
     )
 
-    email = forms.CharField(
+    email = forms.EmailField(
         required=True,
         max_length=100,
         error_messages={
