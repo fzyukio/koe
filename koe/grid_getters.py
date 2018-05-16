@@ -22,9 +22,9 @@ def bulk_get_segment_info(segs, extras):
     :param extras: Must specify the user to get the correct ExtraAttrValue columns
     :return: [row]
     """
-    user = extras.user
-    databases, current_database = get_user_databases(user)
-    similarities, current_similarity = get_current_similarity(user, current_database)
+    databases, current_database = get_user_databases(extras.user)
+    from_user = extras.from_user
+    similarities, current_similarity = get_current_similarity(extras.user, current_database)
 
     rows = []
     ids = []
@@ -60,13 +60,13 @@ def bulk_get_segment_info(segs, extras):
     segids = [str(x[0]) for x in values]
     extra_attrs = ExtraAttr.objects.filter(klass=Segment.__name__)
     extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user=user, attr__in=extra_attrs, owner_id__in=segids) \
+        .filter(user__username=from_user, attr__in=extra_attrs, owner_id__in=segids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     song_ids = list(set([x[4] for x in values]))
     song_extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
     song_extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user=user, attr__in=song_extra_attrs, owner_id__in=song_ids) \
+        .filter(user__username=from_user, attr__in=song_extra_attrs, owner_id__in=song_ids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     extra_attr_values_lookup = {}
@@ -137,8 +137,7 @@ def bulk_get_exemplars(objs, extras):
     """
     cls = extras.cls
     from_user = extras.from_user
-    user = extras.user
-    _, current_database = get_user_databases(user)
+    _, current_database = get_user_databases(extras.user)
 
     if isinstance(objs, QuerySet):
         ids = objs.filter(segmentation__audio_file__database=current_database).values_list('id', flat=True)
@@ -244,8 +243,9 @@ def bulk_get_song_sequences(all_songs, extras):
     :return:
     """
     cls = extras.cls
-    user = extras.user
-    _, current_database = get_user_databases(user)
+    # user = extras.user
+    _, current_database = get_user_databases(extras.user)
+    from_user = extras.from_user
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)
@@ -271,14 +271,14 @@ def bulk_get_song_sequences(all_songs, extras):
     seg_ids = segs.values_list('id', flat=True)
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user=user) \
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=from_user) \
         .values_list('owner_id', 'value')
 
     seg_id_to_label = {int(x): y for x, y in labels}
 
     extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
     extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user=user, attr__in=extra_attrs, owner_id__in=song_ids) \
+        .filter(user__username=from_user, attr__in=extra_attrs, owner_id__in=song_ids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     extra_attr_values_lookup = {}

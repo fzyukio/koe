@@ -331,11 +331,11 @@ $(document).ready(function () {
     if (pageName === '/') {
         page = require('home-page');
     }
-    else if (pageName === '/syllables/') {
-        page = require('syllables-page');
-    }
     else if (pageName === '/version/') {
         page = require('version-page');
+    }
+    else if (pageName.startsWith('/syllables/')) {
+        page = require('syllables-page');
     }
     else if (pageName.startsWith('/segmentation/')) {
         page = require('segmentation-page');

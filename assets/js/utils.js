@@ -1100,7 +1100,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
         throw new Error('Arguments multiSelect and radioSelect can\'t both be true')
     }
 
-    let filter = args.filter;
+    let filter = args.filter || gridFilter;
 
     /*
      * Avoid repeat initialising the grid if only the data needs to be updated.

@@ -51,6 +51,7 @@ class SegmentGrid extends FlexibleGrid {
 }
 
 export const grid = new SegmentGrid();
+let fromUser = $('#segment-info').attr('from_user');
 const contextMenu = $('#context-menu');
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
@@ -429,14 +430,20 @@ const focusOnGridOnInit = function () {
 };
 
 
+let gridExtraArgs = {
+    '__extra__from_user': fromUser,
+    multiSelect: true
+};
+
+
 export const run = function (commonElements) {
     ce = commonElements;
 
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader({multiSelect: true}, function () {
-        grid.initMainGridContent({}, focusOnGridOnInit);
+    grid.initMainGridHeader(gridExtraArgs, function () {
+        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });

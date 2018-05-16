@@ -5,7 +5,8 @@ from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermissi
 from root.models import User
 
 
-def populate_context(context, user, with_similarity=False):
+def populate_context(page_name, context, request, kwargs, with_similarity=False):
+    user = request.user
     databases, current_database = get_user_databases(user)
     db_assignment = DatabaseAssignment.objects.filter(database=current_database, user=user).first()
     inaccessible_databases = Database.objects.exclude(id__in=databases)
@@ -22,6 +23,16 @@ def populate_context(context, user, with_similarity=False):
     context['db_assignment'] = db_assignment
     context['pending_requests'] = pending_requests
 
+    from_user = kwargs.get('from_user', user.username)
+    from_user = get_or_error(User, dict(username=from_user))
+
+    cls = kwargs.get('class', 'label')
+    context['from_user'] = from_user
+
+    context['cls'] = cls
+    context['page'] = '/{}/'.format(page_name)
+    context['subpage'] = '/{}/{}/'.format(page_name, cls)
+
     if with_similarity:
         similarities, current_similarity = get_current_similarity(user, current_database)
         context['similarities'] = similarities
@@ -36,33 +47,25 @@ class SyllablesView(TemplateView):
     The view to index page
     """
 
-    template_name = 'index.html'
+    page_name = 'syllables'
+    template_name = 'syllables.html'
 
     def get_context_data(self, **kwargs):
         context = super(SyllablesView, self).get_context_data(**kwargs)
-        user = self.request.user
 
-        populate_context(context, user, True)
+        populate_context(SyllablesView.page_name, context, self.request, kwargs, True)
 
-        context['page'] = '/syllables/'
         return context
 
 
 class ExemplarsView(TemplateView):
+    page_name = 'exemplars'
     template_name = "exemplars.html"
 
     def get_context_data(self, **kwargs):
         context = super(ExemplarsView, self).get_context_data(**kwargs)
-        user = self.request.user
-        cls = kwargs.get('class', 'label')
-        from_user = kwargs.get('from_user', user.username)
 
-        populate_context(context, user)
-
-        context['cls'] = cls
-        context['from_user'] = from_user
-        context['page'] = '/exemplars/'
-        context['subpage'] = '/exemplars/{}/'.format(cls)
+        populate_context(ExemplarsView.page_name, context, self.request, kwargs)
 
         return context
 
@@ -72,18 +75,14 @@ class SongsView(TemplateView):
     The view to index page
     """
 
+    page_name = 'songs'
     template_name = 'songs.html'
 
     def get_context_data(self, **kwargs):
         context = super(SongsView, self).get_context_data(**kwargs)
-        user = self.request.user
-        cls = kwargs.get('class', 'label')
 
-        populate_context(context, user)
+        populate_context(SongsView.page_name, context, self.request, kwargs)
 
-        context['cls'] = cls
-        context['page'] = '/songs/'
-        context['subpage'] = '/songs/{}/'.format(cls)
         return context
 
 

@@ -362,6 +362,12 @@ const initKeyboardHooks = function () {
 };
 
 
+let gridExtraArgs = {
+    '__extra__file_id': fileId,
+    multiSelect: true,
+};
+
+
 export const run = function (commonElements) {
     ce = commonElements;
 
@@ -374,11 +380,8 @@ export const run = function (commonElements) {
     viz.init(oscillogramId, spectrogramId);
 
     visualiseSong(function () {
-        grid.initMainGridHeader({
-            multiSelect: true,
-            '__extra__file_id': fileId
-        }, function () {
-            grid.initMainGridContent({'__extra__file_id': fileId}, function () {
+        grid.initMainGridHeader(gridExtraArgs, function () {
+            grid.initMainGridContent(gridExtraArgs, function () {
                 let items = grid.mainGrid.getData().getItems();
                 let syllables = {};
                 for (let i = 0; i < items.length; i++) {

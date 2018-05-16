@@ -69,19 +69,21 @@ def get_attrs(objs, table, extras):
                 row[attr] = attrs[attr][id]
             rows.append(row)
 
-    for column in table['columns']:
-        attr = column['slug']
-        editable = column['editable']
-        attr_editable = '__{}_editable'.format(attr)
-        if callable(editable):
-            editabilities = editable(objs, extras)
-        else:
-            editabilities = {id: editable for id in ids}
+    from_user = extras.from_user
+    if not from_user or from_user == extras.user.username:
+        for column in table['columns']:
+            attr = column['slug']
+            editable = column['editable']
+            attr_editable = '__{}_editable'.format(attr)
+            if callable(editable):
+                editabilities = editable(objs, extras)
+            else:
+                editabilities = {id: editable for id in ids}
 
-        for row in rows:
-            id = row['id']
-            editability = editabilities[id]
-            row[attr_editable] = editability
+            for row in rows:
+                id = row['id']
+                editability = editabilities[id]
+                row[attr_editable] = editability
 
     return rows
 
@@ -177,6 +179,9 @@ def get_grid_column_definition(request):
     table_name = request.POST['grid-type']
     table = tables[table_name]
 
+    from_user = request.POST.get('__extra__from_user', user.username)
+    user_is_editing = from_user == user.username
+
     columns = []
 
     for column in table['columns']:
@@ -185,7 +190,7 @@ def get_grid_column_definition(request):
 
         if not is_addon:
             name = column['name']
-        editable = column['editable']
+        editable = column['editable'] and user_is_editing
         total_label = column['total_label']
         editor = column['editor']
         formatter = column['formatter']

@@ -1,7 +1,8 @@
 /* global Slick */
 import {postRequest} from './ajax-handler';
-import {editabilityAwareFormatter, isNull, getCache, setCache, deepCopy, appendSlickGridData, replaceSlickGridData,
-    renderSlickGrid, gridFilter, initFilter, updateSlickGridData
+import {
+    editabilityAwareFormatter, isNull, getCache, setCache, deepCopy, appendSlickGridData, replaceSlickGridData,
+    renderSlickGrid, initFilter, updateSlickGridData
 } from './utils';
 
 require('slickgrid/plugins/slick.autotooltips');
@@ -220,10 +221,12 @@ export class FlexibleGrid {
             'property': JSON.stringify(itemSimplified)
         };
 
-        postRequest({requestSlug: 'change-properties',
+        postRequest({
+            requestSlug: 'change-properties',
             data: postData,
             onSuccess,
-            onFailure});
+            onFailure
+        });
     }
 
     /**
@@ -281,21 +284,15 @@ export class FlexibleGrid {
         });
     }
 
-    initMainGridHeader(args, callback) {
+    initMainGridHeader(defaultArgs, callback) {
         let self = this;
-        let data = args.data || {};
-        data['grid-type'] = self.gridType;
+        let args = defaultArgs || {};
+        args['grid-type'] = self.gridType;
 
         let onSuccess = function (columns) {
             self.columns = columns;
 
-            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), {
-                multiSelect: args.multiSelect,
-                radioSelect: args.radioSelect,
-                rowMoveable: args.rowMoveable,
-                gridType: self.gridType,
-                filter: args.filter || gridFilter
-            });
+            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), args);
 
             self.postMainGridHeader();
             initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
@@ -305,9 +302,11 @@ export class FlexibleGrid {
             }
         };
 
-        postRequest({requestSlug: 'get-grid-column-definition',
-            data,
-            onSuccess});
+        postRequest({
+            requestSlug: 'get-grid-column-definition',
+            data: args,
+            onSuccess
+        });
     }
 
     redrawMainGrid(args, callback) {
@@ -316,13 +315,7 @@ export class FlexibleGrid {
         self.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
         self.mainGrid.registerPlugin(new Slick.AutoTooltips());
 
-        renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), {
-            multiSelect: args.multiSelect,
-            radioSelect: args.radioSelect,
-            rowMoveable: args.rowMoveable,
-            gridType: self.gridType,
-            filter: args.filter || gridFilter
-        });
+        renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), args);
         self.postMainGridHeader();
         initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
 
@@ -377,9 +370,11 @@ export class FlexibleGrid {
             }
         };
 
-        postRequest({requestSlug: 'get-grid-content',
+        postRequest({
+            requestSlug: 'get-grid-content',
             data: args,
-            onSuccess});
+            onSuccess
+        });
     }
 
     getSelectedRows() {

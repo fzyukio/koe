@@ -53,6 +53,8 @@ class Grid extends FlexibleGrid {
 
 export const grid = new Grid();
 let cls = $('#songs-grid').attr('cls');
+let fromUser = $('#songs-grid').attr('from_user');
+
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
 const speedSlider = $('#speed-slider');
@@ -414,13 +416,18 @@ const initCopySongsBtn = function () {
 };
 
 
+let gridExtraArgs = {
+    '__extra__cls': cls,
+    '__extra__from_user': fromUser
+};
+
 export const run = function (commonElements) {
     ce = commonElements;
     initAudioContext();
 
     grid.init(cls);
     grid.initMainGridHeader({multiSelect: true}, function () {
-        grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -435,5 +442,5 @@ export const postRun = function () {
 };
 
 export const handleDatabaseChange = function () {
-    grid.initMainGridContent({'__extra__cls': cls}, focusOnGridOnInit);
+    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
 };

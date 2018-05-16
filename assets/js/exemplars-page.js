@@ -276,16 +276,19 @@ const focusOnGridOnInit = function () {
 };
 
 
+let gridExtraArgs = {
+    '__extra__cls': cls,
+    '__extra__from_user': fromUser
+};
+
+
 export const run = function () {
 
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader({}, function () {
-        grid.initMainGridContent({
-            '__extra__cls': cls,
-            '__extra__from_user': fromUser
-        }, focusOnGridOnInit);
+    grid.initMainGridHeader(gridExtraArgs, function () {
+        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -296,9 +299,6 @@ export const run = function () {
 };
 
 export const handleDatabaseChange = function() {
-    grid.initMainGridContent({
-        '__extra__cls': cls,
-        '__extra__from_user': fromUser
-    }, focusOnGridOnInit);
+    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
 };
 
