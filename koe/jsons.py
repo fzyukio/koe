@@ -168,7 +168,7 @@ tables = \
                     "slug": "note",
                     "type": "SHORT_TEXT",
                     "editable": True,
-                    "is_extra_attr": True
+                    "is_attribute": True
                 },
                 {
                     "name": "Format version",
@@ -180,7 +180,7 @@ tables = \
                     "name": "Database",
                     "slug": "database",
                     "type": "SHORT_TEXT",
-                    "is_extra_attr": True
+                    "is_attribute": True
                 },
                 {
                     "name": "Size (kb)",

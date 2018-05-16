@@ -12,19 +12,13 @@ def get_builtin_attrs():
     :return: None
     """
     from root.models import ExtraAttr, ValueTypes, User
-    from koe.models import HistoryEntry
 
-    heCls = HistoryEntry.__name__
-
-    note_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='note', type=ValueTypes.SHORT_TEXT)
-    version_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='version', type=ValueTypes.INTEGER)
-    database_attr, _ = ExtraAttr.objects.get_or_create(klass=heCls, name='database', type=ValueTypes.SHORT_TEXT)
-
-    current_database_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-database')
-    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(klass=User.__name__, name='current-similarity')
+    current_database_attr, _ = ExtraAttr.objects.get_or_create(
+        klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
+    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(
+        klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
-        history=DotMap(note=note_attr, version=version_attr, database=database_attr),
         user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr)
     )
 

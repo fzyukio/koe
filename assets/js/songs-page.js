@@ -418,7 +418,8 @@ const initCopySongsBtn = function () {
 
 let gridExtraArgs = {
     '__extra__cls': cls,
-    '__extra__from_user': fromUser
+    '__extra__from_user': fromUser,
+    multiSelect: true
 };
 
 export const run = function (commonElements) {
@@ -426,7 +427,7 @@ export const run = function (commonElements) {
     initAudioContext();
 
     grid.init(cls);
-    grid.initMainGridHeader({multiSelect: true}, function () {
+    grid.initMainGridHeader(gridExtraArgs, function () {
         grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
@@ -442,5 +443,5 @@ export const postRun = function () {
 };
 
 export const handleDatabaseChange = function () {
-    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    location.reload()
 };

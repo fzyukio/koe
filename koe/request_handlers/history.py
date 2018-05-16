@@ -2,7 +2,6 @@ import io
 import json
 import zipfile
 
-from django.conf import settings
 from django.core.files import File
 from django.db import transaction
 from django.utils import timezone
@@ -24,7 +23,7 @@ def save_history(request):
     :return: name of the zip file created
     :version: 2.0.0
     """
-    version = 2
+    version = 3
     user = request.user
 
     comment = get_or_error(request.POST, 'comment')
@@ -47,13 +46,7 @@ def save_history(request):
 
     binary_content = zip_buffer.getvalue()
 
-    he = HistoryEntry.objects.create(user=user, time=timezone.now())
-    heid = he.id
-
-    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=comment, attr=settings.ATTRS.history.note)
-    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=version, attr=settings.ATTRS.history.version)
-    ExtraAttrValue.objects.create(owner_id=heid, user=user, value=database_id, attr=settings.ATTRS.history.database)
-
+    he = HistoryEntry.objects.create(user=user, time=timezone.now(), database=database, version=version, note=comment)
     filename = he.filename
     filepath = history_path(filename)
     ensure_parent_folder_exists(filepath)
@@ -142,9 +135,9 @@ def import_history(request):
 
     # Wrap all DB modification in one transaction to utilise the roll-back ability when things go wrong
     with transaction.atomic():
-        # ExtraAttrValue.objects.filter(user=user).exclude(attr__klass=User.__name__).delete()
         for attr_id, owner_ids in attrs_to_values.items():
             ExtraAttrValue.objects.filter(user=user, owner_id__in=owner_ids, attr__id=attr_id).delete()
-        ExtraAttrValue.objects.bulk_create(extra_attr_values)
+
+    ExtraAttrValue.objects.bulk_create(extra_attr_values)
 
     return True

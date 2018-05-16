@@ -1112,7 +1112,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
     }
 
     let columnActions = [];
-    const gridType = args.gridType;
+    const gridType = args['grid-type'];
 
     /*
      * Assign appropriate input validator, input editor, output formatter, and make the cell width minimum at 50px

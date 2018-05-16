@@ -44,7 +44,7 @@ class UserSignInForm(ErrorMixin, forms.Form):
 class UserRegistrationForm(ErrorMixin, forms.Form):
     code = forms.CharField(
         required=True,
-        max_length=10,
+        max_length=255,
         error_messages={
             'required': 'This field is required'
         },

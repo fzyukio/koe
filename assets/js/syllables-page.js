@@ -744,5 +744,5 @@ export const postRun = function () {
 };
 
 export const handleDatabaseChange = function () {
-    grid.initMainGridContent({}, focusOnGridOnInit);
+    location.reload()
 };

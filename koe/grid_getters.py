@@ -1,14 +1,15 @@
+import json
 import os
+import zipfile
 
 import numpy as np
-from django.conf import settings
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
 
 from koe.model_utils import get_user_databases, get_current_similarity
-from koe.models import AudioFile, Segment, Database
-from root.models import ExtraAttr, ExtraAttrValue
+from koe.models import AudioFile, Segment, Database, DatabaseAssignment, DatabasePermission, HistoryEntry
+from root.models import ExtraAttr, ExtraAttrValue, ValueTypes
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
@@ -372,53 +373,92 @@ def bulk_get_segments_for_audio(segs, extras):
     return ids, rows
 
 
+def has_import_permission(user_id, database_id):
+    """
+    Check if user has IMPORT permission on database
+    :param user_id:
+    :param database_id:
+    :return:
+    """
+    return DatabaseAssignment.objects.filter(user=user_id, database=database_id,
+                                             permission__gte=DatabasePermission.IMPORT_DATA).exists()
+
+
+def repopulate_history_entry_info(hes):
+    """
+    In older versions of Koe, HistoryEntry didn't have all the fields it does now. However these fields can be
+     inferred from existing data. This function finds these field values and populate the database
+    :param hes: a QuerySet of HistoryEntry objects
+    :return: None
+    """
+    hes_ = hes.filter(database=None)
+    note_attr, _ = ExtraAttr.objects.get_or_create(klass=HistoryEntry.__name__, name='note', type=ValueTypes.SHORT_TEXT)
+    default_database_id = Database.objects.filter(name='Bellbirds').values_list('id', flat=True).first()
+
+    for he in hes_:
+        filelist = {}
+        filepath = history_path(he.filename)
+        if os.path.isfile(filepath):
+            with zipfile.ZipFile(filepath, "r") as zip_file:
+                namelist = zip_file.namelist()
+                for name in namelist:
+                    filelist[name] = zip_file.read(name)
+
+            if 'meta.json' in filelist:
+                meta = json.loads(filelist['meta.json'])
+                database_id = meta['database']
+                version = meta['version']
+
+            else:
+                database_id = default_database_id
+                version = 1
+
+            he.database_id = database_id
+            he.version = version
+            he.save()
+
+    hes_ = hes.filter(note=None)
+    for he in hes_:
+        note_attr_value = ExtraAttrValue.objects.filter(owner_id=he.id, user=he.user, attr=note_attr).first()
+        if note_attr_value:
+            he.note = note_attr_value.value
+
+        he.save()
+
+
 def bulk_get_history_entries(hes, extras):
+    repopulate_history_entry_info(hes)
+    user = extras.user
+
     tz = extras.tz
-    if isinstance(hes, QuerySet):
-        values = list(hes.values_list('id', 'filename', 'time', 'user__username', 'user__id'))
-    else:
-        values = list([(x.id, x.filename, x.time, x.user.username, x.user.id) for x in hes])
+    values = hes.values_list('id', 'filename', 'time', 'user__username', 'user__id', 'database',
+                             'database__name', 'note', 'version')
 
-    ids = list([x[0] for x in values])
-    users = list([x[-1] for x in values])
-
-    extra_attr_values = ExtraAttrValue.objects \
-        .filter(owner_id__in=ids, user__id__in=users, attr__in=settings.ATTRS.history.values()) \
-        .values_list('owner_id', 'attr__name', 'value')
-
-    database_map = {x[0]: x[1] for x in Database.objects.all().values_list('id', 'name')}
-
-    extra_attr_values_lookup = {}
-    for id, attr, value in extra_attr_values:
-        if id not in extra_attr_values_lookup:
-            extra_attr_values_lookup[id] = {}
-        extra_attr_dict = extra_attr_values_lookup[id]
-
-        if attr == 'database':
-            extra_attr_dict[attr] = database_map[value]
-        else:
-            extra_attr_dict[attr] = value
-
+    ids = []
     rows = []
-    for id, filename, time, username, userid in values:
+    for id, filename, time, creator, creator_id, database_id, database_name, note, version in values:
         ids.append(id)
         tztime = time.astimezone(tz)
 
-        url_path = history_path(filename, for_url=True)
-        local_file_path = url_path[1:]
-        if os.path.isfile(local_file_path):
-            file_size = os.path.getsize(local_file_path) / 1024
-            url = '[{}]({})'.format(url_path, filename)
+        user_is_creator = user.id == creator_id
+        can_import = user_is_creator or has_import_permission(user.id, database_id)
+
+        if can_import:
+            url_path = history_path(filename, for_url=True)
+            local_file_path = url_path[1:]
+            if os.path.isfile(local_file_path):
+                file_size = os.path.getsize(local_file_path) / 1024
+                url = '[{}]({})'.format(url_path, filename)
+            else:
+                url = 'File is missing'
+                file_size = 0
         else:
-            url = 'File is missing'
             file_size = 0
+            url = 'Insufficient permission to download'
 
-        row = dict(id=id, url=url, creator=username, time=tztime, size=file_size)
-
-        extra_attr_dict = extra_attr_values_lookup.get(str(id), {})
-
-        for attr in extra_attr_dict:
-            row[attr] = extra_attr_dict[attr]
+        row = dict(id=id, url=url, creator=creator, time=tztime, size=file_size, database=database_name, note=note,
+                   version=version, __can_import=can_import, __can_delete=user_is_creator)
 
         rows.append(row)
+
     return ids, rows

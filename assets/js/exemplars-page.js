@@ -299,6 +299,6 @@ export const run = function () {
 };
 
 export const handleDatabaseChange = function() {
-    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    location.reload()
 };
 

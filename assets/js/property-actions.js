@@ -1,4 +1,5 @@
 import {getUrl} from './utils';
+import {postRequest} from './ajax-handler';
 
 export const actionRequirements = {
 
@@ -74,11 +75,15 @@ const setColumnWidth = function (e, grid, gridType) {
         }
     }
 
-    $.post(
-        getUrl('send-request', 'set-action-values'),
-        {'column-ids-action-values': JSON.stringify(colIdsWidths),
-            'grid-type': gridType}
-    );
+    let postData = {
+        'column-ids-action-values': JSON.stringify(colIdsWidths),
+        'grid-type': gridType
+    };
+
+    postRequest({
+        requestSlug: 'set-action-values',
+        data: postData,
+    });
 };
 
 
@@ -97,9 +102,21 @@ const reorderColumn = function (e, grid, gridType) {
 
     $.post(
         getUrl('send-request', 'set-action-values'),
-        {'column-ids-action-values': JSON.stringify(colIdToIdx),
-            'grid-type': gridType}
+        {
+            'column-ids-action-values': JSON.stringify(colIdToIdx),
+            'grid-type': gridType
+        }
     );
+
+    let postData = {
+        'column-ids-action-values': JSON.stringify(colIdToIdx),
+        'grid-type': gridType
+    };
+
+    postRequest({
+        requestSlug: 'set-action-values',
+        data: postData,
+    });
 };
 
 

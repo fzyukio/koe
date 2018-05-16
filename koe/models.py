@@ -99,13 +99,14 @@ class Database(StandardModel):
 
 
 class DatabasePermission(MagicChoices):
-    VIEW = 1
-    ANNOTATE = 2
-    COPY_FILES = 3
-    ADD_FILES = 4
-    MODIFY_SEGMENTS = 5
-    DELETE_FILES = 6
-    ASSIGN_USER = 10
+    VIEW = 100
+    ANNOTATE = 200
+    IMPORT_DATA = 300
+    COPY_FILES = 400
+    ADD_FILES = 500
+    MODIFY_SEGMENTS = 600
+    DELETE_FILES = 700
+    ASSIGN_USER = 800
 
 
 class DatabaseAssignment(SimpleModel):
@@ -345,11 +346,14 @@ class HistoryEntry(StandardModel):
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    version = models.IntegerField(default=1)
+    note = models.TextField(null=True, blank=True)
     time = models.DateTimeField()
     filename = models.CharField(max_length=255)
+    database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=False)
 
     class Meta:
-        ordering = ['-time', 'user']
+        ordering = ['-time', 'user', 'database']
 
     def save(self, *args, **kwargs):
         """
@@ -358,7 +362,8 @@ class HistoryEntry(StandardModel):
         :param kwargs:
         :return:
         """
-        self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S_%Z'))
+        if not self.filename:
+            self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S_%Z'))
         super(HistoryEntry, self).save(*args, **kwargs)
 
 

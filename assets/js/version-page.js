@@ -28,9 +28,14 @@ let ce;
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
-    grid.on('row-added', function () {
-        applyVersionBtn.prop('disabled', false);
-        deleteVersionBtn.prop('disabled', false);
+    grid.on('row-added', function (e, args) {
+        let item = args.item;
+        if (item.__can_import) {
+            applyVersionBtn.prop('disabled', false);
+        }
+        if (item.__can_delete) {
+            deleteVersionBtn.prop('disabled', false);
+        }
     });
 };
 
