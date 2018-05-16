@@ -15,7 +15,7 @@ class SegmentGrid extends FlexibleGrid {
     }
 }
 
-const grid = new SegmentGrid();
+export const grid = new SegmentGrid();
 const applyVersionBtn = $('#apply-version-btn');
 const deleteVersionBtn = $('#delete-version-btn');
 const importZipBtn = $('#import-zip-btn');

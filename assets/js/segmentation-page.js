@@ -115,7 +115,7 @@ class Grid extends FlexibleGrid {
 
 }
 
-const grid = new Grid();
+export const grid = new Grid();
 const gridEl = $('#segments-grid');
 const fileId = gridEl.attr('file-id');
 const fileLength = gridEl.attr('length');

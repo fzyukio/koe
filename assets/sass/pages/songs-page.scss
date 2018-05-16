@@ -1,9 +1,5 @@
 @import "../variables";
 
-$controller-wrapper-height: 36px;
-$controller-wrapper-child-height: 25px;
-
-
 #songs-grid {
   max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }

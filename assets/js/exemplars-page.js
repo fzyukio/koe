@@ -49,7 +49,7 @@ class ExemplarsGrid extends FlexibleGrid {
     }
 }
 
-const grid = new ExemplarsGrid();
+export const grid = new ExemplarsGrid();
 let cls = $('#exemplars-grid').attr('cls');
 let fromUser = $('#exemplars-grid').attr('from_user');
 
