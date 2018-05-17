@@ -48,7 +48,7 @@ class UserRegistrationForm(ErrorMixin, forms.Form):
         error_messages={
             'required': 'This field is required'
         },
-        widget=forms.TextInput()
+        widget=forms.TextInput(attrs={'placeholder': 'Invitation code'})
     )
 
     username = forms.CharField(
@@ -58,6 +58,24 @@ class UserRegistrationForm(ErrorMixin, forms.Form):
             'required': 'This field is required'
         },
         widget=forms.TextInput(attrs={'placeholder': 'Username, 10 characters or less'})
+    )
+
+    first_name = forms.CharField(
+        required=True,
+        max_length=100,
+        error_messages={
+            'required': 'This field is required'
+        },
+        widget=forms.TextInput(attrs={'placeholder': 'First name'})
+    )
+
+    last_name = forms.CharField(
+        required=True,
+        max_length=100,
+        error_messages={
+            'required': 'This field is required'
+        },
+        widget=forms.TextInput(attrs={'placeholder': 'Last name'})
     )
 
     email = forms.EmailField(

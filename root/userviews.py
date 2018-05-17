@@ -54,9 +54,14 @@ class UserSignInView(FormView, RedirectIfAuthenticated):
                 context['form'] = form
                 return self.render_to_response(context)
 
+        now = timezone.now()
+        if user.invitation_code and user.invitation_code.expiry <= now:
+            user.is_active = False
+            user.save()
+
         if not user.is_active:
-            form.add_error('acc_or_email', 'Account is disabled. '
-                                           'Please contact the web administrator to enable your account')
+            form.add_error('acc_or_email', 'Your account has expired. Should you wish to continue using this website, '
+                                           'please contact us.')
             context = self.get_context_data()
             context['form'] = form
             return self.render_to_response(context)
@@ -90,6 +95,8 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
         password = form_data['password']
         re_password = form_data['re_password']
         username = form_data['username']
+        last_name = form_data['last_name']
+        first_name = form_data['first_name']
 
         invitation_code = InvitationCode.objects.filter(code=code, expiry__gte=now).first()
 
@@ -120,7 +127,8 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
             context['form'] = form
             return self.render_to_response(context)
 
-        user = User.objects.create_user(username, email, password, invitation_code=invitation_code)
+        user = User.objects.create_user(username, email, password, invitation_code=invitation_code,
+                                        first_name=first_name, last_name=last_name)
         user.save()
 
         authenticated_user = auth.authenticate(username=user.username, password=password)

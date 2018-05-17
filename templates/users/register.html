@@ -3,89 +3,89 @@
 {% load widget_tweaks %}
 
 {% block navbar-right %}
-    <p class="navbar-text navbar-right">Registration</p>
+  <p class="navbar-text navbar-right">Registration</p>
 {% endblock %}
 
 {% block content-center %}
-    <div id="register-form">
-        <form role="form" url="{% url "register" %}" method="post">
-            {% csrf_token %}
+  <div id="register-form">
+    <form role="form" url="{% url "register" %}" method="post">
+      {% csrf_token %}
 
-            <div class="form-group">
-                <label for="{{ form.code.id_for_label }}" class="cols-sm-2 control-label">Invitation code</label>
-                <div class="cols-sm-10">
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-code fa" aria-hidden="true"></i></span>
-                        {{ form.code|add_error_class:"has-error"|add_class:"form-control"}}
-                    </div>
-                    {{ form.code.errors }}
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-code fa" aria-hidden="true"></i></span>
+          {{ form.code|add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.code.errors }}
+      </div>
 
-            <div class="form-group">
-                <label for="{{ form.username.id_for_label }}" class="cols-sm-2 control-label">Pick a username</label>
-                <div class="cols-sm-10">
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-user fa" aria-hidden="true"></i></span>
-                        {{ form.username|add_error_class:"has-error"|add_class:"form-control"}}
-                    </div>
-                    {{ form.username.errors }}
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-user fa-lg" aria-hidden="true"></i></span>
+          {{ form.username|add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.username.errors }}
+      </div>
 
-            <div class="form-group">
-                <label for="{{ form.email.id_for_label }}" class="cols-sm-2 control-label">Your email</label>
-                <div class="cols-sm-10">
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
-                        {{ form.email|add_error_class:"has-error"|add_class:"form-control"}}
-                    </div>
-                    {{ form.email.errors }}
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-user fa-lg" aria-hidden="true"></i></span>
+          {{ form.first_name|add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.first_name.errors }}
+      </div>
 
-            <div class="form-group">
-                <label for="{{ form.password.id_for_label }}" class="cols-sm-2 control-label">Password</label>
-                <div class="cols-sm-10">
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
-                        {{ form.password | add_error_class:"has-error"|add_class:"form-control" }}
-                    </div>
-                    {{ form.password.errors }}
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-user fa-lg" aria-hidden="true"></i></span>
+          {{ form.last_name|add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.last_name.errors }}
+      </div>
 
-            <div class="form-group">
-                <label for="{{ form.re_password.id_for_label }}" class="cols-sm-2 control-label">Confirm
-                    Password</label>
-                <div class="cols-sm-10">
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
-                        {{ form.re_password | add_error_class:"has-error"|add_class:"form-control" }}
-                    </div>
-                    {{ form.re_password.errors }}
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-envelope fa" aria-hidden="true"></i></span>
+          {{ form.email|add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.email.errors }}
+      </div>
 
-            <div class="form-group">
-                <div class="col-xs">
-                    <input type="checkbox" tabindex="3" name="remember" id="remember">
-                    <label for="remember"> I agree with the terms and conditions</label>
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
+          {{ form.password | add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.password.errors }}
+      </div>
 
-            <div class="form-group ">
-                <p>Already have an account? Click <a href="{% url 'login' %}">here</a> to log in.</p>
-            </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
+          {{ form.re_password | add_error_class:"has-error"|add_class:"form-control" }}
+        </div>
+        {{ form.re_password.errors }}
+      </div>
 
-            <div class="btn-group btn-group-justified" role="group" aria-label="...">
-                <div class="btn-group" role="group">
-                    <input type="submit" tabindex="4" class="btn btn-primary" value="Sign up">
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="col-xs">
+          <input type="checkbox" tabindex="3" name="remember" id="remember">
+          <label for="remember"> I agree with the terms and conditions</label>
+        </div>
+      </div>
 
-        </form>
-    </div>
+      <div class="form-group ">
+        <p>Already have an account? Click <a href="{% url 'login' %}">here</a> to log in.</p>
+      </div>
+
+      <div class="btn-group btn-group-justified" role="group" aria-label="...">
+        <div class="btn-group" role="group">
+          <input type="submit" tabindex="4" class="btn btn-primary" value="Sign up">
+        </div>
+      </div>
+
+    </form>
+  </div>
 {% endblock %}
 
 {% block bottom %}{% endblock %}
