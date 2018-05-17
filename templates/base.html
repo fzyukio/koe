@@ -30,7 +30,7 @@
     <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
 
-    <!-- Webpack rendered CSS -->
+    {# Webpack rendered CSS #}
     {% render_bundle 'main' 'css' %}
     <style>
         #loading-spinner-modal {
@@ -94,13 +94,13 @@
         window.USER_IS_SUPERUSER = true;
     </script>
 {% endif %}
-<!-- django-js-reverse -->
+{# django-js-reverse #}
 <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
 
-<!-- Webpack rendered Javascript -->
+{# Webpack rendered Javascript #}
 {% render_bundle 'main' 'js' %}
 
-<!-- Common URL -->
+{# Common URL #}
 <script>
     window.appCache = {};
     {% get_server_constants as constants %}

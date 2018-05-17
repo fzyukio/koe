@@ -5,7 +5,7 @@ from json import JSONEncoder
 
 import dj_database_url
 
-from setup import config as envconf, base_dir_join
+from maintenance import config as envconf, base_dir_join
 
 BASE_DIR = envconf['base_dir']
 
@@ -183,7 +183,6 @@ DATABASES = {
     'default': dj_database_url.parse(envconf['database_url'])
 }
 
-SIGN_UP_SECRET = '123456'
 WAGTAIL_SITE_NAME = 'Koe'
 
 JSONEncoder_olddefault = JSONEncoder.default

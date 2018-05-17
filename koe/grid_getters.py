@@ -244,7 +244,6 @@ def bulk_get_song_sequences(all_songs, extras):
     :return:
     """
     cls = extras.cls
-    # user = extras.user
     _, current_database = get_user_databases(extras.user)
     from_user = extras.from_user
 
@@ -269,7 +268,7 @@ def bulk_get_song_sequences(all_songs, extras):
                               'segmentation__audio_file__individual__gender',
                               'segmentation__audio_file__individual__species__genus',
                               'segmentation__audio_file__individual__species__species')
-    seg_ids = segs.values_list('id', flat=True)
+    seg_ids = [str(x) for x in segs.values_list('id', flat=True)]
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
     labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=from_user) \
@@ -392,7 +391,8 @@ def repopulate_history_entry_info(hes):
     :return: None
     """
     hes_ = hes.filter(database=None)
-    note_attr, _ = ExtraAttr.objects.get_or_create(klass=HistoryEntry.__name__, name='note', type=ValueTypes.SHORT_TEXT)
+    note_attr, _ = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note',
+                                            type=ValueTypes.SHORT_TEXT).first()
     default_database_id = Database.objects.filter(name='Bellbirds').values_list('id', flat=True).first()
 
     for he in hes_:
@@ -417,13 +417,14 @@ def repopulate_history_entry_info(hes):
             he.version = version
             he.save()
 
-    hes_ = hes.filter(note=None)
-    for he in hes_:
-        note_attr_value = ExtraAttrValue.objects.filter(owner_id=he.id, user=he.user, attr=note_attr).first()
-        if note_attr_value:
-            he.note = note_attr_value.value
+    if note_attr:
+        hes_ = hes.filter(note=None)
+        for he in hes_:
+            note_attr_value = ExtraAttrValue.objects.filter(owner_id=he.id, user=he.user, attr=note_attr).first()
+            if note_attr_value:
+                he.note = note_attr_value.value
 
-        he.save()
+            he.save()
 
 
 def bulk_get_history_entries(hes, extras):

@@ -28,7 +28,7 @@ services:
       - VIRTUAL_HOST=koe.io.ac.nz
       - VIRTUAL_PROTO=uwsgi
 # Uncomment below to DELETE and re-create the database from fixtures
-#      - CLEAR_DB=true
+#      - RESET_DB=true
     env_file:
       - koe.env
     restart: unless-stopped
@@ -36,6 +36,7 @@ services:
       - db
     volumes:
       - ./user_data:/code/user_data
+      - ./backups:/code/backups
   cache:
     image: redis
     container_name: koe_cache

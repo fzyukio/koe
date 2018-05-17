@@ -19,3 +19,4 @@ mossop.db
 *.db
 help.md
 settings.yaml
+backups/

@@ -5,24 +5,19 @@ unset https_proxy
 
 cd /code
 
-if test "$CLEAR_DB" = "true"; then
-    python setup.py --reset-database
-fi
+# Always clear the cache
+python manage.py cache --action=clear
 
-# Important: This flag must be set for this to work
-export IMPORTING_FIXTURE="true"
-python manage.py migrate
+# Always back-up the database
+mkdir -p backups/mysql
+chmod 777 backups/mysql
+DB_BACKUP_NAME=backups/mysql/backup-`date "+%Y-%m-%d_%H-%M-%S"`.sql
+python maintenance.py --backup-database --file="$DB_BACKUP_NAME"
+chmod 666 "$DB_BACKUP_NAME"
 
-if test "$CLEAR_DB" = "true"; then
-    # load all fixtures - must be done in this order
-    python manage.py loaddata users
-    python manage.py loaddata cms
-    python manage.py loaddata data
-    python manage.py loaddata root.columnactionvalue.json
-    python manage.py loaddata root.extraattr.json
-    python manage.py loaddata root.extraattrvalue.json
+if test "$RESET_DB" = "true"; then
+    python maintenance.py --reset-database
 fi
-export IMPORTING_FIXTURE="false"
 
 uwsgi --ini uwsgi.ini:prod
 

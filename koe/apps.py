@@ -2,6 +2,7 @@ import os
 
 from django.apps import AppConfig
 from django.conf import settings
+from django.db import ProgrammingError
 from dotmap import DotMap
 
 
@@ -40,9 +41,15 @@ class KoeConfig(AppConfig):
 
         :return: None
         """
-        is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
+        from root.models import User
 
-        if not is_importing_fixture:
+        is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
+        try:
+            is_database_empty = User.objects.all().count() == 0
+        except ProgrammingError:
+            is_database_empty = True
+
+        if not is_importing_fixture and not is_database_empty:
             from root.views import register_app_modules, init_tables
 
             register_app_modules(self.name, 'request_handlers.history')
