@@ -8,7 +8,8 @@ from root.models import User
 def populate_context(page_name, context, request, kwargs, with_similarity=False):
     user = request.user
     databases, current_database = get_user_databases(user)
-    db_assignment = DatabaseAssignment.objects.filter(database=current_database, user=user).first()
+    db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
+
     inaccessible_databases = Database.objects.exclude(id__in=databases)
 
     databases_own = DatabaseAssignment.objects \

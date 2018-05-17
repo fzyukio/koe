@@ -294,6 +294,9 @@ def assert_permission(user, database, required_level):
     :param required_level:
     :return: if user does have permission, return the database assignment
     """
+    if database is None:
+        return None
+
     db_assignment = DatabaseAssignment.objects \
         .filter(user=user, database=database, permission__gte=required_level).first()
     if db_assignment is None or db_assignment.permission < required_level:
