@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import numpy as np
 from django.db.models import F
 from progress.bar import Bar
