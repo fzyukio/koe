@@ -116,8 +116,7 @@ class Command(BaseCommand):
         from koe.models import Segment
         # DistanceMatrix.objects.all().delete()
         database, _ = Database.objects.get_or_create(name=database_name)
-        segments = Segment.objects.filter(
-            segmentation__audio_file__database=database)  # , id__lte=33200)
+        segments = Segment.objects.filter(segmentation__audio_file__database=database)
 
         unsorted_ids = np.array(segments.values_list('id', flat=True))
         sorted_idx = np.argsort(unsorted_ids)
@@ -152,10 +151,8 @@ class Command(BaseCommand):
                             feature_name, config_str, dist_name, metric_name, norm)
                         if bulk_extract_func is None or segment_feature_array is None:
                             bulk_extract_func = extract_funcs[feature_name]
-                            chirps_feature_array = bulk_extract_func(
-                                segments, config, True)
-                            segment_feature_array = bulk_extract_func(
-                                segments, config, False)
+                            segment_feature_array = bulk_extract_func(segments, config, False)
+                            chirps_feature_array = bulk_extract_func(segments, config, True)
 
                             chirps_feature_array = chirps_feature_array[sorted_idx]
                             segment_feature_array = segment_feature_array[sorted_idx]

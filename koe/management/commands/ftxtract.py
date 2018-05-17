@@ -118,17 +118,25 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
 
     else:
         mfccs = []
-        segments_info = segments.values_list('segmentation__audio_file__name', 'segmentation__audio_file__length',
-                                             'segmentation__audio_file__fs', 'start_time_ms', 'end_time_ms')
+        segments_info = segments.values_list('segmentation__audio_file__name', 'segmentation__audio_file__fs',
+                                             'start_time_ms', 'end_time_ms', 'id')
 
-        for file_name, length, fs, start, end in segments_info:
+        segment_data = {}
+
+        for file_name, fs, start, end, id in segments_info:
             file_url = wav_path(file_name)
             sig = wavfile.read_segment(file_url, start, end, mono=True)
+
             mfcc_fts = _extract_xfcc(sig, fs, method, xtrargs, ndelta)
+
+            segment_data['s' + str(id)] = dict(sig=sig, fs=fs, ft=mfcc_fts)
 
             mfccs.append(mfcc_fts)
             bar.next()
         mfccs = np.array(mfccs)
+
+        import scipy.io as sio
+        sio.savemat('/tmp/segment_data.mat', segment_data)
 
     bar.finish()
     return mfccs
