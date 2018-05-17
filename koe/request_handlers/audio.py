@@ -6,6 +6,7 @@ import pydub
 from django.conf import settings
 from django.core.files import File
 from django.http import HttpResponse
+from memoize import memoize
 
 from koe import wavfile
 from koe.grid_getters import get_sequence_info_empty_songs
@@ -31,6 +32,30 @@ def _match_target_amplitude(sound, loudness=-10):
     return sound
 
 
+@memoize(timeout=None)
+def _cached_get_segment_audio_data(audio_file_name, fs, start, end):
+    wav_file_path = wav_path(audio_file_name)
+    chunk = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=False)
+    audio_segment = pydub.AudioSegment(
+        chunk.tobytes(),
+        frame_rate=fs,
+        sample_width=chunk.dtype.itemsize,
+        channels=1
+    )
+
+    audio_segment = _match_target_amplitude(audio_segment)
+
+    out = io.BytesIO()
+    audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
+    binary_content = out.getvalue()
+
+    response = HttpResponse()
+    response.write(binary_content)
+    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
+    response['Content-Length'] = len(binary_content)
+    return response
+
+
 def get_segment_audio_data(request):
     """
     Return a playable audio segment given the segment id
@@ -47,26 +72,7 @@ def get_segment_audio_data(request):
     start = segment.start_time_ms
     end = segment.end_time_ms
 
-    wav_file_path = wav_path(audio_file.name)
-    chunk = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=False)
-    audio_segment = pydub.AudioSegment(
-        chunk.tobytes(),
-        frame_rate=audio_file.fs,
-        sample_width=chunk.dtype.itemsize,
-        channels=1
-    )
-
-    audio_segment = _match_target_amplitude(audio_segment)
-
-    out = io.BytesIO()
-    audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
-    binary_content = out.getvalue()
-
-    response = HttpResponse()
-    response.write(binary_content)
-    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
-    response['Content-Length'] = len(binary_content)
-    return response
+    return _cached_get_segment_audio_data(audio_file.name, audio_file.fs, start, end)
 
 
 def import_audio_files(request):

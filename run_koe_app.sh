@@ -6,7 +6,7 @@ unset https_proxy
 cd /code
 
 # Always clear the cache
-python manage.py cache --action=clear
+python manage.py cache --action=clear --pattern='template.cache.*'
 
 # Always back-up the database
 mkdir -p backups/mysql

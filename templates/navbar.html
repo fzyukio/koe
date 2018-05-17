@@ -1,4 +1,5 @@
 {% load static %}
+{% load cache %}
 {% load custom_tags %}
 
 <div id="navbar" class="navbar {% if transparent_bg == True %}transparent{% endif %} navbar-fixed-top" role="navigation">
@@ -12,18 +13,19 @@
         <a href="/" class="navbar-brand">声KOE</a>
     </div>
     <div class="collapse navbar-collapse">
+        {% cache None navbar page subpage%}
         <ul class="nav navbar-nav">
             {% get_navbar_urls as pages %}
             {% for page_ in pages %}
                 {% include "partials/navbar-menu.html" with page=page_ current_page=page current_subpage=subpage%}
             {% endfor %}
 
-            <!--Display all child pages of the Welcome page (from the CMS system) -->
+          {# Display all child pages of the Welcome page (from the CMS system)#}
             <li class="dropdown {% if page.is_cms_page %}active{% endif %}">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help<span class="caret"></span></a>
                 <ul class="dropdown-menu">
                 {% get_pages as pages %}
-                 <!-- We must use page_ to not shadow the page variable that is given by the view -->
+                 {# We must use page_ to not shadow the page variable that is given by the view #}
                 {% for page_ in pages %}
                     {% if page.slug == page_.slug %}
                         <li class="active"><a href="{{ page_.url }}">{{ page_.slug|title }}</a></li>
@@ -34,9 +36,11 @@
                 </ul>
             </li>
         </ul>
+        {% endcache %}
         <ul id="user-card" class="nav navbar-nav navbar-right">
             <li class="dropdown">
                 {% if user.is_authenticated %}
+                    {% cache 300 navbar-user-authenticated request.user.username %}
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-user"></span> 
                         <strong>{{ user.username }}</strong>
@@ -65,7 +69,9 @@
                             </div>
                         </li>
                     </ul>
+                    {% endcache %}
                 {% else %}
+                    {% cache None navbar-user-notauthenticated%}
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                         <span class="glyphicon glyphicon-user"></span> 
                         <strong>Guest</strong>
@@ -83,6 +89,7 @@
                             </div>
                         </li>
                     </ul>
+                    {% endcache %}
                 {% endif %}
             </li>
         </ul>

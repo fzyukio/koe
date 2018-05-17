@@ -98,3 +98,4 @@ django-tz-detect
 colorama
 django_bulk_update
 django-grappelli
+django-memoize

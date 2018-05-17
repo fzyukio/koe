@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 from django.conf import settings
+from django.db import models
 from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
@@ -8,11 +9,9 @@ from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
 from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database, DatabasePermission
 from koe.utils import triu2mat, mat2triu
-
-from django.db import models
+from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
-from root.exceptions import CustomAssertionError
 
 window_size = 256
 noverlap = 256 * 0.75

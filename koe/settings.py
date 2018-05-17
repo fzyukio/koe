@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
     'modelcluster',
     'taggit',
+    'memoize',
 
     'root',
     'koe',

@@ -40,7 +40,7 @@ services:
   cache:
     image: redis
     container_name: koe_cache
-    restart: unless-stopped
+    restart: "no"
 #volumes:
 #  code-volume:
 networks:
