@@ -96,3 +96,4 @@ uwsgi
 django-extensions
 django-tz-detect
 colorama
+django_bulk_update
