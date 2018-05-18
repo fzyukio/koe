@@ -60,3 +60,5 @@ class KoeConfig(AppConfig):
 
             init_tables()
             get_builtin_attrs()
+
+            import koe.signals  # noqa: F401  Must include this for the signals to work
