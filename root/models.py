@@ -349,17 +349,17 @@ class AutoSetterGetterMixin:
         user = extras.user
 
         if isinstance(objs, QuerySet):
-            ids = objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True)
+            ids = frozenset(objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True))
         else:
-            ids = [str(obj.id) for obj in objs]
+            ids = frozenset([str(obj.id) for obj in objs])
 
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
         val2str = value_setter[extra_attr.type]
         value = val2str(value)
 
         existings = ExtraAttrValue.objects.filter(user=user, owner_id__in=ids, attr=extra_attr)
-        existings_owner_ids = existings.values_list('owner_id', flat=True)
-        nonexistings_owner_ids = [x for x in ids if x not in existings_owner_ids]
+        existings_owner_ids = frozenset(existings.values_list('owner_id', flat=True))
+        nonexistings_owner_ids = frozenset([x for x in ids if x not in existings_owner_ids])
 
         existings.update(value=value)
         newly_created = [ExtraAttrValue(user=user, owner_id=id, attr=extra_attr, value=value)

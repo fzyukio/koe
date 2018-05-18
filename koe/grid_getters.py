@@ -91,8 +91,14 @@ def bulk_get_segment_info(segs, extras):
         indices = [0] * nrows
     else:
         sorted_ids = current_similarity.ids
-        sorted_order = current_similarity.order
-        indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
+        try:
+            sorted_order = current_similarity.order
+            indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
+        except IndexError as e:
+            # This happens when the referenced IDs no longer exist - most likely because the
+            # segmentation changed
+
+            indices = [0] * nrows
 
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
@@ -391,8 +397,7 @@ def repopulate_history_entry_info(hes):
     :return: None
     """
     hes_ = hes.filter(database=None)
-    note_attr, _ = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note',
-                                            type=ValueTypes.SHORT_TEXT).first()
+    note_attr = ExtraAttr.objects.filter(klass=HistoryEntry.__name__, name='note', type=ValueTypes.SHORT_TEXT).first()
     default_database_id = Database.objects.filter(name='Bellbirds').values_list('id', flat=True).first()
 
     for he in hes_:
@@ -404,17 +409,19 @@ def repopulate_history_entry_info(hes):
                 for name in namelist:
                     filelist[name] = zip_file.read(name)
 
+            backup_type = 'labels'
             if 'meta.json' in filelist:
                 meta = json.loads(filelist['meta.json'])
                 database_id = meta['database']
                 version = meta['version']
-
+                backup_type = meta.get('type', backup_type)
             else:
                 database_id = default_database_id
                 version = 1
 
             he.database_id = database_id
             he.version = version
+            he.type = backup_type
             he.save()
 
     if note_attr:
@@ -433,11 +440,11 @@ def bulk_get_history_entries(hes, extras):
 
     tz = extras.tz
     values = hes.values_list('id', 'filename', 'time', 'user__username', 'user__id', 'database',
-                             'database__name', 'note', 'version')
+                             'database__name', 'note', 'version', 'type')
 
     ids = []
     rows = []
-    for id, filename, time, creator, creator_id, database_id, database_name, note, version in values:
+    for id, filename, time, creator, creator_id, database_id, database_name, note, version, type in values:
         ids.append(id)
         tztime = time.astimezone(tz)
 
@@ -458,7 +465,7 @@ def bulk_get_history_entries(hes, extras):
             url = 'Insufficient permission to download'
 
         row = dict(id=id, url=url, creator=creator, time=tztime, size=file_size, database=database_name, note=note,
-                   version=version, __can_import=can_import, __can_delete=user_is_creator)
+                   version=version, __can_import=can_import, __can_delete=user_is_creator, type=type)
 
         rows.append(row)
 

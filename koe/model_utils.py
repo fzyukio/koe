@@ -307,6 +307,11 @@ def assert_permission(user, database, required_level):
     return db_assignment
 
 
+def assert_values(value, value_range):
+    if value not in value_range:
+        raise CustomAssertionError('Invalid value {}'.format(value))
+
+
 def get_or_error(obj, key):
     """
     Get key or filter Model for given attributes. If None found, error

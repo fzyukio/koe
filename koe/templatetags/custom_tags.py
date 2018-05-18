@@ -117,7 +117,11 @@ def get_default_url(page):
     :param page:
     :return:
     """
-    return page.relative_url(page.get_site())
+    try:
+        site = page.get_site()
+    except Exception:
+        site = None
+    return page.relative_url(site)
 
 
 @register.simple_tag

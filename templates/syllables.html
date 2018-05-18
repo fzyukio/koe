@@ -62,8 +62,18 @@
 
 {% block bottom %}
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        <div class="btn-group" role="group">
-            <button id="save-data-btn" type="button" class="btn btn-primary">Save</button>
+        <div class="btn-group dropup" role="group">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                Backup
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="back-up-data" id="save-data-btn" data-backup-type="labels">Labels, Notes</a></li>
+                <li><a class="back-up-data" id="upload-csv-btn" data-backup-type="segmentation">Labels, Notes and
+                    Endpoints</a>
+                </li>
+            </ul>
         </div>
         {% if db_assignment.can_modify_segments %}
             <div class="btn-group" role="group">

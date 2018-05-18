@@ -155,8 +155,7 @@ tables = \
                 {
                     "name": "Time",
                     "slug": "time",
-                    "type": "SHORT_TEXT",
-                    "is_attribute": True
+                    "type": "SHORT_TEXT"
                 },
                 {
                     "name": "Downloadable Link",
@@ -167,26 +166,27 @@ tables = \
                     "name": "Note",
                     "slug": "note",
                     "type": "SHORT_TEXT",
-                    "editable": True,
-                    "is_attribute": True
+                    "editable": True
                 },
                 {
                     "name": "Format version",
                     "slug": "version",
-                    "type": "INTEGER",
-                    "is_extra_attr": True
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Backup type",
+                    "slug": "type",
+                    "type": "SHORT_TEXT"
                 },
                 {
                     "name": "Database",
                     "slug": "database",
-                    "type": "SHORT_TEXT",
-                    "is_attribute": True
+                    "type": "SHORT_TEXT"
                 },
                 {
                     "name": "Size (kb)",
                     "slug": "size",
-                    "type": "FLOAT",
-                    "is_extra_attr": True
+                    "type": "FLOAT"
                 }
             ]
         },

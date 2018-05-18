@@ -708,7 +708,9 @@ const initDeleteSegmentsBtn = function () {
 
 
 export const postRun = function () {
-    $('#save-data-btn').click(function () {
+    $('.back-up-data').click(function () {
+        let backUpType = $(this).data('backup-type');
+
         ce.inputText.val('');
 
         ce.dialogModalTitle.html('Backing up your data...');
@@ -725,7 +727,8 @@ export const postRun = function () {
             ce.dialogModal.modal('hide');
             let postData = {
                 comment: value,
-                database: databaseId
+                database: databaseId,
+                type: backUpType
             };
             let msgGen = function (isSuccess, response) {
                 return isSuccess ?

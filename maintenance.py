@@ -392,11 +392,15 @@ def empty_database():
     reset_db_function = reset_db_functions[db_engine_short_name]
     reset_db_function()
 
-    talk_to_user('Now I\'m recreating all the tables')
+
+def apply_migrations():
+    talk_to_user('Apply migration...')
     run_command('python manage.py makemigrations koe')
     run_command('python manage.py makemigrations root')
     run_command('python manage.py migrate --database=default')
 
+
+def delete_wagtail_pages():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'koe.settings')
     import django
     django.setup()
@@ -496,9 +500,6 @@ if __name__ == '__main__':
         if not backup_file:
             raise Exception('To backup data, parameter --file is required')
 
-    if restore_db:
-        reset_db = True
-
     db_config = dj_database_url.parse(config['database_url'])
     db_engine = db_config['ENGINE']
     db_name = db_config['NAME']
@@ -525,12 +526,15 @@ if __name__ == '__main__':
     os.environ['IMPORTING_FIXTURE'] = 'true'
     if reset_db:
         empty_database()
+        apply_migrations()
+        delete_wagtail_pages()
 
     if restore_db:
         if backup_file.endswith('.zip'):
             restore_database_using_fixtures()
         else:
             restore_database_using_sql()
+        apply_migrations()
     del os.environ['IMPORTING_FIXTURE']
 
     talk_to_user('All done!')

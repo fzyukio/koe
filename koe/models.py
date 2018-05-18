@@ -348,6 +348,7 @@ class HistoryEntry(StandardModel):
     time = models.DateTimeField()
     filename = models.CharField(max_length=255)
     database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=False)
+    type = models.CharField(max_length=32, default='labels')
 
     class Meta:
         ordering = ['-time', 'user', 'database']
