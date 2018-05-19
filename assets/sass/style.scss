@@ -12,12 +12,12 @@
 @import "vendor/slick-grid";
 @import "vendor/slick-default-theme";
 
+// Customised Vendor
+@import "vendor/custom-bootstrap";
+
 // General
 @import "variables";
 @import "helpers/all";
 @import "global";
 @import "components/all";
 @import "pages/all";
-
-// Customised Vendor
-@import "vendor/custom-bootstrap";

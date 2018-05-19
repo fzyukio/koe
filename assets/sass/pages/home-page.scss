@@ -186,14 +186,33 @@
 }
 
 #navbar {
+  .navbar-toggle {
+    border: 1px solid #e72510;
+    margin-right: 10px;
+    .icon-bar {
+      background-color: #e72510;
+    }
+  }
 
   .navbar-collapse {
     //background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
-    border-color: transparent;
+    background-color: white;
+
+    &.collapse.in, &.collapsing {
+      border: 1px solid #e72510;
+    }
   }
 
   &.transparent {
     background: transparent;
+
+    .navbar-toggle {
+      border: 1px solid white;
+
+      .icon-bar {
+        background-color: white;
+      }
+    }
 
     .navbar-brand {
       background: transparent;
@@ -211,17 +230,9 @@
       color: black;
     }
 
-    .icon-bar {
-      background-color: white;
-    }
-
-    .navbar-toggle {
-      border: 1px solid white;
-    }
-
     .navbar-collapse {
-      background: transparent;
       &.collapse {
+        background-color: transparent;
         .nav > li > a:hover, .nav > li > a:focus {
           background-color: transparent;
           border: white 1px solid;
@@ -229,6 +240,7 @@
       }
       &.collapse.in, &.collapsing {
         background: white;
+        border: 1px solid white;
         a {
           color: black;
         }
