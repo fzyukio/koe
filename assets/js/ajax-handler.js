@@ -1,4 +1,5 @@
 import {getUrl, noop} from './utils';
+
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
@@ -14,48 +15,26 @@ function defaultMsgGen(isSuccess, response) {
         `Something's wrong, server says <strong><i>"${response}"</i></strong>.`;
 }
 
+
+const body = $('body');
 const delayOnSuccess = 500;
 const delayOnFailure = 4000;
 
 /**
  * Shortcut to call ajaxRequest for normal POST requests
- * @param requestSlug second part of a send-request/ url
- * @param data data
- * @param msgGen function to generate notification message
- * @param onSuccess callback when success
- * @param onFailure callback when failure
- * @param immediate whether or not to call callback right after showing the notification
+ * @param args see ajaxRequest
  */
-export const postRequest = function ({
-    requestSlug, data, msgGen, onSuccess = noop, onFailure = noop, immediate = false
-}) {
-    let type = 'POST';
-    let ajaxArgs = {};
-    ajaxRequest({
-        requestSlug,
-        data,
-        msgGen,
-        type,
-        ajaxArgs,
-        onSuccess,
-        onFailure,
-        immediate
-    })
+export const postRequest = function (args) {
+    args.type = 'POST';
+    ajaxRequest(args)
 };
 
 /**
  * Shortcut to call ajaxRequest for file upload
- * @param requestSlug second part of a send-request/ url
- * @param data data
- * @param msgGen function to generate notification message
- * @param onSuccess callback when success
- * @param onFailure callback when failure
- * @param immediate whether or not to call callback right after showing the notification
+ * @param args see ajaxRequest
  */
-export const uploadRequest = function ({
-    requestSlug, data, msgGen, onSuccess = noop, onFailure = noop, immediate = false
-}) {
-    let ajaxArgs = {
+export const uploadRequest = function (args) {
+    args.ajaxArgs = {
         // !IMPORTANT: this tells jquery to not set expectation of the content type.
         // If not set to false it will not send the file
         contentType: false,
@@ -64,17 +43,8 @@ export const uploadRequest = function ({
         // If not set to false it will raise "IllegalInvocation" exception
         processData: false
     };
-    let type = 'POST';
-    ajaxRequest({
-        requestSlug,
-        data,
-        msgGen,
-        type,
-        ajaxArgs,
-        onSuccess,
-        onFailure,
-        immediate
-    })
+    args.type = 'POST';
+    ajaxRequest(args);
 };
 
 /**
@@ -85,9 +55,7 @@ export const uploadRequest = function ({
  * @param callback
  * @param immediate whether or not to call callback right after showing the notification
  */
-export const handleResponse = function ({
-    response, msgGen = noop, isSuccess = true, callback = noop, immediate = false
-}) {
+export const handleResponse = function ({response, msgGen = noop, isSuccess = true, callback = noop, immediate = false}) {
     let alertEl, delay;
     let message = msgGen(isSuccess, response) || defaultMsgGen(isSuccess, response);
 
@@ -122,15 +90,27 @@ export const handleResponse = function ({
  * @param onSuccess callback when success
  * @param onFailure callback when failure
  * @param immediate whether or not to call callback right after showing the notification
+ * @param noSpinner if true, don't show the spinner during AJAX loads
  */
 const ajaxRequest = function ({
     requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = noop,
-    onFailure = noop, immediate = false
+    onFailure = noop, immediate = false, noSpinner = false
 }) {
+
     ajaxArgs.url = getUrl('send-request', requestSlug);
     ajaxArgs.type = type;
     ajaxArgs.data = data;
+    ajaxArgs.beforeSend = function () {
+        if (!noSpinner) {
+            body.addClass('loading');
+        }
+        body.css("cursor", "progress");
+    };
     ajaxArgs.success = function (response) {
+        if (!noSpinner) {
+            body.removeClass('loading');
+        }
+        body.css("cursor", "default");
         handleResponse({
             response,
             msgGen,
@@ -140,6 +120,10 @@ const ajaxRequest = function ({
         })
     };
     ajaxArgs.error = function (response) {
+        if (!noSpinner) {
+            body.removeClass('loading');
+        }
+        body.css("cursor", "default");
         handleResponse({
             response: response.responseText,
             msgGen,

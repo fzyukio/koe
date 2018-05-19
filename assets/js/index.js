@@ -90,20 +90,6 @@ const _preRun = function () {
 
     SlickEditors.Select = SelectizeEditor;
 
-    let body = $('body');
-
-    /**
-     * Trigger the loading modal to be displayed/stopped while an Ajax call is being made
-     */
-    $(document).on({
-        ajaxStart () {
-            body.addClass('loading');
-        },
-        ajaxStop () {
-            body.removeClass('loading');
-        }
-    });
-
     restoreModalAfterClosing();
 };
 

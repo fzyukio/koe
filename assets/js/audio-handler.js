@@ -20,6 +20,8 @@ let cachedArrays = {};
  */
 let playbackSpeed = 100;
 
+const body = $('body');
+
 /**
  * Self-explanatory
  * @param newSpeed
@@ -163,8 +165,14 @@ const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callbac
 
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
+
+    xhr.onloadstart = function() {
+        body.addClass('loading');
+        body.css("cursor", "progress");
+    };
     xhr.onloadend = function () {
-        $.event.trigger('ajaxStop');
+        body.removeClass('loading');
+        body.css("cursor", "default");
     };
 
     // We expect the response to be audio/mp4 when success, and text when failure.
@@ -216,9 +224,6 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
         let formData = convertToFormData(postData);
 
         if (fileId) {
-            let msgGen = function (isSuccess) {
-                return isSuccess ? 'Success' : null;
-            };
             let onSuccess = function (fileUrl) {
                 queryAndHandleAudioGetOrPost({url: fileUrl,
                     cacheKey,
@@ -228,15 +233,17 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
                 requestSlug: 'koe/get-audio-file-url',
                 data: postData,
                 onSuccess,
-                msgGen,
-                immediate: true
+                immediate: true,
+                noSpinner: true
             });
         }
         else {
-            queryAndHandleAudioGetOrPost({url,
+            queryAndHandleAudioGetOrPost({
+                url,
                 cacheKey,
                 formData,
-                callback});
+                callback
+            });
         }
     }
 };
