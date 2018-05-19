@@ -2,3 +2,4 @@
 docker-compose.yml
 db/
 user_data/
+backups/
