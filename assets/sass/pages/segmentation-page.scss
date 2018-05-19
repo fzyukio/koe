@@ -1,11 +1,8 @@
 @import "../variables";
 
-$spectrogram-height: 200px;
-$oscillogram-height: 100px;
-$visualisation-height: 300px;
-
 $scrollbar-height: 15px;
-$axis-height: 20px;
+$axis-height: 18.6px;
+$gap-between-svgs: 8px;
 
 .axis {
   text {
@@ -26,17 +23,17 @@ $axis-height: 20px;
 }
 
 #visualisation {
-  height: calc(#{$visualisation-height} + #{$axis-height} + #{$scrollbar-height});
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram {
-    height: #{$oscillogram-height};
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 1 / 14);
     overflow-y: hidden;
   }
 
   #spectrogram {
-    height: calc(#{$spectrogram-height} + #{$axis-height});
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
     overflow-y: hidden;
 
     .brush-handle {
@@ -46,7 +43,7 @@ $axis-height: 20px;
 
     .syllable {
       stroke: black;
-      stroke-dasharray: 1 1;
+      stroke-dasharray: 1, 1;
       fill: black;
       fill-opacity: 0.2;
       &:hover, &.highlight {
@@ -65,38 +62,19 @@ $axis-height: 20px;
 }
 
 #zoomed {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height}) / 3);
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 2 / 14);
     width: 100%;
   }
 
   #spectrogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height}) * 2 / 3);
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 8 / 14);
     width: 100%;
   }
-}
-
-#zoomed-offset-holder {
-  display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
-}
-
-#oscillogram-zoomed-offset-holder,
-#spectrogram-zoomed-offset-holder {
-  display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height} - #{$axis-height})
-}
-
-#oscillogram-zoomed-offset-holder {
-  minus-height: $axis-height;
-}
-
-#spectrogram-zoomed-offset-holder {
-  add-height: $axis-height;
 }
 
 #oscillogram, #oscillogram-zoomed {
@@ -108,12 +86,7 @@ $axis-height: 20px;
 }
 
 #segments-grid {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
-}
-
-#segments-grid-offset-holder {
-  display: none;
-  height: calc(100000px - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$visualisation-height});
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 5 / 8);
 }
 
 .controller-item {

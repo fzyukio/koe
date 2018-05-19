@@ -237,19 +237,6 @@ const subscribeSlickEvents = function () {
 };
 
 
-/**
- * Redraw the table on orientation changed
- */
-export const orientationChange = function () {
-    grid.redrawMainGrid({
-        rowMoveable: true,
-        multiSelect: true
-    }, function () {
-        subscribeSlickEvents();
-    });
-};
-
-
 const showBigSpectrogram = function (e, args) {
     e.preventDefault();
     let cellElement = $(args.e.target);

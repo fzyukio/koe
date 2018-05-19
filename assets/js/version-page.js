@@ -39,16 +39,6 @@ const subscribeFlexibleEvents = function () {
     });
 };
 
-/**
- * Redraw the table on orientation changed
- */
-export const orientationChange = function () {
-    grid.redrawMainGrid({
-        rowMoveable: false,
-        radioSelect: true
-    });
-};
-
 
 const initApplyVersionBtn = function () {
     applyVersionBtn.click(function () {

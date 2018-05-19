@@ -7,6 +7,7 @@ html, body {
   font-family: 'Oxygen', sans-serif;
   display: flex;
   font-weight: 500;
+  background-color: white;
 }
 
 a {
@@ -43,6 +44,7 @@ a {
 
   .navbar-nav {
     margin: 0;
+    padding-top: 6px;
   }
 
   .navbar-collapse {
@@ -63,9 +65,7 @@ a {
     font-size: 17px;
     line-height: 18px;
     height: $navbar-height;
-
-    //background: linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
-    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFE72510', endColorstr='#FFCB210E', GradientType=0);
+    padding-left: 10px;
 
     a, span {
       color: white;
@@ -110,11 +110,6 @@ a {
   width: 100%;
   max-height: $max-screen-height;
   overflow-y: hidden;
-
-  background: white;
-  -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
-  -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 3);
 }
 
 #content-wrapper-offset-holder {

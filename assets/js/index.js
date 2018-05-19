@@ -83,30 +83,6 @@ function viewPortChangeHandler() {
 }
 
 /**
- *
- */
-const adjustFullHeightOffset = function () {
-    let offsetItems = $('.vh-offset');
-    let maxVh = $('#max-vh').css('max-height');
-    maxVh = maxVh.substr(0, maxVh.indexOf('px'));
-    let vh = Math.min(maxVh, Math.max(document.documentElement.clientHeight, window.innerHeight || 0));
-
-    for (let i = 0; i < offsetItems.length; i++) {
-        let item = $(offsetItems[i]);
-        let holder = $('#' + item.attr('id') + '-offset-holder');
-        let attr = holder.attr('attr');
-        let subtractExpression = holder.attr('minus');
-        let subtractAmount = subtractExpression ? eval(subtractExpression) : 0;
-
-        let divideFactor = holder.attr('divide') || 1;
-
-        let offsetValue = holder.css(attr);
-        offsetValue = 100000 - offsetValue.substr(0, offsetValue.indexOf('px'));
-        item.css(attr, (vh - offsetValue - subtractAmount) / divideFactor);
-    }
-};
-
-/**
  * Put everything you need to run before the page has been loaded here
  * @private
  */
@@ -114,7 +90,6 @@ const _preRun = function () {
 
     SlickEditors.Select = SelectizeEditor;
 
-    adjustFullHeightOffset();
     let body = $('body');
 
     /**
@@ -292,15 +267,15 @@ const initDatabaseButtons = function () {
 const _postRun = function () {
     const viewPortChangeCallback = function () {
         viewPortChangeHandler().then(function () {
-            adjustFullHeightOffset();
 
-            if (!isNull(page) && typeof page.orientationChange == 'function') {
-                page.orientationChange();
+            if (!isNull(page) && page.grid) {
+                page.grid.mainGrid.resizeCanvas();
             }
         });
     };
 
     window.addEventListener('orientationchange', viewPortChangeCallback);
+    window.addEventListener('resize', viewPortChangeCallback);
 
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
