@@ -365,7 +365,7 @@ export class FlexibleGrid {
             updateSlickGridData(self.mainGrid, rows);
             self.cacheSelectableOptions();
 
-            if (typeof callback == 'function') {
+            if (typeof callback === 'function') {
                 callback();
             }
         };
