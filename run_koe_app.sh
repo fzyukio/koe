@@ -17,6 +17,8 @@ chmod 666 "$DB_BACKUP_NAME"
 
 if test "$RESET_DB" = "true"; then
     python maintenance.py --reset-database
+else
+    python manage.py migrate --database=default
 fi
 
 uwsgi --ini uwsgi.ini:prod
