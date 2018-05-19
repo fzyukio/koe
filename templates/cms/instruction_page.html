@@ -1,14 +1,15 @@
-{% extends "cms/base__landing.html" %}
+{% extends "base.html" %}
 {% load wagtailcore_tags %}
 
 {% block body_class %}template-homepage{% endblock %}
 
-{% block content-container %}
-    <div class="container" id="content-container">
-        <div class="row">
-            <div class="homepage-content col-xs-12">
-                {{ page.body|richtext }}
-            </div>
+
+{% block main-content %}
+
+    <div id="content-container">
+        <div class="content col-xs-12">
+            {{ page.body|richtext }}
         </div>
     </div>
+
 {% endblock %}

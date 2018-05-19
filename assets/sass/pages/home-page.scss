@@ -185,16 +185,6 @@
 
 }
 
-.homepage-content {
-  background-color: #fffaf0cc;
-  border-radius: .28571429rem;
-  box-shadow: 0 1px 21px #acacac;
-  border-top: 12px solid #9f181c;
-  border-bottom: 12px solid #333333;
-  height: calc(100vh - 140px * 2);
-  overflow-y: auto;
-}
-
 #navbar {
 
   .navbar-collapse {
@@ -313,13 +303,6 @@
     margin: 7px 0px 23px 0px;
   }
 }
-
-#content-container {
-  z-index: 2;
-  margin-top: 140px;
-  margin-bottom: 140px;
-}
-
 
 /************************/
 
