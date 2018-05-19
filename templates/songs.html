@@ -42,16 +42,8 @@
 
 {% endblock %}
 
-{% block modal-button %}
-    <div class="btn-group" role="group">
-        <button type="button" id="dialog-modal-yes-button" data-action="save" role="button"
-                class="btn btn-outline-primary btn-hover-green">Yes
-        </button>
-    </div>
-    <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary" data-dismiss="modal" role="button">Cancel
-        </button>
-    </div>
+{% block modal-dialog %}
+{% include 'partials/modal.html' with order='yes-no' yes='Yes' no='No' %}
 {% endblock %}
 
 {% block bottom %}

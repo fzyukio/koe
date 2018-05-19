@@ -19,7 +19,7 @@ cycler==0.10.0
 dask==0.14.1
 decorator==4.0.11
 dj-database-url==0.4.2
-Django==2.0.1
+Django==2.0.4
 django-log-request-id==1.3.2
 django-model-utils==2.6.1
 django-naomi==0.8
@@ -89,7 +89,7 @@ mysqlclient
 Markdown
 python-markdown-oembed
 djangorestframework==3.7.7
-wagtail==2.0rc1
+wagtail==2.0.1
 pydub
 flake8-docstrings
 uwsgi
