@@ -8,10 +8,10 @@
         <div class="col-xs-4 col-sm-3 col-md-2 no-padding-left">
             <div class="btn-group btn-group-justified" role="group" aria-label="...">
                 <div class="btn-group btn-group-sm" role="group">
-                    <button id="play-song" type="button" class="btn btn-primary">Play</button>
+                    <button id="play-song" type="button" class="btn btn-outline-primary">Play</button>
                 </div>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button id="stop-song" type="button" class="btn btn-primary">Stop</button>
+                    <button id="stop-song" type="button" class="btn btn-outline-primary">Stop</button>
                 </div>
             </div>
 
@@ -74,11 +74,11 @@
 {% block modal-button %}
     <div class="btn-group" role="group">
         <button type="button" id="dialog-modal-yes-button" data-action="save" role="button"
-                class="btn btn-primary btn-hover-green">Set
+                class="btn btn-outline-primary btn-hover-green">Set
         </button>
     </div>
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-primary" data-dismiss="modal" role="button">Cancel
+        <button type="button" class="btn btn-outline-primary" data-dismiss="modal" role="button">Cancel
         </button>
     </div>
 {% endblock %}
@@ -87,12 +87,12 @@
     <div class="btn-group btn-group-justified" role="group" aria-label="...">
         {% if db_assignment.can_modify_segments %}
             <div class="btn-group" role="group">
-                <button disabled id="delete-segments-btn" type="button" class="btn btn-primary">
+                <button disabled id="delete-segments-btn" type="button" class="btn btn-outline-primary">
                     Delete selected
                 </button>
             </div>
             <div class="btn-group" role="group">
-                <button id="save-segmentations-btn" disabled type="button" class="btn btn-primary">
+                <button id="save-segmentations-btn" disabled type="button" class="btn btn-outline-primary">
                     Save segmentation
                 </button>
             </div>

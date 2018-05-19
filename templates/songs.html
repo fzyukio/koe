@@ -45,11 +45,11 @@
 {% block modal-button %}
     <div class="btn-group" role="group">
         <button type="button" id="dialog-modal-yes-button" data-action="save" role="button"
-                class="btn btn-primary btn-hover-green">Yes
+                class="btn btn-outline-primary btn-hover-green">Yes
         </button>
     </div>
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-primary" data-dismiss="modal" role="button">Cancel
+        <button type="button" class="btn btn-outline-primary" data-dismiss="modal" role="button">Cancel
         </button>
     </div>
 {% endblock %}
@@ -69,7 +69,7 @@
                     <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
                     <input type="submit">
                 </form>
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"
+                <button type="button" class="btn btn-outline-primary dropdown-toggle" data-toggle="dropdown"
                         aria-haspopup="true" aria-expanded="false">
                     Upload
                     <span class="caret"></span>
@@ -83,12 +83,12 @@
         {% endif %}
         {% if db_assignment.can_copy_files %}
             <div class="btn-group" role="group">
-                <button disabled id="copy-songs-btn" type="button" class="btn btn-primary">Copy selected</button>
+                <button disabled id="copy-songs-btn" type="button" class="btn btn-outline-primary">Copy</button>
             </div>
         {% endif %}
         {% if db_assignment.can_delete_files %}
             <div class="btn-group" role="group">
-                <button disabled id="delete-songs-btn" type="button" class="btn btn-primary">Delete selected</button>
+                <button disabled id="delete-songs-btn" type="button" class="btn btn-outline-primary">Delete</button>
             </div>
         {% endif %}
 

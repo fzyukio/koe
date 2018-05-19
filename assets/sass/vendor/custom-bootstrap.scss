@@ -1,6 +1,5 @@
 //colors
 $color_celeste_approx: #ccc;
-$white: #fff;
 
 .input-group-btn {
   font-size: inherit;
@@ -76,12 +75,52 @@ $white: #fff;
 
 }
 
-
-
 .nav > li {
 
   > a {
     padding-left: 5px;
     padding-right: 5px;
   }
+}
+
+.dropdown-menu > .active > a, .dropdown-menu > .active > a:hover, .dropdown-menu > .active > a:focus {
+  //background-color: #dddddd;
+}
+
+.btn-outline-primary {
+  color: #D9230F;
+  background: transparent none;
+  border-color: #D9230F;
+}
+
+.btn-outline-primary:hover {
+  &:focus {
+    color: #fff;
+  }
+  background-color: #D9230F;
+  border-color: #D9230F;
+}
+
+.btn-outline-primary:focus, .btn-outline-primary.focus {
+  color: #D9230F;
+  -webkit-box-shadow: 0 0 0 0.2rem rgba(217, 35, 15, 0.5);
+          box-shadow: 0 0 0 0.2rem rgba(217, 35, 15, 0.5);
+}
+
+.btn-outline-primary.disabled, .btn-outline-primary:disabled {
+  color: #D9230F88;
+  background-color: transparent;
+}
+
+.btn-outline-primary:not(:disabled):not(.disabled):active, .btn-outline-primary:not(:disabled):not(.disabled).active,
+.show > .btn-outline-primary.dropdown-toggle {
+  color: #fff;
+  background-color: #D9230F;
+  border-color: #D9230F;
+}
+
+.btn-outline-primary:not(:disabled):not(.disabled):active:focus, .btn-outline-primary:not(:disabled):not(.disabled).active:focus,
+.show > .btn-outline-primary.dropdown-toggle:focus {
+  -webkit-box-shadow: 0 0 0 0.2rem rgba(217, 35, 15, 0.5);
+          box-shadow: 0 0 0 0.2rem rgba(217, 35, 15, 0.5);
 }

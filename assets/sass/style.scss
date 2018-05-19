@@ -8,8 +8,7 @@
 @import "../../node_modules/bootstrap-slider/src/sass/bootstrap-slider";
 @import "../../node_modules/selectize/dist/css/selectize.bootstrap3.css";
 
-// Customised Vendor
-@import "vendor/custom-bootstrap";
+// Vendor
 @import "vendor/slick-grid";
 @import "vendor/slick-default-theme";
 
@@ -19,3 +18,6 @@
 @import "global";
 @import "components/all";
 @import "pages/all";
+
+// Customised Vendor
+@import "vendor/custom-bootstrap";
