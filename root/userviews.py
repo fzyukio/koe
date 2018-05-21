@@ -129,7 +129,6 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
 
         user = User.objects.create_user(username, email, password, invitation_code=invitation_code,
                                         first_name=first_name, last_name=last_name)
-        user.save()
 
         authenticated_user = auth.authenticate(username=user.username, password=password)
         auth.login(self.request, authenticated_user)
