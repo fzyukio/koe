@@ -15,6 +15,7 @@ from root import views as root_views
 urlpatterns = [] + root_urls.urlpatterns
 
 urlpatterns += [
+    url('grappelli/', include('grappelli.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^version/$', login_required(root_views.get_view('version')), name='version'),
     url(r'^syllables/$', login_required(views.SyllablesView.as_view()), name='syllables'),
