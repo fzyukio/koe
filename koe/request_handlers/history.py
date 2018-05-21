@@ -131,10 +131,13 @@ def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None):
     extra_attrs = ExtraAttr.objects.values_list('id', 'klass', 'type', 'name')
     extra_attr_old_id_to_key = {x[0]: (x[1], x[2], x[3]) for x in _extra_attrs}
     extra_attr_key_to_new_id = {(x[1], x[2], x[3]): x[0] for x in extra_attrs}
-
-    extra_attr_old_to_new_id = {
-        old_id: extra_attr_key_to_new_id[key] for old_id, key in extra_attr_old_id_to_key.items()
-    }
+    extra_attr_old_to_new_id = {}
+    for old_id, key in extra_attr_old_id_to_key.items():
+        if key in extra_attr_key_to_new_id:
+            extra_attr_old_to_new_id[old_id] = extra_attr_key_to_new_id[key]
+        else:
+            extra_attr = ExtraAttr.objects.create(klass=key[0], type=key[1], name=key[2])
+            extra_attr_old_to_new_id[old_id] = extra_attr.id
 
     _entries = []
 
@@ -173,7 +176,7 @@ def import_history_version_4(database, user, filelist):
 
     # Match saved song IDs to their actual IDs on the datbase (if exists)
     # Songs that don't exist in the database are ignore
-    song_names = frozenset(_song_info.keys())
+    song_names = frozenset(list(_song_info.keys()))
 
     existing_songs_no_segmentation = AudioFile.objects \
         .filter(name__in=song_names, segmentation=None, database=database) \
@@ -189,8 +192,8 @@ def import_history_version_4(database, user, filelist):
         .values_list('audio_file__name', 'id')
     }
 
-    segmentation_ids = frozenset(song_name_to_segmentation_id.values())
-    song_names = frozenset(song_name_to_segmentation_id.keys())
+    segmentation_ids = frozenset(list(song_name_to_segmentation_id.values()))
+    song_names = frozenset(list(song_name_to_segmentation_id.keys()))
 
     existing_segments = Segment.objects \
         .filter(segmentation__audio_file__name__in=song_names, segmentation__audio_file__database=database) \
