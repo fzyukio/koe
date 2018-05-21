@@ -1,156 +1,192 @@
 /* eslint consistent-this: off, no-console: off */
+import {spectToUri} from './visual-utils';
+
 const FFT = require('fft.js');
 import d3 from './d3-importer';
-import {stopAudio, queryAndPlayAudio} from './audio-handler';
-import {defaultCm} from './colour-map';
 
-import {getUrl, getCache, calcSegments, setCache, uuid4, debug, noop} from './utils';
+import {stopAudio, playAudioDataArray} from './audio-handler';
+
+import {getCache, calcSegments, setCache, uuid4, debug, noop} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
 
 const nfft = 256;
-const noverlap = nfft * 3 / 4;
+const noverlap = 0;
 
-// (200ms per tick)
-const tickInterval = 200;
-const globalMinSpectPixel = -139;
-const globalMaxSpectPixel = 43;
-const {rPixelValues, gPixelValues, bPixelValues} = defaultCm;
+// (400ms per tick)
+const tickInterval = 400;
 const standardLength = 0.3 * 48000;
 
 
-/**
- * Converts segment of a signal into spectrogram and displays it.
- * Keep in mind that the spectrogram's SVG contaims multiple images next to each other.
- * This function should be called multiple times to generate the full spectrogram
- * @param imgHeight
- * @param sig full audio signal
- * @param segs the segment indices to be turned into spectrogram
- * @param fft
- * @param contrast
- */
-function displaySpectrogram(imgHeight, sig, segs, fft, contrast) {
-    let subImgWidth = segs.length;
-    return new Promise(function (resolve) {
-        let img = new Image();
-        let cacheKey = `${segs[0][0]} -- ${segs[segs.length - 1][1]}`;
-        img.onload = function () {
-            let spect = getCache('spect', cacheKey);
-            if (spect === undefined) {
-                spect = transposeFlipUD(calcSpect(sig, segs, fft));
-                setCache('spect', cacheKey, spect);
-            }
-            let canvas = document.createElement('canvas');
-            let context = canvas.getContext('2d');
-            let imgData = context.createImageData(subImgWidth, imgHeight);
-
-            canvas.height = imgHeight;
-            canvas.width = subImgWidth;
-
-            spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
-            context.putImageData(imgData, 0, 0);
-            resolve(canvas.toDataURL('image/webp', 1));
-        };
-
-        // This data URI is a dummy one, use it to trigger onload()
-        img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
-    });
-}
-
-
-/**
- * Convert a given a spectrogram (power spectral density 2D array), put it on the canvas
- * @param spect a 2D FloatArray
- * @param imgData the imageData of the canvas to be written to
- * @param dspMin
- * @param dspMax
- * @param contrast
- */
-const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
-
-    /*
-     * Some checking: spect and canvas must have the same size
-     */
-    let height = spect.length;
-    let width = spect[0].length;
-
-    if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
-
-    const colouredInterval = 64;
-    const nIntervals = colouredInterval + contrast - 1;
-
-    const dspBinValue = (dspMax - dspMin) / (nIntervals - 1);
-    const round = Math.round;
-
-    const spectrumFlatened = spect.reduce(function (p, c) {
-        return p.concat(c);
-    });
-
-    // fill imgData with colors from array
-    let i,
-        k = 0,
-        psd, colourMapIndex;
-    for (i = 0; i < spectrumFlatened.length; i++) {
-        psd = spectrumFlatened[i];
-        if (isNaN(psd)) {
-            colourMapIndex = 0;
-        }
-        else {
-            colourMapIndex = round(Math.max(0, psd - dspMin) / dspBinValue) - contrast;
-            if (colourMapIndex < 0) colourMapIndex = 0;
-        }
-        imgData.data[k++] = rPixelValues[colourMapIndex];
-        imgData.data[k++] = gPixelValues[colourMapIndex];
-        imgData.data[k++] = bPixelValues[colourMapIndex];
-
-        // Alpha channel
-        imgData.data[k++] = 255;
-    }
-};
-
 // Grab the head of the promise chain for cancellation purpose
 let visualisationPromiseChainHead;
+const visualisationContainer = $('#track-visualisation');
+let imagesAreInitialised = false;
+let currentImageIndex = 0;
+const spectRenderingStatus = {};
 
-export const visualiseSpectrogram = function (spectrogramSpects, spectHeight, spectWidth, imgHeight, imgWidth, sig, contrast, _noverlap = noverlap) {
-    let segs = calcSegments(sig.length, nfft, _noverlap);
-    let chunks = calcSegments(segs.length, spectWidth, 0, true);
-    let fft = new FFT(nfft);
-
-    chunks.forEach(function (chunk) {
-        if (spectrogramSpects.select(`image.offset${chunk[0]}`).empty()) {
-            spectrogramSpects.append('image').attr('class', `offset${chunk[0]}`);
-        }
-    });
-
-    // Cancel all pending visualisation promises
-    if (visualisationPromiseChainHead) {
-        visualisationPromiseChainHead.cancel();
-    }
-
-    visualisationPromiseChainHead = chunks.reduce(function (promiseChain, chunk, index) {
-        let segBeg = chunk[0];
-        let segEnd = chunk[1];
-        let subSegs = segs.slice(segBeg, segEnd);
-        let subImgWidth = subSegs.length;
-
-        return promiseChain.then(function () {
-            return displaySpectrogram(imgHeight, sig, subSegs, fft, contrast);
-        }).then(function (dataURI) {
-            debug(`Displaying chunk: ${index}`);
-            if (index == chunks.length - 1) {
-                debug('end');
-            }
-            let img = spectrogramSpects.select(`image.offset${segBeg}`);
-            img.attr('height', imgHeight);
-            img.attr('width', subImgWidth);
-            img.attr('x', segBeg);
-            img.attr('xlink:href', dataURI);
-            img.style('transform', `scaleY(${spectHeight / imgHeight})`);
-        });
-    }, Promise.resolve());
-};
-
+const stateEmpty = 0;
+const stateScheduled = 1;
+const stateBeforeCalculation = 2;
+const stateCalculated = 3;
+const stateBeforeDisplaying = 4;
+const stateDisplayed = 5;
 
 export const Visualise = function () {
+    this.visualiseSpectrogram = function (sig, _noverlap = noverlap) {
+        const viz = this;
+        const segs = calcSegments(sig.length, nfft, _noverlap);
+        const chunks = calcSegments(segs.length, viz.spectWidth, 0, true);
+        const lastChunkIdx = chunks.length - 1;
+        const fft = new FFT(nfft);
+        const visibleWidth = visualisationContainer.width();
+        const numberOfImages = Math.floor(visibleWidth / viz.spectWidth) * 10;
+
+        const displayAsPromises = function (centerIdx) {
+            let start = Math.max(0, centerIdx - numberOfImages);
+            let end = Math.min(lastChunkIdx, centerIdx + numberOfImages);
+
+            let sliced = [];
+            for (let i = start; i <= end; i++) {
+                let segBeg = chunks[i][0];
+                let renderStatus = spectRenderingStatus[segBeg];
+
+                if (renderStatus.state !== stateDisplayed || renderStatus.contrast === viz.contrast) {
+                    renderStatus.contrast = viz.contrast;
+                    renderStatus.state = stateScheduled;
+                    sliced.push(chunks[i]);
+                }
+            }
+
+            let toDelete = [];
+            let needCancelled = false;
+            for (let i = 0; i <= lastChunkIdx; i++) {
+                if (i < start || i > end) {
+                    let segBeg = chunks[i][0];
+                    let renderStatus = spectRenderingStatus[segBeg];
+
+                    if (renderStatus.state !== stateEmpty) {
+                        renderStatus.spect = null;
+                        toDelete.push(chunks[i]);
+                        let state = renderStatus.state;
+                        if (state === stateScheduled ||
+                            state === stateBeforeCalculation ||
+                            state === stateBeforeDisplaying) {
+                            needCancelled = true;
+                        }
+                        renderStatus.state = stateEmpty;
+                    }
+                }
+            }
+
+            if (needCancelled && visualisationPromiseChainHead !== undefined) {
+                visualisationPromiseChainHead.cancel();
+                visualisationPromiseChainHead = undefined;
+            }
+
+            // If there are spects to be deleted, but they have not been rendered because the promise chain
+            // is still running - then we must cancel the promise chain
+            let deletePromises = toDelete.reduce(function (promiseChain, chunk) {
+                let segBeg = chunk[0];
+                let renderStatus = spectRenderingStatus[segBeg];
+                return promiseChain.
+                    then(function () {
+                        renderStatus.state = stateEmpty;
+                        debug(`Delete chunk: ${segBeg}`);
+                        let img = viz.spectrogramSpects.select(`image[x="${segBeg}"]`);
+                        img.attr('xlink:href', undefined);
+                    });
+            }, Promise.resolve());
+
+
+            return sliced.reduce(function (promiseChain, chunk) {
+                let segBeg = chunk[0];
+                let segEnd = chunk[1];
+                let subSegs = segs.slice(segBeg, segEnd);
+                let renderStatus = spectRenderingStatus[segBeg];
+
+                if (renderStatus.state === stateCalculated) {
+                    return promiseChain;
+                }
+
+                return promiseChain.
+                    then(function () {
+                        let spect = renderStatus.spect;
+                        if (spect === null) {
+                            debug(`Calculate chunk: ${segBeg}`);
+                            renderStatus.state = stateBeforeCalculation;
+                            spect = transposeFlipUD(calcSpect(sig, subSegs, fft));
+                            renderStatus.spect = spect;
+                            renderStatus.state = stateCalculated;
+                            return spect;
+                        }
+                        return undefined;
+                    }).
+                    then(function (spect) {
+                        if (spect) {
+                            renderStatus.state = stateBeforeDisplaying;
+                            return spectToUri(spect, viz.imgHeight, subSegs.length, viz.contrast);
+                        }
+                        return undefined;
+                    }).
+                    then(function (dataURI) {
+                        if (dataURI) {
+                            renderStatus.state = stateDisplayed;
+                            let img = viz.spectrogramSpects.select(`image[x="${segBeg}"]`);
+                            img.attr('xlink:href', dataURI);
+                        }
+                    });
+            }, deletePromises);
+        };
+
+        if (!imagesAreInitialised) {
+            chunks.forEach(function (chunk) {
+                let segBeg = chunk[0];
+                let segEnd = chunk[1];
+                let subImgWidth = segEnd - segBeg;
+
+                viz.spectrogramSpects.append('image').
+                    attr('id', `spect-${segBeg}`).
+                    attr('height', viz.imgHeight).
+                    attr('width', subImgWidth).
+                    attr('x', segBeg).
+                    style('transform', `scaleY(${viz.spectHeight / viz.imgHeight})`);
+
+                spectRenderingStatus[segBeg] = {
+                    state: stateEmpty,
+                    contrast: null,
+                    spect: null
+                }
+            });
+
+            setCache('spectRenderingStatus', undefined, spectRenderingStatus);
+
+            visualisationContainer.scroll(function () {
+                let cursorPosition = visualisationContainer.scrollLeft();
+                let imageStartIndex = Math.floor(cursorPosition / viz.spectWidth);
+
+                if (imageStartIndex !== currentImageIndex) {
+                    currentImageIndex = imageStartIndex;
+                    if (visualisationPromiseChainHead) {
+                        visualisationPromiseChainHead.then(displayAsPromises(currentImageIndex));
+                    }
+                    else {
+                        visualisationPromiseChainHead = displayAsPromises(currentImageIndex);
+                    }
+                }
+            });
+
+            imagesAreInitialised = true;
+        }
+
+        if (visualisationPromiseChainHead) {
+            visualisationPromiseChainHead.then(displayAsPromises(currentImageIndex));
+        }
+        else {
+            visualisationPromiseChainHead = displayAsPromises(currentImageIndex);
+        }
+    };
+
+
     this.init = function (oscillogramId, spectrogramId) {
         const viz = this;
         // Handlers of the D3JS objects
@@ -168,6 +204,7 @@ export const Visualise = function () {
         viz.spectrogramId = spectrogramId;
         viz.oscillogramId = oscillogramId;
         viz.spectBrush = null;
+        viz.contrast = 0;
 
         /**
          * All events of the file browser will be broadcast via this mock element
@@ -230,6 +267,8 @@ export const Visualise = function () {
                         id: newId,
                         start,
                         end,
+                        duration: end - start,
+                        name: uuid4()
                     };
                     syllables[newId] = newSyllable;
 
@@ -246,6 +285,8 @@ export const Visualise = function () {
                 else {
                     syllables[sylIdx].start = start;
                     syllables[sylIdx].end = end;
+                    syllables[sylIdx].duration = end - start;
+                    syllables[sylIdx].progress = 'Changed';
 
                     viz.eventNotifier.trigger('segment-changed', {
                         type: 'segment-adjusted',
@@ -264,113 +305,11 @@ export const Visualise = function () {
 
     };
 
-    this.zoomInSyllable = function (item, sig, contrast) {
-        const viz = this;
-
-        let fileLength = getCache('file-length');
-        let fileFs = getCache('file-fs');
-        let durationMs = fileLength * 1000 / fileFs;
-        let itemStartMs = item.start;
-        let itemEndMs = item.end;
-        let itemDurationMs = itemEndMs - itemStartMs;
-
-
-        let sigStart = Math.ceil(itemStartMs / durationMs * sig.length);
-        let sigEnd = Math.floor(itemEndMs / durationMs * sig.length);
-        let subSig = sig.subarray(sigStart, sigEnd);
-
-        viz.showZoomedOscillogram(subSig, fileFs);
-
-        let _nfft = nfft;
-        let _noverlap = _nfft * 7 / 8;
-        let fft = new FFT(nfft);
-
-        let segs = calcSegments(subSig.length, _nfft, _noverlap);
-        let imgWidth = segs.length;
-        let imgHeight = _nfft / 2;
-
-        let spectZoomSvg = d3.select('#spectrogram-zoomed');
-        spectZoomSvg.selectAll('g').remove();
-
-        let spectWidth = $('#spectrogram-zoomed').width() - viz.margin.left - viz.margin.right;
-        let spectHeight = $('#spectrogram-zoomed').height() - viz.margin.top - viz.scrollbarHeight - viz.axisHeight;
-
-        spectWidth = Math.round(spectWidth);
-        spectHeight = Math.round(spectHeight);
-
-        spectZoomSvg.attr('height', spectHeight + viz.margin.top + viz.margin.bottom);
-        spectZoomSvg.attr('width', spectWidth + viz.margin.left + viz.margin.right);
-
-        /*
-         * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
-         */
-        let spectXExtent = [itemStartMs, itemEndMs];
-        let spectXScale = d3.scaleLinear().range([0, spectWidth]).domain(spectXExtent);
-        let numTicks = itemDurationMs / tickInterval * 3;
-        let xAxis = d3.axisBottom().scale(spectXScale).ticks(numTicks);
-
-        let spectrogramSpects = spectZoomSvg.append('g').classed('spects', true);
-
-        let spectrogramAxis = spectZoomSvg.append('g');
-        spectrogramAxis.attr('class', 'x axis');
-        spectrogramAxis.attr('transform', 'translate(0,' + spectHeight + ')');
-        spectrogramAxis.call(xAxis);
-
-        let promise = displaySpectrogram(imgHeight, subSig, segs, fft, contrast);
-        let subImgWidth = segs.length;
-        promise.then(function (dataURI) {
-            let img = spectrogramSpects.append('image');
-            img.attr('height', imgHeight);
-            img.attr('width', subImgWidth);
-            img.attr('x', 0);
-            img.attr('xlink:href', dataURI);
-            img.style('transform', `scale(${spectWidth / imgWidth}, ${spectHeight / imgHeight})`);
-        });
-    };
-
-    this.showZoomedOscillogram = function (sig, fs) {
-        let viz = this;
-        let length = sig.length;
-        let data = [];
-        let minY = 99999;
-        let maxY = -99999;
-        let y;
-        for (let i = 0; i < length; i++) {
-            y = sig[i];
-            data.push({
-                x: i / fs,
-                y
-            });
-            if (minY > y) minY = y;
-            if (maxY < y) maxY = y;
-        }
-
-        let elId = viz.oscillogramId + '-zoomed';
-
-        let oscilloWidth = $(elId).width() - viz.margin.left - viz.margin.right;
-        let oscilloHeight = $(elId).height() - viz.margin.top;
-
-        let oscillogramSvg = d3.select(elId);
-        oscillogramSvg.attr('width', oscilloWidth);
-        oscillogramSvg.attr('height', oscilloHeight);
-
-        let xScale = d3.scaleLinear().range([0, oscilloWidth]).domain([0, length / fs]);
-        let yScale = d3.scaleLinear().domain([minY, maxY]).nice().range([oscilloHeight, 0]);
-
-        let plotLine = d3.line().x(function (d) {
-            return xScale(d.x);
-        }).y(function (d) {
-            return yScale(d.y);
-        });
-        oscillogramSvg.selectAll('path').remove();
-        oscillogramSvg.append('path').attr('class', 'line').attr('d', plotLine(data));
-    };
-
     this.showOscillogram = function (sig, fs) {
         let viz = this;
         let length = sig.length;
         let data = [];
-        let resampleFactor = Math.max(1, Math.min(80, Math.round(length / standardLength)));
+        let resampleFactor = Math.max(1, Math.min(1000, Math.round(length / standardLength)));
         debug(`resampleFactor = ${resampleFactor}`);
         let minY = 99999;
         let maxY = -99999;
@@ -406,6 +345,21 @@ export const Visualise = function () {
 
     this.visualise = function (sig, fs) {
         const viz = this;
+        viz.originalSig = sig;
+        viz.originalFs = fs;
+
+        // let sigLength = sig.length;
+        // let dsFactor = 2;
+        // let dsLength = sigLength / dsFactor;
+        // let dsFs = fs / dsFactor;
+        // let dsSig = new sig.constructor(dsLength);
+
+        // let i = 0,
+        //     j = 0;
+        // for (; i < dsLength;) {
+        //     dsSig[i++] = sig[j += dsFactor];
+        // }
+
         viz.margin = {
             top: 0,
             right: 0,
@@ -422,9 +376,8 @@ export const Visualise = function () {
         let segs = calcSegments(sig.length, nfft, noverlap);
         let imgWidth = segs.length;
         let imgHeight = nfft / 2;
-        let fileLength = getCache('file-length');
-        let fileFs = fs || getCache('file-fs');
-        let durationMs = fileLength * 1000 / fileFs;
+        let fileLength = sig.length;
+        let durationMs = fileLength * 1000 / fs;
 
         let spectXExtent = [0, durationMs];
         viz.spectXScale = d3.scaleLinear().range([0, imgWidth]).domain(spectXExtent);
@@ -438,7 +391,7 @@ export const Visualise = function () {
         viz.spectWidth = Math.round(viz.spectWidth);
         viz.spectWidth = Math.round(viz.spectWidth);
 
-        viz.showOscillogram(sig, fileFs);
+        viz.showOscillogram(sig, fs);
 
         viz.spectrogramSvg = d3.select(viz.spectrogramId);
         viz.spectrogramSvg.attr('height', viz.spectHeight + viz.margin.top + viz.margin.bottom);
@@ -461,27 +414,13 @@ export const Visualise = function () {
         viz.spectrogramSpects = viz.spectrogramSvg.append('g').classed('spects', true);
 
 
-        viz.spectrogramSvg.append('line').attr('class', 'playback-indicator').
-            attr('x1', 0).attr('y1', 0).
-            attr('x2', 1).
-            attr('y2', viz.spectHeight).
-            style('stroke-width', 2).
-            style('stroke', 'black').
-            style('fill', 'none').
-            style('display', 'none');
+        viz.spectrogramSvg.append('line').attr('class', 'playback-indicator').attr('x1', 0).attr('y1', 0).attr('x2', 1).attr('y2', viz.spectHeight).style('stroke-width', 2).style('stroke', 'black').style('fill', 'none').style('display', 'none');
 
-        viz.oscillogramSvg.append('line').attr('class', 'playback-indicator').
-            attr('x1', 0).attr('y1', 0).
-            attr('x2', 1).
-            attr('y2', viz.oscilloHeight).
-            style('stroke-width', 2).
-            style('stroke', 'black').
-            style('fill', 'none').
-            style('display', 'none');
+        viz.oscillogramSvg.append('line').attr('class', 'playback-indicator').attr('x1', 0).attr('y1', 0).attr('x2', 1).attr('y2', viz.oscilloHeight).style('stroke-width', 2).style('stroke', 'black').style('fill', 'none').style('display', 'none');
 
         viz.playbackIndicator = d3.selectAll('.playback-indicator');
 
-        visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig);
+        viz.visualiseSpectrogram(sig);
 
         viz.drawBrush()
     };
@@ -509,8 +448,6 @@ export const Visualise = function () {
      */
     this.playAudio = function (begin = 0, end = 'end', onStartCallback = noop, stopScrolling = noop) {
         let viz = this;
-        let fileId = getCache('file-id');
-
         let startX = viz.spectXScale(begin);
         if (end === 'end') {
             end = viz.spectXScale.domain()[1];
@@ -520,34 +457,29 @@ export const Visualise = function () {
         let endSec = end / 1000;
         let durationMs = end - begin;
 
-        let args = {
-            url: getUrl('send-request', 'koe/get-file-audio-data'),
-            postData: {'file-id': fileId},
-            cacheKey: fileId,
-            playAudioArgs: {
-                beginSec: begin / 1000,
-                endSec,
-                onStartCallback (playbackSpeed) {
-                    let durationAtSpeed = durationMs * 100 / playbackSpeed;
+        let playAudioArgs = {
+            beginSec: begin / 1000,
+            endSec,
+            onStartCallback(playbackSpeed) {
+                let durationAtSpeed = durationMs * 100 / playbackSpeed;
 
-                    viz.playbackIndicator.interrupt();
-                    viz.playbackIndicator.style('display', 'unset').attr('transform', `translate(${startX}, 0)`);
+                viz.playbackIndicator.interrupt();
+                viz.playbackIndicator.style('display', 'unset').attr('transform', `translate(${startX}, 0)`);
 
-                    let transition = viz.playbackIndicator.transition();
-                    transition.attr('transform', `translate(${endX}, 0)`);
-                    transition.duration(durationAtSpeed);
-                    transition.ease(d3.easeLinear);
+                let transition = viz.playbackIndicator.transition();
+                transition.attr('transform', `translate(${endX}, 0)`);
+                transition.duration(durationAtSpeed);
+                transition.ease(d3.easeLinear);
 
-                    onStartCallback(startX, endX, durationAtSpeed);
-                },
-                onEndedCallback () {
-                    viz.playbackIndicator.interrupt();
-                    viz.playbackIndicator.style('display', 'none');
-                    stopScrolling();
-                }
+                onStartCallback(startX, endX, durationAtSpeed);
+            },
+            onEndedCallback() {
+                viz.playbackIndicator.interrupt();
+                viz.playbackIndicator.style('display', 'none');
+                stopScrolling();
             }
         };
-        queryAndPlayAudio(args);
+        playAudioDataArray(viz.originalSig, viz.originalFs, playAudioArgs);
     };
 
     /**

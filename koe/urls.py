@@ -30,6 +30,9 @@ urlpatterns += [
     url(r'^exemplars/(?P<class>[0-9a-z-_]+)/$', login_required(views.ExemplarsView.as_view()), name='exemplars'),
     url(r'^exemplars/(?P<class>[0-9a-z-_]+)/(?P<from_user>[0-9a-z-_]+)/$',
         login_required(views.ExemplarsView.as_view()), name='exemplars'),
+    url(r'^song-partition/$', login_required(views.SongPartitionView.as_view()), name='song-partition'),
+    url(r'^song-partition/(?P<track_id>[0-9a-z-_]+)/$', login_required(views.SongPartitionView.as_view()),
+        name='song-partition'),
     re_path(r'^cms/', include(wagtailadmin_urls)),
     re_path(r'^documents/', include(wagtaildocs_urls)),
     re_path(r'', include(wagtail_urls))

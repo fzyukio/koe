@@ -3,6 +3,7 @@ import datetime
 import io
 import json
 import os
+from django.conf import settings
 from shutil import copyfile
 
 from django.db import transaction, IntegrityError
@@ -64,7 +65,7 @@ def import_audio_metadata(request):
         track_name = row['track']
         date = None
         if date_str:
-            date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            date = datetime.datetime.strptime(date_str, settings.DATE_INPUT_FORMAT).date()
 
         species_key = (genus, species_code)
         if species_key in existing_species:

@@ -13,7 +13,7 @@ from root.models import ExtraAttr, ExtraAttrValue, ValueTypes
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
-           'bulk_get_history_entries']
+           'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording']
 
 
 def bulk_get_segment_info(segs, extras):
@@ -470,3 +470,7 @@ def bulk_get_history_entries(hes, extras):
         rows.append(row)
 
     return ids, rows
+
+
+def bulk_get_audio_file_for_raw_recording(audio_files, extras):
+    return [], []

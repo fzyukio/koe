@@ -3,6 +3,7 @@ import string
 import uuid
 
 import six
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db import utils
@@ -204,7 +205,7 @@ value_getter = {
     ValueTypes.INTEGER: lambda s: int(s),
     ValueTypes.FLOAT: lambda s: float(s),
     ValueTypes.BOOLEAN: lambda s: bool(s),
-    ValueTypes.DATE: lambda s: datetime.datetime.utcfromtimestamp(int(s)).strftime('%Y-%m-%d')
+    ValueTypes.DATE: lambda s: datetime.datetime.utcfromtimestamp(int(s)).strftime(settings.DATE_INPUT_FORMAT)
 }
 
 value_setter = {
@@ -213,7 +214,7 @@ value_setter = {
     ValueTypes.INTEGER: lambda v: str(v),
     ValueTypes.FLOAT: lambda v: str(v),
     ValueTypes.BOOLEAN: lambda v: str(v),
-    ValueTypes.DATE: lambda v: str(utils.datetime2timestamp(v, '%Y-%m-%d')),
+    ValueTypes.DATE: lambda v: str(utils.datetime2timestamp(v, settings.DATE_INPUT_FORMAT)),
 }
 
 

@@ -295,6 +295,9 @@ $(document).ready(function () {
     else if (pageName === '/version/') {
         page = require('version-page');
     }
+    else if (pageName.startsWith('/song-partition/')) {
+        page = require('song-partition-page');
+    }
     else if (pageName.startsWith('/syllables/')) {
         page = require('syllables-page');
     }

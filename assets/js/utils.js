@@ -51,7 +51,7 @@ export const debug = function (str) {
         let where = stack.split('\n')[2];
 
         // eslint-disable-next-line
-        console.log(`${str}\n${where}`);
+        console.log(`${str}`);
     }
 };
 
@@ -194,16 +194,24 @@ export const setCache = function (cache, key, value) {
     if (key) {
         let _cache = window.appCache[cache];
         if (_cache) {
-            _cache[key] = value;
+            if (value) {
+                _cache[key] = value;
+            }
+            else {
+                delete _cache[key];
+            }
         }
-        else {
+        else if (value) {
             _cache = {};
             _cache[key] = value;
             window.appCache[cache] = _cache;
         }
     }
-    else {
+    else if (value) {
         window.appCache[cache] = value;
+    }
+    else {
+        delete window.appCache[cache];
     }
 };
 
@@ -683,31 +691,31 @@ const filterFunctions = {
 
 
 const arithmeticOperator = {
-    '<' (x) {
+    '<'(x) {
         return x < this.filterValue;
     },
-    '<=' (x) {
+    '<='(x) {
         return x <= this.filterValue;
     },
-    '=' (x) {
+    '='(x) {
         return x == this.filterValue;
     },
-    '==' (x) {
+    '=='(x) {
         return x == this.filterValue;
     },
-    '>' (x) {
+    '>'(x) {
         return x > this.filterValue;
     },
-    '>=' (x) {
+    '>='(x) {
         return x >= this.filterValue;
     },
-    '..' (x) {
+    '..'(x) {
         return x > this.lower && x < this.upper;
     },
-    '++' (x) {
+    '++'(x) {
         return x >= this.lower && x <= this.upper;
     },
-    'in' (x) {
+    'in'(x) {
         return this.array.indexOf(x) != -1
     },
 };
@@ -1658,6 +1666,7 @@ export const uuid4 = function () {
 
     return id.join('');
 };
+
 /* eslint-enable no-bitwise */
 
 

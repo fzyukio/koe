@@ -146,7 +146,7 @@ export const visualiseSong = function (callback) {
         endSecond: null
     };
     queryAndHandleAudio(args, function (sig) {
-        viz.visualise(fileId, sig);
+        viz.visualise(sig);
         callback();
     });
 };

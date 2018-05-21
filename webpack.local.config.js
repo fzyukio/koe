@@ -9,7 +9,7 @@ const yaml = require('yamljs');
 const settings = yaml.load('settings.yaml');
 const port = settings.environment_variables.WEBPACK_SERVER_PORT;
 
-baseConfig[1].devtool = '#source-map';
+// baseConfig[1].devtool = '#source-map';
 baseConfig[1].entry = [
     'webpack-dev-server/client?http://localhost:' + port,
     'webpack/hot/only-dev-server',

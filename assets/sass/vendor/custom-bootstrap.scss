@@ -96,3 +96,39 @@ $color_celeste_approx: #ccc;
     opacity: 1;
   }
 }
+
+/* make sure input-group goes 100% i.e. full width of screen
+   to compliment the display: inline-table; that showed up in 3.2.0 */
+.input-group {
+  width: 100%;
+}
+
+/* override width: auto; that showed up in 3.2.0
+   with at least 1px for the addon or btn (I had an addon) */
+.input-group .input-group-addon,
+.input-group .input-group-btn {
+  width: 1px;
+}
+
+/* separate .form-control and give it width: 100%; */
+.input-group .form-control {
+  width: 100%;
+}
+
+/* make sure navbar-form's input-group goes 100% i.e. full width of screen
+   to compliment the display: inline-table; that showed up in 3.2.0 */
+.navbar-form .input-group {
+  width: 100%;
+}
+
+/* override width: auto; that showed up in 3.2.0
+   with at least 1px for the addon or btn (I had an addon) */
+.navbar-form .input-group .input-group-addon,
+.navbar-form .input-group .input-group-btn {
+  width: 1px;
+}
+
+/* separate .form-control and give it width: 100%; */
+.navbar-form .input-group .form-control {
+  width: 100%;
+}

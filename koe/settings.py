@@ -198,9 +198,9 @@ def JSONEncoder_newdefault(self, obj):
     :return: the JSONified string
     """
     if isinstance(obj, datetime.datetime):
-        return obj.strftime('%Y-%m-%d %H:%M:%S %z%Z')
+        return obj.strftime(TIME_INPUT_FORMAT)
     elif isinstance(obj, datetime.date):
-        return obj.strftime('%Y-%m-%d')
+        return obj.strftime(DATE_INPUT_FORMAT)
     return JSONEncoder_olddefault(self, obj)
 
 
@@ -212,6 +212,8 @@ TZ_DETECT_COUNTRIES = ('NZ', 'AU', 'GB', 'US', 'CA', 'CN', 'JP', 'FR', 'DE')
 
 CSRF_TRUSTED_ORIGINS = envconf['csrf_trusted_origin']
 
+DATE_INPUT_FORMAT = '%Y-%m-%d'
+TIME_INPUT_FORMAT = '%Y-%m-%d %H:%M:%S %z%Z'
 
 # For local run:
 if DEBUG:

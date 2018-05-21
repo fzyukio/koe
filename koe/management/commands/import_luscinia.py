@@ -137,7 +137,7 @@ def import_song_info(conn, user):
                 song_note = song['call_context']
                 individual_name = song['iname']
 
-                track_name = '{}_{}_{}'.format(location, date.strftime('%Y-%m-%d'), track_id)
+                track_name = '{}_{}_{}'.format(location, date.strftime(settings.DATE_INPUT_FORMAT), track_id)
 
                 track, _ = AudioTrack.objects.get_or_create(name=track_name, date=date)
 

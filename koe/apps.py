@@ -13,14 +13,19 @@ def get_builtin_attrs():
     :return: None
     """
     from root.models import ExtraAttr, ValueTypes, User
+    from koe.models import AudioFile
 
     current_database_attr, _ = ExtraAttr.objects.get_or_create(
         klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
     current_similarity_attr, _ = ExtraAttr.objects.get_or_create(
         klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
 
+    note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
+    type_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='type', type=ValueTypes.SHORT_TEXT)
+
     settings.ATTRS = DotMap(
-        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr)
+        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr),
+        audio_file=DotMap(note=note_attr, type=type_attr)
     )
 
 

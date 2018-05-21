@@ -82,6 +82,7 @@ export const handleResponse = function ({response, msgGen = noop, isSuccess = tr
 
 /**
  *
+ * @param url the direct URL to send request. If left empty, requestSlug will be used
  * @param requestSlug second part of a send-request/ url
  * @param data data
  * @param msgGen function to generate notification message
@@ -89,28 +90,40 @@ export const handleResponse = function ({response, msgGen = noop, isSuccess = tr
  * @param ajaxArgs extra arguments for the AJAX call
  * @param onSuccess callback when success
  * @param onFailure callback when failure
+ * @param onProgress callback when progress changes
  * @param immediate whether or not to call callback right after showing the notification
  * @param noSpinner if true, don't show the spinner during AJAX loads
  */
 const ajaxRequest = function ({
-    requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = noop,
-    onFailure = noop, immediate = false, noSpinner = false
+    url, requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = noop, onFailure = noop,
+    onProgress = noop, immediate = false, noSpinner = false
 }) {
 
-    ajaxArgs.url = getUrl('send-request', requestSlug);
+    if (url) {
+        ajaxArgs.url = url;
+    }
+    else {
+        ajaxArgs.url = getUrl('send-request', requestSlug);
+    }
     ajaxArgs.type = type;
     ajaxArgs.data = data;
+
+    if (data instanceof FormData) {
+        ajaxArgs.processData = false;
+        ajaxArgs.contentType = false;
+    }
+
     ajaxArgs.beforeSend = function () {
         if (!noSpinner) {
             body.addClass('loading');
         }
-        body.css("cursor", "progress");
+        body.css('cursor', 'progress');
     };
     ajaxArgs.success = function (response) {
         if (!noSpinner) {
             body.removeClass('loading');
         }
-        body.css("cursor", "default");
+        body.css('cursor', 'default');
         handleResponse({
             response,
             msgGen,
@@ -123,7 +136,7 @@ const ajaxRequest = function ({
         if (!noSpinner) {
             body.removeClass('loading');
         }
-        body.css("cursor", "default");
+        body.css('cursor', 'default');
         handleResponse({
             response: response.responseText,
             msgGen,
@@ -131,6 +144,14 @@ const ajaxRequest = function ({
             callback: onFailure,
             immediate
         })
+    };
+
+    ajaxArgs.xhr = function () {
+        let myXhr = $.ajaxSettings.xhr();
+        if (myXhr.upload) {
+            myXhr.upload.addEventListener('progress', onProgress, false);
+        }
+        return myXhr;
     };
 
     $.ajax(ajaxArgs);

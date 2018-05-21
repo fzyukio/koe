@@ -1,0 +1,99 @@
+@import "../variables";
+
+$scrollbar-height: 15px;
+$axis-height: 18.6px;
+$gap-between-svgs: 8px;
+
+.controller-item {
+  padding-top: 10px;
+  display: inline-block;
+
+  & > div {
+    height: $controller-wrapper-child-height;
+    line-height: $controller-wrapper-child-height;
+  }
+}
+
+#track-visualisation {
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
+  overflow-y: hidden;
+  overflow-x: visible;
+
+  #oscillogram {
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 1 / 14);
+    overflow-y: hidden;
+  }
+
+  #spectrogram {
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
+    overflow-y: hidden;
+
+    .brush-handle {
+      fill: #eee;
+      stroke: #666;
+    }
+
+    .syllable {
+      stroke: black;
+      stroke-dasharray: 1, 1;
+      fill: black;
+      fill-opacity: 0.2;
+      &:hover, &.highlight {
+        stroke: rgb(255, 101, 4);
+        stroke-width: 2px;
+        fill: transparent;
+      }
+    }
+
+    .brush .selection {
+      stroke: #000;
+      fill-opacity: .125;
+      shape-rendering: crispEdges;
+    }
+  }
+}
+
+#song-partition-grid {
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
+}
+
+.slider-group {
+  width: 100%;
+
+  .slider-selection {
+    background: #d9230f7a;
+  }
+}
+
+.slider.slider-horizontal {
+  width: 100%;
+}
+
+
+#track-info {
+  padding-top: 15px;
+
+  label {
+    margin-bottom: 0;
+  }
+
+  .form-control {
+    padding: 3px 5px !important;
+    border-radius: 0;
+  }
+
+  .input {
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 15px;
+  }
+
+  .errorlist {
+    padding-left: 0;
+
+    li {
+      color: #cf0000;
+      font-size: .8em;
+    }
+  }
+}

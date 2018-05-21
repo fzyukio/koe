@@ -3,14 +3,16 @@ import hashlib
 import numpy as np
 import os
 import pickle
+from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from logging import warning
 
 from koe.utils import base64_to_array, array_to_base64
+from root.exceptions import CustomAssertionError
 from root.models import StandardModel, SimpleModel, User, AutoSetterGetterMixin, IdSafeModel, MagicChoices
-from root.utils import history_path, ensure_parent_folder_exists, pickle_path
+from root.utils import history_path, ensure_parent_folder_exists, pickle_path, wav_path, audio_path
 
 __all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission',
            'DatabaseAssignment', 'AudioFile', 'Segment', 'Segmentation', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
@@ -66,6 +68,9 @@ class Species(StandardModel):
     class Meta:
         unique_together = ['species', 'genus']
 
+    def __str__(self):
+        return '{} {}'.format(self.genus, self.species)
+
 
 class Individual(StandardModel):
     """
@@ -73,7 +78,7 @@ class Individual(StandardModel):
     """
 
     name = models.CharField(max_length=255)
-    gender = models.CharField(max_length=16)
+    gender = models.CharField(max_length=16, null=True, blank=True)
     species = models.ForeignKey(Species, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
@@ -156,8 +161,10 @@ class AudioFile(StandardModel):
     name = models.CharField(max_length=255)
     track = models.ForeignKey(AudioTrack, null=True, blank=True, on_delete=models.SET_NULL)
     individual = models.ForeignKey(Individual, null=True, blank=True, on_delete=models.SET_NULL)
-    quality = models.CharField(max_length=2, null=True, blank=True)
+    quality = models.CharField(max_length=255, null=True, blank=True)
     database = models.ForeignKey(Database, on_delete=models.CASCADE)
+    start = models.IntegerField(null=True, blank=True)
+    end = models.IntegerField(null=True, blank=True)
 
     # To facilitate copying database - when an AudioFile object is copied, another object is created
     # with the same name but different database, and reference this object as its original
@@ -175,6 +182,37 @@ class AudioFile(StandardModel):
         :return: True if it is original
         """
         return self.original is None
+
+    @classmethod
+    def set_individual(cls, objs, name, extras={}):
+        individual, _ = Individual.objects.get_or_create(name=name)
+        AudioFile.objects.filter(id__in=objs).update(individual=individual)
+
+    @classmethod
+    def set_name(cls, objs, name, extras={}):
+        if len(objs) != 1:
+            raise CustomAssertionError('Can\'t set the same name to more than 1 song.')
+        obj = objs[0]
+
+        unique_name = name
+        is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+        postfix = 0
+        while not is_unique:
+            postfix += 1
+            unique_name = '{}({}).wav'.format(name, postfix)
+            is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+
+        new_name_wav = wav_path(unique_name)
+        new_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
+
+        old_name_wav = wav_path(obj.name)
+        old_name_compressed = audio_path(obj.name, settings.AUDIO_COMPRESSED_FORMAT)
+
+        os.rename(old_name_wav, new_name_wav)
+        os.rename(old_name_compressed, new_name_compressed)
+
+        obj.name = name
+        obj.save()
 
 
 class Segment(SimpleModel):

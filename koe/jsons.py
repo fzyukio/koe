@@ -305,6 +305,73 @@ tables = \
                 }
             ]
         },
+        "song-partition-grid": {
+            "class": "koe.AudioFile",
+            "getter": "koe.bulk_get_audio_file_for_raw_recording",
+            "columns": [
+                {
+                    "slug": "_sel",
+                    "editable": False,
+                    "is_addon": True,
+                    "type": "BOOLEAN"
+                },
+                {
+                    "name": "Upload progress",
+                    "slug": "progress",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Start",
+                    "slug": "start",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "End",
+                    "slug": "end",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Duration",
+                    "slug": "duration",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Song name",
+                    "slug": "name",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_attribute": True
+                },
+                {
+                    "name": "Quality",
+                    "slug": "quality",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_attribute": True
+                },
+                {
+                    "name": "Individual",
+                    "slug": "individual",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_attribute": True
+                },
+                {
+                    "name": "Type",
+                    "slug": "type",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True
+                },
+                {
+                    "name": "Note",
+                    "slug": "note",
+                    "type": "LONG_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True
+                }
+            ]
+        },
     }
 
 num_exemplars = 10

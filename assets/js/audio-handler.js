@@ -1,4 +1,5 @@
-import {isNull} from './utils';
+const bufferToWav = require('audiobuffer-to-wav');
+import {isNull, noop} from './utils';
 import {handleResponse, postRequest} from './ajax-handler';
 
 /**
@@ -107,15 +108,29 @@ export const stopAudio = function () {
 
 
 /**
- * Convert audio data to audio bugger and then play
- * @param fullAudioDataArray a Float32Array object
- * @param sampleRate sampling rate
+ * Convert audio data to audio buffer and then play
+ * @param sig a Float32Array object
+ * @param fs sampling rate
  * @param playAudioArgs arguments to provide for playAudio
  */
-const playAudioDataArray = function (fullAudioDataArray, sampleRate, playAudioArgs) {
-    audioBuffer = audioContext.createBuffer(1, fullAudioDataArray.length, sampleRate);
-    audioBuffer.getChannelData(0).set(fullAudioDataArray);
+export const playAudioDataArray = function (sig, fs, playAudioArgs) {
+    audioBuffer = audioContext.createBuffer(1, sig.length, fs);
+    audioBuffer.getChannelData(0).set(sig);
     playAudio(playAudioArgs);
+};
+
+
+/**
+ * Convert Float32Array into audio object
+ * @param sig a Float32Array object
+ * @param fs sampling rate
+ * @return Blob audio blob
+ */
+export const createAudioFromDataArray = function (sig, fs) {
+    audioBuffer = audioContext.createBuffer(1, sig.length, fs);
+    audioBuffer.getChannelData(0).set(sig);
+    let wav = bufferToWav(audioBuffer);
+    return new window.Blob([new DataView(wav)], {type: 'audio/wav'});
 };
 
 
@@ -166,13 +181,13 @@ const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callbac
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
 
-    xhr.onloadstart = function() {
+    xhr.onloadstart = function () {
         body.addClass('loading');
-        body.css("cursor", "progress");
+        body.css('cursor', 'progress');
     };
     xhr.onloadend = function () {
         body.removeClass('loading');
-        body.css("cursor", "default");
+        body.css('cursor', 'default');
     };
 
     // We expect the response to be audio/mp4 when success, and text when failure.
@@ -225,9 +240,11 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
 
         if (fileId) {
             let onSuccess = function (fileUrl) {
-                queryAndHandleAudioGetOrPost({url: fileUrl,
+                queryAndHandleAudioGetOrPost({
+                    url: fileUrl,
                     cacheKey,
-                    callback});
+                    callback
+                });
             };
             postRequest({
                 requestSlug: 'koe/get-audio-file-url',
@@ -263,5 +280,43 @@ export const queryAndPlayAudio = function ({url, postData, cacheKey, playAudioAr
     };
     queryAndHandleAudio(args, function (sig, fs) {
         playAudioDataArray(sig, fs, playAudioArgs);
+    });
+};
+
+/**
+ * Upload an audio file and extract its data for in-browser processing
+ *
+ * @param file a file Blob
+ * @param reader A FileReader instance
+ * @param onProgress callback onprogress
+ * @param onAbort callback onabort
+ * @param onError callback onerror
+ * @param onLoadStart callback onloadstart
+ * @param onLoad callback onload
+ * @return Promise that resolves to {sig, fs}
+ */
+export const loadLocalAudioFile = function ({
+    file, reader = new FileReader(), onProgress = noop, onAbort = noop, onError = noop, onLoadStart = noop,
+    onLoad = noop
+}) {
+    return new Promise(function (resolve) {
+        reader.onload = function (e) {
+            onLoad(e);
+            const arrayBuffer = reader.result;
+            audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
+                let fullAudioDataArray = _audioBuffer.getChannelData(0);
+                let sampleRate = _audioBuffer.sampleRate;
+                resolve({
+                    sig: fullAudioDataArray,
+                    fs: sampleRate
+                });
+            });
+        };
+        reader.onprogress = onProgress;
+        reader.onerror = onError;
+        reader.onabort = onAbort;
+        reader.onloadstart = onLoadStart;
+
+        reader.readAsArrayBuffer(file);
     });
 };
