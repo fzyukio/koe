@@ -160,17 +160,16 @@ const showCreateDatabaseDialog = function (errorMessage) {
         let databaseName = inputText.val();
         inputText.val('');
 
-        $.post(url, {name: databaseName}, function (res) {
-            res = JSON.parse(res);
-            dialogModal.modal('hide');
+        $.post(url, {name: databaseName}).done(function () {
             dialogModal.one('hidden.bs.modal', function () {
-                if (res.success) {
-                    location.reload();
-                }
-                else {
-                    showCreateDatabaseDialog(res.error);
-                }
+                location.reload();
             });
+            dialogModal.modal('hide');
+        }).fail(function (response) {
+            dialogModal.one('hidden.bs.modal', function () {
+                showCreateDatabaseDialog(response.responseText);
+            });
+            dialogModal.modal('hide');
         });
     });
 };
