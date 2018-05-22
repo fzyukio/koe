@@ -129,6 +129,8 @@ def delete_history(request):
 def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None):
     # Match saved extra attr IDs with their current IDs
     extra_attrs = ExtraAttr.objects.values_list('id', 'klass', 'type', 'name')
+    if _extra_attrs is None:
+        _extra_attrs = extra_attrs
     extra_attr_old_id_to_key = {x[0]: (x[1], x[2], x[3]) for x in _extra_attrs}
     extra_attr_key_to_new_id = {(x[1], x[2], x[3]): x[0] for x in extra_attrs}
     extra_attr_old_to_new_id = {}
