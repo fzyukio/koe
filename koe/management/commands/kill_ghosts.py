@@ -1,4 +1,5 @@
 import os
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -48,27 +49,40 @@ class Command(BaseCommand):
             except ValueError:
                 print('Found weird named files: {}/{}'.format(spect_path, existing_spect))
 
-        audio_file_names = frozenset(AudioFile.objects.values_list('name', flat=True))
+        audio_file_names = AudioFile.objects.values_list('name', flat=True)
+        audio_file_names_wav = []
+        audio_file_names_mp4 = []
+        mp4_ext = '.{}'.format(settings.AUDIO_COMPRESSED_FORMAT)
+        for audio_file_name in audio_file_names:
+            if audio_file_name.lower().endswith('.wav'):
+                clean_name = audio_file_name[:-4]
+            else:
+                clean_name = audio_file_name
+            audio_file_names_wav.append(clean_name + '.wav')
+            audio_file_names_mp4.append(clean_name + mp4_ext)
+
+        audio_file_names_wav = frozenset(audio_file_names_wav)
+        audio_file_names_mp4 = frozenset(audio_file_names_mp4)
+
         wav_path = os.path.join(settings.MEDIA_URL, 'audio', 'wav')[1:]
+        mp4_path = os.path.join(settings.MEDIA_URL, 'audio', settings.AUDIO_COMPRESSED_FORMAT)[1:]
         existing_wavs = os.listdir(wav_path)
-        for existing_wav in existing_wavs:
-            if existing_wav not in audio_file_names:
-                filepath = '{}/{}'.format(wav_path, existing_wav)
-                print('File {} is a ghost'.format(filepath))
-                if commit:
-                    os.remove(filepath)
+        existing_mp4s = os.listdir(mp4_path)
 
-        compressed_audio_path = os.path.join(settings.MEDIA_URL, 'audio', settings.AUDIO_COMPRESSED_FORMAT)[1:]
-        existing_compressed_audios = os.listdir(compressed_audio_path)
-        for existing_compressed_audio in existing_compressed_audios:
-            name_no_ext, _ = os.path.splitext(existing_compressed_audio)
-            existing_compressed_audio_as_wav = '{}.wav'.format(name_no_ext)
+        ghost_wavs = [x for x in existing_wavs if x not in audio_file_names_wav]
+        ghost_mp4s = [x for x in existing_mp4s if x not in audio_file_names_mp4]
 
-            if existing_compressed_audio_as_wav not in audio_file_names:
-                filepath = '{}/{}'.format(compressed_audio_path, existing_compressed_audio)
-                print('File {} is a ghost'.format(filepath))
-                if commit:
-                    os.remove(filepath)
+        for wav in ghost_wavs:
+            filepath = '{}/{}'.format(wav_path, wav)
+            print('File {} is a ghost'.format(filepath))
+            if commit:
+                os.remove(filepath)
+
+        for mp4 in ghost_mp4s:
+            filepath = '{}/{}'.format(mp4_path, mp4)
+            print('File {} is a ghost'.format(filepath))
+            if commit:
+                os.remove(filepath)
 
         attr_values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__).exclude(owner_id__in=segment_ids)
         print('Found {} ghost ExtraAttrValue of Segment'.format(attr_values.count()))
