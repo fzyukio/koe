@@ -39,7 +39,6 @@ fixture_list = [
     'koe.individual',
     'koe.audiotrack',
     'koe.audiofile',
-    'koe.segmentation',
     'koe.segment',
     'root.extraattrvalue',
 ]

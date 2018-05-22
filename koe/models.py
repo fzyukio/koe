@@ -11,11 +11,11 @@ from logging import warning
 
 from koe.utils import base64_to_array, array_to_base64
 from root.exceptions import CustomAssertionError
-from root.models import StandardModel, SimpleModel, User, AutoSetterGetterMixin, IdSafeModel, MagicChoices
+from root.models import SimpleModel, User, MagicChoices
 from root.utils import history_path, ensure_parent_folder_exists, pickle_path, wav_path, audio_path
 
-__all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission',
-           'DatabaseAssignment', 'AudioFile', 'Segment', 'Segmentation', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
+__all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
+           'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
 
 
 class NumpyArrayField(models.TextField):
@@ -49,7 +49,7 @@ class NumpyArrayField(models.TextField):
         return array_to_base64(value)
 
 
-class AudioTrack(StandardModel):
+class AudioTrack(SimpleModel):
     """
     A track is a whole raw audio recording containing many songs.
     """
@@ -61,7 +61,7 @@ class AudioTrack(StandardModel):
         return self.name
 
 
-class Species(StandardModel):
+class Species(SimpleModel):
     genus = models.CharField(max_length=32)
     species = models.CharField(max_length=32)
 
@@ -72,7 +72,7 @@ class Species(StandardModel):
         return '{} {}'.format(self.genus, self.species)
 
 
-class Individual(StandardModel):
+class Individual(SimpleModel):
     """
     Represents a bird.
     """
@@ -88,7 +88,7 @@ class Individual(StandardModel):
         unique_together = ['name', 'species']
 
 
-class Database(StandardModel):
+class Database(SimpleModel):
     """
     This works as a separator between different sets of audio files that are not related.
     E.g. a database of bellbirds and a database of dolphin sounds...
@@ -151,7 +151,7 @@ class DatabaseAssignment(SimpleModel):
         return self.user.is_superuser or self.permission >= DatabasePermission.ASSIGN_USER
 
 
-class AudioFile(StandardModel):
+class AudioFile(SimpleModel):
     """
     Represent a song
     """
@@ -223,9 +223,7 @@ class Segment(SimpleModel):
     start_time_ms = models.IntegerField()
     end_time_ms = models.IntegerField()
 
-    # Different people/algorithms might segment a song differently, so a segment
-    # can't be a direct dependency of a Song. It must depend on a Segmentation object
-    segmentation = models.ForeignKey('Segmentation', on_delete=models.CASCADE)
+    audio_file = models.ForeignKey(AudioFile, on_delete=models.CASCADE)
 
     # Some measurements
     mean_ff = models.FloatField(null=True)
@@ -233,28 +231,16 @@ class Segment(SimpleModel):
     max_ff = models.FloatField(null=True)
 
     def __str__(self):
-        return '{} - {}:{}'.format(self.segmentation.audio_file.name, self.start_time_ms, self.end_time_ms)
+        return '{} - {}:{}'.format(self.audio_file.name, self.start_time_ms, self.end_time_ms)
 
     class Meta:
-        ordering = ('segmentation', 'start_time_ms')
-
-
-class Segmentation(StandardModel):
-    """
-    Represents a segmentation scheme, which aggregate all segments
-    """
-
-    audio_file = models.ForeignKey(AudioFile, null=True, on_delete=models.CASCADE)
-    source = models.CharField(max_length=1023)
-
-    def __str__(self):
-        return '{} by {}'.format(self.audio_file.name, self.source)
+        ordering = ('audio_file', 'start_time_ms')
 
 
 options.DEFAULT_NAMES += 'attrs',
 
 
-class PicklePersistedModel(IdSafeModel):
+class PicklePersistedModel(SimpleModel):
     """
     Abstract base for models that need to persist its attributes not in the database but in a pickle file
     Any attributes can be added to the model by declaring `attrs = ('attribute1', 'attribute2',...) in class Meta
@@ -279,7 +265,7 @@ class PicklePersistedModel(IdSafeModel):
         """
         super(PicklePersistedModel, self).save(*args, **kwargs)
 
-        fpath = pickle_path(str(self.id), self.__class__.__name__)
+        fpath = pickle_path(self.id, self.__class__.__name__)
         ensure_parent_folder_exists(fpath)
 
         mdict = {}
@@ -296,7 +282,7 @@ class PicklePersistedModel(IdSafeModel):
         :return: None
         """
         if self.id:
-            fpath = pickle_path(str(self.id), self.__class__.__name__)
+            fpath = pickle_path(self.id, self.__class__.__name__)
             if os.path.isfile(fpath):
                 with open(fpath, 'rb') as f:
                     mdict = pickle.load(f)
@@ -355,7 +341,7 @@ class IdOrderedModel(PicklePersistedModel):
         super(IdOrderedModel, self).save(*args, **kwargs)
 
 
-class DistanceMatrix(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
+class DistanceMatrix(AlgorithmicModelMixin, IdOrderedModel):
     """
     To store the upper triangle (triu) of a distance matrix
     """
@@ -365,7 +351,7 @@ class DistanceMatrix(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedMode
         attrs = ('ids', 'triu')
 
 
-class Coordinate(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
+class Coordinate(AlgorithmicModelMixin, IdOrderedModel):
     """
     To store a list of coordinates together with the clustered tree and the sorted natural order of the elements
     """
@@ -375,7 +361,7 @@ class Coordinate(AlgorithmicModelMixin, AutoSetterGetterMixin, IdOrderedModel):
         attrs = ('ids', 'coordinates', 'tree', 'order')
 
 
-class HistoryEntry(StandardModel):
+class HistoryEntry(SimpleModel):
     """
     Represent a snapshot of the current user's workspace.
     """
@@ -403,7 +389,7 @@ class HistoryEntry(StandardModel):
         super(HistoryEntry, self).save(*args, **kwargs)
 
 
-class AccessRequest(StandardModel):
+class AccessRequest(SimpleModel):
     """
     Record a database access request from user so that a database admin can response
     """
@@ -450,7 +436,7 @@ def _mymodel_delete(sender, instance, **kwargs):
     :return:
     """
     if isinstance(instance, PicklePersistedModel):
-        filepath = pickle_path(str(instance.id), instance.__class__.__name__)
+        filepath = pickle_path(instance.id, instance.__class__.__name__)
         print('Delete {}'.format(filepath))
         if os.path.isfile(filepath):
             os.remove(filepath)

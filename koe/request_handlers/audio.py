@@ -41,7 +41,7 @@ def get_segment_audio_data(request):
 
     segment_id = get_or_error(request.POST, 'segment-id')
     segment = get_or_error(Segment, dict(id=segment_id))
-    audio_file = segment.segmentation.audio_file
+    audio_file = segment.audio_file
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
     start = segment.start_time_ms

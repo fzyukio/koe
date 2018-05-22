@@ -1,6 +1,5 @@
 import datetime
 import string
-import uuid
 
 import six
 from django.conf import settings
@@ -8,11 +7,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db import utils
 from django.db.models.base import ModelBase
-from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 
 __all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
-           'ColumnActionValue', 'User', 'SimpleModel', 'StandardModel', 'IdSafeModel',
+           'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel', 'InvitationCode',
            'value_setter', 'value_getter', 'get_bulk_id', 'has_field']
 
 
@@ -245,7 +243,7 @@ class ExtraAttrValue(models.Model):
     """
 
     user = models.ForeignKey('User', on_delete=models.CASCADE)
-    owner_id = models.CharField(max_length=255)
+    owner_id = models.IntegerField()
     attr = models.ForeignKey(ExtraAttr, on_delete=models.CASCADE)
     value = models.TextField()
 
@@ -350,9 +348,9 @@ class AutoSetterGetterMixin:
         user = extras.user
 
         if isinstance(objs, QuerySet):
-            ids = frozenset(objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True))
+            ids = frozenset(objs.values_list('id', flat=True))
         else:
-            ids = frozenset([str(obj.id) for obj in objs])
+            ids = frozenset([obj.id for obj in objs])
 
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
         val2str = value_setter[extra_attr.type]
@@ -405,60 +403,19 @@ class AutoSetterGetterMixin:
         return lambda objs, value, extras: cls._set_extra_(objs, attr, value, extras)
 
 
-def id_generator(klass):
-    """
-    Generate the ID for the next object to be stored in the database
-    :param klass: a class object
-    :return: an ID with the format 'WWDDDDD' with WW being two random ASCII character and DDDDD being the integer
-             that would be used as ID otherwise if normal ID generating process is involved.
-             Usually that means the next integer. E.g. if the last object in the database is ab172637, then the next
-             ID will be ??172638
-    """
-    uuid_prefix = uuid.uuid4().hex[:2]
-    last_obj = klass.objects.all().extra(select={'idint': "CAST(SUBSTR(id, 3) AS UNSIGNED)"}).order_by('idint').last()
-    if not last_obj:
-        last_id = 0
-    else:
-        last_id = last_obj.idint
-    return '{}{}'.format(uuid_prefix, last_id + 1)
-
-
-class IdSafeModel(models.Model):
+class SimpleModel(models.Model, AutoSetterGetterMixin):
     """
     An ID Safe Model has ID that cannot be guessed. The ID is small enough to be efficient to send in bulk over the
     wire, but safe enough to prevent injection of any kind.
     """
 
-    id = models.CharField(primary_key=True, editable=False, auto_created=False, max_length=255)
-
-    class Meta:
-        abstract = True
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.id = id_generator(self.__class__)
-        super(IdSafeModel, self).save(*args, **kwargs)
-
-
-class StandardModel(IdSafeModel, AutoSetterGetterMixin):
-    """
-    A shortcut for any Model that requires safe ID and all the benefit of auto getter-setter
-    """
+    id = models.AutoField(primary_key=True, editable=False, auto_created=True, max_length=255)
 
     class Meta:
         abstract = True
 
 
-class SimpleModel(models.Model, AutoSetterGetterMixin):
-    """
-    A shortcut for any Model that requires all the benefit of auto getter-setter but doesn't need a safe ID
-    """
-
-    class Meta:
-        abstract = True
-
-
-class InvitationCode(IdSafeModel):
+class InvitationCode(SimpleModel):
     """
     Tie a user to an invitation code for managing purpose
     """
@@ -470,19 +427,16 @@ class InvitationCode(IdSafeModel):
         return 'Code: {} expiry {}'.format(self.code, self.expiry)
 
 
-class User(AbstractUser, StandardModel):
+class User(AbstractUser, SimpleModel):
     """
     A simple User model that uses safe ID
     """
 
+    id = models.AutoField(primary_key=True, editable=False, auto_created=True)
     invitation_code = models.ForeignKey(InvitationCode, on_delete=models.SET_NULL, null=True, blank=True)
 
     def get_avatar(self):
         return "https://api.adorable.io/avatars/200/" + self.email
-
-    def generate_id(self):
-        hash_suffix = uuid.uuid4().hex[:4]  # grab 4 random characters
-        return '{}-{}'.format(self.username, hash_suffix)
 
 
 class ColumnActionValue(SimpleModel):

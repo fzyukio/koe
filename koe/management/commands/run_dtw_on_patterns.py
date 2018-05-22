@@ -116,7 +116,7 @@ class Command(BaseCommand):
         from koe.models import Segment
         # DistanceMatrix.objects.all().delete()
         database, _ = Database.objects.get_or_create(name=database_name)
-        segments = Segment.objects.filter(segmentation__audio_file__database=database)
+        segments = Segment.objects.filter(audio_file__database=database)
 
         unsorted_ids = np.array(segments.values_list('id', flat=True))
         sorted_idx = np.argsort(unsorted_ids)

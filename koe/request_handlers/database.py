@@ -12,7 +12,7 @@ from dotmap import DotMap
 from koe.grid_getters import bulk_get_segments_for_audio
 from koe.model_utils import extract_spectrogram, assert_permission, \
     get_or_error
-from koe.models import AudioFile, Segment, Segmentation, Database, DatabaseAssignment, \
+from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
@@ -129,15 +129,15 @@ def delete_audio_files(request):
         raise CustomAssertionError('You\'re trying to delete files that don\'t belong to database {}. '
                                    'Are you messing with Javascript?'.format(database.name))
 
-    associated_segments_ids = Segment.objects.filter(segmentation__audio_file__in=audio_files_ids)\
+    associated_segments_ids = Segment.objects.filter(audio_file__in=audio_files_ids)\
         .values_list('id', flat=True)
 
     for segment_id in associated_segments_ids:
-        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        seg_spect_path = spect_fft_path(segment_id, 'syllable')
         if os.path.isfile(seg_spect_path):
             os.remove(seg_spect_path)
 
-        seg_mask_path = spect_mask_path(str(segment_id))
+        seg_mask_path = spect_mask_path(segment_id)
         if os.path.isfile(seg_mask_path):
             os.remove(seg_mask_path)
 
@@ -151,6 +151,8 @@ def delete_audio_files(request):
 def create_database(request):
     user = request.user
     name = get_or_error(request.POST, 'name')
+    if name == '':
+        raise CustomAssertionError('Please provide a proper name.')
 
     if Database.objects.filter(name=name).exists():
         raise CustomAssertionError('Database with name {} already exists.'.format(name))
@@ -185,18 +187,14 @@ def save_segmentation(request):
     file_id = get_or_error(request.POST, 'file-id')
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.MODIFY_SEGMENTS)
-
-    segmentation, _ = Segmentation.objects.get_or_create(audio_file=audio_file, source='user')
-
-    segments = Segment.objects.filter(segmentation=segmentation)
+    segments = Segment.objects.filter(audio_file=audio_file)
 
     new_segments = []
     old_segments = []
     for item in items:
         id = item['id']
         if isinstance(id, str) and id.startswith('new:'):
-            segment = Segment(segmentation=segmentation, start_time_ms=item['start'],
-                              end_time_ms=item['end'])
+            segment = Segment(audio_file=audio_file, start_time_ms=item['start'], end_time_ms=item['end'])
             new_segments.append(segment)
         else:
             old_segments.append(item)
@@ -221,7 +219,7 @@ def save_segmentation(request):
     for segment in to_delete:
         segment_id = segment.id
         to_delete_segment_ids.append(segment_id)
-        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        seg_spect_path = spect_fft_path(segment_id, 'syllable')
         if os.path.isfile(seg_spect_path):
             os.remove(seg_spect_path)
 
@@ -235,9 +233,9 @@ def save_segmentation(request):
 
         Segment.objects.bulk_create(new_segments)
 
-    extract_spectrogram(segmentation)
+    extract_spectrogram(audio_file)
 
-    segments = Segment.objects.filter(segmentation=segmentation)
+    segments = Segment.objects.filter(audio_file=audio_file)
     _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id))
     return rows
 
@@ -332,27 +330,10 @@ def copy_audio_files(request):
         raise CustomAssertionError(
             'Some file(s) you\'re trying to copy already exist in {}'.format(target_database_name))
 
-    song_segmentation_values = Segmentation.objects \
-        .filter(audio_file__in=source_audio_files).values_list('id', 'audio_file')
-
-    # not all AudioFiles have Segmentation - so this is to keep track of which Segmentations need to be copied
-    song_old_id_to_segmentation_old_id = {x[1]: x[0] for x in song_segmentation_values}
-
-    # We need this to get all Segments that need to be copied - again, because not all AudioFiles have Segmentation
-    segmentations_old_ids = song_old_id_to_segmentation_old_id.values()
-
     # We need to map old and new IDs of AudioFiles so that we can copy their ExtraAttrValue later
     songs_old_id_to_new_id = {}
 
-    # We need to map old and new IDs of Segmentation so that we can bulk create new Segments for the new Segmentation
-    # based on the old Segments of the old Segmentation
-    segmentation_old_id_to_new_id = {}
-
-    # We need this to query back the Segments after they have been bulk created (bulk-creation doesn't return the actual
-    # IDs)
-    new_segmentation_ids = []
-
-    # Create Song and Segmentation objects one by one because they can't be bulk created
+    # Create Song objects one by one because they can't be bulk created
     for old_id, fs, length, name, track, individual, quality, original in song_values:
         # Make sure that we always point to the true original. E.g if AudioFile #2 is a copy of #1 and someone makes
         # a copy of AudioFile #2, the new AudioFile must still reference #1 as its original
@@ -362,45 +343,38 @@ def copy_audio_files(request):
         audio_file = AudioFile.objects.create(fs=fs, length=length, name=name, track_id=track, individual_id=individual,
                                               quality=quality, original_id=original_id, database=target_database)
 
-        old_segmentation_id = song_old_id_to_segmentation_old_id.get(old_id, None)
-        if old_segmentation_id:
-            segmentation = Segmentation.objects.create(source='user', audio_file=audio_file)
-            segmentation_old_id_to_new_id[old_segmentation_id] = segmentation.id
-            new_segmentation_ids.append(segmentation.id)
-
         songs_old_id_to_new_id[old_id] = audio_file.id
 
-    segments = Segment.objects.filter(segmentation__source='user', segmentation__in=segmentations_old_ids)
+    segments = Segment.objects.filter(audio_file__in=songs_old_id_to_new_id.keys())
     segments_values = segments.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
-                                           'segmentation__audio_file__name', 'segmentation__id')
+                                           'audio_file__name', 'audio_file__id')
 
     # We need this to map old and new IDs of Segments so that we can copy their ExtraAttrValue later
     # The only reliable way to map new to old Segments is through the pair (start_time_ms, end_time_ms, song_name)
     # since they are guaranteed to be unique
     segments_old_id_to_start_end = {x[0]: (x[1], x[2], x[6]) for x in segments_values}
 
-    new_segmentations_info = {}
-    for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, old_segmentation_id in segments_values:
+    new_segments_info = {}
+    for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, song_old_id in segments_values:
         segment_info = (seg_id, start, end, mean_ff, min_ff, max_ff)
-        if old_segmentation_id not in new_segmentations_info:
-            new_segmentations_info[old_segmentation_id] = [segment_info]
+        if song_old_id not in new_segments_info:
+            new_segments_info[song_old_id] = [segment_info]
         else:
-            new_segmentations_info[old_segmentation_id].append(segment_info)
+            new_segments_info[song_old_id].append(segment_info)
 
     segments_to_copy = []
-    for old_segmentation_id, segment_info in new_segmentations_info.items():
+    for song_old_id, segment_info in new_segments_info.items():
         for seg_id, start, end, mean_ff, min_ff, max_ff in segment_info:
-            segmentation_id = segmentation_old_id_to_new_id[old_segmentation_id]
+            song_new_id = songs_old_id_to_new_id[song_old_id]
 
             segment = Segment(start_time_ms=start, end_time_ms=end, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
-                              segmentation_id=segmentation_id)
+                              audio_file_id=song_new_id)
             segments_to_copy.append(segment)
 
     Segment.objects.bulk_create(segments_to_copy)
 
-    copied_segments = Segment.objects.filter(segmentation__in=new_segmentation_ids)
-    copied_segments_values = copied_segments.values_list('id', 'start_time_ms', 'end_time_ms',
-                                                         'segmentation__audio_file__name')
+    copied_segments = Segment.objects.filter(audio_file__in=songs_old_id_to_new_id.values())
+    copied_segments_values = copied_segments.values_list('id', 'start_time_ms', 'end_time_ms', 'audio_file__name')
     segments_new_start_end_to_new_id = {(x[1], x[2], x[3]): x[0] for x in copied_segments_values}
 
     # Based on two maps: from new segment (start,end) key to their ID and old segment's ID to (start,end) key
@@ -450,11 +424,11 @@ def copy_audio_files(request):
 
     for old_segment_id, new_segment_id in segments_old_id_to_new_id.items():
         # Copy spectrograms / signal masks:
-        new_mask_img = spect_mask_path(str(new_segment_id))
-        new_spect_img = spect_fft_path(str(new_segment_id), 'syllable')
+        new_mask_img = spect_mask_path(new_segment_id)
+        new_spect_img = spect_fft_path(new_segment_id, 'syllable')
 
-        old_mask_img = spect_mask_path(str(old_segment_id))
-        old_spect_img = spect_fft_path(str(old_segment_id), 'syllable')
+        old_mask_img = spect_mask_path(old_segment_id)
+        old_spect_img = spect_fft_path(old_segment_id, 'syllable')
 
         if os.path.isfile(old_mask_img):
             copyfile(old_mask_img, new_mask_img)
@@ -472,15 +446,15 @@ def delete_segments(request):
     database = get_or_error(Database, dict(id=database_id))
     assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
 
-    segments = Segment.objects.filter(id__in=ids, segmentation__audio_file__database=database)
+    segments = Segment.objects.filter(id__in=ids, audio_file__database=database)
     ids = segments.values_list('id', flat=True)
 
     for segment_id in ids:
-        seg_spect_path = spect_fft_path(str(segment_id), 'syllable')
+        seg_spect_path = spect_fft_path(segment_id, 'syllable')
         if os.path.isfile(seg_spect_path):
             os.remove(seg_spect_path)
 
-        seg_mask_path = spect_mask_path(str(segment_id))
+        seg_mask_path = spect_mask_path(segment_id)
         if os.path.isfile(seg_mask_path):
             os.remove(seg_mask_path)
 

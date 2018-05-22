@@ -142,12 +142,12 @@ def generate_chirp_dictionary(pklfile, database):
     :param pklfile: path to the pickle file to be saved
     :return: None
     """
-    durations = list(set(Segment.objects.filter(segmentation__audio_file__database=database)
+    durations = list(set(Segment.objects.filter(audio_file__database=database)
                          .annotate(duration=F('end_time_ms') - F('start_time_ms'))
                          .values_list('duration', flat=True)))
 
-    fss = list(set(Segment.objects.filter(segmentation__audio_file__database=database)
-                   .values_list('segmentation__audio_file__fs', flat=True)))
+    fss = list(set(Segment.objects.filter(audio_file__database=database)
+                   .values_list('audio_file__fs', flat=True)))
 
     chirp_dict = OrderedDict()
     fs = fss[0]
@@ -198,7 +198,7 @@ class Command(BaseCommand):
 
         # segment = Segment.objects.first()
         # duration = (segment.end_time_ms - segment.start_time_ms) / 1000
-        # fs = segment.segmentation.audio_file.fs
+        # fs = segment.audio_file.fs
         # generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat')
 
         # X = np.array([[0.81472, 0.15761, 0.65574], [0.90579, 0.97059, 0.035712], [0.12699, 0.95717, 0.84913],

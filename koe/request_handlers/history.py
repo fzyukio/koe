@@ -8,7 +8,7 @@ from django_bulk_update.helper import bulk_update
 
 from koe.model_utils import assert_permission, \
     get_or_error, assert_values, get_user_databases
-from koe.models import Segment, HistoryEntry, Database, DatabasePermission, AudioFile, Segmentation
+from koe.models import Segment, HistoryEntry, Database, DatabasePermission, AudioFile
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr
 from root.utils import history_path, ensure_parent_folder_exists
@@ -18,9 +18,7 @@ __all__ = ['save_history', 'import_history', 'delete_history']
 
 def save_label_history(database, user, zip_file, segments_ids=None, song_ids=None):
     if segments_ids is None:
-        segments_ids = frozenset(Segment.objects
-                                 .filter(segmentation__audio_file__database=database, segmentation__source='user')
-                                 .values_list('id', flat=True))
+        segments_ids = frozenset(Segment.objects.filter(audio_file__database=database).values_list('id', flat=True))
     if song_ids is None:
         song_ids = frozenset(AudioFile.objects.filter(database=database).values_list('id', flat=True))
 
@@ -46,8 +44,8 @@ def save_segmentation_history(database, user, zip_file):
     :param zip_file:
     :return:
     """
-    segment_values = Segment.objects.filter(segmentation__audio_file__database=database, segmentation__source='user') \
-        .values_list('id', 'segmentation__audio_file__name', 'segmentation__audio_file', 'start_time_ms', 'end_time_ms',
+    segment_values = Segment.objects.filter(audio_file__database=database) \
+        .values_list('id', 'audio_file__name', 'audio_file', 'start_time_ms', 'end_time_ms',
                      'mean_ff', 'min_ff', 'max_ff')
 
     seg_ids = []
@@ -126,7 +124,7 @@ def delete_history(request):
     return True
 
 
-def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None):
+def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None, owner_ids_are_int=False):
     # Match saved extra attr IDs with their current IDs
     extra_attrs = ExtraAttr.objects.values_list('id', 'klass', 'type', 'name')
     if _extra_attrs is None:
@@ -145,6 +143,8 @@ def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None):
 
     for owner_id, _attr_id, value in entries:
         attr_id = extra_attr_old_to_new_id[_attr_id]
+        if owner_ids_are_int:
+            owner_id = int(owner_id)
         _entries.append((owner_id, attr_id, value))
 
     if owner_old_to_new_id:
@@ -158,7 +158,7 @@ def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None):
     return _entries
 
 
-def import_history_version_4(database, user, filelist):
+def import_history_with_segmentation(database, user, filelist):
     """
     For version 4 - the segment endpoints are also stored, so object IDs don't matter.
     - Recreate segmentation for files that haven't got segmentation, or theirs are different
@@ -168,103 +168,86 @@ def import_history_version_4(database, user, filelist):
     :param filelist:
     :return:
     """
-    try:
-        _extra_attrs = json.loads(filelist['extraattr.json'])
-        segment_attr_values = json.loads(filelist['segment.extraattrvalue.json'])
-        song_attr_values = json.loads(filelist['audiofile.extraattrvalue.json'])
-        _song_info = json.loads(filelist['songinfo.json'])
-    except Exception:
-        raise CustomAssertionError('The history content is malformed and cannot be parsed.')
-
-    # Match saved song IDs to their actual IDs on the datbase (if exists)
-    # Songs that don't exist in the database are ignore
-    song_names = frozenset(list(_song_info.keys()))
-
-    existing_songs_no_segmentation = AudioFile.objects \
-        .filter(name__in=song_names, segmentation=None, database=database) \
-        .values_list('id', flat=True)
-
     with transaction.atomic():
-        for song_id in existing_songs_no_segmentation:
-            Segmentation.objects.create(audio_file_id=song_id, source='user')
+        try:
+            _extra_attrs = json.loads(filelist['extraattr.json'])
+            segment_attr_values = json.loads(filelist['segment.extraattrvalue.json'])
+            song_attr_values = json.loads(filelist['audiofile.extraattrvalue.json'])
+            _song_info = json.loads(filelist['songinfo.json'])
+        except Exception:
+            raise CustomAssertionError('The history content is malformed and cannot be parsed.')
 
-    song_name_to_segmentation_id = {
-        x[0]: x[1] for x in Segmentation.objects
-        .filter(source='user', audio_file__database=database, audio_file__name__in=song_names)
-        .values_list('audio_file__name', 'id')
-    }
+        # Match saved song IDs to their actual IDs on the datbase (if exists)
+        # Songs that don't exist in the database are ignore
+        song_names = list(_song_info.keys())
 
-    segmentation_ids = frozenset(list(song_name_to_segmentation_id.values()))
-    song_names = frozenset(list(song_name_to_segmentation_id.keys()))
+        existing_segments = Segment.objects \
+            .filter(audio_file__name__in=song_names, audio_file__database=database) \
+            .values_list('id', 'audio_file__name', 'audio_file', 'start_time_ms', 'end_time_ms')
 
-    existing_segments = Segment.objects \
-        .filter(segmentation__audio_file__name__in=song_names, segmentation__audio_file__database=database) \
-        .values_list('id', 'segmentation__audio_file__name', 'segmentation__audio_file', 'start_time_ms', 'end_time_ms')
+        song_name_to_new_id = {
+            x[0]: x[1] for x in AudioFile.objects.filter(name__in=song_names, database=database)
+            .values_list('name', 'id')}
 
-    song_name_to_new_id = {
-        x[0]: x[1] for x in AudioFile.objects.filter(name__in=song_names, database=database).values_list('name', 'id')}
+        seg_old_to_new_id = {}
+        song_info = {}
+        new_segments = []
+        song_old_to_new_id = {}
 
-    seg_old_to_new_id = {}
-    song_info = {}
-    new_segments = []
-    song_old_to_new_id = {}
+        for seg_id, song_name, song_id, start, end in existing_segments:
+            if song_name not in song_info:
+                song_info[song_name] = (song_id, [])
+            song_info[song_name][1].append((seg_id, start, end))
 
-    for seg_id, song_name, song_id, start, end in existing_segments:
-        if song_name not in song_info:
-            song_info[song_name] = (song_id, [])
-        song_info[song_name][1].append((seg_id, start, end))
+        seg_key_to_new_id = {}
+        seg_key_to_old_id = {}
+        seg_key_to_extras = {}
+        for song_name, (_song_id, _info) in _song_info.items():
 
-    seg_key_to_new_id = {}
-    seg_key_to_old_id = {}
-    seg_key_to_extras = {}
-    for song_name, (_song_id, _info) in _song_info.items():
+            # Ignore songs that exist in the saved but not in this database
+            if song_name not in song_name_to_new_id:
+                continue
 
-        # Ignore songs that exist in the saved but not in this database
-        if song_name not in song_name_to_new_id:
-            continue
+            for _seg_id, start, end, mean_ff, min_ff, max_ff in _info:
+                seg_key = (start, end, song_name)
+                seg_key_to_old_id[seg_key] = _seg_id
+                seg_key_to_extras[seg_key] = (mean_ff, min_ff, max_ff)
 
-        for _seg_id, start, end, mean_ff, min_ff, max_ff in _info:
-            seg_key = (start, end, song_name)
-            seg_key_to_old_id[seg_key] = _seg_id
-            seg_key_to_extras[seg_key] = (mean_ff, min_ff, max_ff)
+            if song_name in song_info:
+                song_id, info = song_info[song_name]
+                song_old_to_new_id[_song_id] = song_id
 
-        if song_name in song_info:
-            song_id, info = song_info[song_name]
-            song_old_to_new_id[_song_id] = song_id
+                for seg_id, start, end in info:
+                    seg_key_to_new_id[(start, end, song_name)] = seg_id
+            else:
+                song_old_to_new_id[_song_id] = song_name_to_new_id[song_name]
 
-            for seg_id, start, end in info:
-                seg_key_to_new_id[(start, end, song_name)] = seg_id
-        else:
-            song_old_to_new_id[_song_id] = song_name_to_new_id[song_name]
+        for seg_key, _seg_id in seg_key_to_old_id.items():
+            if seg_key in seg_key_to_new_id:
+                seg_id = seg_key_to_new_id[seg_key]
+                seg_old_to_new_id[_seg_id] = seg_id
+            else:
+                start, end, song_name = seg_key
+                mean_ff, min_ff, max_ff = seg_key_to_extras[seg_key]
+                song_id = song_name_to_new_id[song_name]
+                new_segments.append(Segment(start_time_ms=start, end_time_ms=end, audio_file_id=song_id,
+                                            mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff))
 
-    for seg_key, _seg_id in seg_key_to_old_id.items():
-        if seg_key in seg_key_to_new_id:
-            seg_id = seg_key_to_new_id[seg_key]
-            seg_old_to_new_id[_seg_id] = seg_id
-        else:
-            start, end, song_name = seg_key
-            mean_ff, min_ff, max_ff = seg_key_to_extras[seg_key]
-            segmentation_id = song_name_to_segmentation_id[song_name]
-            new_segments.append(Segment(start_time_ms=start, end_time_ms=end, segmentation_id=segmentation_id,
-                                        mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff))
+        Segment.objects.bulk_create(new_segments)
+        seg_key_to_new_id = {
+            (x[0], x[1], x[2]): x[3] for x in Segment.objects.filter(audio_file__id__in=song_name_to_new_id.values())
+            .values_list('start_time_ms', 'end_time_ms', 'audio_file__name', 'id')
+        }
 
-    Segment.objects.bulk_create(new_segments)
-    seg_key_to_new_id = {
-        (x[0], x[1], x[2]): x[3] for x in Segment.objects.filter(segmentation__in=segmentation_ids)
-        .values_list('start_time_ms', 'end_time_ms', 'segmentation__audio_file__name', 'id')
-    }
+        for seg_key, _seg_id in seg_key_to_old_id.items():
+            if seg_key in seg_key_to_new_id:
+                seg_old_to_new_id[_seg_id] = seg_key_to_new_id[seg_key]
 
-    for seg_key, _seg_id in seg_key_to_old_id.items():
-        if seg_key in seg_key_to_new_id:
-            seg_old_to_new_id[_seg_id] = seg_key_to_new_id[seg_key]
+        segment_attr_values = change_owner_and_attr_ids(segment_attr_values, _extra_attrs, seg_old_to_new_id, True)
+        song_attr_values = change_owner_and_attr_ids(song_attr_values, _extra_attrs, song_old_to_new_id)
 
-    seg_old_to_new_id = {str(k): str(v) for k, v in seg_old_to_new_id.items()}
-
-    segment_attr_values = change_owner_and_attr_ids(segment_attr_values, _extra_attrs, seg_old_to_new_id)
-    song_attr_values = change_owner_and_attr_ids(song_attr_values, _extra_attrs, song_old_to_new_id)
-
-    update_extra_attr_values(user, segment_attr_values)
-    update_extra_attr_values(user, song_attr_values)
+        update_extra_attr_values(user, segment_attr_values)
+        update_extra_attr_values(user, song_attr_values)
 
     return True
 
@@ -304,9 +287,9 @@ def update_extra_attr_values(user, new_entries):
         new_value = extra_attr_values_to_update[extra_attr_value.id]
         extra_attr_value.value = new_value
 
-    bulk_update(extra_attr_values_object_to_update, update_fields=['value'])
-
-    ExtraAttrValue.objects.bulk_create(extra_attr_values_to_create)
+    with transaction.atomic():
+        bulk_update(extra_attr_values_object_to_update, update_fields=['value'])
+        ExtraAttrValue.objects.bulk_create(extra_attr_values_to_create)
 
     return True
 
@@ -344,44 +327,28 @@ def import_history(request):
         for name in namelist:
             filelist[name] = zip_file.read(name)
 
-    version = 1
-    backup_type = 'labels'
-    extra_attrs = None
+    meta = json.loads(get_or_error(filelist, 'meta.json'))
+    version = get_or_error(meta, 'version')
+    backup_type = get_or_error(meta, 'type')
 
-    if 'meta.json' in filelist:
-        meta = json.loads(filelist['meta.json'])
-        version = meta['version']
-        backup_type = meta.get('type', backup_type)
+    if version < 4:
+        raise CustomAssertionError('This file format is too old and not supported anymore.')
 
-    try:
-        content = filelist['root.extraattrvalue.json']
-    except KeyError:
-        raise CustomAssertionError('This is not a Koe history file')
-
-    if version == 4:
-        if backup_type == 'segmentation':
-            return import_history_version_4(current_database, user, filelist)
-        else:
-            contents = [
-                filelist['segment.extraattrvalue.json'],
-                filelist['audiofile.extraattrvalue.json']
-            ]
-            extra_attrs = json.loads(filelist['extraattr.json'])
-    else:
-        contents = [content]
+    if backup_type == 'segmentation':
+        return import_history_with_segmentation(current_database, user, filelist)
 
     try:
+        contents = [
+            get_or_error(filelist, 'segment.extraattrvalue.json'),
+            get_or_error(filelist, 'audiofile.extraattrvalue.json')
+        ]
+        extra_attrs = json.loads(get_or_error(filelist, 'extraattr.json'))
         new_entries = []
         for content in contents:
             loaded = json.loads(content)
             new_entries += loaded
     except Exception:
         raise CustomAssertionError('The history content is malformed and cannot be parsed.')
-
-    if version == 1:
-        new_entries = [
-            (x['fields']['owner_id'], x['fields']['attr'], x['fields']['value']) for x in new_entries
-        ]
 
     new_entries = change_owner_and_attr_ids(new_entries, extra_attrs)
 

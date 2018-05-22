@@ -23,7 +23,7 @@ from koe import wavfile as wf
 from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
-from koe.models import AudioFile, Segmentation, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
+from koe.models import AudioFile, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
 from koe.utils import get_wav_info
 from root.models import ExtraAttr, ValueTypes, User
 from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path, audio_path
@@ -246,8 +246,7 @@ def import_syllables(conn):
         syllables.append(syllable)
 
     # delete all existing manual segmentation:
-    Segmentation.objects.filter(
-        audio_file__name__in=songs_2_syllables.keys(), source='user').delete()
+    Segment.objects.filter(audio_file__name__in=songs_2_syllables.keys()).delete()
 
     bar = Bar('Importing syllables ...', max=len(songs_2_syllables))
     for song in songs_2_syllables:
@@ -258,16 +257,11 @@ def import_syllables(conn):
                     ' Ignore for now'.format(song))
             continue
 
-        segmentation = Segmentation()
-        segmentation.audio_file = audio_file
-        segmentation.source = 'user'
-        segmentation.save()
-
         for syllable in syllables:
             segment = Segment()
             segment.start_time_ms = syllable[0]
             segment.end_time_ms = syllable[1]
-            segment.segmentation = segmentation
+            segment.audio_file = audio_file
             segment.save()
 
         # print('Processed song {}'.format(song))
@@ -324,8 +318,8 @@ def import_signal_mask(conn):
         song_info[song_name] = (song['id'], song['maxfreq'], song['dy'])
 
     segments_info = Segment.objects \
-        .filter(segmentation__audio_file__name__in=song_info.keys()) \
-        .values_list('id', 'segmentation__audio_file__name', 'start_time_ms', 'end_time_ms')
+        .filter(audio_file__name__in=song_info.keys()) \
+        .values_list('id', 'audio_file__name', 'start_time_ms', 'end_time_ms')
 
     n = len(segments_info)
     bar = Bar('Importing segments ...', max=n)
@@ -438,7 +432,7 @@ def import_signal_mask(conn):
                 warning('Syl_idx > 0')
                 file_path = spect_mask_path('{}_{}'.format(seg_id, syl_idx))
             else:
-                file_path = spect_mask_path('{}'.format(seg_id))
+                file_path = spect_mask_path(seg_id)
             ensure_parent_folder_exists(file_path)
 
             img.save(file_path, format='PNG')
@@ -451,8 +445,8 @@ def extract_spectrogram(database):
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia)
     :return:
     """
-    values_list = Segment.objects.filter(segmentation__audio_file__database=database)[:25].values_list(
-        'id', 'segmentation__audio_file__id', 'segmentation__audio_file__name', 'start_time_ms', 'end_time_ms')
+    values_list = Segment.objects.filter(audio_file__database=database)[:25].values_list(
+        'id', 'audio_file__id', 'audio_file__name', 'start_time_ms', 'end_time_ms')
     audio_to_segs = {}
     for id, song_id, song_name, start, end in values_list:
         key = (song_name, song_id)
@@ -467,7 +461,7 @@ def extract_spectrogram(database):
     for (song_name, song_id), seg_list in audio_to_segs.items():
         count = 0
         for seg_id, start, end in seg_list:
-            seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+            seg_spect_path = spect_fft_path(seg_id, 'syllable')
             if os.path.isfile(seg_spect_path):
                 count += 1
         if count == len(seg_list):
@@ -501,7 +495,7 @@ def extract_spectrogram(database):
             file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape((height, width)) * 255
 
             for seg_id, start, end in seg_list:
-                seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+                seg_spect_path = spect_fft_path(seg_id, 'syllable')
                 if not os.path.isfile(seg_spect_path):
                     roi_start = int(start / duration_ms * width)
                     roi_end = int(np.ceil(end / duration_ms * width))
@@ -526,14 +520,14 @@ def compress_data(database):
     tar = tarfile.open("user_data.tar.gz", "w:gz")
 
     segments_ids = Segment.objects.filter(
-        segmentation__audio_file__database=database).values_list('id', flat=True)
+        audio_file__database=database).values_list('id', flat=True)
     audio_files = AudioFile.objects.filter(
         database=database).values_list('name', flat=True)
 
     bar = Bar('Zipping ...', max=len(segments_ids) + len(audio_files))
 
     for s in segments_ids:
-        seg_spect_path = spect_fft_path(str(s), 'syllable')
+        seg_spect_path = spect_fft_path(s, 'syllable')
         seg_mask_path = spect_mask_path('{}'.format(s))
 
         tar.add(seg_mask_path)

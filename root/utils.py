@@ -63,7 +63,7 @@ def forget_password_handler(user):
 
 
 def data_path(prefix, fullname, ext=None, for_url=False):
-    filename, _ext = os.path.splitext(fullname)
+    filename, _ext = os.path.splitext(str(fullname))
     _ext = _ext[1:]
     if ext is None:
         ext = _ext

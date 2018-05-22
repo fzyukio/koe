@@ -39,9 +39,9 @@ def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
             objs = [objs]
 
         if isinstance(objs, QuerySet):
-            ids = objs.annotate(strid=Cast('id', models.CharField())).values_list('strid', flat=True)
+            ids = objs.values_list('id', flat=True)
         else:
-            ids = [str(obj.id) for obj in objs]
+            ids = [obj.id for obj in objs]
     else:
         ids = objs_or_ids
         if not hasattr(ids, '__iter__'):
@@ -165,9 +165,9 @@ class Command(BaseCommand):
             warning('The following songs are found in Excel but not in database: \n{}'
                     .format('\n'.join(songs_in_excel_not_db)))
 
-        segment_values_list = Segment.objects.filter(segmentation__audio_file__name__in=song_names) \
+        segment_values_list = Segment.objects.filter(audio_file__name__in=song_names) \
             .annotate(strid=Cast('id', models.CharField())) \
-            .values_list('strid', 'segmentation__audio_file__name', 'start_time_ms', 'end_time_ms')
+            .values_list('strid', 'audio_file__name', 'start_time_ms', 'end_time_ms')
 
         songs_2_syllable_endpoints_db = {}
         for seg_id, song_name, syl_start, syl_end in segment_values_list:

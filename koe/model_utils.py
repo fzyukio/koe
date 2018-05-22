@@ -236,15 +236,13 @@ def get_current_similarity(user, current_database):
     return similarities, current_similarity
 
 
-def extract_spectrogram(segmentation):
+def extract_spectrogram(audio_file):
     """
-    Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file given the
-    segmentation scheme
-    :param segmentation:
+    Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
+    :param audio_file:
     :return:
     """
-    segs_info = Segment.objects.filter(segmentation=segmentation).values_list('id', 'start_time_ms', 'end_time_ms')
-    audio_file = segmentation.audio_file
+    segs_info = Segment.objects.filter(audio_file=audio_file).values_list('id', 'start_time_ms', 'end_time_ms')
     song_name = audio_file.name
 
     filepath = wav_path(song_name)
@@ -252,8 +250,7 @@ def extract_spectrogram(segmentation):
     fs, sig = wav_2_mono(filepath)
     duration_ms = len(sig) * 1000 / fs
 
-    _, _, s = signal.stft(sig, fs=fs, window=window,
-                          noverlap=noverlap, nfft=window_size, return_onesided=True)
+    _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
     file_spect = np.abs(s * scale)
 
     height, width = np.shape(file_spect)
@@ -280,7 +277,7 @@ def extract_spectrogram(segmentation):
 
         seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
         seg_spect_img = Image.fromarray(seg_spect_rgb)
-        seg_spect_path = spect_fft_path(str(seg_id), 'syllable')
+        seg_spect_path = spect_fft_path(seg_id, 'syllable')
         ensure_parent_folder_exists(seg_spect_path)
 
         seg_spect_img.save(seg_spect_path, format='PNG')

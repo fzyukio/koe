@@ -84,7 +84,7 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
         sorted_mfcc = []
 
         segments_info = segments.values_list(
-            'duration', 'segmentation__audio_file__fs')
+            'duration', 'audio_file__fs')
         for duration, fs in segments_info:
             if duration not in cache:
                 cache = {duration: {}}
@@ -116,7 +116,7 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
 
     else:
         mfccs = []
-        segments_info = segments.values_list('segmentation__audio_file__name', 'segmentation__audio_file__fs',
+        segments_info = segments.values_list('audio_file__name', 'audio_file__fs',
                                              'start_time_ms', 'end_time_ms', 'id')
 
         segment_data = {}
