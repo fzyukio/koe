@@ -675,12 +675,20 @@ const initDeleteSegmentsBtn = function () {
                 ids: JSON.stringify(itemsIds),
                 'database-id': databaseId
             };
-
             let onSuccess = function () {
+                let items = dataView.getItems();
+                let newItems = [];
                 for (let i = 0; i < numRows; i++) {
-                    let itemId = itemsIds[i];
-                    dataView.deleteItem(itemId);
+                    let row = selectedRows[i];
+                    delete items[row];
                 }
+                for (let i = 0; i < numRows; i++) {
+                    let item = items[i];
+                    if (item) {
+                        newItems.push(item);
+                    }
+                }
+                dataView.setItems(newItems);
             };
             ce.dialogModal.modal('hide');
             postRequest({
