@@ -13,6 +13,7 @@ from shutil import copyfile
 __all__ = ['config']
 
 fixture_list = [
+    'root.invitationcode',
     'root.user',
     'root.extraattr',
     'root.columnactionvalue',
