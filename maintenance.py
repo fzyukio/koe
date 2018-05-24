@@ -473,6 +473,9 @@ if __name__ == '__main__':
     parser.add_argument('--reset-database', dest='reset_db', action='store_true', default=False,
                         help='Truncate all tables. Database structure restored')
 
+    parser.add_argument('--empty-database', dest='empty_db', action='store_true', default=False,
+                        help='Truncate all tables. Database will be completely empty')
+
     parser.add_argument('--restore-database', dest='restore_db', action='store_true', default=False,
                         help='Empty the database, then restore it with fixtures or sql dump')
     parser.add_argument('--backup-database', dest='backup_db', action='store_true', default=False,
@@ -486,6 +489,7 @@ if __name__ == '__main__':
     restore_db = args.restore_db
     backup_db = args.backup_db
     backup_file = args.backup_file
+    empty_db = args.empty_db
 
     if restore_db and backup_db:
         raise Exception('Cannot use both params --restore-database and --backup-database')
@@ -524,12 +528,16 @@ if __name__ == '__main__':
             backup_database_using_sql()
 
     os.environ['IMPORTING_FIXTURE'] = 'true'
-    if reset_db:
+
+    if reset_db or empty_db:
         empty_database()
+
+    if reset_db:
         apply_migrations()
         delete_wagtail_pages()
 
     if restore_db:
+        empty_database()
         if backup_file.endswith('.zip'):
             restore_database_using_fixtures()
         else:
