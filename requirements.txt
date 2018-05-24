@@ -39,7 +39,6 @@ model-mommy==1.3.2
 networkx==1.11
 nodeenv==1.1.2
 olefile==0.44
-opbeat>=3.6.0
 packaging==16.8
 pathlib2==2.2.1
 pbr==2.0.0
@@ -97,5 +96,5 @@ django-extensions
 django-tz-detect
 colorama
 django_bulk_update
-django-grappelli
 django-memoize
+raven

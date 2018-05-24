@@ -9,7 +9,6 @@ from maintenance import config as envconf, base_dir_join
 
 BASE_DIR = envconf['base_dir']
 
-
 SITE_ID = 1
 
 SECRET_KEY = envconf['secret_key']
@@ -25,7 +24,6 @@ ADMINS = (
 AUTH_USER_MODEL = 'root.User'
 
 INSTALLED_APPS = [
-    'grappelli',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,7 +51,6 @@ INSTALLED_APPS = [
 
     'modelcluster',
     'taggit',
-    'memoize',
 
     'root',
     'koe',
@@ -142,6 +139,10 @@ WEBPACK_LOADER = {
     'JQUERY': {
         'BUNDLE_DIR_NAME': 'bundles/',
         'STATS_FILE': 'jquery-webpack-stats.json',
+    },
+    'ERROR_TRACKING': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': 'error-checking-stats.json',
     }
 }
 
@@ -302,15 +303,11 @@ else:
     LOG_REQUEST_ID_HEADER = 'HTTP_X_REQUEST_ID'
     LOG_REQUESTS = True
 
-    # Opbeat
-    INSTALLED_APPS += ['opbeat.contrib.django']
-    OPBEAT = {
-        'ORGANIZATION_ID': '07d57ec41f4442539ceaf70270d1b3a5',
-        'APP_ID': '145395c333',
-        'SECRET_TOKEN': '227d2d8537b77d3e50f452578efcf18eeafa387e',
+    # Error tracker
+    INSTALLED_APPS += ['raven.contrib.django.raven_compat', ]
+    RAVEN_CONFIG = {
+        'dsn': 'https://657ede38a2d94950bf0bf1d7c6907945:3be22b1ebaa84bc0bf761b752ed452d7@sentry.io/1212536',
     }
-    MIDDLEWARE.insert(  # insert OpbeatAPMMiddleware on the top
-        0, 'opbeat.contrib.django.middleware.OpbeatAPMMiddleware')
 
     LOGGING = {
         'version': 1,

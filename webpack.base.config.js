@@ -92,4 +92,38 @@ module.exports = [{
         fs: "empty",
         child_process: "empty"
     }
+}, {
+    entry: [
+        './assets/js/error-tracking.js',
+    ],
+    output: {
+        path: path.resolve('./assets/bundles/'),
+        filename: 'error-tracking.js',
+    },
+    module: {
+        loaders: [
+            {
+                test: /\.jsx?$/,
+                exclude: [nodeModulesDir],
+                loader: 'babel?presets[]=es2015',
+            },
+            {
+                test: /jquery\/dist\/jquery\.js$/,
+                loader: 'expose?$',
+            },
+            {
+                test: /jquery\/dist\/jquery\.js$/,
+                loader: 'expose?jQuery',
+            },
+            {
+                test: /tether\.js$/,
+                loader: "expose?Tether"
+            }
+        ],
+    },
+    plugins: [
+        new BundleTracker({
+            filename: './error-checking-stats.json',
+        })
+    ]
 }];

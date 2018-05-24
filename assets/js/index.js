@@ -91,6 +91,13 @@ const _preRun = function () {
     SlickEditors.Select = SelectizeEditor;
 
     restoreModalAfterClosing();
+
+    $('.alert .close').on('click', function () {
+        let alertEl = $(this).parent();
+        let timerId = alertEl.attr('timer-id');
+        clearTimeout(timerId);
+        alertEl.hide();
+    });
 };
 
 

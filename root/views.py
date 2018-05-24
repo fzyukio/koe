@@ -8,12 +8,10 @@ from django.conf import settings
 from django.db.models.base import ModelBase
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.http import HttpResponseServerError
-from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from dotmap import DotMap
-from opbeat import Client
 from tz_detect.utils import offset_to_timezone
 
 from koe import jsons
@@ -21,20 +19,16 @@ from root.exceptions import CustomAssertionError
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
     ColumnActionValue, get_bulk_id
 
-opbeat_client = None
-if hasattr(settings, 'OPBEAT'):
-    opbeat_client = Client(
-        organization_id=settings.OPBEAT['ORGANIZATION_ID'],
-        app_id=settings.OPBEAT['APP_ID'],
-        secret_token=settings.OPBEAT['SECRET_TOKEN'],
-    )
+
+if hasattr(settings, 'RAVEN_CONFIG'):
+    from raven.contrib.django.raven_compat.models import client as error_tracker
 else:
-    class FakeOpbeatClient():
-
-        def capture_exception(self):
+    class ConsoleErrorTracker():
+        def captureException(self):
             print(traceback.format_exc())
+            return -1
 
-    opbeat_client = FakeOpbeatClient()
+    error_tracker = ConsoleErrorTracker()
 
 tables = None
 actions = None
@@ -456,14 +450,13 @@ def send_request(request, *args, **kwargs):
                 response = function(request)
                 if isinstance(response, HttpResponse):
                     return response
-                return JsonResponse(response, safe=False)
+                return HttpResponse(json.dumps(dict(message=response)))
             except Exception as e:
-                opbeat_client.capture_exception()
-
+                error_id = error_tracker.captureException()
                 if isinstance(e, CustomAssertionError):
-                    return HttpResponseBadRequest(str(e))
+                    return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=str(e))))
 
-                return HttpResponseServerError(str(e))
+                return HttpResponseServerError(json.dumps(dict(errid=error_id, message=str(e))))
 
     return HttpResponseNotFound()
 

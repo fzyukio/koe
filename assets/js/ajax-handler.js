@@ -55,9 +55,14 @@ export const uploadRequest = function (args) {
  * @param callback
  * @param immediate whether or not to call callback right after showing the notification
  */
-export const handleResponse = function ({response, msgGen = noop, isSuccess = true, callback = noop, immediate = false}) {
+export const handleResponse = function ({
+    response, msgGen = noop, isSuccess, callback = noop, immediate = false
+}) {
     let alertEl, delay;
-    let message = msgGen(isSuccess, response) || defaultMsgGen(isSuccess, response);
+    let responseJson = JSON.parse(response);
+    let errorId = responseJson.errid;
+    let responseMessage = responseJson.message;
+    let message = msgGen(isSuccess, responseMessage) || defaultMsgGen(isSuccess, responseMessage);
 
     if (isSuccess) {
         alertEl = alertSuccess;
@@ -69,15 +74,31 @@ export const handleResponse = function ({response, msgGen = noop, isSuccess = tr
     }
 
     if (message) {
-        alertEl.html(message);
-        alertEl.fadeIn().delay(delay).fadeOut(delay, function () {
-            if (!immediate) callback(response);
-        });
+        alertEl.find('.message').html(message);
+        if (errorId) {
+            alertEl.find('.link').attr('error-id', errorId);
+        }
+
+        let timerId = alertEl.attr('timer-id');
+        if (timerId) {
+            clearTimeout(timerId);
+        }
+
+        timerId = setTimeout(function () {
+            alertEl.fadeOut(500, function () {
+                if (!immediate) callback(responseMessage);
+            });
+        }, delay);
+
+        alertEl.attr('timer-id', timerId);
+        alertEl.fadeIn();
+
     }
     else {
         immediate = true;
     }
-    if (immediate) callback(response);
+
+    if (immediate) callback(responseMessage);
 };
 
 /**

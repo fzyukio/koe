@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponseServerError
-from django.template import loader
+from django.http import HttpResponseBadRequest
+from django.shortcuts import render
 from django.utils.deprecation import MiddlewareMixin
 
 from root.exceptions import CustomAssertionError
@@ -15,6 +15,5 @@ class HandleBusinessExceptionMiddleware(MiddlewareMixin):
             message = str(exception)
             messages.error(request, message)
 
-            t = loader.get_template('errors/assertion-error.html')
-            context = dict(request=request, message=message)
-            return HttpResponseServerError(t.render(context=context))
+            context = dict(message=message, status_code=400)
+            return HttpResponseBadRequest(render(request, 'errors/assertion-error.html', context=context))

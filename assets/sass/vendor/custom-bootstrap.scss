@@ -132,3 +132,9 @@ $color_celeste_approx: #ccc;
 .navbar-form .input-group .form-control {
   width: 100%;
 }
+
+.alert-danger {
+  a {
+    text-decoration: underline;
+  }
+}

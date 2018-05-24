@@ -1,4 +1,4 @@
 {% extends "errors/base.html" %}
 {% block title %}Something's wrong{% endblock %}
-{% block code %}500{% endblock %}
+{% block code %}{{ status_code }}{% endblock %}
 {% block message %}{{ message }}{% endblock %}
