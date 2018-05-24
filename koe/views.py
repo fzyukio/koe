@@ -1,3 +1,6 @@
+import json
+
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView, FormView
 
@@ -183,4 +186,5 @@ class SongPartitionView(FormView):
 
         context['form'] = form
 
-        return render(self.request, 'partials/track-info-form.html', context=context)
+        rendered = render(self.request, 'partials/track-info-form.html', context=context)
+        return HttpResponse(json.dumps(dict(message=rendered.content.decode('utf-8'))))
