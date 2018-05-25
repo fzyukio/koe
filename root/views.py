@@ -1,9 +1,11 @@
+import csv
 import datetime
 import importlib
 import json
 import traceback
 from collections import OrderedDict
 
+import io
 from django.conf import settings
 from django.db.models.base import ModelBase
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
@@ -224,6 +226,36 @@ def get_grid_column_definition(request):
                     'formatter': 'Action'})
 
     return columns
+
+
+def import_content_csv(request):
+    """
+    The user can upload a csv file - containing all the metadata.
+    This function imports these metadata into the database
+    :param request:
+    :return:
+    """
+    grid_type = request.POST['grid-type']
+    file = request.FILES['file']
+    table = tables[grid_type]
+    columns = table['columns']
+    field_names = [x['slug'] for x in columns]
+    editable_fields = [x['slug'] for x in columns if x['editable']]
+    file_data = file.read().decode("utf-8")
+    reader = csv.DictReader(io.StringIO(file_data))
+
+    supplied_fields = reader.fieldnames
+    unknown_fields = [x for x in supplied_fields if x not in field_names]
+    uneditable_fields = [x for x in supplied_fields if x not in editable_fields]
+
+    if unknown_fields:
+        raise CustomAssertionError(
+            'I don\'t recognise field(s): {}'.format(','.join(unknown_fields)))
+
+    if uneditable_fields:
+        raise CustomAssertionError(
+            'These field(s) are not editable: {}'.format(','.join(uneditable_fields)))
+
 
 
 def get_grid_content(request):

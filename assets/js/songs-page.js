@@ -62,7 +62,6 @@ const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const uploadSongsBtn = $('#upload-songs-btn');
-const uploadCsvBtn = $('#upload-csv-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
@@ -70,9 +69,6 @@ const audioUploadForm = $('#file-upload-form');
 const audioUploadInput = audioUploadForm.find('input[type=file]');
 const audioUploadSubmitBtn = audioUploadForm.find('input[type=submit]');
 
-const csvUploadForm = $('#csv-upload-form');
-const csvUploadInput = csvUploadForm.find('input[type=file]');
-const csvUploadSubmitBtn = csvUploadForm.find('input[type=submit]');
 
 let ce;
 
@@ -256,16 +252,8 @@ const initUploadSongsBtn = function () {
         audioUploadInput.click();
     });
 
-    uploadCsvBtn.click(function () {
-        csvUploadInput.click();
-    });
-
     audioUploadInput.change(function () {
         audioUploadSubmitBtn.click();
-    });
-
-    csvUploadInput.change(function () {
-        csvUploadSubmitBtn.click();
     });
 
     audioUploadForm.submit(function (e) {
@@ -278,15 +266,6 @@ const initUploadSongsBtn = function () {
             requestSlug: 'koe/import-audio-files',
             data: formData,
             onSuccess
-        });
-    });
-
-    csvUploadForm.submit(function (e) {
-        e.preventDefault();
-        let formData = new FormData(this);
-        uploadRequest({
-            requestSlug: 'koe/import-audio-metadata',
-            data: formData
         });
     });
 };

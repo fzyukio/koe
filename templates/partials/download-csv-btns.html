@@ -4,9 +4,15 @@
         Export
         <span class="caret"></span>
     </button>
+    <form id="csv-upload-form" method="post" enctype="multipart/form-data" style="display: none">
+        <input type="file" name="file" accept="text/csv">
+        <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
+        <input type="submit">
+    </form>
     <ul class="dropdown-menu">
-        <li><a class="download-xls" id="upload-songs-btn" data-download-type="all">Entire table</a></li>
-        <li><a class="download-xls" id="upload-csv-btn" data-download-type="visible-rows-only">Visible rows only</a>
+        <li><a class="upload-xls">Upload CSV</a></li>
+        <li><a class="download-xls" data-download-type="all">Entire table</a></li>
+        <li><a class="download-xls" data-download-type="visible-rows-only">Visible rows only</a>
         </li>
     </ul>
 </div>

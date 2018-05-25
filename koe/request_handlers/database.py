@@ -19,11 +19,11 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import spect_fft_path, \
     spect_mask_path
 
-__all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation',
+__all__ = ['create_database', 'import_metadata', 'delete_audio_files', 'save_segmentation',
            'request_database_access', 'approve_database_access', 'copy_audio_files', 'delete_segments']
 
 
-def import_audio_metadata(request):
+def import_metadata(request):
     """
     Store uploaded files (csv only)
     :param request: must contain a list of files and the id of the database to be stored against
@@ -33,6 +33,11 @@ def import_audio_metadata(request):
 
     file = get_or_error(request.FILES, 'file')
     database_id = get_or_error(request.POST, 'database')
+    grid_type = get_or_error(request.POST, 'grid-type')
+    table = tables[grid_type]
+    columns = table['columns']
+    klass = table['class']
+
     database = get_or_error(Database, dict(id=database_id))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
@@ -40,8 +45,8 @@ def import_audio_metadata(request):
     reader = csv.DictReader(io.StringIO(file_data))
 
     supplied_fields = reader.fieldnames
-    required_fields = ['filename', 'genus', 'species', 'quality', 'date', 'individual', 'gender', 'track']
-    missing_fields = [x for x in required_fields if x not in supplied_fields]
+    # supported_fields =
+
 
     if missing_fields:
         raise CustomAssertionError(

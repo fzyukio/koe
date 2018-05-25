@@ -209,6 +209,7 @@ tables = \
         "songs-grid": {
             "class": "koe.AudioFile",
             "getter": "koe.bulk_get_song_sequences",
+            "setter": "koe.bulk_set_song_sequences",
             "columns": [
                 {
                     "slug": "_sel",
@@ -230,6 +231,26 @@ tables = \
                     "name": "Date",
                     "slug": "date",
                     "type": "DATE"
+                },
+                {
+                    "name": "Behaviours",
+                    "slug": "behaviours",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Specific Locality",
+                    "slug": "locality",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Latitude",
+                    "slug": "latitude",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Longitude",
+                    "slug": "longitude",
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Gender",

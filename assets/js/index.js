@@ -19,7 +19,7 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, SlickEditors, createCsv, downloadBlob, getUrl} from './utils';
-import {postRequest} from './ajax-handler';
+import {postRequest, uploadRequest} from './ajax-handler';
 import {SelectizeEditor} from './selectize-formatter';
 require('no-going-back');
 
@@ -253,6 +253,12 @@ const initDatabaseButtons = function () {
 };
 
 
+const uploadCsvBtn = $('.upload-xls');
+const csvUploadForm = $('#csv-upload-form');
+const csvUploadInput = csvUploadForm.find('input[type=file]');
+const csvUploadSubmitBtn = csvUploadForm.find('input[type=submit]');
+
+
 /**
  * Put everything you need to run after the page has been loaded here
  */
@@ -283,6 +289,26 @@ const _postRun = function () {
         let filename = `koe-${gridType}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
         let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
         downloadBlob(blob, filename);
+    });
+
+    uploadCsvBtn.click(function () {
+        csvUploadInput.click();
+    });
+
+    csvUploadInput.change(function () {
+        csvUploadSubmitBtn.click();
+    });
+
+    csvUploadForm.submit(function (e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        let gridType = page.grid.gridName;
+        formData.append('grid-type', gridType);
+
+        uploadRequest({
+            requestSlug: 'koe/import-metadata',
+            data: formData
+        });
     });
 
     countDown();
