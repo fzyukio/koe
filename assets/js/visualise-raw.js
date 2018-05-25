@@ -50,7 +50,7 @@ export const Visualise = function () {
                 let segBeg = chunks[i][0];
                 let renderStatus = spectRenderingStatus[segBeg];
 
-                if (renderStatus.state !== stateDisplayed || renderStatus.contrast === viz.contrast) {
+                if (renderStatus.state !== stateDisplayed || renderStatus.contrast !== viz.contrast) {
                     renderStatus.contrast = viz.contrast;
                     renderStatus.state = stateScheduled;
                     sliced.push(chunks[i]);
@@ -117,6 +117,9 @@ export const Visualise = function () {
                             spect = transposeFlipUD(calcSpect(sig, subSegs, fft));
                             renderStatus.spect = spect;
                             renderStatus.state = stateCalculated;
+                            return spect;
+                        }
+                        else if (renderStatus.state !== stateDisplayed) {
                             return spect;
                         }
                         return undefined;

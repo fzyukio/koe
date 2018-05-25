@@ -51,7 +51,7 @@ export const debug = function (str) {
         let where = stack.split('\n')[2];
 
         // eslint-disable-next-line
-        console.log(`${str}`);
+        console.log(`${str}\t\t\t${where}`);
     }
 };
 
