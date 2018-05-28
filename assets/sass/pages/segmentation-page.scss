@@ -126,7 +126,7 @@ $visualisation-wrapper-padding-bottom: 10px;
   table-layout: fixed;
 
   tr td {
-    overflow-x: overlay;
+    word-wrap: break-word;
 
     &:first-child {
       font-weight: bolder;
