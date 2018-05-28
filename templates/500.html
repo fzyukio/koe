@@ -1,11 +1,12 @@
 {% extends "errors/base.html" %}
 {% block code %}500{% endblock %}
 {% block message %}
-  Sorry, something really bad happened :-(
-  <br>Our ninjas are looking into it.
-{% if request.sentry.id %}
-  <br>
-  If you need assistance, you may reference this error as
-  <pre>{{ request.sentry.id }}</pre>
-{% endif %}
+    Sorry, some unpredictable error's happened :-(, my bad
+    <br>Worry not, other functions of this website should still work.
+    <br>This error has been reported - I will look into it as soon as I can.
+    {% if request.sentry.id %}
+        <br>
+        If you need assistance, you may reference this error as
+        <pre>{{ request.sentry.id }}</pre>
+    {% endif %}
 {% endblock %}
