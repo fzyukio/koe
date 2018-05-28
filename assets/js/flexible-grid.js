@@ -357,13 +357,17 @@ export class FlexibleGrid {
     initMainGridContent(defaultArgs, callback) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
+        let dontCacheSelectableOptions = self.defaultArgs.dontCacheSelectableOptions;
+
         let args = deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
 
         let onSuccess = function (rows) {
             self.rows = rows;
             updateSlickGridData(self.mainGrid, rows);
-            self.cacheSelectableOptions();
+            if (!dontCacheSelectableOptions) {
+                self.cacheSelectableOptions();
+            }
 
             if (typeof callback === 'function') {
                 callback();

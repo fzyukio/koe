@@ -86,7 +86,7 @@ $gap-between-svgs: 8px;
 }
 
 #segments-grid {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 5 / 8);
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
 }
 
 .controller-item {
@@ -115,3 +115,15 @@ $gap-between-svgs: 8px;
   margin: 30vh auto;
 }
 
+#song-info {
+  margin-top: 20px;
+  table-layout: fixed;
+
+  tr td {
+    overflow-x: auto;
+
+    &:first-child {
+      font-weight: bolder;
+    }
+  }
+}

@@ -1608,7 +1608,7 @@ export const calcSegments = function (signalLength, windowSize, noverlap, includ
         endIdx += step;
     }
 
-    if (includeTail && endIdx > signalLength) {
+    if (includeTail && endIdx > signalLength && startIdx < signalLength) {
         segs.push([startIdx, signalLength]);
     }
 

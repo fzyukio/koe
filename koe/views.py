@@ -113,6 +113,13 @@ class SegmentationView(TemplateView):
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
         context['db_assignment'] = db_assignment
+
+        context['song_name'] = audio_file.name
+        context['song_quality'] = audio_file.quality
+        context['track_name'] = audio_file.track.name
+        context['individual_name'] = audio_file.individual.name
+        context['individual_gender'] = audio_file.individual.gender
+
         return context
 
 

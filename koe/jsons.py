@@ -292,6 +292,12 @@ tables = \
                     "type": "BOOLEAN"
                 },
                 {
+                    "name": "ID",
+                    "slug": "id",
+                    "type": "INTEGER",
+                    "is_attribute": True
+                },
+                {
                     "name": "Start",
                     "slug": "start",
                     "type": "INTEGER",
@@ -302,7 +308,54 @@ tables = \
                     "slug": "end",
                     "type": "INTEGER",
                     "is_attribute": True
-                }
+                },
+                {
+                    "name": "Duration",
+                    "slug": "duration",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Family",
+                    "slug": "label_family",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True,
+                    "editor": "Select",
+                    "css_class": "overflow"
+                },
+                {
+                    "name": "Subfamily",
+                    "slug": "label_subfamily",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True,
+                    "editor": "Select",
+                    "css_class": "overflow"
+                },
+                {
+                    "name": "Label",
+                    "slug": "label",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True,
+                    "editor": "Select",
+                    "css_class": "overflow"
+                },
+                {
+                    "name": "Mean FF",
+                    "slug": "mean_ff",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Min FF",
+                    "slug": "min_ff",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Max FF",
+                    "slug": "max_ff",
+                    "type": "FLOAT"
+                },
             ]
         },
         "song-partition-grid": {

@@ -7,6 +7,7 @@ from django.conf import settings
 from shutil import copyfile
 
 from django.db import transaction, IntegrityError
+from django.db.models import Count
 from dotmap import DotMap
 
 from koe.grid_getters import bulk_get_segments_for_audio
@@ -19,7 +20,7 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import spect_fft_path, \
     spect_mask_path
 
-__all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation',
+__all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'approve_database_access', 'copy_audio_files', 'delete_segments']
 
 
@@ -184,7 +185,7 @@ def save_segmentation(request):
     """
     user = request.user
     items = json.loads(get_or_error(request.POST, 'items'))
-    file_id = get_or_error(request.POST, 'file-id')
+    file_id = int(get_or_error(request.POST, 'file-id'))
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.MODIFY_SEGMENTS)
     segments = Segment.objects.filter(audio_file=audio_file)
@@ -195,7 +196,11 @@ def save_segmentation(request):
         id = item['id']
         if isinstance(id, str) and id.startswith('new:'):
             segment = Segment(audio_file=audio_file, start_time_ms=item['start'], end_time_ms=item['end'])
-            new_segments.append(segment)
+            label = item.get('label', None)
+            family = item.get('label_family', None)
+            subfamily = item.get('label_subfamily', None)
+
+            new_segments.append((segment, label, family, subfamily))
         else:
             old_segments.append(item)
 
@@ -224,6 +229,9 @@ def save_segmentation(request):
             os.remove(seg_spect_path)
 
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=to_delete_segment_ids).delete()
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
+    family_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_family')
+    subfamily_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_subfamily')
 
     with transaction.atomic():
         for segment in to_update:
@@ -231,12 +239,19 @@ def save_segmentation(request):
         for segment in to_delete:
             segment.delete()
 
-        Segment.objects.bulk_create(new_segments)
+        for segment, label, family, subfamily in new_segments:
+            segment.save()
+            if label:
+                ExtraAttrValue.objects.create(user=user, attr=label_attr, owner_id=segment.id, value=label)
+            if family:
+                ExtraAttrValue.objects.create(user=user, attr=family_attr, owner_id=segment.id, value=family)
+            if subfamily:
+                ExtraAttrValue.objects.create(user=user, attr=subfamily_attr, owner_id=segment.id, value=subfamily)
 
     extract_spectrogram(audio_file)
 
     segments = Segment.objects.filter(audio_file=audio_file)
-    _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id))
+    _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id, user=user))
     return rows
 
 
@@ -461,3 +476,30 @@ def delete_segments(request):
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=ids).delete()
     segments.delete()
     return True
+
+
+def get_label_options(request):
+    file_id = json.loads(get_or_error(request.POST, 'file-id'))
+    audio_file = get_or_error(AudioFile, dict(id=file_id))
+    database = audio_file.database
+    user = request.user
+
+    assert_permission(user, database, DatabasePermission.VIEW)
+    all_segment_ids = list(Segment.objects.filter(audio_file__database=database).values_list('id', flat=True))
+
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
+    family_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_family')
+    subfamily_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_subfamily')
+
+    extra_attr_values = ExtraAttrValue.objects.filter(user=user, owner_id__in=all_segment_ids)
+    labels_and_counts = extra_attr_values.filter(attr=label_attr).values_list('value').annotate(c=Count('value'))
+    families_and_counts = extra_attr_values.filter(attr=family_attr).values_list('value').annotate(c=Count('value'))
+    subfams_and_counts = extra_attr_values.filter(attr=subfamily_attr).values_list('value').annotate(c=Count('value'))
+
+    labels_to_counts = {l: c for l, c in labels_and_counts}
+    fams_to_counts = {l: c for l, c in families_and_counts}
+    subfams_to_counts = {l: c for l, c in subfams_and_counts}
+
+    retval = {'label': labels_to_counts, 'label_family': fams_to_counts, 'label_subfamily': subfams_to_counts}
+
+    return retval

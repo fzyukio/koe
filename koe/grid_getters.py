@@ -351,13 +351,36 @@ def bulk_get_segments_for_audio(segs, extras):
     :return: the usual stuff
     """
     file_id = extras.file_id
+    from_user = extras.user
     segs = segs.filter(audio_file=file_id)
-    values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
+    values = segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',)
     ids = []
     rows = []
-    for id, start, end in values:
+
+    segids = [x[0] for x in values]
+
+    extra_attr_values_list = ExtraAttrValue.objects \
+        .filter(user__username=from_user, attr__klass=Segment.__name__, owner_id__in=segids) \
+        .values_list('owner_id', 'attr__name', 'value')
+
+    extra_attr_values_lookup = {}
+    for id, attr, value in extra_attr_values_list:
+        if id not in extra_attr_values_lookup:
+            extra_attr_values_lookup[id] = {}
+        extra_attr_dict = extra_attr_values_lookup[id]
+        extra_attr_dict[attr] = value
+
+    for id, start, end, mean_ff, min_ff, max_ff in values:
         ids.append(id)
-        rows.append(dict(id=id, start=start, end=end))
+        duration = end - start
+        row = dict(id=id, start=start, end=end, duration=duration, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff)
+
+        extra_attr_dict = extra_attr_values_lookup.get(id, {})
+
+        for attr in extra_attr_dict:
+            row[attr] = extra_attr_dict[attr]
+
+        rows.append(row)
 
     return ids, rows
 

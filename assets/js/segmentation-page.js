@@ -1,12 +1,13 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, initAudioContext, queryAndHandleAudio} from './audio-handler';
-import {deepCopy, getUrl, setCache, getCache, smotthScrollTo} from './utils';
+import {deepCopy, getUrl, setCache, getCache, smotthScrollTo, isNumber} from './utils';
 import {postRequest} from './ajax-handler';
 import {visualiseSpectrogram, Visualise} from './visualise-d3';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
+gridOptions.rowHeight = 50;
 
 let ce;
 let contrast;
@@ -113,6 +114,14 @@ class Grid extends FlexibleGrid {
         }
     }
 
+    rowChangeHandler(e, args, onSuccess, onFailure) {
+        let item = args.item;
+
+        // Only change properties of files that already exist on the server
+        if (isNumber(item.id)) {
+            super.rowChangeHandler(e, args, onSuccess, onFailure);
+        }
+    }
 }
 
 export const grid = new Grid();
@@ -365,6 +374,7 @@ const initKeyboardHooks = function () {
 let gridExtraArgs = {
     '__extra__file_id': fileId,
     multiSelect: true,
+    dontCacheSelectableOptions: true
 };
 
 
@@ -378,6 +388,16 @@ export const run = function (commonElements) {
     initAudioContext();
     grid.init(fileId);
     viz.init(oscillogramId, spectrogramId);
+
+    let onSuccess = function (selectableOptions) {
+        setCache('selectableOptions', undefined, selectableOptions)
+    };
+
+    postRequest({
+        requestSlug: 'koe/get-label-options',
+        data: {'file-id': fileId},
+        onSuccess
+    });
 
     visualiseSong(function () {
         grid.initMainGridHeader(gridExtraArgs, function () {

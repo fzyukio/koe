@@ -230,6 +230,7 @@ export const Visualise = function () {
                         id: newId,
                         start,
                         end,
+                        duration: end - start
                     };
                     syllables[newId] = newSyllable;
 
@@ -246,6 +247,7 @@ export const Visualise = function () {
                 else {
                     syllables[sylIdx].start = start;
                     syllables[sylIdx].end = end;
+                    syllables[sylIdx].duration = end - start;
 
                     viz.eventNotifier.trigger('segment-changed', {
                         type: 'segment-adjusted',
