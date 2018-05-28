@@ -33,8 +33,14 @@ const subscribeFlexibleEvents = function () {
         if (item.__can_import) {
             applyVersionBtn.prop('disabled', false);
         }
+        else {
+            applyVersionBtn.prop('disabled', true);
+        }
         if (item.__can_delete) {
             deleteVersionBtn.prop('disabled', false);
+        }
+        else {
+            applyVersionBtn.prop('disabled', true);
         }
     });
 };
