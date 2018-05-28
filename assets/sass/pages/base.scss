@@ -300,3 +300,27 @@ body.loading #loading-spinner-modal {
   width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
   padding-left: 20px;
 }
+
+@-webkit-keyframes border-blink {
+  from, to {
+    stroke-dasharray: 2 4 4 2 0;
+  }
+  25% {
+    stroke-dasharray: 4 4 2 0 2;
+  }
+  50% {
+    stroke-dasharray: 4 2 0 2 4;
+  }
+  75% {
+    stroke-dasharray: 2 0 2 4 4;
+  }
+}
+
+@keyframes border-blink {
+  10%, 30%, 50%, 70%, 90% {
+    stroke-dasharray: 3 6 3 0;
+  }
+  from, 20%, 40%, 60%, 80%, to {
+    stroke-dasharray: 0 3 6 3;
+  }
+}

@@ -42,6 +42,8 @@ $gap-between-svgs: 8px;
         stroke: rgb(255, 101, 4);
         stroke-width: 2px;
         fill: transparent;
+        -webkit-animation: border-blink 1s step-end infinite;
+        animation: border-blink 1s step-end infinite;
       }
     }
 
