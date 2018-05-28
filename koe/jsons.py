@@ -166,6 +166,7 @@ tables = \
                     "name": "Note",
                     "slug": "note",
                     "type": "SHORT_TEXT",
+                    "is_attribute": True,
                     "editable": True
                 },
                 {
