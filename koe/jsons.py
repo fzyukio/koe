@@ -342,6 +342,13 @@ tables = \
                     "css_class": "overflow"
                 },
                 {
+                    "name": "Note",
+                    "slug": "note",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_extra_attr": True
+                },
+                {
                     "name": "Mean FF",
                     "slug": "mean_ff",
                     "type": "FLOAT"

@@ -4,8 +4,19 @@
 
 {% block content-grid %}
 
+    <div class="row no-margin" id="visualisation-wrapper">
+        <div class="col-xs-12 no-padding" id="visualisation">
+            <div class="row no-margin">
+                <svg id="oscillogram"></svg>
+            </div>
+            <div class="row no-margin">
+                <svg id="spectrogram"></svg>
+            </div>
+        </div>
+    </div>
+
     <div class="row no-margin">
-        <div class="col-xs-5 col-sm-4 col-md-3 no-padding-left">
+        <div class="col-xs-4 col-sm-3 col-md-2 no-padding-left">
             <div class="btn-group btn-group-justified" role="group" aria-label="...">
                 <div class="btn-group btn-group-sm" role="group">
                     <button id="play-song" type="button" class="btn btn-primary">Play</button>
@@ -35,48 +46,28 @@
 
             </div>
 
-
-  <table class="table table-hover table-condensed table-striped" id="song-info">
-    <tbody>
-      <tr>
-        <td class="col-md-4">Song</td>
-        <td class="col-md-8">{{ song_name }}</td>
-      </tr>
-      <tr>
-        <td>Track</td>
-        <td>{{ track_name }}</td>
-      </tr>
-      <tr>
-        <td>Quality</td>
-        <td>{{ song_quality }}</td>
-      </tr>
-      <tr>
-        <td>Individual</td>
-        <td>{{ individual_name }}</td>
-      </tr>
-      <tr>
-        <td>Gender</td>
-        <td>{{ individual_gender }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-
-
+            <table class="table table-hover table-condensed table-striped" id="song-info">
+                <thead>
+                <tr>
+                    <th class="col-md-4">Attribute</th>
+                    <th class="col-md-8">Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for attr, value in song_info.items %}
+                <tr>
+                    <td>{{ attr }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <div class="col-xs-7 col-sm-8 col-md-9 no-padding">
-            <div id="visualisation">
-                <div class="row no-margin">
-                    <svg id="oscillogram"></svg>
-                </div>
-                <div class="row no-margin">
-                    <svg id="spectrogram"></svg>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row no-margin">
+        <div class="col-xs-3 col-sm-5 col-md-7 no-padding">
+            <div class="has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}" fs="{{ fs }}"></div>
+        </div>
+
         <div class="col-xs-5 col-sm-4 col-md-3 no-padding">
             <div class="" id="zoomed">
                 <div class="row no-margin">
@@ -88,9 +79,6 @@
             </div>
         </div>
 
-        <div class="col-xs-7 col-sm-8 col-md-9 no-padding">
-            <div class="has-grid" id="segments-grid" file-id="{{ file_id }}" length="{{ length }}" fs="{{ fs }}"></div>
-        </div>
     </div>
 
 {% endblock %}

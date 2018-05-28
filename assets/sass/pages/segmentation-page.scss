@@ -3,6 +3,7 @@
 $scrollbar-height: 15px;
 $axis-height: 18.6px;
 $gap-between-svgs: 8px;
+$visualisation-wrapper-padding-bottom: 10px;
 
 .axis {
   text {
@@ -20,6 +21,11 @@ $gap-between-svgs: 8px;
     fill: none;
     stroke: black;
   }
+}
+
+
+#visualisation-wrapper {
+  padding-bottom: $visualisation-wrapper-padding-bottom;
 }
 
 #visualisation {
@@ -62,17 +68,17 @@ $gap-between-svgs: 8px;
 }
 
 #zoomed {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom}) * 10 / 14);
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 2 / 14);
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs}) * 2 / 14);
     width: 100%;
   }
 
   #spectrogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 8 / 14);
+    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs}) * 8 / 14);
     width: 100%;
   }
 }
@@ -86,7 +92,7 @@ $gap-between-svgs: 8px;
 }
 
 #segments-grid {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
+  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom}) * 10 / 14);
 }
 
 .controller-item {
@@ -120,7 +126,7 @@ $gap-between-svgs: 8px;
   table-layout: fixed;
 
   tr td {
-    overflow-x: auto;
+    overflow-x: overlay;
 
     &:first-child {
       font-weight: bolder;

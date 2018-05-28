@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.generic import TemplateView, FormView
@@ -7,7 +8,7 @@ from django.views.generic import TemplateView, FormView
 from koe.forms import SongPartitionForm
 from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
 from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermission, AccessRequest, AudioTrack
-from root.models import User
+from root.models import User, ExtraAttrValue
 
 
 def populate_context(obj, context, kwargs, with_similarity=False):
@@ -107,18 +108,35 @@ class SegmentationView(TemplateView):
         file_id = get_or_error(kwargs, 'file_id')
         audio_file = get_or_error(AudioFile, dict(id=file_id))
         db_assignment = assert_permission(user, audio_file.database, DatabasePermission.VIEW)
+        track = audio_file.track
+        individual = audio_file.individual
+        quality = audio_file.quality
+        date = track.date if track else None
+        species = individual.species if individual else None
 
         context['page'] = 'segmentation'
         context['file_id'] = file_id
+        context['db_assignment'] = db_assignment
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
-        context['db_assignment'] = db_assignment
 
-        context['song_name'] = audio_file.name
-        context['song_quality'] = audio_file.quality
-        context['track_name'] = audio_file.track.name
-        context['individual_name'] = audio_file.individual.name
-        context['individual_gender'] = audio_file.individual.gender
+        context['song_info'] = {
+            'Length': '{:5.2f} secs'.format(audio_file.length / audio_file.fs),
+            'Name': audio_file.name,
+            'Species': str(species) if species else 'Unknown',
+            'Date': date.strftime(settings.DATE_INPUT_FORMAT) if date else 'Unknown',
+            'Quality': quality if quality else 'Unknown',
+            'Track': track.name if track else 'Unknown',
+            'Individual': individual.name if individual else 'Unknown',
+            'Gender': individual.gender if individual else 'Unknown'
+        }
+
+        song_extra_attr_values_list = ExtraAttrValue.objects \
+            .filter(user=user, attr__klass=AudioFile.__name__, owner_id=audio_file.id) \
+            .values_list('attr__name', 'value')
+
+        for attr, value in song_extra_attr_values_list:
+            context['song_info']['Song\'s {}'.format(attr)] = value
 
         return context
 
