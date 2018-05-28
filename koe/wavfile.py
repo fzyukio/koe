@@ -67,9 +67,7 @@ def _read_fmt_chunk(fid):
 
 # assumes file pointer is immediately
 #   after the 'data' id
-def _read_data_chunk(fid, noc, bits, normalized=False):
-    size = struct.unpack('<i', fid.read(4))[0]
-
+def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False):
     if bits == 8 or bits == 24:
         dtype = 'u1'
         bytes = 1
@@ -80,7 +78,16 @@ def _read_data_chunk(fid, noc, bits, normalized=False):
     if bits == 32 and _ieee:
         dtype = 'float32'
 
-    data = numpy.fromfile(fid, dtype=dtype, count=size // bytes)
+    data_start = fid.tell()
+    # Important #2: beg must be at the beginning of a frame
+    # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
+    #      for 24-bit audio (bytes = 1), beg must be divisible by 1
+    #      for 32-bit audio (bytes = 4), beg must be divisible by 4
+    beg = nearest_multiple(beg, bytes)
+    fid.seek(beg + data_start)
+    chunk_size = end - beg
+
+    data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
 
     if bits == 24:
         a = numpy.empty((len(data) // 3, 4), dtype='u1')
@@ -94,10 +101,9 @@ def _read_data_chunk(fid, noc, bits, normalized=False):
     if bool(size & 1):  # if odd number of bytes, move 1 byte further (data chunk is word-aligned)
         fid.seek(1, 1)
 
-    if normalized:
-        if bits == 8 or bits == 16 or bits == 24:
-            normfactor = 2 ** (bits - 1)
-        data = numpy.float32(data) * 1.0 / normfactor
+    if normalised:
+        normfactor = 1.0 / (2 ** (bits - 1))
+        data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
 
     return data
 
@@ -162,7 +168,7 @@ def read_wav_info(file):
     return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
 
 
-def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
+def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
     :param normalised: If true, return float32 array, otherwise return the raw ubyte array
@@ -175,69 +181,65 @@ def read_segment(file, beg_ms, end_ms, mono=False, normalised=True):
         fid = file
     else:
         fid = open(file, 'rb')
-    _read_riff_chunk(fid)
 
-    # the next four bytes is the ID of the next chunk - which is always fmt. We MUST read pass this 4 bytes
-    fid.read(4)
+    fsize = _read_riff_chunk(fid)
 
-    size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
+    while fid.tell() < fsize:
+        chunk_id = fid.read(4)
+        if chunk_id == b'fmt ':
+            size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
+        elif chunk_id == b'data':
+            size = struct.unpack('<i', fid.read(4))[0]
+            if bits == 8 or bits == 24:
+                dtype = 'u1'
+                bytes = 1
+            else:
+                bytes = bits // 8
+                dtype = '<i%d' % bytes
 
-    # the next four bytes is the ID of the next chunk - which is always data. We MUST read pass this 4 bytes
-    fid.read(4)
+            if bits == 32 and _ieee:
+                dtype = 'float32'
 
-    if bits == 8 or bits == 24:
-        dtype = 'u1'
-        bytes = 1
-    else:
-        bytes = bits // 8
-        dtype = '<i%d' % bytes
+            beg = int(beg_ms * rate * ba / 1000)
+            data_start = fid.tell()
 
-    if bits == 32 and _ieee:
-        dtype = 'float32'
+            # Important #2: beg must be at the beginning of a frame
+            # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
+            #      for 24-bit audio (bytes = 1), beg must be divisible by 1
+            #      for 32-bit audio (bytes = 4), beg must be divisible by 4
+            beg = nearest_multiple(beg, bytes)
+            fid.seek(beg + data_start)
 
-    beg = int(beg_ms * rate * ba / 1000)
-    end = int(end_ms * rate * ba / 1000)
+            if end_ms is None:
+                end = size
+            else:
+                end = int(end_ms * rate * ba / 1000)
 
-    chunk_size = end - beg
-    current_pos = fid.tell()
+            chunk_size = end - beg
+            data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
 
-    # Important: must skip the next 4 byte otherwise the audio data will be corrupted
-    # in read() the statement size = struct.unpack('<i', fid.read(4))[0] creates this effect
-    # but in here we don't care about the size so either we call that statement or we must skip 4 bytes
-    beg = beg + current_pos + 4
+            fid.close()
 
-    # Important #2: beg must be at the beginning of a frame
-    # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
-    #      for 24-bit audio (bytes = 1), beg must be divisible by 1
-    #      for 32-bit audio (bytes = 4), beg must be divisible by 4
-    beg = nearest_multiple(beg, bytes)
-    fid.seek(beg)
+            if bits == 24:
+                a = numpy.empty((len(data) // 3, 4), dtype='u1')
+                a[:, :3] = data.reshape((-1, 3))
+                a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
+                data = a.view('<i4').reshape(a.shape[:-1])
 
-    data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+            if noc > 1:
+                data = data.reshape(-1, noc)
+                if mono:
+                    data = data[:, 0]
 
-    fid.close()
-
-    if bits == 24:
-        a = numpy.empty((len(data) // 3, 4), dtype='u1')
-        a[:, :3] = data.reshape((-1, 3))
-        a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
-        data = a.view('<i4').reshape(a.shape[:-1])
-
-    if noc > 1:
-        data = data.reshape(-1, noc)
-        if mono:
-            data = data[:, 0]
-
-    if normalised:
-        normfactor = 1.0 / (2 ** (bits - 1))
-        data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
-    else:
-        data = numpy.ascontiguousarray(data, dtype=data.dtype)
-    return data
+            if normalised:
+                normfactor = 1.0 / (2 ** (bits - 1))
+                data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
+            else:
+                data = numpy.ascontiguousarray(data, dtype=data.dtype)
+            return data
 
 
-def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False, readloops=False, readpitch=False,
-         normalized=False, forcestereo=False):
+def read(file, beg_ms=0, end_ms=None, normalised=True, mono=False):
     """
     Return the sample rate (in samples/sec) and data from a WAV file
     Notes
@@ -254,8 +256,8 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
     :param readmarkerslist:
     :param readloops:
     :param readpitch:
-    :param normalized:
-    :param forcestereo:
+    :param normalised:
+    :param mono:
     :return: rate : int Sample rate of wav file
              data : numpy array Data read from wav file
     """
@@ -270,14 +272,22 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
 
     _markersdict = collections.defaultdict(lambda: {'position': -1, 'label': ''})
     loops = []
-    pitch = 0.0
     while fid.tell() < fsize:
         # read the next chunk
         chunk_id = fid.read(4)
         if chunk_id == b'fmt ':
             size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
         elif chunk_id == b'data':
-            data = _read_data_chunk(fid, noc, bits, normalized)
+            size = struct.unpack('<i', fid.read(4))[0]
+            beg = int(beg_ms * rate * ba / 1000)
+            data_start = fid.tell()
+            if end_ms is None:
+                end = size
+            else:
+                end = int(end_ms * rate * ba / 1000)
+            data = _read_data_chunk(fid, noc, size, bits, beg, end, normalised)
+            fid.seek(size + data_start)
+
         elif chunk_id == b'cue ':
             str1 = fid.read(8)
             size, numcue = struct.unpack('<ii', str1)
@@ -289,13 +299,13 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
 
         elif chunk_id == b'LIST':
             str1 = fid.read(8)
-            size, type = struct.unpack('<ii', str1)
+            # size, type = struct.unpack('<ii', str1)
         elif chunk_id in [b'ICRD', b'IENG', b'ISFT', b'ISTJ']:  # see http://www.pjb.com.au/midi/sfspec21.html#i5
             _skip_unknown_chunk(fid)
         elif chunk_id == b'labl':
             str1 = fid.read(8)
             size, id = struct.unpack('<ii', str1)
-            size = size + (size % 2)  # the size should be even, see WAV specfication, e.g. 16=>16, 23=>24
+            size += size % 2  # the size should be even, see WAV specfication, e.g. 16=>16, 23=>24
             label = fid.read(size - 4).rstrip('\x00')  # remove the trailing null characters
             # _cuelabels.append(label)
             _markersdict[id]['label'] = label  # needed to match labels and markers
@@ -304,34 +314,23 @@ def read(file, readmarkers=False, readmarkerlabels=False, readmarkerslist=False,
             str1 = fid.read(40)
             size, manuf, prod, fs, midiunitynote, midipitchfraction, smptefmt, smpteoffs, nsampleloops, samplerdata = \
                 struct.unpack('<iiiiiIiiii', str1)
-            cents = midipitchfraction * 1. / (2 ** 32 - 1)
-            pitch = 440. * 2 ** ((midiunitynote + cents - 69.) / 12)
             for i in range(nsampleloops):
                 str1 = fid.read(24)
                 cuepointid, type, start, end, fraction, playcount = struct.unpack('<iiiiii', str1)
                 loops.append([start, end])
         else:
-            warnings.warn("Chunk " + chunk_id + " skipped", WavFileWarning)
+            try:
+                chunk_id_printable = chunk_id.decode('utf-8')
+            except UnicodeDecodeError:
+                chunk_id_printable = str(chunk_id)
+            warnings.warn("Chunk " + chunk_id_printable + " skipped", WavFileWarning)
             _skip_unknown_chunk(fid)
     fid.close()
 
-    if data.ndim == 1 and forcestereo:
+    if data.ndim == 1 and mono:
         data = numpy.column_stack((data, data))
 
-    _markerslist = sorted([_markersdict[l] for l in _markersdict], key=lambda k: k['position'])  # sort by position
-    _cue = [m['position'] for m in _markerslist]
-    _cuelabels = [m['label'] for m in _markerslist]
-
-    return (rate, data, bits,) + \
-           ((_cue,) if readmarkers else ()) + \
-           ((_cuelabels,) if readmarkerlabels else ()) + \
-           ((_markerslist,) if readmarkerslist else ()) + \
-           ((loops,) if readloops else ()) + \
-           ((pitch,) if readpitch else ())
-
-
-def write_raw():
-    pass
+    return rate, data, bits
 
 
 def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=None):

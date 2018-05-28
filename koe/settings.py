@@ -217,6 +217,9 @@ CSRF_TRUSTED_ORIGINS = envconf['csrf_trusted_origin']
 DATE_INPUT_FORMAT = '%Y-%m-%d'
 TIME_INPUT_FORMAT = '%Y-%m-%d %H:%M:%S %z%Z'
 
+# Test runner with no database creation
+TEST_RUNNER = 'tests.test_nodb.NoDbTestRunner'
+
 # For local run:
 if DEBUG:
 

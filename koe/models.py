@@ -409,6 +409,20 @@ class AccessRequest(SimpleModel):
         )
 
 
+class Feature(SimpleModel):
+    name = models.CharField(max_length=255, unique=True)
+    is_fixed_length = models.BooleanField()
+    is_one_dimensional = models.BooleanField()
+
+
+class SegmentFeature(SimpleModel):
+    segment = models.ForeignKey(Segment, on_delete=models.CASCADE)
+    feature = models.ForeignKey(Feature, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('segment', 'feature')
+
+
 @receiver(post_delete, sender=HistoryEntry)
 def _history_delete(sender, instance, **kwargs):
     """

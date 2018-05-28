@@ -20,3 +20,4 @@ mossop.db
 help.md
 settings.yaml
 backups/
+*.h5

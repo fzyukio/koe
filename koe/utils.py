@@ -94,7 +94,7 @@ def normxcorr2(template, image, mode="valid"):
     ar = np.flipud(np.fliplr(template))
     out = fftconvolve(image, ar.conj(), mode=mode)
 
-    image = fftconvolve(np.square(image), a1, mode=mode)\
+    image = fftconvolve(np.square(image), a1, mode=mode) \
         - np.square(fftconvolve(image, a1, mode=mode)) / (np.prod(template.shape))
 
     # Remove small machine precision errors after subtraction
@@ -131,11 +131,51 @@ def get_wav_info(audio_file):
     return rate, nframes
 
 
-if __name__ == '__main__':
-    b = np.array([[8, 1, 6], [3, 5, 7], [4, 9, 2]], dtype=np.float64)
-    a = np.array([[8, 1, 6, 8, 5], [3, 5, 7, 4, 6], [4, 9, 2, 0, 2], [0, 2, 9, 1, 3], [1, 8, 5, 2, 9]],
-                 dtype=np.float64)
+def segments(siglen, window, noverlap, incltail=False):
+    """
+    Calculate how many segments can be extracted from a signal given
+    the window size and overlap size
+     INPUT:
+      - SIGLEN : length of the signal
+      - WINDOW : window size (number of samples)
+      - NOVERLAP: overlap size (number of samples)
+      - INCLTAIL: true to always include the last owner (might be < window)
+                    false to exclude it if it's < window
+     OUTPUT:
+      - NSEGS   : number of segments that can be extracted
+      - SEGS    : a two dimensional arrays. Each column is a pair of segments
+                   indices
+     Example:
+      [nsegs, segs] = nsegment(53, 10, 5)
+       nsegs = 9
+       segs =
+         1    10
+         6    15
+        11    20
+        16    25
+        21    30
+        26    35
+        31    40
+        36    45
+        41    50
+      tail:
+        51    53
+    """
+    idx1 = np.arange(0, siglen, window - noverlap)
+    idx2 = idx1 + window
 
-    c = normxcorr2(b, a)
-    with printoptions(precision=3, suppress=True):
-        print(c)
+    last = np.where(idx2 > siglen)[0][0] + 1
+    if idx2[last - 2] == siglen:
+        incltail = False
+    if incltail:
+        nsegs = last
+        idx2[nsegs - 1] = siglen
+    else:
+        nsegs = last - 1
+
+    segs = np.empty((nsegs, 2), dtype=np.uint32)
+
+    segs[:, 0] = idx1[:nsegs]
+    segs[:, 1] = idx2[:nsegs]
+
+    return nsegs, segs

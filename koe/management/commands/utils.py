@@ -35,20 +35,20 @@ def get_dbconf(dbs):
     return conns
 
 
-def wav_2_mono(file):
+def wav_2_mono(file, **kwargs):
     """
     Read a wav file and return fs and first channel's data stream.
     The data is normalised to be equivalent to Matlab's `audioread(...)` function
     :param file:
     :return: fs and signal
     """
-    w = wavfile.read(file)
+    w = wavfile.read(file, **kwargs)
     if len(numpy.shape(w[1])) > 1:
         data = w[1][:, 0]
     else:
         data = w[1]
     fs = w[0]
-    bitrate = w[2]
-    normalization_factor = float(2 ** (bitrate - 1))
-    sig = data / normalization_factor
-    return fs, sig
+    # bitrate = w[2]
+    # normalization_factor = float(2 ** (bitrate - 1))
+    # sig = data / normalization_factor
+    return fs, data
