@@ -113,7 +113,7 @@ def init_tables():
             column['filter'] = ValueTypes.get_associated_value(_type, 'filter_type')
             column['sortable'] = ValueTypes.get_associated_value(_type, 'sortable')
             column['copyable'] = ValueTypes.get_associated_value(_type, 'copyable')
-            column['exportable'] = ValueTypes.get_associated_value(_type, 'exportable')
+            column['exportable'] = column.get('exportable', ValueTypes.get_associated_value(_type, 'exportable'))
             column['cssClass'] = column.get('css_class', '')
 
             if 'has_total' not in column:

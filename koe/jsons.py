@@ -10,7 +10,8 @@ tables = \
                     "slug": "_sel",
                     "editable": False,
                     "is_addon": True,
-                    "type": "BOOLEAN"
+                    "type": "BOOLEAN",
+                    "exportable": False,
                 },
                 {
                     "name": "ID",
@@ -215,7 +216,8 @@ tables = \
                     "slug": "_sel",
                     "editable": False,
                     "is_addon": True,
-                    "type": "BOOLEAN"
+                    "type": "BOOLEAN",
+                    "exportable": False,
                 },
                 {
                     "name": "Filename",
@@ -290,7 +292,8 @@ tables = \
                     "slug": "_sel",
                     "editable": False,
                     "is_addon": True,
-                    "type": "BOOLEAN"
+                    "type": "BOOLEAN",
+                    "exportable": False,
                 },
                 {
                     "name": "ID",
@@ -374,7 +377,8 @@ tables = \
                     "slug": "_sel",
                     "editable": False,
                     "is_addon": True,
-                    "type": "BOOLEAN"
+                    "type": "BOOLEAN",
+                    "exportable": False
                 },
                 {
                     "name": "Upload progress",

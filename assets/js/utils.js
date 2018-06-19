@@ -331,6 +331,25 @@ const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
 
 
 /**
+ * Break a markdown URL down to url and text
+ * @param rawUrl markdown URL
+ */
+const convertRawUrl = function(rawUrl) {
+    let matches = urlRegex.exec(rawUrl);
+    let url;
+    let val = rawUrl;
+    if (matches) {
+        url = matches[1];
+        val = matches[2];
+    }
+    return {
+        url,
+        val
+    };
+};
+
+
+/**
  * Display text as clickable URL. The url is embedded in the cell value
  * @param row
  * @param cell
@@ -357,15 +376,13 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
         return `<a href="${dataContext[fieldUrl]}" target="_blank">${value}</a>`
     }
 
-    let matches = urlRegex.exec(value);
-    if (matches) {
-        let url = matches[1];
-        let val = matches[2];
+    let {url, val} = convertRawUrl(value);
+    if (url) {
         dataContext[fieldUrl] = url;
         dataContext[fieldName] = val;
         return `<a href="${url}" target="_blank">${val}</a>`
     }
-    return value
+    return val;
 };
 
 
@@ -1531,7 +1548,11 @@ export const createCsv = function (grid, downloadType) {
             let columnField = column.field;
             let exportable = column.exportable;
             if (exportable) {
-                row.push(`${item[columnField] || ''}`);
+                let fieldValue = item[columnField];
+                if (columnField === 'url') {
+                    fieldValue = convertRawUrl(fieldValue).val;
+                }
+                row.push(`${fieldValue || ''}`);
             }
         }
         rows.push(row);
