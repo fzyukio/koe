@@ -25,7 +25,7 @@ from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
 from koe.models import AudioFile, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
 from koe.utils import get_wav_info
-from root.models import ExtraAttr, ValueTypes, User
+from root.models import User
 from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path, audio_path
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
@@ -46,8 +46,7 @@ global_spect_pixel_range = global_max_spect_pixel - global_min_spect_pixel
 interval64 = global_spect_pixel_range / 63
 
 name_regex = re.compile('(\d\d)(\d\d)(\d\d)_(.*) (\d+)(.*)wav')
-note_attr, _ = ExtraAttr.objects.get_or_create(
-    klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
+note_attr = settings.ATTRS.audio_file.note
 
 PY3 = sys.version_info[0] == 3
 if PY3:

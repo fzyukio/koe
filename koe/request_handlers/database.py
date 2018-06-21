@@ -199,8 +199,9 @@ def save_segmentation(request):
             label = item.get('label', None)
             family = item.get('label_family', None)
             subfamily = item.get('label_subfamily', None)
+            note = item.get('note', None)
 
-            new_segments.append((segment, label, family, subfamily))
+            new_segments.append((segment, label, family, subfamily, note))
         else:
             old_segments.append(item)
 
@@ -229,9 +230,11 @@ def save_segmentation(request):
             os.remove(seg_spect_path)
 
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=to_delete_segment_ids).delete()
-    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
-    family_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_family')
-    subfamily_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_subfamily')
+
+    label_attr = settings.ATTRS.segment.label
+    family_attr = settings.ATTRS.segment.family
+    subfamily_attr = settings.ATTRS.segment.subfamily
+    note_attr = settings.ATTRS.segment.note
 
     with transaction.atomic():
         for segment in to_update:
@@ -239,7 +242,7 @@ def save_segmentation(request):
         for segment in to_delete:
             segment.delete()
 
-        for segment, label, family, subfamily in new_segments:
+        for segment, label, family, subfamily, note in new_segments:
             segment.save()
             if label:
                 ExtraAttrValue.objects.create(user=user, attr=label_attr, owner_id=segment.id, value=label)
@@ -247,6 +250,8 @@ def save_segmentation(request):
                 ExtraAttrValue.objects.create(user=user, attr=family_attr, owner_id=segment.id, value=family)
             if subfamily:
                 ExtraAttrValue.objects.create(user=user, attr=subfamily_attr, owner_id=segment.id, value=subfamily)
+            if note:
+                ExtraAttrValue.objects.create(user=user, attr=note_attr, owner_id=segment.id, value=note)
 
     extract_spectrogram(audio_file)
 

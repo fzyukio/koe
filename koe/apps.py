@@ -13,19 +13,24 @@ def get_builtin_attrs():
     :return: None
     """
     from root.models import ExtraAttr, ValueTypes, User
-    from koe.models import AudioFile
+    from koe.models import AudioFile, Segment
 
-    current_database_attr, _ = ExtraAttr.objects.get_or_create(
-        klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
-    current_similarity_attr, _ = ExtraAttr.objects.get_or_create(
-        klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
+    goc = ExtraAttr.objects.get_or_create
 
-    note_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
-    type_attr, _ = ExtraAttr.objects.get_or_create(klass=AudioFile.__name__, name='type', type=ValueTypes.SHORT_TEXT)
+    current_database_attr, _ = goc(klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
+    current_similarity_attr, _ = goc(klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
+
+    song_note_attr, _ = goc(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
+    type_attr, _ = goc(klass=AudioFile.__name__, name='type', type=ValueTypes.SHORT_TEXT)
+    label_attr, _ = goc(klass=Segment.__name__, name='label', type=ValueTypes.SHORT_TEXT)
+    family_attr, _ = goc(klass=Segment.__name__, name='label_family', type=ValueTypes.SHORT_TEXT)
+    subfamily_attr, _ = goc(klass=Segment.__name__, name='label_subfamily', type=ValueTypes.SHORT_TEXT)
+    seg_note_attr, _ = goc(klass=Segment.__name__, name='note', type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
         user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr),
-        audio_file=DotMap(note=note_attr, type=type_attr)
+        audio_file=DotMap(note=song_note_attr, type=type_attr),
+        segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr)
     )
 
 

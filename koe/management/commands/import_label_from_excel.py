@@ -4,6 +4,7 @@ Import syllables (not elements) from luscinia (after songs have been imported)
 import os
 from logging import warning
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models.functions import Cast
@@ -12,7 +13,7 @@ from django.forms import models
 from openpyxl import load_workbook
 
 from koe.models import Segment, AudioFile
-from root.models import enum, ExtraAttr, ValueTypes, User, value_setter, ExtraAttrValue
+from root.models import enum, ExtraAttr, User, value_setter, ExtraAttrValue
 
 ColumnName = enum(
     POPULATION='Population',
@@ -24,11 +25,10 @@ ColumnName = enum(
     LABEL='Label'
 )
 
-label_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label', type=ValueTypes.SHORT_TEXT)
-family_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label_family',
-                                                 type=ValueTypes.SHORT_TEXT)
-subfamily_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label_subfamily',
-                                                    type=ValueTypes.SHORT_TEXT)
+label_attr = settings.ATTRS.segment.label
+family_attr = settings.ATTRS.segment.family
+subfamily_attr = settings.ATTRS.segment.subfamily
+
 user = User.objects.get(username='wesley')
 
 
