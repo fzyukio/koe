@@ -1,44 +1,64 @@
+r"""
+Run to extract features of given segment ID and export the feature matrix with segment labels to a matlab file
+
+e.g.
+python manage.py extract_features --csv=/tmp/bellbirds.csv --h5file=bellbird-lbi.h5 --matfile=/tmp/mt-lbi.mat \
+                                  --features="frequency_modulation;spectral_continuity;mean_frequency"
+
+--> extracts full features (see features/feature_extract.py for the full list)
+            of segments in file /tmp/bellbirds.csv (created by segment_select)
+            stores the features in bellbird-lbi.h5
+            then use three features (frequency_modulation;spectral_continuity;mean_frequency) (aggregated by mean,
+            median, std) to construct a feature matrix (9 dimensions). Store this matrix with the labels (second column
+            in /tmp/bellbirds.csv) to file /tmp/mt-lbi.mat
+"""
+import csv
 import os
+
 import h5py
 import numpy as np
+import time
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
+from scipy.stats import zscore
 
 from koe.features.feature_extract import feature_extractors
 from koe.features.feature_extract import features as full_features
 from koe.models import *
 from koe.models import SegmentFeature, Feature
-from root.models import ExtraAttr, ExtraAttrValue, ValueTypes
+from koe.utils import get_wav_info
 from root.utils import wav_path
 
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from scipy.io import savemat
 
-def extract_segment_features_for_audio_file(audio_file, h5file, features):
+
+def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features):
     nfft = 512
     noverlap = nfft * 3 // 4
     win_length = nfft
 
-    # print('Extracting segment features of {}'.format(audio_file.name))
+    fs, length = get_wav_info(wav_file_path)
+    segment_ids = [x[0] for x in segs_info]
 
-    duration_ms = audio_file.length * 1000 / audio_file.fs
-    all_segments = Segment.objects.filter(audio_file=audio_file)
-    segment_endpoints = list(all_segments.values_list('id', 'start_time_ms', 'end_time_ms'))
-
-    wav_file_path = wav_path(audio_file.name)
-    args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=audio_file.fs, start=0, end=None,
+    duration_ms = length * 1000 / fs
+    args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
                 win_length=win_length)
 
     with h5py.File(h5file, 'a') as hf:
         for feature in features:
             extractor = feature_extractors[feature]
-            existing_features = SegmentFeature.objects.filter(segment__in=all_segments, feature=feature).values_list(
-                'id', flat=True)
+            existing_features = SegmentFeature.objects \
+                .filter(segment__in=segment_ids, feature=feature).values_list('id', flat=True)
+
             for sfid in existing_features:
                 sfid = str(sfid)
                 if sfid in hf:
                     del hf[sfid]
 
             if feature.is_fixed_length:
-                for seg_id, beg, end in segment_endpoints:
+                for seg_id, beg, end in segs_info:
                     args['start'] = beg
                     args['end'] = end
                     feature_value = extractor(args)
@@ -60,7 +80,7 @@ def extract_segment_features_for_audio_file(audio_file, h5file, features):
                 else:
                     feature_length = audio_file_feature_value.shape[1]
 
-                for seg_id, beg, end in segment_endpoints:
+                for seg_id, beg, end in segs_info:
                     beg_idx = max(0, int(np.round(beg * feature_length / duration_ms)))
                     end_idx = min(feature_length, int(np.round(end * feature_length / duration_ms)))
 
@@ -98,24 +118,41 @@ def view_feature_values(h5file):
                 ))
 
 
-def extract_segment_features_for_audio_files(audio_files, h5file, features):
-    bar = Bar('Extracting...', max=audio_files.count())
+def extract_segment_features_for_segments(sids, h5file, features):
+    segments = Segment.objects.filter(id__in=sids)
 
-    for audio_file in audio_files:
-        extract_segment_features_for_audio_file(audio_file, h5file, features)
+    vals = segments.order_by('audio_file', 'start_time_ms') \
+        .values_list('audio_file__name', 'id', 'start_time_ms', 'end_time_ms')
+    af_to_segments = {}
+
+    for name, id, start, end in vals:
+        if name not in af_to_segments:
+            af_to_segments[name] = []
+        af_to_segments[name].append((id, start, end))
+
+    num_audio_files = len(af_to_segments)
+
+    bar = Bar('Extracting...', max=num_audio_files)
+
+    for song_name, segs_info in af_to_segments.items():
+        wav_file_path = wav_path(song_name)
+        extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features)
         bar.next()
 
     bar.finish()
 
 
-def create_dataset(audio_files, h5file, matfile, features):
-    segments = Segment.objects.filter(audio_file__in=audio_files)
+def create_dataset(segment_to_label, h5file, features):
+    if features is None or len(features) == 0:
+        features = full_features
+
+    segment_ids = segment_to_label.keys()
     feature_vectors = {}
     aggregators = [np.mean, np.median, np.std]
 
     with h5py.File(h5file, 'r') as hf:
         for feature in features:
-            segment_features = SegmentFeature.objects.filter(feature=feature, segment__in=segments) \
+            segment_features = SegmentFeature.objects.filter(feature=feature, segment__in=segment_ids) \
                 .values_list('id', 'segment')
 
             for sfid, sid in segment_features:
@@ -150,33 +187,109 @@ def create_dataset(audio_files, h5file, matfile, features):
         sids.append(sid)
         dataset.append(feature_vector)
 
-    label_attr, _ = ExtraAttr.objects.get_or_create(klass=Segment.__name__, name='label', type=ValueTypes.SHORT_TEXT)
-    segment_labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=sids).values_list('owner_id', 'value')
-    segment_labels = {x: y for x, y in segment_labels}
-
-    labels = []
-    for sid in sids:
-        label = segment_labels.get(sid, '__NONE__')
-        labels.append(label)
-
     dataset = np.array(dataset)
-    sids = np.array(sids, dtype=np.int32)
+    return dataset, sids
 
-    from scipy.io import savemat
-    savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels))
+
+def run_clustering(dataset):
+    ndim = dataset.shape[1]
+    n_components = min(50, ndim // 2)
+    pca = PCA(n_components=n_components)
+    pca_result = pca.fit_transform(dataset)
+    print('Cumulative explained variation for {} principal components: {}'
+          .format(n_components, np.sum(pca.explained_variance_ratio_)))
+
+    time_start = time.time()
+    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000)
+    tsne_pca_results = tsne.fit_transform(pca_result)
+    print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
+    return tsne_pca_results
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
-        audio_files = AudioFile.objects.filter(database__name__iexact='BirdCLEF')
-        h5file = 'birdclef.h5'
-        matfile = '/tmp/mt-birdclef.mat'
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--csv',
+            action='store',
+            dest='segment_csv',
+            required=True,
+            type=str,
+            help='CSV file containing IDs + labels of the segments to be extracted',
+        )
 
-        selected_features = list(Feature.objects.filter(name__in=[
-            'frequency_modulation', 'amplitude_modulation', 'goodness_of_pitch', 'spectral_continuity',
-            'mean_frequency', 'entropy', 'amplitude', 'duration'
-        ]))
+        parser.add_argument(
+            '--h5file',
+            action='store',
+            dest='h5file',
+            required=True,
+            type=str,
+            help='Name of the h5 file to store extracted feature values',
+        )
+
+        parser.add_argument(
+            '--matfile',
+            action='store',
+            dest='matfile',
+            required=False,
+            type=str,
+            help='Name of the .mat file to store extracted feature values for Matlab',
+        )
+
+        parser.add_argument(
+            '--features',
+            action='store',
+            dest='selected_features',
+            required=False,
+            type=str,
+            help='List of features to be extracted',
+        )
+
+    def handle(self, *args, **options):
+        selected_features = options['selected_features'].split(';')
+        matfile = options['matfile']
+        h5file = options['h5file']
+        segment_csv = options['segment_csv']
+
+        with open(segment_csv, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f, delimiter='\t')
+
+            supplied_fields = reader.fieldnames
+            required_fields = ['id', 'label']
+            missing_fields = [x for x in required_fields if x not in supplied_fields]
+
+            if missing_fields:
+                raise ValueError('Field(s) {} are required but not found in your CSV file'
+                                 .format(','.join(missing_fields)))
+
+            sid_to_label = {int(row['id']): row['label'] for row in reader}
+
+        sids = sid_to_label.keys()
+
+        selected_features = list(Feature.objects.filter(name__in=selected_features))
 
         if not os.path.isfile(h5file):
-            extract_segment_features_for_audio_files(audio_files, h5file, full_features)
-        create_dataset(audio_files, h5file, matfile, selected_features)
+            try:
+                extract_segment_features_for_segments(sids, h5file, full_features)
+            except Exception as e:
+                os.remove(h5file)
+                raise e
+
+        dataset, sids = create_dataset(sid_to_label, h5file, selected_features)
+        dataset = zscore(dataset)
+        sids = np.array(sids, dtype=np.int32)
+        labels = []
+        for sid in sids:
+            label = sid_to_label.get(sid, '__NONE__')
+            labels.append(label)
+
+        clusters = run_clustering(dataset)
+
+        labels = np.array(labels)
+        label_sort_ind = np.argsort(labels)
+        labels = labels[label_sort_ind]
+        sids = sids[label_sort_ind]
+        dataset = dataset[label_sort_ind, :]
+        clusters = clusters[label_sort_ind, :]
+        sids = sids[label_sort_ind]
+
+        savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels, clusters=clusters))

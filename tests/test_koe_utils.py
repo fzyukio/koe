@@ -1,5 +1,7 @@
+import h5py
 import numpy as np
 from django.test import TestCase
+from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
@@ -42,3 +44,16 @@ class KoeUtilsTest(TestCase):
                 segment1_len_ms = np.round(len(segment1) * 1000 / fs)
 
                 self.assertEqual(segment1_len_ms, length_ms)
+
+    def test_zscore(self):
+        with h5py.File('zscore.h5', 'r') as hf:
+            x = hf['x'].value.ravel()
+            self.z = hf['z'].value.ravel()
+            xx = hf['xx'].value.T
+            self.zz = hf['zz'].value.T
+
+            z = zscore(x)
+            self.assertTrue(np.allclose(z, self.z))
+
+            zz = zscore(xx)
+            self.assertTrue(np.allclose(zz, self.zz))

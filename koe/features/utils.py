@@ -23,11 +23,13 @@ def _cached_get_window(name, nfft):
 
 @memoize(timeout=60)
 def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name):
-    fs, chunk_, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=False)
+    fs, chunk_, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
 
     window = _cached_get_window(window_name, nfft)
     hopsize = win_length - noverlap
-    return stft(y=chunk_, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=False,
+    center = len(chunk_) < win_length
+
+    return stft(y=chunk_, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
                 dtype=np.complex128)
 
 
