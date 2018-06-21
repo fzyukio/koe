@@ -67,7 +67,7 @@ def _read_fmt_chunk(fid):
 
 # assumes file pointer is immediately
 #   after the 'data' id
-def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False):
+def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False, mono=False):
     if bits == 8 or bits == 24:
         dtype = 'u1'
         bytes = 1
@@ -83,7 +83,9 @@ def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False):
     # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
     #      for 24-bit audio (bytes = 1), beg must be divisible by 1
     #      for 32-bit audio (bytes = 4), beg must be divisible by 4
-    beg = nearest_multiple(beg, bytes)
+    byte_per_frame = bits // 8
+    beg = nearest_multiple(beg, byte_per_frame)
+    end = nearest_multiple(end, byte_per_frame)
     fid.seek(beg + data_start)
     chunk_size = end - beg
 
@@ -97,6 +99,8 @@ def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False):
 
     if noc > 1:
         data = data.reshape(-1, noc)
+        if mono:
+            data = data[:, 0]
 
     if bool(size & 1):  # if odd number of bytes, move 1 byte further (data chunk is word-aligned)
         fid.seek(1, 1)
@@ -207,13 +211,15 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True):
             # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
             #      for 24-bit audio (bytes = 1), beg must be divisible by 1
             #      for 32-bit audio (bytes = 4), beg must be divisible by 4
-            beg = nearest_multiple(beg, bytes)
+            byte_per_frame = bits // 8
+            beg = nearest_multiple(beg, byte_per_frame)
             fid.seek(beg + data_start)
 
             if end_ms is None:
                 end = size
             else:
                 end = int(end_ms * rate * ba / 1000)
+            end = nearest_multiple(end, byte_per_frame)
 
             chunk_size = end - beg
             data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
@@ -285,7 +291,7 @@ def read(file, beg_ms=0, end_ms=None, normalised=True, mono=False):
                 end = size
             else:
                 end = int(end_ms * rate * ba / 1000)
-            data = _read_data_chunk(fid, noc, size, bits, beg, end, normalised)
+            data = _read_data_chunk(fid, noc, size, bits, beg, end, normalised, mono)
             fid.seek(size + data_start)
 
         elif chunk_id == b'cue ':
@@ -327,7 +333,7 @@ def read(file, beg_ms=0, end_ms=None, normalised=True, mono=False):
             _skip_unknown_chunk(fid)
     fid.close()
 
-    if data.ndim == 1 and mono:
+    if data.ndim == 1 and not mono:
         data = numpy.column_stack((data, data))
 
     return rate, data, bits

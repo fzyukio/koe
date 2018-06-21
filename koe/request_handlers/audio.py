@@ -35,7 +35,8 @@ def _match_target_amplitude(sound, loudness=-10):
 @memoize(timeout=None)
 def _cached_get_segment_audio_data(audio_file_name, fs, start, end):
     wav_file_path = wav_path(audio_file_name)
-    chunk = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=False)
+    chunk = wavfile.read_segment(wav_file_path, start, end, normalised=False, mono=True)
+
     audio_segment = pydub.AudioSegment(
         chunk.tobytes(),
         frame_rate=fs,
