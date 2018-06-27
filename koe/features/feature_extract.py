@@ -5,6 +5,7 @@ from koe.models import Feature
 
 feature_extractors = {}
 features = []
+feature_map = {}
 
 feature_whereabout = {
     librosa_features: [
@@ -56,5 +57,7 @@ for module, feature_names in feature_whereabout.items():
         feature = Feature.objects.get_or_create(name=feature_name, is_fixed_length=is_fixed_length,
                                                 is_one_dimensional=is_one_dimensional)[0]
 
-        feature_extractors[feature] = getattr(module, feature_name)
+        extractor = getattr(module, feature_name)
+        feature_extractors[feature_name] = extractor
         features.append(feature)
+        feature_map[feature_name] = feature

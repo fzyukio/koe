@@ -21,28 +21,75 @@ def _cached_get_window(name, nfft):
             return tapers[:, 1]
 
 
-@memoize(timeout=60)
-def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name):
-    fs, chunk_, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
-
+def stft_from_sig(sig, nfft, noverlap, win_length, window_name):
     window = _cached_get_window(window_name, nfft)
     hopsize = win_length - noverlap
-    center = len(chunk_) < win_length
+    center = len(sig) < win_length
 
-    return stft(y=chunk_, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
+    return stft(y=sig, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
                 dtype=np.complex128)
+
+
+def psd_or_sig(args):
+    wav_file_path, fs, start, end, nfft, noverlap = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
+    if wav_file_path:
+        psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
+        sig = None
+    else:
+        sig = args['sig']
+        psd = None
+
+    return psd, sig
+
+
+def get_sig(args):
+    wav_file_path, fs, start, end = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end'])
+    if wav_file_path:
+        sig = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=True)
+    else:
+        sig = args['sig']
+    return sig
+
+
+def maybe_cached_stft(args, window_name):
+    wav_file_path, fs, start, end, nfft, noverlap, win_length = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
+    if wav_file_path:
+        tapered = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name)
+    else:
+        sig = args['sig']
+        tapered = stft_from_sig(sig, nfft, noverlap, win_length, window_name)
+
+    return tapered
+
+
+def get_psd(args):
+    wav_file_path, fs, start, end, nfft, noverlap = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
+    if wav_file_path:
+        spect = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
+    else:
+        complex_spect = maybe_cached_stft(args, window_name='hann')
+        spect = np.abs(complex_spect)
+    return spect
+
+
+def get_psddb(args):
+    spect = get_psd(args)
+    return np.log10(spect) * 10.0
+
+
+@memoize(timeout=60)
+def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name):
+    fs, chunk, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
+    return stft_from_sig(chunk, nfft, noverlap, win_length, window_name)
 
 
 def get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, win_length):
     spect__ = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name='hann')
 
     return np.abs(spect__)
-
-
-def cached_spectrogram_db(wav_file_path, fs, start, end, nfft, noverlap):
-    spect = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
-
-    return np.log10(spect) * 10.0
 
 
 def unroll_args(args, requires):

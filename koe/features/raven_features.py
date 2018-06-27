@@ -1,13 +1,11 @@
 import numpy as np
 
-from koe.features.utils import unroll_args, get_spectrogram, cached_spectrogram_db
+from koe.features.utils import unroll_args, get_psd, get_psddb
 
 
 def total_energy(args):
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
+    fs, nfft = unroll_args(args, ['fs', 'nfft'])
+    psd = get_psd(args)
 
     # This is a little bit unclear. Eq (6.1) of Raven is the calculation below, but then it says it is in decibels,
     # which this is not!
@@ -16,10 +14,7 @@ def total_energy(args):
 
 
 def aggregate_entropy(args):
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
+    psd = get_psd(args)
 
     # Entropy of energy in each frequency bin over whole time
     ebin = np.sum(psd, axis=1)
@@ -28,10 +23,7 @@ def aggregate_entropy(args):
 
 
 def average_entropy(args):
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
+    psd = get_psd(args)
 
     # Entropy of each frame (time slice) averaged
     newsg = (psd.T / np.sum(psd)).T
@@ -47,10 +39,7 @@ def average_power(args):
     :param args:
     :return:
     """
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psddb = cached_spectrogram_db(wav_file_path, fs, start, end, nfft, noverlap)
+    psddb = get_psddb(args)
     return np.sum(psddb) / np.size(psddb)
 
 
@@ -60,10 +49,7 @@ def max_power(args):
     :param args:
     :return:
     """
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psddb = cached_spectrogram_db(wav_file_path, fs, start, end, nfft, noverlap)
+    psddb = get_psddb(args)
     return np.max(psddb)
 
 
@@ -73,10 +59,8 @@ def max_frequency(args):
     :param args:
     :return:
     """
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-
-    psddb = cached_spectrogram_db(wav_file_path, fs, start, end, nfft, noverlap)
+    psddb = get_psddb(args)
+    fs = args['fs']
     max_index = np.argmax(np.max(psddb, axis=1))
     nyquist = fs / 2.0
     return max_index / psddb.shape[0] * nyquist

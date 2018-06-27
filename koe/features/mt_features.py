@@ -1,11 +1,10 @@
 import numpy as np
-from memoize import memoize
 from scipy.fftpack import ifft
 from skimage.measure import label
 from skimage.measure import regionprops
 
-from koe.features.utils import cached_stft, unroll_args
-from koe.utils import get_wav_info
+from koe.features.utils import unroll_args, maybe_cached_stft
+from memoize import memoize
 
 
 def find_zc(arr):
@@ -15,10 +14,8 @@ def find_zc(arr):
 
 @memoize(timeout=60)
 def cached_tf_derivatives(args):
-    wav_file_path, start, end, nfft, noverlap, win_length = \
-        unroll_args(args, ['wav_file_path', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
-    tapered1 = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'dpss1')
-    tapered2 = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'dpss2')
+    tapered1 = maybe_cached_stft(args, 'dpss1')
+    tapered2 = maybe_cached_stft(args, 'dpss2')
 
     real1 = np.real(tapered1)
     real2 = np.real(tapered2)
@@ -52,10 +49,8 @@ def amplitude_modulation(args):
 
 
 def goodness_of_pitch(args):
-    wav_file_path, start, end, nfft, noverlap, win_length = \
-        unroll_args(args, ['wav_file_path', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
-
-    stft = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'dpss1')
+    nfft = args['nfft']
+    stft = maybe_cached_stft(args, 'dpss1')
 
     # To restore the full spectrum, we should've conjugated the second half.
     # e.g. np.concatenate((stft, np.conj(stft[-2:0:-1, :])), axis=0)
@@ -67,11 +62,8 @@ def goodness_of_pitch(args):
 
 
 def mtspect(args):
-    wav_file_path, start, end, nfft, noverlap, win_length = \
-        unroll_args(args, ['wav_file_path', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
-
-    tapered1 = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'dpss1')
-    tapered2 = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'dpss2')
+    tapered1 = maybe_cached_stft(args, 'dpss1')
+    tapered2 = maybe_cached_stft(args, 'dpss2')
     return (np.abs(tapered1) ** 2 + np.abs(tapered2) ** 2) / 2
 
 
@@ -141,10 +133,7 @@ def frequency_contours(args):
 
 
 def mean_frequency(args):
-    wav_file_path, start, end, nfft, noverlap, win_length = \
-        unroll_args(args, ['wav_file_path', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
-
-    fs, _ = get_wav_info(wav_file_path)
+    fs, nfft = unroll_args(args, ['fs', 'nfft'])
     s = mtspect(args)
     freq_range = nfft // 2 + 1
     idx = np.arange(freq_range)

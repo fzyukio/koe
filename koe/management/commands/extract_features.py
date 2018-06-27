@@ -18,12 +18,21 @@ import os
 import h5py
 import numpy as np
 import time
+
+from django.db.models import Case, IntegerField
+from django.db.models import F
+from django.db.models import Value
+from django.db.models import When
+
+from ced import pyed
 from django.core.management.base import BaseCommand
+from memoize import memoize
 from progress.bar import Bar
 from scipy.stats import zscore
 
-from koe.features.feature_extract import feature_extractors
+from koe.features.feature_extract import feature_extractors, feature_map
 from koe.features.feature_extract import features as full_features
+from koe.management.commands.chirp_generator import generate_chirp
 from koe.models import *
 from koe.models import SegmentFeature, Feature
 from koe.utils import get_wav_info
@@ -34,10 +43,20 @@ from sklearn.manifold import TSNE
 from scipy.io import savemat
 
 
+nfft = 512
+noverlap = nfft * 3 // 4
+win_length = nfft
+aggregators = [
+    np.mean, np.median, np.std,
+    ('dtw_chirp', 'pipe'),
+    ('dtw_chirp', 'squeak-up'),
+    ('dtw_chirp', 'squeak-down'),
+    ('dtw_chirp', 'squeak-convex'),
+    ('dtw_chirp', 'squeak-concave')
+]
+
+
 def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features):
-    nfft = 512
-    noverlap = nfft * 3 // 4
-    win_length = nfft
 
     fs, length = get_wav_info(wav_file_path)
     segment_ids = [x[0] for x in segs_info]
@@ -48,7 +67,7 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, fe
 
     with h5py.File(h5file, 'a') as hf:
         for feature in features:
-            extractor = feature_extractors[feature]
+            extractor = feature_extractors[feature.name]
             existing_features = SegmentFeature.objects \
                 .filter(segment__in=segment_ids, feature=feature).values_list('id', flat=True)
 
@@ -75,7 +94,7 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, fe
                 audio_file_feature_value = extractor(args)
 
                 if feature.is_one_dimensional:
-                    audio_file_feature_value = audio_file_feature_value.reshape((max(audio_file_feature_value.shape),))
+                    audio_file_feature_value = audio_file_feature_value.reshape((1, audio_file_feature_value.shape[0]))
                     feature_length = audio_file_feature_value.shape[0]
                 else:
                     feature_length = audio_file_feature_value.shape[1]
@@ -142,41 +161,117 @@ def extract_segment_features_for_segments(sids, h5file, features):
     bar.finish()
 
 
+@memoize(timeout=60)
+def _cached_get_chirp(chirp_type, duration_ms, fs):
+    return generate_chirp(chirp_type, 'constant', duration_ms, fs)
+
+
+@memoize(timeout=300)
+def _cached_get_chirp_feature(feature_name, args):
+    duration_ms = args['duration']
+    fs = args['fs']
+    chirp_type = args['chirp_type']
+
+    chirp = _cached_get_chirp(chirp_type, duration_ms, fs)
+
+    args['sig'] = chirp
+    extractor = feature_extractors[feature_name]
+    feature_value = extractor(args)
+    return feature_value
+
+
+def dtw_chirp(feature, seg_feature_value, args):
+    chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
+    if feature.is_one_dimensional:
+        chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
+
+    settings = pyed.Settings(dist='euclid_square', norm='max', compute_path=False)
+
+    if chirp_feature_value.ndim == 2:
+        assert chirp_feature_value.shape[0] == seg_feature_value.shape[0]
+        dim0 = chirp_feature_value.shape[0]
+    else:
+        dim0 = 1
+    retval = np.empty((dim0, ), dtype=np.float64)
+
+    for d in range(dim0):
+        chirp_feature_array = chirp_feature_value[d, :]
+        seg_feature_array = seg_feature_value[d, :]
+        distance = pyed.Dtw(chirp_feature_array, seg_feature_array, settings=settings, args={})
+        retval[d] = distance.get_dist()
+
+    # if chirp_feature_value.ndim == 2:
+    #     chirp_feature_value = chirp_feature_value\
+    #         .reshape((chirp_feature_value.shape[1], chirp_feature_value.shape[0]))
+    #     seg_feature_value = seg_feature_value.reshape((seg_feature_value.shape[1], seg_feature_value.shape[0]))
+    # distance = pyed.Dtw(chirp_feature_value, seg_feature_value, settings=settings, args={})
+    # retval = distance.get_dist()
+
+    return retval
+
+
 def create_dataset(segment_to_label, h5file, features):
     if features is None or len(features) == 0:
         features = full_features
 
     segment_ids = segment_to_label.keys()
     feature_vectors = {}
-    aggregators = [np.mean, np.median, np.std]
 
     with h5py.File(h5file, 'r') as hf:
-        for feature in features:
-            segment_features = SegmentFeature.objects.filter(feature=feature, segment__in=segment_ids) \
-                .values_list('id', 'segment')
+        segment_features = SegmentFeature.objects.filter(feature__in=features, segment__in=segment_ids) \
+            .annotate(duration=F('segment__end_time_ms') - F('segment__start_time_ms')) \
+            .annotate(
+            n_features=Case(
+                When(
+                    feature__is_fixed_length=True,
+                    then=Value(1)
+                ),
+                default=Value(len(aggregators)),
+                output_field=IntegerField()
+            )
+        ).order_by('duration', 'feature__name')
 
-            for sfid, sid in segment_features:
-                if sid in feature_vectors:
-                    feature_vector = feature_vectors[sid]
-                else:
-                    feature_vector = []
-                    feature_vectors[sid] = feature_vector
+        n_calculations = sum(list(segment_features.values_list('n_features', flat=True)))
+        attrs = segment_features.values_list('id', 'feature__name', 'segment', 'duration', 'segment__audio_file__fs')
 
-                value = hf[str(sfid)].value
+        bar = Bar('Extract features', max=n_calculations)
 
-                if feature.is_fixed_length:
-                    feature_vector.append(value)
-                else:
-                    for aggregator in aggregators:
+        for sfid, fname, sid, duration, fs in attrs:
+            args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, fs=fs, duration=duration, start=None,
+                        end=None, win_length=win_length)
+            feature = feature_map[fname]
+
+            if sid in feature_vectors:
+                feature_vector = feature_vectors[sid]
+            else:
+                feature_vector = []
+                feature_vectors[sid] = feature_vector
+
+            value = hf[str(sfid)].value
+
+            if feature.is_fixed_length:
+                feature_vector.append(value)
+                bar.next()
+            else:
+                if feature.is_one_dimensional:
+                    value = value.reshape(1, (max(value.shape)))
+                for aggregator in aggregators:
+                    if isinstance(aggregator, tuple) and aggregator[0] == 'dtw_chirp':
+                        chirp_type = aggregator[1]
+                        args['chirp_type'] = chirp_type
+                        aggregated = dtw_chirp(feature, value, args)
+                    else:
                         aggregated = aggregator(value, axis=-1)
-                        if isinstance(aggregated, np.ndarray):
-                            if len(aggregated) == 1:
-                                feature_vector.append(aggregated[0])
-                            else:
-                                for x in aggregated:
-                                    feature_vector.append(x)
+                    if isinstance(aggregated, np.ndarray):
+                        if len(aggregated) == 1:
+                            feature_vector.append(aggregated[0])
                         else:
-                            feature_vector.append(aggregated)
+                            for x in aggregated:
+                                feature_vector.append(x)
+                    else:
+                        feature_vector.append(aggregated)
+                    bar.next()
+        bar.finish()
 
     assert max([len(x) for x in feature_vectors.values()]) == min([len(x) for x in feature_vectors.values()])
 
@@ -290,6 +385,5 @@ class Command(BaseCommand):
         sids = sids[label_sort_ind]
         dataset = dataset[label_sort_ind, :]
         clusters = clusters[label_sort_ind, :]
-        sids = sids[label_sort_ind]
 
         savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels, clusters=clusters))

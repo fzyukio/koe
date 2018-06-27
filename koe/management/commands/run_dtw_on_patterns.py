@@ -185,8 +185,7 @@ class Command(BaseCommand):
                         else:
                             metric_func = euclid
 
-                        settings = pyed.Settings(
-                            dist=dist_name, norm=norm, compute_path=False)
+                        settings = pyed.Settings(dist=dist_name, norm=norm, compute_path=False)
 
                         for i in range(nsegs):
                             seg_one_f0 = segment_feature_array[i]

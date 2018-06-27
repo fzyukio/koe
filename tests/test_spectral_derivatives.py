@@ -54,7 +54,7 @@ class KoeUtilsTest(TestCase):
 
             write(cls.wav_file_path, cls.fs, data)
             cls.args = dict(wav_file_path=cls.wav_file_path, start=0, end=None, nfft=cls.nfft,
-                            win_length=cls.window_length, noverlap=cls.noverlap)
+                            win_length=cls.window_length, noverlap=cls.noverlap, fs=cls.fs)
 
     @classmethod
     def tearDownClass(cls):
