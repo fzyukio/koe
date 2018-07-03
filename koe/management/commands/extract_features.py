@@ -13,7 +13,9 @@ python manage.py extract_features --csv=/tmp/bellbirds.csv --h5file=bellbird-lbi
             in /tmp/bellbirds.csv) to file /tmp/mt-lbi.mat
 """
 import csv
+import json
 import os
+import uuid
 
 import h5py
 import numpy as np
@@ -42,7 +44,6 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from scipy.io import savemat
 
-
 nfft = 512
 noverlap = nfft * 3 // 4
 win_length = nfft
@@ -57,7 +58,6 @@ aggregators = [
 
 
 def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features):
-
     fs, length = get_wav_info(wav_file_path)
     segment_ids = [x[0] for x in segs_info]
 
@@ -94,8 +94,8 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, fe
                 audio_file_feature_value = extractor(args)
 
                 if feature.is_one_dimensional:
-                    audio_file_feature_value = audio_file_feature_value.reshape((1, audio_file_feature_value.shape[0]))
-                    feature_length = audio_file_feature_value.shape[0]
+                    feature_length = max(audio_file_feature_value.shape)
+                    audio_file_feature_value = audio_file_feature_value.reshape((1, feature_length))
                 else:
                     feature_length = audio_file_feature_value.shape[1]
 
@@ -161,6 +161,151 @@ def extract_segment_features_for_segments(sids, h5file, features):
     bar.finish()
 
 
+def store_segment_info_in_h5(h5file):
+    with h5py.File(h5file, 'r') as hf:
+        info = hf.get('info', None)
+        sfids = hf.keys()
+        if info:
+            return
+        sfids = list(map(int, sfids))
+        db_attrs = SegmentFeature.objects.filter(id__in=sfids). \
+            values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
+
+        songs_info = {}
+        for sfid, song_name, start, end, ft_id in db_attrs:
+            if song_name not in songs_info:
+                song_info = []
+                songs_info[song_name] = song_info
+            else:
+                song_info = songs_info[song_name]
+            song_info.append((start, end, ft_id, sfid))
+
+        ft_id_to_name = {x: y for x, y in Feature.objects.values_list('id', 'name')}
+        info = dict(ftmap=ft_id_to_name, songs=songs_info)
+
+    with h5py.File(h5file, 'a') as hf:
+        hf.create_dataset('info', data=json.dumps(info, indent=4))
+
+
+def recalibrate_database(h5file):
+    """
+    If a segment feature exists in the h5 file and not in the database, import it to the database
+    if it does, update the segment feature ID in the h5 file.
+
+    :param h5file:
+    :return:
+    """
+    temp_h5file = '/tmp/{}.h5'.format(uuid.uuid4().hex)
+    with h5py.File(h5file, 'r') as hf:
+        info = json.loads(hf['info'].value)
+        h5_ft_id_to_name = info['ftmap']
+        h5_songs_info = info['songs']
+        song_names = list(h5_songs_info.keys())
+
+        db_ft_name_to_id = {x: y for x, y in Feature.objects.values_list('name', 'id')}
+
+        ft_h5_id_to_db_id = {}
+        for id, name in h5_ft_id_to_name.items():
+            if name in db_ft_name_to_id:
+                ft_h5_id_to_db_id[int(id)] = db_ft_name_to_id[name]
+
+        # Update Feature IDs in h5 file to match what's in the database
+        new_h5_songs_info = {}
+        for song_name, h5_info in h5_songs_info.items():
+            new_h5_info = []
+            for sta, end, ft_id, sfid in h5_info:
+                db_ft_id = ft_h5_id_to_db_id[ft_id]
+                new_h5_info.append((sta, end, db_ft_id, sfid))
+            new_h5_songs_info[song_name] = new_h5_info
+
+        h5_songs_info = new_h5_songs_info
+
+        db_attrs = SegmentFeature.objects.filter(segment__audio_file__name__in=song_names). \
+            values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
+
+        db_songs_info = {}
+        for id, song_name, start, end, ft_id in db_attrs:
+            if song_name not in db_songs_info:
+                song_info = {}
+                db_songs_info[song_name] = song_info
+            else:
+                song_info = db_songs_info[song_name]
+            song_info[(start, end, ft_id)] = id
+
+        to_add = {}
+        to_update = {}
+        to_keep = {}
+
+        for song_name, h5_info in h5_songs_info.items():
+            if song_name not in db_songs_info:
+                to_add[song_name] = h5_info
+            else:
+                segments = []
+                db_segment_info = db_songs_info[song_name]
+
+                for sta, end, ft_id, sfid in h5_info:
+                    key = (sta, end, ft_id)
+                    if key not in db_segment_info:
+                        segments.append((sta, end, ft_id, sfid))
+                    else:
+                        db_sfid = db_segment_info[key]
+                        if db_sfid != sfid:
+                            to_update[sfid] = db_sfid
+                        else:
+                            to_keep[sfid] = db_sfid
+
+                if segments:
+                    to_add[song_name] = segments
+
+        if len(to_add) == 0 and len(to_update) == 0:
+            print('File is consistent with database')
+            return h5file
+
+        to_update.update(to_keep)
+
+        seg_endpoints_to_ids = {
+            (sname, sta, end): sid for sid, sname, sta, end in
+            Segment.objects.filter(audio_file__name__in=song_names)
+            .values_list('id', 'audio_file__name', 'start_time_ms', "end_time_ms")
+        }
+
+        for song_name, h5_info in to_add.items():
+            for sta, end, ft_id, sfid in h5_info:
+                endpoint_key = (song_name, sta, end)
+                if endpoint_key in seg_endpoints_to_ids:
+                    seg_id = seg_endpoints_to_ids[endpoint_key]
+                    sf = SegmentFeature()
+                    sf.feature_id = ft_id
+                    sf.segment_id = seg_id
+                    sf.save()
+                    db_sfid = sf.id
+                    to_update[sfid] = db_sfid
+
+        # Update SegmentFeature IDs in h5 file to match what's in the database
+        new_h5_songs_info = {}
+        for song_name, h5_info in h5_songs_info.items():
+            new_h5_info = []
+            for sta, end, ft_id, sfid in h5_info:
+                db_sfid = to_update[sfid]
+                new_h5_info.append((sta, end, ft_id, db_sfid))
+            new_h5_songs_info[song_name] = new_h5_info
+
+        h5_songs_info = new_h5_songs_info
+
+        with h5py.File(temp_h5file, 'w') as nhf:
+            for h5sfid, dbsfid in to_update.items():
+                data = hf[str(h5sfid)].value
+                nhf.create_dataset(str(dbsfid), data=data)
+
+            info = dict(ftmap=h5_ft_id_to_name, songs=h5_songs_info)
+            nhf.create_dataset('info', data=json.dumps(info, indent=4))
+
+        print('File seems to be exported from somewhere else. '
+              'A copy that has been made consistent with the current database has been exported to ',
+              temp_h5file)
+        return temp_h5file
+
+
 @memoize(timeout=60)
 def _cached_get_chirp(chirp_type, duration_ms, fs):
     return generate_chirp(chirp_type, 'constant', duration_ms, fs)
@@ -185,14 +330,14 @@ def dtw_chirp(feature, seg_feature_value, args):
     if feature.is_one_dimensional:
         chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
 
-    settings = pyed.Settings(dist='euclid_square', norm='max', compute_path=False)
+    settings = pyed.Settings(dist='euclid_squared', norm='max', compute_path=False)
 
     if chirp_feature_value.ndim == 2:
         assert chirp_feature_value.shape[0] == seg_feature_value.shape[0]
         dim0 = chirp_feature_value.shape[0]
     else:
         dim0 = 1
-    retval = np.empty((dim0, ), dtype=np.float64)
+    retval = np.empty((dim0,), dtype=np.float64)
 
     for d in range(dim0):
         chirp_feature_array = chirp_feature_value[d, :]
@@ -244,13 +389,13 @@ def create_dataset(segment_to_label, h5file, features):
             if sid in feature_vectors:
                 feature_vector = feature_vectors[sid]
             else:
-                feature_vector = []
+                feature_vector = {}
                 feature_vectors[sid] = feature_vector
 
             value = hf[str(sfid)].value
 
             if feature.is_fixed_length:
-                feature_vector.append(value)
+                feature_vector[fname] = value
                 bar.next()
             else:
                 if feature.is_one_dimensional:
@@ -258,32 +403,40 @@ def create_dataset(segment_to_label, h5file, features):
                 for aggregator in aggregators:
                     if isinstance(aggregator, tuple) and aggregator[0] == 'dtw_chirp':
                         chirp_type = aggregator[1]
+                        fname_modif = '{}_{}_{}'.format(fname, 'chirp', chirp_type)
+
                         args['chirp_type'] = chirp_type
                         aggregated = dtw_chirp(feature, value, args)
                     else:
                         aggregated = aggregator(value, axis=-1)
+                        fname_modif = '{}_{}'.format(fname, aggregator.__name__)
                     if isinstance(aggregated, np.ndarray):
                         if len(aggregated) == 1:
-                            feature_vector.append(aggregated[0])
+                            feature_vector[fname_modif] = aggregated[0]
                         else:
-                            for x in aggregated:
-                                feature_vector.append(x)
+                            for idx, x in enumerate(aggregated):
+                                fname_modif_indexed = '{}_{}'.format(fname_modif, idx)
+                                feature_vector[fname_modif_indexed] = x
                     else:
-                        feature_vector.append(aggregated)
+                        feature_vector[fname_modif] = aggregated
                     bar.next()
         bar.finish()
 
-    assert max([len(x) for x in feature_vectors.values()]) == min([len(x) for x in feature_vectors.values()])
+    assert max([len(x.values()) for x in feature_vectors.values()]) == min(
+        [len(x.values()) for x in feature_vectors.values()])
 
     sids = []
     dataset = []
+    fnames = list(next(iter(feature_vectors.values())).keys())
+    fnames.sort()
 
     for sid, feature_vector in feature_vectors.items():
         sids.append(sid)
-        dataset.append(feature_vector)
+        feature_vector_values = [feature_vector[x] for x in fnames]
+        dataset.append(feature_vector_values)
 
     dataset = np.array(dataset)
-    return dataset, sids
+    return dataset, sids, fnames
 
 
 def run_clustering(dataset):
@@ -365,11 +518,15 @@ class Command(BaseCommand):
         if not os.path.isfile(h5file):
             try:
                 extract_segment_features_for_segments(sids, h5file, full_features)
+                store_segment_info_in_h5(h5file)
             except Exception as e:
                 os.remove(h5file)
                 raise e
 
-        dataset, sids = create_dataset(sid_to_label, h5file, selected_features)
+        else:
+            h5file = recalibrate_database(h5file)
+
+        dataset, sids, fnames = create_dataset(sid_to_label, h5file, selected_features)
         dataset = zscore(dataset)
         sids = np.array(sids, dtype=np.int32)
         labels = []
@@ -386,4 +543,4 @@ class Command(BaseCommand):
         dataset = dataset[label_sort_ind, :]
         clusters = clusters[label_sort_ind, :]
 
-        savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels, clusters=clusters))
+        savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels, fnames=fnames, clusters=clusters))
