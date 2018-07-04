@@ -82,7 +82,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         database_name = options['database_name']
         username = options['username']
-        label_level = options['label_level']
+        primary_label_level = options['label_level']
         csv_file = options['csv_file']
         startswith = options['startswith']
         labels_to_ignore = options['labels_to_ignore']
@@ -97,19 +97,39 @@ class Command(BaseCommand):
 
         segment_ids = segments.values_list('id', flat=True)
 
-        segment_to_label = {
+        segment_to_primary_label = {
             x: y.lower() for x, y in
             ExtraAttrValue.objects
-            .filter(attr__name=label_level, owner_id__in=segment_ids, user__username__iexact=username)
+            .filter(attr__name=primary_label_level, owner_id__in=segment_ids, user__username__iexact=username)
             .values_list('owner_id', 'value')
             if y.lower() not in labels_to_ignore
         }
 
-        occurs = Counter(segment_to_label.values())
+        occurs = Counter(segment_to_primary_label.values())
 
-        segment_to_label = {x: y for x, y in segment_to_label.items() if occurs[y] >= min_occur}
+        segment_to_labels = {}
+        for segid, primary_label in segment_to_primary_label.items():
+            if occurs[primary_label] >= min_occur:
+                segment_to_labels[segid] = [primary_label]
+
+        other_labels = [x for x in ['label_family', 'label_subfamily', 'label'] if x != primary_label_level]
+        for other_label in other_labels:
+            segment_to_label = {
+                x: y.lower() for x, y in
+                ExtraAttrValue.objects
+                    .filter(attr__name=other_label, owner_id__in=segment_ids, user__username__iexact=username)
+                    .values_list('owner_id', 'value')
+            }
+            for segid, labels in segment_to_labels.items():
+                label = segment_to_label.get(segid, '')
+                labels.append(label)
+
+        segment_to_gender = {x: y.lower() for x, y in segments.values_list('id', 'audio_file__individual__gender')}
+        for segid, labels in segment_to_labels.items():
+            gender = segment_to_gender.get(segid, '')
+            labels.append(gender)
 
         with open(csv_file, 'w', encoding='utf-8') as f:
-            f.write('id\tlabel\n')
-            for sid, label in segment_to_label.items():
-                f.write('{}\t{}\n'.format(sid, label))
+            f.write('id\t{}\t{}\tGender\n'.format(primary_label_level, '\t'.join(other_labels)))
+            for sid, labels in segment_to_labels.items():
+                f.write('{}\t{}\n'.format(sid, '\t'.join(labels)))

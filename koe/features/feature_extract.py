@@ -30,17 +30,12 @@ feature_whereabout = {
         ('max_frequency', True, True),
     ],
     mt_features: [
-        # ('time_derivative', False, False),
-        # ('freq_derivative', False, False),
         ('frequency_modulation', False, True),
         ('amplitude_modulation', False, True),
         ('goodness_of_pitch', False, True),
-        # ('mtspect', False, False),
         ('amplitude', False, True),  # TODO: Normalise
         ('entropy', False, True),
-        # ('frequency_contours', False, False),
         ('mean_frequency', False, True),
-        # ('spectral_derivative', False, False),
         ('spectral_continuity', False, True)
     ],
     other_features: [

@@ -500,16 +500,12 @@ class Command(BaseCommand):
 
         with open(segment_csv, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f, delimiter='\t')
-
             supplied_fields = reader.fieldnames
-            required_fields = ['id', 'label']
-            missing_fields = [x for x in required_fields if x not in supplied_fields]
 
-            if missing_fields:
-                raise ValueError('Field(s) {} are required but not found in your CSV file'
-                                 .format(','.join(missing_fields)))
+            # The first field is always id, the second field is always the primary label type
+            primary_label_level = supplied_fields[1]
 
-            sid_to_label = {int(row['id']): row['label'] for row in reader}
+            sid_to_label = {int(row['id']): row[primary_label_level] for row in reader}
 
         sids = sid_to_label.keys()
 
@@ -531,7 +527,7 @@ class Command(BaseCommand):
         sids = np.array(sids, dtype=np.int32)
         labels = []
         for sid in sids:
-            label = sid_to_label.get(sid, '__NONE__')
+            label = sid_to_label[sid]
             labels.append(label)
 
         clusters = run_clustering(dataset)
