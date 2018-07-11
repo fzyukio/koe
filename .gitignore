@@ -23,3 +23,4 @@ backups/
 *.h5
 **/management/commands/_*
 notebooks/.ipynb_checkpoints/
+csv/
