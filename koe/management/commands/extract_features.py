@@ -187,7 +187,7 @@ def store_segment_info_in_h5(h5file):
         hf.create_dataset('info', data=json.dumps(info, indent=4))
 
 
-def recalibrate_database(h5file):
+def recalibrate_database(database_name, h5file):
     """
     If a segment feature exists in the h5 file and not in the database, import it to the database
     if it does, update the segment feature ID in the h5 file.
@@ -220,8 +220,9 @@ def recalibrate_database(h5file):
 
         h5_songs_info = new_h5_songs_info
 
-        db_attrs = SegmentFeature.objects.filter(segment__audio_file__name__in=song_names). \
-            values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
+        db_attrs = SegmentFeature.objects\
+            .filter(segment__audio_file__database__name=database_name, segment__audio_file__name__in=song_names) \
+            .values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
 
         db_songs_info = {}
         for id, song_name, start, end, ft_id in db_attrs:
@@ -265,7 +266,7 @@ def recalibrate_database(h5file):
 
         seg_endpoints_to_ids = {
             (sname, sta, end): sid for sid, sname, sta, end in
-            Segment.objects.filter(audio_file__name__in=song_names)
+            Segment.objects.filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
             .values_list('id', 'audio_file__name', 'start_time_ms', "end_time_ms")
         }
 
@@ -344,13 +345,6 @@ def dtw_chirp(feature, seg_feature_value, args):
         seg_feature_array = seg_feature_value[d, :]
         distance = pyed.Dtw(chirp_feature_array, seg_feature_array, settings=settings, args={})
         retval[d] = distance.get_dist()
-
-    # if chirp_feature_value.ndim == 2:
-    #     chirp_feature_value = chirp_feature_value\
-    #         .reshape((chirp_feature_value.shape[1], chirp_feature_value.shape[0]))
-    #     seg_feature_value = seg_feature_value.reshape((seg_feature_value.shape[1], seg_feature_value.shape[0]))
-    # distance = pyed.Dtw(chirp_feature_value, seg_feature_value, settings=settings, args={})
-    # retval = distance.get_dist()
 
     return retval
 
@@ -457,6 +451,15 @@ def run_clustering(dataset):
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
+            '--database-name',
+            action='store',
+            dest='database_name',
+            required=True,
+            type=str,
+            help='E.g Bellbird, Whale, ..., case insensitive',
+        )
+
+        parser.add_argument(
             '--csv',
             action='store',
             dest='segment_csv',
@@ -497,6 +500,7 @@ class Command(BaseCommand):
         matfile = options['matfile']
         h5file = options['h5file']
         segment_csv = options['segment_csv']
+        database_name = options['database_name']
 
         with open(segment_csv, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f, delimiter='\t')
@@ -520,7 +524,7 @@ class Command(BaseCommand):
                 raise e
 
         else:
-            h5file = recalibrate_database(h5file)
+            h5file = recalibrate_database(database_name, h5file)
 
         dataset, sids, fnames = create_dataset(sid_to_label, h5file, selected_features)
         dataset = zscore(dataset)
