@@ -449,7 +449,7 @@ export const run = function (commonElements) {
                 owner: similarityCombo.attr('owner-id')
             };
             let onSuccess = function () {
-                grid.initMainGridContent({}, focusOnGridOnInit);
+                grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
             };
 
             postRequest({

@@ -63,7 +63,7 @@
             <li class="dropdown-submenu">
             <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.id }}"
                cls="{{ current_similarity_owner_class }}" current-attr="current-similarity"
-               owner-id="{{ current_database_owner_class }}">Sort algorithm</a>
+               owner-id="{{ current_database_owner_id }}">Sort algorithm</a>
             <ul class="dropdown-menu">
                 {% for similarity in similarities %}
                     <li class="{% if current_similarity == similarity %}active{% else %}not-active{% endif %}">

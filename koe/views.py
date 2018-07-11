@@ -27,6 +27,7 @@ def populate_context(obj, context, kwargs, with_similarity=False):
     context['databases'] = databases
     context['current_database'] = current_database
     context['current_database_owner_class'] = User.__name__
+    context['current_database_owner_id'] = user.id
     context['inaccessible_databases'] = inaccessible_databases
     context['db_assignment'] = db_assignment
     context['pending_requests'] = pending_requests

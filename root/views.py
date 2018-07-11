@@ -322,14 +322,14 @@ def change_extra_attr_value(request):
     """
     attr = request.POST['attr']
     klass = request.POST['klass']
-    owner = request.POST.get('owner', request.user.id)
+    owner_id = int(request.POST.get('owner', request.user.id))
     value = request.POST['value']
 
-    extra_attr_value = ExtraAttrValue.objects.filter(user=request.user, owner_id=owner, attr__name=attr).first()
+    extra_attr_value = ExtraAttrValue.objects.filter(user=request.user, owner_id=owner_id, attr__name=attr).first()
     if extra_attr_value is None:
         extra_attr_value = ExtraAttrValue()
         extra_attr_value.user = request.user
-        extra_attr_value.owner_id = owner
+        extra_attr_value.owner_id = owner_id
         extra_attr_value.attr = ExtraAttr.objects.get(klass=klass, name=attr)
     extra_attr_value.value = value
     extra_attr_value.save()
