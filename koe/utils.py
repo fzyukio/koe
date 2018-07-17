@@ -281,3 +281,32 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
             out[s] = func(vals[s])
 
     return out
+
+
+def sub2ind(array_shape, rows, cols):
+    """
+    Equivalent to the same-named function in Matlab (Except that Matlab is Fortran-styled indexing)
+    :param array_shape:
+    :param rows:
+    :param cols:
+    :return:
+    """
+    ind = rows*array_shape[1] + cols
+    ind[ind < 0] = -1
+    ind[ind >= array_shape[0]*array_shape[1]] = -1
+    return ind
+
+
+def ind2sub(array_shape, ind):
+    """
+    Equivalent to the same-named function in Matlab (Except that Matlab is Fortran-styled indexing)
+    :param array_shape:
+    :param rows:
+    :param cols:
+    :return:
+    """
+    ind[ind < 0] = -1
+    ind[ind >= array_shape[0]*array_shape[1]] = -1
+    rows = (ind.astype('int') / array_shape[1])
+    cols = ind % array_shape[1]
+    return (rows, cols)
