@@ -490,11 +490,8 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         if not has_unlabelled:
             sequences += song_sequence
             sequence_ind += 1
-        else:
-            print('Skip song {} due to having unlabelled data'.format(song_id))
-
-    # for sid, eid, label in sequences:
-    #     print('{} {} {} {}'.format(sid, eid, 1, label[0]))
+        # else:
+        #     print('Skip song {} due to having unlabelled data'.format(song_id))
 
     ids = []
     rows = []
