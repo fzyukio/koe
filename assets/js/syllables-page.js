@@ -417,8 +417,11 @@ const focusOnGridOnInit = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__from_user': fromUser,
+let extraArgs = {
+    'from_user': fromUser,
+};
+
+let gridArgs = {
     multiSelect: true
 };
 
@@ -429,8 +432,8 @@ export const run = function (commonElements) {
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader(gridExtraArgs, function () {
-        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    grid.initMainGridHeader(gridArgs, extraArgs, function () {
+        grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -449,7 +452,7 @@ export const run = function (commonElements) {
                 owner: similarityCombo.attr('owner-id')
             };
             let onSuccess = function () {
-                grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+                grid.initMainGridContent(extraArgs, focusOnGridOnInit);
             };
 
             postRequest({

@@ -371,10 +371,13 @@ const initKeyboardHooks = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__file_id': fileId,
+let extraArgs = {
+    'file_id': fileId,
+};
+
+let gridArgs = {
     multiSelect: true,
-    dontCacheSelectableOptions: true
+    doCacheSelectableOptions: false
 };
 
 
@@ -400,8 +403,8 @@ export const run = function (commonElements) {
     });
 
     visualiseSong(function () {
-        grid.initMainGridHeader(gridExtraArgs, function () {
-            grid.initMainGridContent(gridExtraArgs, function () {
+        grid.initMainGridHeader(gridArgs, extraArgs, function () {
+            grid.initMainGridContent(gridArgs, extraArgs, function () {
                 let items = grid.mainGrid.getData().getItems();
                 let syllables = {};
                 for (let i = 0; i < items.length; i++) {

@@ -63,13 +63,13 @@ const initSlider = function () {
     $('#mingap-slider-enabled').click(function () {
         if (this.checked) {
             mingapSlider.slider('enable');
-            gridExtraArgs.__extra__use_gap = true;
+            extraArgs.useGap = true;
         }
         else {
             mingapSlider.slider('disable');
-            gridExtraArgs.__extra__use_gap = false;
+            extraArgs.useGap = false;
         }
-        gridExtraArgs.__extra__max_gap = parseInt(mingapSlider.val());
+        extraArgs.maxGap = parseInt(mingapSlider.val());
         loadGrid();
     });
 
@@ -79,7 +79,7 @@ const initSlider = function () {
 
     mingapSlider.on('slideStop', function(slideEvt) {
         document.getElementById('mingap-slider-value').textContent = slideEvt.value;
-        gridExtraArgs.__extra__max_gap = slideEvt.value;
+        extraArgs.maxGap = slideEvt.value;
         loadGrid();
     });
 };
@@ -139,15 +139,15 @@ const focusOnGridOnInit = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__cls': cls,
-    '__extra__from_user': fromUser,
-    '__extra__use_gap': false,
-    '__extra__max_gap': null,
+let extraArgs = {
+    cls,
+    'from_user': fromUser,
+    'use_gap': false,
+    'max_gap': null,
 };
 
 const loadGrid = function () {
-    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    grid.initMainGridContent({}, extraArgs, focusOnGridOnInit);
     subscribeSlickEvents();
     subscribeFlexibleEvents();
 };
@@ -156,7 +156,7 @@ export const run = function () {
     initAudioContext();
 
     grid.init(cls);
-    grid.initMainGridHeader(gridExtraArgs, function () {
+    grid.initMainGridHeader({}, extraArgs, function () {
         loadGrid();
     });
 

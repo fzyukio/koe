@@ -403,9 +403,12 @@ const initCopySongsBtn = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__cls': cls,
-    '__extra__from_user': fromUser,
+let extraArgs = {
+    cls,
+    'from_user': fromUser,
+};
+
+let gridArgs = {
     multiSelect: true
 };
 
@@ -414,8 +417,8 @@ export const run = function (commonElements) {
     initAudioContext();
 
     grid.init(cls);
-    grid.initMainGridHeader(gridExtraArgs, function () {
-        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    grid.initMainGridHeader(gridArgs, extraArgs, function () {
+        grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });

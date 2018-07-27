@@ -438,8 +438,8 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     cls = extras.cls
     _, current_database = get_user_databases(extras.user)
     from_user = extras.from_user
-    use_gap = extras.use_gap == 'true'
-    max_gap = int(extras.max_gap) if use_gap else 1
+    use_gap = extras.useGap
+    max_gap = extras.maxGap if use_gap else 1
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)

@@ -173,7 +173,7 @@ def get_grid_column_definition(request):
     table_name = request.POST['grid-type']
     table = tables[table_name]
 
-    from_user = request.POST.get('__extra__from_user', user.username)
+    from_user = request.POST.get('from_user', user.username)
     user_is_editing = from_user == user.username
 
     columns = []
@@ -240,10 +240,9 @@ def get_grid_content(request):
 
     extras = DotMap(today=today, now=now, user=request.user, tz=tz)
     grid_type = request.POST['grid-type']
-    for key in request.POST:
-        if key.startswith('__extra__'):
-            extra_kw = key[len('__extra__'):]
-            extras[extra_kw] = request.POST[key]
+    extra_args = json.loads(request.POST.get('extras', {}))
+    for key, value in extra_args.items():
+        extras[key] = value
 
     table = tables[grid_type]
 

@@ -263,9 +263,9 @@ const focusOnGridOnInit = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__cls': cls,
-    '__extra__from_user': fromUser
+let extraArgs = {
+    cls,
+    'from_user': fromUser
 };
 
 
@@ -274,8 +274,8 @@ export const run = function () {
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader(gridExtraArgs, function () {
-        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    grid.initMainGridHeader({}, extraArgs, function () {
+        grid.initMainGridContent({}, extraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });

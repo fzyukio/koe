@@ -132,15 +132,18 @@ const initImportZipBtn = function () {
 
 };
 
+let extraArgs = {};
+let gridArgs = {
+    rowMoveable: false,
+    radioSelect: true
+};
+
 export const run = function (commonElements) {
     ce = commonElements;
 
     grid.init();
-    grid.initMainGridHeader({
-        rowMoveable: false,
-        radioSelect: true
-    }, function () {
-        grid.initMainGridContent();
+    grid.initMainGridHeader(gridArgs, extraArgs, function () {
+        grid.initMainGridContent(gridArgs, extraArgs);
     });
 };
 

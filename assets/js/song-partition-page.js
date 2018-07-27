@@ -383,9 +383,12 @@ const initKeyboardHooks = function () {
 };
 
 
-let gridExtraArgs = {
-    '__extra__track_id': trackInfoForm.find('#id_track_id').attr('valid'),
-    multiSelect: true,
+let extraArgs = {
+    'track_id': trackInfoForm.find('#id_track_id').attr('valid'),
+};
+
+let gridArgs = {
+    multiSelect: true
 };
 
 
@@ -502,7 +505,7 @@ const initSaveTrackInfoBtn = function () {
                     }
 
                     // eslint-disable-next-line dot-notation
-                    gridExtraArgs['__extra__track_id'] = trackInfoForm.find('#id_track_id').attr('value');
+                    extraArgs['track_id'] = trackInfoForm.find('#id_track_id').attr('value');
                 }
             }
         });
@@ -538,8 +541,8 @@ export const run = function () {
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));
     viz.init(oscillogramId, spectrogramId);
 
-    grid.initMainGridHeader(gridExtraArgs, function () {
-        grid.initMainGridContent(gridExtraArgs, function () {
+    grid.initMainGridHeader(gridArgs, extraArgs, function () {
+        grid.initMainGridContent(gridArgs, extraArgs, function () {
             let items = grid.mainGrid.getData().getItems();
             let syllables = {};
             for (let i = 0; i < items.length; i++) {
