@@ -129,3 +129,12 @@ def ensure_parent_folder_exists(file_path):
         except OSError as exc:  # Guard against race condition
             if exc.errno != errno.EEXIST:
                 raise
+
+
+def mkdirp(dir):
+    if not os.path.exists(dir):
+        try:
+            os.makedirs(dir)
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise

@@ -316,6 +316,9 @@ $(document).ready(function () {
     else if (pageName.startsWith('/exemplars/')) {
         page = require('exemplars-page');
     }
+    else if (pageName.startsWith('/sequence-mining/')) {
+        page = require('sequence-mining-page')
+    }
 
     _preRun();
 

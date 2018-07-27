@@ -4,6 +4,7 @@ import numpy as np
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
+from pycspade import cspade
 
 from koe.model_utils import get_user_databases, get_current_similarity
 from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission
@@ -11,7 +12,7 @@ from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
-           'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording']
+           'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations']
 
 
 def bulk_get_segment_info(segs, extras):
@@ -429,6 +430,95 @@ def bulk_get_history_entries(hes, extras):
                    version=version, __can_import=can_import, __can_delete=user_is_creator, type=type)
 
         rows.append(row)
+
+    return ids, rows
+
+
+def bulk_get_song_sequence_associations(all_songs, extras):
+    cls = extras.cls
+    _, current_database = get_user_databases(extras.user)
+    from_user = extras.from_user
+
+    if isinstance(all_songs, QuerySet):
+        all_songs = all_songs.filter(database=current_database)
+    else:
+        all_songs = [x.id for x in all_songs if x.database == current_database]
+
+    segs = Segment.objects.filter(audio_file__in=all_songs) \
+        .order_by('audio_file__name', 'start_time_ms')
+
+    values = segs.values_list('id', 'audio_file__id')
+
+    seg_ids = segs.values_list('id', flat=True)
+
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=from_user) \
+        .values_list('owner_id', 'value')
+
+    seg_id_to_label = {x: y for x, y in labels}
+    label_set = set(seg_id_to_label.values())
+    labels2enums = {y: x + 1 for x, y in enumerate(label_set)}
+    enums2labels = {x: y for y, x in labels2enums.items()}
+    seg_id_to_label_enum = {x: labels2enums[y] for x, y in seg_id_to_label.items()}
+
+    # Bagging song syllables by song name
+    songs = {}
+    sequences = []
+    sequence_ind = 1
+
+    for seg_id, song_id in values:
+        if song_id not in songs:
+            segs_info = []
+            songs[song_id] = segs_info
+        else:
+            segs_info = songs[song_id]
+
+        label2enum = seg_id_to_label_enum.get(seg_id, None)
+        segs_info.append(label2enum)
+
+    for song_id, segs_info in songs.items():
+        sequence_labels = []
+        song_sequence = []
+
+        has_unlabelled = False
+        for ind, label2enum in enumerate(segs_info):
+            sequence_labels.append(label2enum)
+            song_sequence.append((sequence_ind, ind + 1, (label2enum,)))
+            if label2enum is None:
+                has_unlabelled = True
+                break
+        if not has_unlabelled:
+            sequences += song_sequence
+            sequence_ind += 1
+        else:
+            print('Skip song {} due to having unlabelled data'.format(song_id))
+
+    # for sid, eid, label in sequences:
+    #     print('{} {} {} {}'.format(sid, eid, 1, label[0]))
+
+    ids = []
+    rows = []
+
+    if len(sequences) == 0:
+        return ids, rows
+
+    result = cspade(data=sequences, support=20, maxgap=1)
+    mined_objects = result['mined_objects']
+    nseqs = result['nsequences']
+
+    for idx, mined_object in enumerate(mined_objects):
+        items = mined_object.items
+        if len(items) == 1:
+            continue
+        conf = -1 if mined_object.confidence is None else mined_object.confidence
+        lift = -1 if mined_object.lift is None else mined_object.lift
+        assocrule = '->'.join([enums2labels[item.elements[0]] for item in items])
+
+        row = dict(id=idx, chainlength=len(items), transcount=mined_object.noccurs, confidence=conf, lift=lift,
+                   support=mined_object.noccurs / nseqs, assocrule=assocrule)
+
+        rows.append(row)
+        ids.append(idx)
 
     return ids, rows
 

@@ -1,0 +1,52 @@
+{% extends 'base-with-grid-and-footer.html' %}
+
+{% block title %}
+    Sequence
+    {% if from_user != user %} by {{ from_user.username }}{% endif %}
+{% endblock %}
+
+{% block content-grid %}
+
+    <div id="controller-wrapper">
+
+        <div id="grid-status">
+            <div class="input-group">
+                <span class="input-group-addon left"><span id="ntotal">0</span></span>
+            </div>
+        </div>
+
+        <div class="slider-group">
+            <div class="input-group">
+                <span class="input-group-addon left">Speed</span>
+                <input id="speed-slider" type="text"
+                       data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
+            </div>
+        </div>
+
+        <div class="grid-controller">
+            <div class="input-group">
+                <span class="input-group-addon left">Filter</span>
+                <input id="sequence-mining-grid-filter" type="text" class="form-control middle">
+
+                {% include "partials/page-controller-settings-btn.html" %}
+            </div>
+        </div>
+    </div>
+
+    <div class="has-grid" id="sequence-mining-grid" cls="{{ cls }}" from_user="{{ from_user.username }}"></div>
+
+    <div id="spectrogram-details-tooltip" class="hidden">
+        <img src=""/>
+    </div>
+
+{% endblock %}
+
+{% block modal-dialog %}
+    {% include 'partials/modal.html' with order='yes-no' yes='Yes' no='No' %}
+{% endblock %}
+
+{% block bottom %}
+    <div class="btn-group btn-group-justified" role="group" aria-label="...">
+        {% include "partials/download-csv-btns.html" %}
+    </div>
+{% endblock %}

@@ -32,10 +32,18 @@ urlpatterns += \
         url(r'^syllables/$', login_required(views.SyllablesView.as_view()), name='syllables'),
         url(r'^syllables/(?P<from_user>[0-9a-zA-Z-_]+)/$$', login_required(views.SyllablesView.as_view()),
             name='syllables'),
+
         url(r'^songs/$', login_required(views.SongsView.as_view()), name='songs'),
         url(r'^songs/(?P<class>[0-9a-z-_]+)/$', login_required(views.SongsView.as_view()), name='songs'),
         url(r'^songs/(?P<class>[0-9a-z-_]+)/(?P<from_user>[0-9a-zA-Z-_]+)/$',
             login_required(views.SongsView.as_view()), name='songs'),
+
+        url(r'^sequence-mining/$', login_required(views.SequenceMiningView.as_view()), name='sequence-mining'),
+        url(r'^sequence-mining/(?P<class>[0-9a-z-_]+)/$', login_required(views.SequenceMiningView.as_view()),
+            name='sequence-mining'),
+        url(r'^sequence-mining/(?P<class>[0-9a-z-_]+)/(?P<from_user>[0-9a-zA-Z-_]+)/$',
+            login_required(views.SequenceMiningView.as_view()), name='sequence-mining'),
+
         url(r'^segmentation/(?P<file_id>[0-9]+)/$', login_required(views.SegmentationView.as_view()),
             name='segmentation'),
         url(r'^exemplars/$', login_required(views.ExemplarsView.as_view()), name='exemplars'),

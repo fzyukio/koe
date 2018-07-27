@@ -86,7 +86,7 @@ def run_nfolds(data, sids, nfolds, niters, enum_labels, nlabels, classifier, bar
 
     ind = 0
 
-    misclassified_counts = np.zeros((nsyls, ), dtype=np.int)
+    misclassified_counts = np.zeros((nsyls,), dtype=np.int)
     confusion_matrix = np.zeros((nlabels, nlabels), dtype=np.int)
     label_prediction_scores = [0] * ntrials
 
@@ -214,10 +214,8 @@ class Command(BaseCommand):
                 lines[1] += ',,,{}'.format(','.join(unique_labels))
 
                 for i in range(nlabels):
-                    lines[i + 2] += ',,{},{}'.format(unique_labels[i], ','.join(list(map(str, confusion_matrix[i,:]))))
+                    lines[i + 2] += ',,{},{}'.format(unique_labels[i], ','.join(list(map(str, confusion_matrix[i, :]))))
 
                 for line in lines:
                     f.write(line)
                     f.write('\n')
-
-

@@ -291,9 +291,9 @@ def sub2ind(array_shape, rows, cols):
     :param cols:
     :return:
     """
-    ind = rows*array_shape[1] + cols
+    ind = rows * array_shape[1] + cols
     ind[ind < 0] = -1
-    ind[ind >= array_shape[0]*array_shape[1]] = -1
+    ind[ind >= array_shape[0] * array_shape[1]] = -1
     return ind
 
 
@@ -306,7 +306,7 @@ def ind2sub(array_shape, ind):
     :return:
     """
     ind[ind < 0] = -1
-    ind[ind >= array_shape[0]*array_shape[1]] = -1
+    ind[ind >= array_shape[0] * array_shape[1]] = -1
     rows = (ind.astype('int') / array_shape[1])
     cols = ind % array_shape[1]
     return (rows, cols)

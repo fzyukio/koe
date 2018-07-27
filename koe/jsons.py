@@ -437,6 +437,49 @@ tables = \
                 }
             ]
         },
+        "sequence-mining-grid": {
+            "class": "koe.AudioFile",
+            "getter": "koe.bulk_get_song_sequence_associations",
+            "columns": [
+                {
+                    "slug": "_sel",
+                    "editable": False,
+                    "is_addon": True,
+                    "type": "BOOLEAN",
+                    "exportable": False
+                },
+                {
+                    "name": "Chain length",
+                    "slug": "chainlength",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Trans count",
+                    "slug": "transcount",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Support",
+                    "slug": "support",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Confidence",
+                    "slug": "confidence",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Lift",
+                    "slug": "lift",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Assocociation Rule",
+                    "slug": "assocrule",
+                    "type": "SHORT_TEXT",
+                }
+            ]
+        },
     }
 
 num_exemplars = 10

@@ -93,6 +93,11 @@ def get_navbar_urls():
             dict(text='Using family', is_single=True, url=reverse('songs', args=['label_family'])),
             dict(text='Using subfamily', is_single=True, url=reverse('songs', args=['label_subfamily'])),
         ]),
+        dict(text='Seq-Mining', is_single=False, url=reverse('sequence-mining'), subpages=[
+            dict(text='Using label', is_single=True, url=reverse('sequence-mining', args=['label'])),
+            dict(text='Using family', is_single=True, url=reverse('sequence-mining', args=['label_family'])),
+            dict(text='Using subfamily', is_single=True, url=reverse('sequence-mining', args=['label_subfamily'])),
+        ]),
     ]
 
     return pages

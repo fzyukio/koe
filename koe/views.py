@@ -95,6 +95,22 @@ class SongsView(TemplateView):
         return context
 
 
+class SequenceMiningView(TemplateView):
+    """
+    The view to index page
+    """
+
+    page_name = 'sequence-mining'
+    template_name = 'sequence-mining.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(SequenceMiningView, self).get_context_data(**kwargs)
+
+        populate_context(self, context, kwargs)
+
+        return context
+
+
 class SegmentationView(TemplateView):
     """
     The view of song segmentation page
