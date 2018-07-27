@@ -4,52 +4,6 @@
   height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
 
-#controller-wrapper {
-  height: $controller-wrapper-height;
-  & > div {
-    display: inline-block;
-    margin-left: -4px;
-
-    &:first-child {
-      margin-left: 0;
-    }
-
-    & > div {
-      height: $controller-wrapper-child-height;
-      line-height: $controller-wrapper-child-height;
-    }
-  }
-
-  .input-group-addon {
-    padding: 0;
-
-    &.left {
-      padding: 0 10px 0 0;
-    }
-    &.right {
-      padding: 0 0 0 10px;
-    }
-
-  }
-
-  #grid-status {
-    width: $grid-status-width;
-    text-align: left;
-
-    .input-group-addon {
-      text-align: left;
-    }
-  }
-
-  .slider-group {
-    width: $slider-group-width;
-
-    .slider-selection {
-      background: #d9230f7a;
-    }
-  }
-}
-
 #segment-info-filter {
   border: 0;
   padding: 0 !important;

@@ -438,6 +438,8 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     cls = extras.cls
     _, current_database = get_user_databases(extras.user)
     from_user = extras.from_user
+    use_gap = extras.use_gap == 'true'
+    max_gap = int(extras.max_gap) if use_gap else 1
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)
@@ -447,7 +449,10 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     segs = Segment.objects.filter(audio_file__in=all_songs) \
         .order_by('audio_file__name', 'start_time_ms')
 
-    values = segs.values_list('id', 'audio_file__id')
+    if use_gap:
+        values = segs.values_list('id', 'audio_file__id', 'start_time_ms')
+    else:
+        values = segs.values_list('id', 'audio_file__id')
 
     seg_ids = segs.values_list('id', flat=True)
 
@@ -466,24 +471,40 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     sequences = []
     sequence_ind = 1
 
-    for seg_id, song_id in values:
+    for value in values:
+        seg_id = value[0]
+        song_id = value[1]
+
+        label2enum = seg_id_to_label_enum.get(seg_id, None)
+        if use_gap:
+            start = value[2]
+            seg_info = (label2enum, start)
+        else:
+            seg_info = label2enum
+
         if song_id not in songs:
             segs_info = []
             songs[song_id] = segs_info
         else:
             segs_info = songs[song_id]
 
-        label2enum = seg_id_to_label_enum.get(seg_id, None)
-        segs_info.append(label2enum)
+        segs_info.append(seg_info)
 
     for song_id, segs_info in songs.items():
         sequence_labels = []
         song_sequence = []
 
         has_unlabelled = False
-        for ind, label2enum in enumerate(segs_info):
+        for ind, seg_info in enumerate(segs_info):
+            if use_gap:
+                label2enum = seg_info[0]
+                eid = seg_info[1]
+            else:
+                label2enum = seg_info
+                eid = ind + 1
+
             sequence_labels.append(label2enum)
-            song_sequence.append((sequence_ind, ind + 1, (label2enum,)))
+            song_sequence.append((sequence_ind, eid, (label2enum,)))
             if label2enum is None:
                 has_unlabelled = True
                 break
@@ -493,13 +514,16 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         # else:
         #     print('Skip song {} due to having unlabelled data'.format(song_id))
 
+    # for sid, eid, label in sequences:
+    #     print('{} {} {} {}'.format(sid, eid, 1, label[0]))
+
     ids = []
     rows = []
 
     if len(sequences) == 0:
         return ids, rows
 
-    result = cspade(data=sequences, support=20, maxgap=1)
+    result = cspade(data=sequences, support=20, maxgap=max_gap)
     mined_objects = result['mined_objects']
     nseqs = result['nsequences']
 

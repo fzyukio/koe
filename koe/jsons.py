@@ -442,13 +442,6 @@ tables = \
             "getter": "koe.bulk_get_song_sequence_associations",
             "columns": [
                 {
-                    "slug": "_sel",
-                    "editable": False,
-                    "is_addon": True,
-                    "type": "BOOLEAN",
-                    "exportable": False
-                },
-                {
                     "name": "Chain length",
                     "slug": "chainlength",
                     "type": "INTEGER"

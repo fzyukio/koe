@@ -1,11 +1,11 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {initAudioContext, changePlaybackSpeed} from './audio-handler';
+import {initAudioContext} from './audio-handler';
 import {debug, deepCopy} from './utils';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
 const gridOptions = deepCopy(defaultGridOptions);
-gridOptions.rowHeight = 50;
+gridOptions.rowHeight = 25;
 
 
 class Grid extends FlexibleGrid {
@@ -53,20 +53,34 @@ class Grid extends FlexibleGrid {
 export const grid = new Grid();
 let cls = $('#sequence-mining-grid').attr('cls');
 let fromUser = $('#sequence-mining-grid').attr('from_user');
-const speedSlider = $('#speed-slider');
+const mingapSlider = $('#mingap-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const initSlider = function () {
-    speedSlider.slider();
+    mingapSlider.slider();
 
-    speedSlider.on('slide', function (slideEvt) {
-        changePlaybackSpeed(slideEvt.value);
+    $('#mingap-slider-enabled').click(function () {
+        if (this.checked) {
+            mingapSlider.slider('enable');
+            gridExtraArgs.__extra__use_gap = true;
+        }
+        else {
+            mingapSlider.slider('disable');
+            gridExtraArgs.__extra__use_gap = false;
+        }
+        gridExtraArgs.__extra__max_gap = parseInt(mingapSlider.val());
+        loadGrid();
     });
 
-    $('.slider').on('click', function () {
-        let newvalue = $('.tooltip-inner').text();
-        changePlaybackSpeed(parseInt(newvalue));
+    mingapSlider.on('slide', function (slideEvt) {
+        document.getElementById('mingap-slider-value').textContent = slideEvt.value;
+    });
+
+    mingapSlider.on('slideStop', function(slideEvt) {
+        document.getElementById('mingap-slider-value').textContent = slideEvt.value;
+        gridExtraArgs.__extra__max_gap = slideEvt.value;
+        loadGrid();
     });
 };
 
@@ -128,7 +142,14 @@ const focusOnGridOnInit = function () {
 let gridExtraArgs = {
     '__extra__cls': cls,
     '__extra__from_user': fromUser,
-    multiSelect: true
+    '__extra__use_gap': false,
+    '__extra__max_gap': null,
+};
+
+const loadGrid = function () {
+    grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
+    subscribeSlickEvents();
+    subscribeFlexibleEvents();
 };
 
 export const run = function () {
@@ -136,9 +157,7 @@ export const run = function () {
 
     grid.init(cls);
     grid.initMainGridHeader(gridExtraArgs, function () {
-        grid.initMainGridContent(gridExtraArgs, focusOnGridOnInit);
-        subscribeSlickEvents();
-        subscribeFlexibleEvents();
+        loadGrid();
     });
 
     initSlider();

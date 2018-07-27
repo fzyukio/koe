@@ -4,11 +4,10 @@
   height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
 
-#controller-wrapper {
+#sequence-mining-controller-wrapper {
   height: $controller-wrapper-height;
   & > div {
     display: inline-block;
-    margin-left: -4px;
 
     &:first-child {
       margin-left: 0;
@@ -21,19 +20,11 @@
   }
 
   .input-group-addon {
-    padding: 0;
-
-    &.left {
-      padding: 0 10px 0 0;
-    }
-    &.right {
-      padding: 0 0 0 10px;
-    }
-
+    padding: 0 10px;
   }
 
   #grid-status {
-    width: $grid-status-width;
+    width: 100%;
     text-align: left;
 
     .input-group-addon {
@@ -42,7 +33,7 @@
   }
 
   .slider-group {
-    width: $slider-group-width;
+    width: 100%;
 
     .slider-selection {
       background: #d9230f7a;

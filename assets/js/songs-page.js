@@ -6,7 +6,7 @@ require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
 const gridOptions = deepCopy(defaultGridOptions);
-gridOptions.rowHeight = 50;
+gridOptions.rowHeight = 30;
 
 
 class Grid extends FlexibleGrid {

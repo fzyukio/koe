@@ -324,3 +324,49 @@ body.loading #loading-spinner-modal {
     stroke-dasharray: 0 3 6 3;
   }
 }
+
+#controller-wrapper {
+  height: $controller-wrapper-height;
+  & > div {
+    display: inline-block;
+    margin-left: -4px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    & > div {
+      height: $controller-wrapper-child-height;
+      line-height: $controller-wrapper-child-height;
+    }
+  }
+
+  .input-group-addon {
+    padding: 0;
+
+    &.left {
+      padding: 0 10px 0 0;
+    }
+    &.right {
+      padding: 0 0 0 10px;
+    }
+
+  }
+
+  #grid-status {
+    width: $grid-status-width;
+    text-align: left;
+
+    .input-group-addon {
+      text-align: left;
+    }
+  }
+
+  .slider-group {
+    width: $slider-group-width;
+
+    .slider-selection {
+      background: #d9230f7a;
+    }
+  }
+}
