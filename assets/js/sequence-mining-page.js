@@ -58,7 +58,9 @@ const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const initSlider = function () {
-    mingapSlider.slider();
+    mingapSlider.slider({
+        scale: 'logarithmic',
+    });
 
     $('#mingap-slider-enabled').click(function () {
         if (this.checked) {

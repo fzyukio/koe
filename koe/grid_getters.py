@@ -450,7 +450,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         .order_by('audio_file__name', 'start_time_ms')
 
     if use_gap:
-        values = segs.values_list('id', 'audio_file__id', 'start_time_ms')
+        values = segs.values_list('id', 'audio_file__id', 'start_time_ms', 'end_time_ms')
     else:
         values = segs.values_list('id', 'audio_file__id')
 
@@ -478,7 +478,8 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         label2enum = seg_id_to_label_enum.get(seg_id, None)
         if use_gap:
             start = value[2]
-            seg_info = (label2enum, start)
+            end = value[3]
+            seg_info = (label2enum, start, end)
         else:
             seg_info = label2enum
 
@@ -493,12 +494,19 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     for song_id, segs_info in songs.items():
         sequence_labels = []
         song_sequence = []
-
         has_unlabelled = False
+        accum_gap = 0
+        last_syl_end = None
         for ind, seg_info in enumerate(segs_info):
             if use_gap:
-                label2enum = seg_info[0]
-                eid = seg_info[1]
+                label2enum, start, end = seg_info
+                if last_syl_end is None:
+                    gap = 0
+                else:
+                    gap = start - last_syl_end
+                last_syl_end = end
+                accum_gap += gap
+                eid = accum_gap
             else:
                 label2enum = seg_info
                 eid = ind + 1
