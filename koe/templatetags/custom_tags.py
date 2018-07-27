@@ -80,8 +80,8 @@ def get_server_constants():
 def get_navbar_urls():
     pages = [
         dict(text='Syllables', is_single=False, url=reverse('syllables'), subpages=[
-            dict(text='Label them', is_single=True, url=reverse('syllables')),
-            dict(text='Restore a saved', is_single=True, url=reverse('version')),
+            dict(text='Label syllables', is_single=True, url=reverse('syllables')),
+            dict(text='Restore version', is_single=True, url=reverse('version')),
         ]),
         dict(text='Exemplars', is_single=False, url=reverse('exemplars'), subpages=[
             dict(text='By label', is_single=True, url=reverse('exemplars', args=['label'])),

@@ -28,9 +28,9 @@
                  {# We must use page_ to not shadow the page variable that is given by the view #}
                 {% for page_ in pages %}
                     {% if page.slug == page_.slug %}
-                        <li class="active"><a href="{{ page_.url }}">{{ page_.slug|title }}</a></li>
+                        <li class="active"><a href="{{ page_.url }}">{{ page_.title|title }}</a></li>
                     {% else %}
-                        <li><a href="{{ page_ | get_default_url }}">{{ page_.slug|title }}</a></li>
+                        <li><a href="{{ page_ | get_default_url }}">{{ page_.title|title }}</a></li>
                     {% endif %}
                 {% endfor %}
                 </ul>
