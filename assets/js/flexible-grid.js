@@ -212,10 +212,6 @@ export class FlexibleGrid {
             }
         }
 
-        let postArgs = deepCopy(self.defaultArgs);
-        postArgs['grid-type'] = self.gridType;
-        postArgs.property = JSON.stringify(itemSimplified);
-
         let postData = {
             'grid-type': self.gridType,
             'property': JSON.stringify(itemSimplified)
@@ -286,6 +282,7 @@ export class FlexibleGrid {
 
     initMainGridHeader(defaultArgs, extraArgs, callback) {
         let self = this;
+        defaultArgs['grid-type'] = self.gridType;
 
         let onSuccess = function (columns) {
             self.columns = columns;
@@ -358,7 +355,7 @@ export class FlexibleGrid {
     initMainGridContent(defaultArgs, extraArgs, callback) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
-        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions;
+        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions || true;
 
         let args = deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
