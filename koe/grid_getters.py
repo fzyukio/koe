@@ -8,6 +8,7 @@ from pycspade import cspade
 
 from koe.model_utils import get_user_databases, get_current_similarity
 from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission
+from root.exceptions import CustomException
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
@@ -530,8 +531,11 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
     if len(sequences) == 0:
         return ids, rows
+    try:
+        result = cspade(data=sequences, support=0.01, maxgap=max_gap)
+    except RuntimeError:
+        raise CustomException('')
 
-    result = cspade(data=sequences, support=20, maxgap=max_gap)
     mined_objects = result['mined_objects']
     nseqs = result['nsequences']
 

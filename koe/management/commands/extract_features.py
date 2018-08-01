@@ -41,7 +41,8 @@ from koe.utils import get_wav_info
 from root.utils import wav_path
 
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
+from MulticoreTSNE import MulticoreTSNE as TSNE
 from scipy.io import savemat
 
 nfft = 512
@@ -433,19 +434,21 @@ def create_dataset(segment_to_label, h5file, features):
     return dataset, sids, fnames
 
 
-def run_clustering(dataset):
+def run_clustering(dataset, dim_reduce, n_components):
     ndim = dataset.shape[1]
-    n_components = min(50, ndim // 2)
-    pca = PCA(n_components=n_components)
-    pca_result = pca.fit_transform(dataset)
-    print('Cumulative explained variation for {} principal components: {}'
-          .format(n_components, np.sum(pca.explained_variance_ratio_)))
+    if dim_reduce:
+        # n_components = min(n_components, ndim // 2)
+        dim_reduce_func = dim_reduce(n_components=n_components)
+        dataset = dim_reduce_func.fit_transform(dataset, y=None)
+        if hasattr(dim_reduce_func, 'explained_variance_ratio_'):
+            print('Cumulative explained variation for {} principal components: {}'
+                  .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
 
     time_start = time.time()
-    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000)
-    tsne_pca_results = tsne.fit_transform(pca_result)
+    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000, n_jobs=4)
+    tsne_results = tsne.fit_transform(dataset)
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
-    return tsne_pca_results
+    return tsne_results
 
 
 class Command(BaseCommand):
@@ -534,7 +537,7 @@ class Command(BaseCommand):
             label = sid_to_label[sid]
             labels.append(label)
 
-        clusters = run_clustering(dataset)
+        clusters = run_clustering(dataset, dim_reduce=PCA, n_components=50)
 
         labels = np.array(labels)
         label_sort_ind = np.argsort(labels)
