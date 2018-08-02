@@ -2,6 +2,7 @@ import os
 
 from django.apps import AppConfig
 from django.conf import settings
+from django.db import OperationalError
 from django.db import ProgrammingError
 from dotmap import DotMap
 
@@ -51,24 +52,25 @@ class KoeConfig(AppConfig):
 
         :return: None
         """
-        from root.models import User
-
         is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
-        try:
-            is_database_empty = User.objects.all().count() == 0
-        except ProgrammingError:
-            is_database_empty = True
 
-        if not is_importing_fixture and not is_database_empty:
-            from root.views import register_app_modules, init_tables
+        if not is_importing_fixture:
+            try:
+                from root.models import User
+                from root.views import register_app_modules, init_tables
 
-            register_app_modules(self.name, 'request_handlers.history')
-            register_app_modules(self.name, 'request_handlers.audio')
-            register_app_modules(self.name, 'request_handlers.database')
-            register_app_modules(self.name, 'models')
-            register_app_modules(self.name, 'grid_getters')
+                is_database_empty = User.objects.all().count() == 0
 
-            init_tables()
-            get_builtin_attrs()
+                if not is_database_empty:
+                    register_app_modules(self.name, 'request_handlers.history')
+                    register_app_modules(self.name, 'request_handlers.audio')
+                    register_app_modules(self.name, 'request_handlers.database')
+                    register_app_modules(self.name, 'models')
+                    register_app_modules(self.name, 'grid_getters')
 
-            import koe.signals  # noqa: F401  Must include this for the signals to work
+                    init_tables()
+                    get_builtin_attrs()
+
+                import koe.signals  # noqa: F401  Must include this for the signals to work
+            except (ProgrammingError, OperationalError):
+                pass

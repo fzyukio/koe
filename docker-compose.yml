@@ -1,36 +1,35 @@
 version: '3.4'
 services:
   db:
-    container_name: koe_db
-    image: mysql
+    container_name: ${CONTAINER_DATABASE_NAME}
+    image: mysql:5.7.23
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${MYSQL_GLOBAL_PORT}:${MYSQL_PORT}"
     volumes:
-      - "../koe-db:/var/lib/mysql"
+      - "${MYSQL_VOLUME}:/var/lib/mysql"
     environment:
-      MYSQL_HOST: koe_db
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: koe
-      MYSQL_PASSWORD: koe
-      MYSQL_DATABASE: koe
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     restart: unless-stopped
   app:
-    container_name: koe_app
+    container_name: ${CONTAINER_APP_NAME}
     build:
       context: .
       network: host
-#    volumes:
-#      - code-volume:/code
     networks:
       - default
       - web
+    ports:
+      - "${VIRTUAL_HOST}:${APP_HTTP_PORT}:8000"
+      - "${VIRTUAL_HOST}:${NOTEBOOK_HTTP_PORT}:8001"
     environment:
-      - VIRTUAL_HOST=koe.io.ac.nz
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
       - VIRTUAL_PROTO=uwsgi
 # Uncomment below to DELETE and re-create the database from fixtures
 #      - RESET_DB=true
-    env_file:
-      - koe.env
     restart: unless-stopped
     depends_on:
       - db
@@ -39,11 +38,9 @@ services:
       - ./backups:/code/backups
   cache:
     image: redis
-    container_name: koe_cache
-    restart: "no"
-#volumes:
-#  code-volume:
+    container_name: ${CONTAINER_CACHE_NAME}
+    restart: unless-stopped
 networks:
   web:
     external:
-      name: web
+      name: ${EXTERNAL_NETWORK}
