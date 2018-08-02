@@ -1,4 +1,4 @@
-version: '3.4'
+version: '2.3'
 services:
   db:
     container_name: ${CONTAINER_DATABASE_NAME}
@@ -16,6 +16,7 @@ services:
     restart: unless-stopped
   app:
     container_name: ${CONTAINER_APP_NAME}
+    runtime: ${runtime}
     build:
       context: .
       network: host
