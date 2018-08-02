@@ -101,7 +101,6 @@ raven
 h5py==2.8.0rc1
 git+https://github.com/fzyukio/spectrum
 scikit-image
-tensorflow==1.9.0rc1
 pycspade>=0.2.1
 django-extensions
 ipython[notebook]

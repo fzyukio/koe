@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image
-FROM python:3.6 as koeapp
+FROM tensorflow/tensorflow:latest-gpu-py3 as koeapp
 
 MAINTAINER Yukio Fukuzawa
 
@@ -11,18 +11,26 @@ ARG http_proxy=''
 ARG https_proxy=''
 ENV http_proxy=''
 ENV https_proxy=''
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
 # backports needed to install ffmpeg
 RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
 deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
 
 # Install extra packages.
-RUN apt-get update && apt-get install -y --no-install-recommends vim mysql-client ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git vim mysql-client libmysqlclient-dev ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
+RUN rm -f /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 
 COPY requirements.txt /
 
 ## Install any needed packages specified in requirements.txt
-RUN pip install Cython numpy && pip install -r requirements.txt --no-cache-dir
+RUN pwd && ls -l / && pip install Cython numpy && pip install -r /requirements.txt --no-cache-dir
+
+RUN python -m ipykernel.kernelspec
+
+# For CUDA profiling, TensorFlow requires CUPTI.
+ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
