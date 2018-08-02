@@ -6,6 +6,8 @@ Including: - Generating a settings.yaml file with a random SECRET_KEY if this fi
 """
 import os
 import uuid
+
+import time
 import yaml
 import zipfile
 from shutil import copyfile
@@ -117,7 +119,7 @@ def reset_mysql():
            ]
 
     # Run query 'show tables;' and get the result
-    result = run_command(cmd + ['-e', 'show tables;'], suppress_output=True)
+    result, err = run_command(cmd + ['-e', 'show tables;'], suppress_output=True)
 
     result_lines = result.decode('utf-8').split('\n')
 
@@ -148,7 +150,7 @@ def backup_mysql():
            '{}'.format(db_name)
            ]
 
-    result = run_command(cmd, suppress_output=True)
+    result, err = run_command(cmd, suppress_output=True)
 
     with open(backup_file, 'wb') as f:
         f.write(result)
@@ -269,7 +271,7 @@ def backup_postgres():
            '--file={}'.format(backup_file),
            '--format=plain']
 
-    message = run_command(cmd, suppress_output=True)
+    message, err = run_command(cmd, suppress_output=True)
     talk_to_user(message.decode('utf-8'))
     return True
 
@@ -288,17 +290,18 @@ def restore_postgres():
            '--dbname={}'.format(db_name),
            '--file={}'.format(backup_file)]
 
-    message = run_command(cmd, suppress_output=True)
+    message, err = run_command(cmd, suppress_output=True)
     talk_to_user(message.decode('utf-8'))
     return True
 
 
-def run_command(cmd, suppress_output=False):
+def run_command(cmd, suppress_output=False, suppress_error=False):
     """
     Run python manage command.
 
     :param cmd: an array of arguments, or a complete command.
-    :param suppress_output: if True, don't print to screen
+    :param suppress_output: if True, don't print output to screen
+    :parem suppress_error: if True, don't print error to screen
     :return: out
     """
     import sys
@@ -310,13 +313,13 @@ def run_command(cmd, suppress_output=False):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
 
-    if not suppress_output:
-        if out:
-            print(out.decode('utf-8'), end='', flush=True)
-    if err:
+    if not suppress_output and out:
+        print(out.decode('utf-8'), end='', flush=True)
+
+    if not suppress_error and err:
         print(err.decode('utf-8'), file=sys.stderr, end='', flush=True)
 
-    return out
+    return out, err
 
 
 def run_loaddata(fixture_dir, fixture_name):
@@ -344,7 +347,7 @@ def run_dumpdata(fixture_dir, fixture_name):
     fixture_file = os.path.join(fixture_dir, '{}.json'.format(fixture_name))
     talk_to_user('Dumping {} to {}'.format(fixture_name, fixture_file))
     command = 'python manage.py dumpdata {} --natural-foreign --indent=2'.format(fixture_name)
-    out = run_command(command, suppress_output=True)
+    out, err = run_command(command, suppress_output=True)
 
     print(out.decode('utf-8'))
 
@@ -358,6 +361,52 @@ def run_compress_fixtures(fixture_dir, compressed_file_name):
             fixture_file = os.path.join(fixture_dir, '{}.json'.format(fixture_name))
             with open(fixture_file, 'r') as f:
                 zip_file.writestr('{}.json'.format(fixture_name), f.read())
+
+
+def probe_sqlite():
+    """
+    Sqlite is always available
+
+    :return: None
+    """
+    return True
+
+
+def probe_postgres():
+    cmd = ['psql',
+           '--username={}'.format(db_user),
+           '--host={}'.format(db_host),
+           '--port={}'.format(db_port),
+           '--dbname={}'.format(db_name),
+           '--file={}'.format(backup_file)]
+
+    message, err = run_command(cmd, suppress_output=True, suppress_error=True)
+
+    err = err.decode('utf-8').strip().split('\n')
+    error_messages = [x for x in err if x.find('Connection refused') != -1 or x.find('FATAL') != -1]
+    return len(error_messages) == 0
+
+
+def probe_mysql():
+    """
+    Reset Mysql database to empty.
+
+    :param filename: path to the backup file. If exists it will be overwritten
+    :return: None
+    """
+    # generic command to log in mysql
+    cmd = ['mysql',
+           '--user={}'.format(db_user),
+           '--password={}'.format(db_pass),
+           '--host={}'.format(db_host),
+           '--port={}'.format(db_port),
+           '{}'.format(db_name)
+           ]
+
+    out, err = run_command(cmd, suppress_output=True, suppress_error=True)
+    err = err.decode('utf-8').strip().split('\n')
+    error_messages = [x for x in err if x.startswith('ERROR')]
+    return len(error_messages) == 0
 
 
 config = get_config()
@@ -385,6 +434,23 @@ backup_db_functions = {
     'postgresql': backup_postgres,
     'mysql': backup_mysql
 }
+
+probe_db_functions = {
+    'sqlite3': probe_sqlite,
+    'postgresql': probe_postgres,
+    'mysql': probe_mysql
+}
+
+
+def wait_for_database():
+    talk_to_user('Testing database connection...')
+    probe_db_function = probe_db_functions[db_engine_short_name]
+
+    connectable = probe_db_function()
+    while not connectable:
+        connectable = probe_db_function()
+        print('Connection is not ready, sleep for 1 sec')
+        time.sleep(1)
 
 
 def empty_database():
@@ -417,7 +483,7 @@ def backup_database_using_fixtures():
         for fixture_name in fixture_list:
             talk_to_user('Dumping {} to {}'.format(fixture_name, backup_file))
             command = 'python manage.py dumpdata {} --natural-foreign --indent=2'.format(fixture_name)
-            out = run_command(command, suppress_output=True)
+            out, err = run_command(command, suppress_output=True)
             zip_file.writestr(fixture_name, out.decode('utf-8'))
 
 
@@ -470,6 +536,9 @@ if __name__ == '__main__':
     colorama_init()
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--probe-database', dest='wait_db', action='store_true', default=False,
+                        help='Try to connect to db until it is connectable')
+
     parser.add_argument('--reset-database', dest='reset_db', action='store_true', default=False,
                         help='Truncate all tables. Database structure restored')
 
@@ -490,6 +559,7 @@ if __name__ == '__main__':
     backup_db = args.backup_db
     backup_file = args.backup_file
     empty_db = args.empty_db
+    wait_db = args.wait_db
 
     if restore_db and backup_db:
         raise Exception('Cannot use both params --restore-database and --backup-database')
@@ -520,6 +590,9 @@ if __name__ == '__main__':
         db_engine_short_name = 'mysql'
     else:
         raise Exception('Database engine {} is not supported.'.format(db_engine))
+
+    if wait_db:
+        wait_for_database()
 
     if backup_db:
         if backup_file.endswith('.zip'):

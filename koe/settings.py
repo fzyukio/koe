@@ -9,6 +9,8 @@ from maintenance import config as envconf, base_dir_join
 
 BASE_DIR = envconf['base_dir']
 
+os.environ['PYTHONPATH'] = BASE_DIR
+
 SITE_ID = 1
 
 SECRET_KEY = envconf['secret_key']
@@ -54,7 +56,8 @@ INSTALLED_APPS = [
 
     'root',
     'koe',
-    'cms'
+    'cms',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
@@ -219,6 +222,15 @@ TIME_INPUT_FORMAT = '%Y-%m-%d %H:%M:%S %z%Z'
 
 # Test runner with no database creation
 TEST_RUNNER = 'tests.test_nodb.NoDbTestRunner'
+
+NOTEBOOK_ARGUMENTS = [
+    '--ip={}'.format(envconf['jupyter']['ip']),
+    '--port=8001',
+    '--no-browser',
+    '--allow-root',
+    '--config', './jupyter_notebook_config.py',
+    '--notebook-dir', 'notebooks'
+]
 
 # For local run:
 if DEBUG:

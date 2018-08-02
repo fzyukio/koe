@@ -5,8 +5,7 @@ unset https_proxy
 
 cd /code
 
-# Always clear the cache
-python manage.py cache --action=clear --pattern='template.cache.*'
+python maintenance.py --probe-database
 
 # Always back-up the database
 mkdir -p backups/mysql
@@ -21,6 +20,9 @@ else
     python manage.py migrate --database=default
 fi
 
-uwsgi --ini uwsgi.ini:prod
+# Always clear the cache
+python manage.py cache --action=clear --pattern='template.cache.*'
 
+python manage.py shell_plus --notebook &
+uwsgi --ini uwsgi.ini:prod
 

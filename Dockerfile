@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image
-FROM python:3 as mainapp
+FROM python:3.6 as koeapp
 
 MAINTAINER Yukio Fukuzawa
 
@@ -7,11 +7,10 @@ ENV PYTHONUNBUFFERED 1
 
 ARG uid=1000
 
-ARG http_proxy=""
-ARG https_proxy=""
-
-ENV http_proxy=$http_proxy
-ENV https_proxy=$https_proxy
+ARG http_proxy=''
+ARG https_proxy=''
+ENV http_proxy=''
+ENV https_proxy=''
 
 # backports needed to install ffmpeg
 RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
