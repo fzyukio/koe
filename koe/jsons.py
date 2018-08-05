@@ -452,6 +452,11 @@ tables = \
                     "type": "INTEGER"
                 },
                 {
+                    "name": "Accumulated occurrences",
+                    "slug": "accumoccurs",
+                    "type": "INTEGER"
+                },
+                {
                     "name": "Support",
                     "slug": "support",
                     "type": "FLOAT"

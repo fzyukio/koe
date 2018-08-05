@@ -535,16 +535,16 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     mined_objects = result['mined_objects']
     nseqs = result['nsequences']
 
-    for idx, mined_object in enumerate(mined_objects):
-        items = mined_object.items
+    for idx, seq in enumerate(mined_objects):
+        items = seq.items
         if len(items) == 1:
             continue
-        conf = -1 if mined_object.confidence is None else mined_object.confidence
-        lift = -1 if mined_object.lift is None else mined_object.lift
+        conf = -1 if seq.confidence is None else seq.confidence
+        lift = -1 if seq.lift is None else seq.lift
         assocrule = '->'.join([enums2labels[item.elements[0]] for item in items])
 
-        row = dict(id=idx, chainlength=len(items), transcount=mined_object.noccurs, confidence=conf, lift=lift,
-                   support=mined_object.noccurs / nseqs, assocrule=assocrule)
+        row = dict(id=idx, chainlength=len(items), transcount=seq.noccurs, accumoccurs=seq.accum_occurs,
+                   confidence=conf, lift=lift, support=seq.noccurs / nseqs, assocrule=assocrule)
 
         rows.append(row)
         ids.append(idx)

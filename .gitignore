@@ -24,3 +24,4 @@ backups/
 **/management/commands/_*
 notebooks/.ipynb_checkpoints/
 csv/
+.env
