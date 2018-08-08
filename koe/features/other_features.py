@@ -3,11 +3,13 @@ import numpy as np
 from koe.features.utils import unroll_args, get_psddb, get_psd
 
 
+# @profile
 def duration(args):
     start, end = unroll_args(args, ['start', 'end'])
     return end - start
 
 
+# @profile
 def frame_entropy(args):
     psd = get_psd(args)
 
@@ -16,6 +18,7 @@ def frame_entropy(args):
     return np.sum(-newsg * np.log2(newsg), axis=0)
 
 
+# @profile
 def average_frame_power(args):
     """
     Average power = sum of PSD (in decibel) divided by number of pixels
@@ -26,6 +29,7 @@ def average_frame_power(args):
     return np.mean(psddb, axis=0)
 
 
+# @profile
 def max_frame_power(args):
     """
     Max power is the darkest pixel in the spectrogram
@@ -36,6 +40,7 @@ def max_frame_power(args):
     return np.max(psddb, axis=0)
 
 
+# @profile
 def dominant_frequency(args):
     """
     Max frequency is the frequency at which max power occurs

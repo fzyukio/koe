@@ -46,6 +46,7 @@ stepsize = nfft - noverlap
 aggregators = aggregators_by_type['all']
 
 
+# @profile
 def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features):
     fs, length = get_wav_info(wav_file_path)
     segment_ids = [x[0] for x in segs_info]
@@ -297,6 +298,7 @@ def recalibrate_database(database_name, h5file):
         return temp_h5file
 
 
+# @profile
 def aggregate_feature_values(segment_to_label, h5file, features):
     """
     Compress all feature sequences into fixed-length vectors

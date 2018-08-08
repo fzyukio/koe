@@ -48,6 +48,7 @@ def amplitude_modulation(args):
     return np.sum(time_deriv, axis=0)
 
 
+# @profile
 def goodness_of_pitch(args):
     nfft = args['nfft']
     stft = maybe_cached_stft(args, 'dpss1')
@@ -67,12 +68,14 @@ def mtspect(args):
     return (np.abs(tapered1) ** 2 + np.abs(tapered2) ** 2) / 2
 
 
+# @profile
 def amplitude(args):
     s = mtspect(args)
     m_LogSum = np.sum(s[3:, :], axis=0)
     return 10 * (np.log10(m_LogSum))
 
 
+# @profile
 def entropy(args):
     s = mtspect(args)
     mean_log = np.mean(np.log(s[3:, :]), axis=0)
@@ -80,6 +83,7 @@ def entropy(args):
     return mean_log - log_mean
 
 
+# @profile
 def spectral_continuity(args):
     contours = frequency_contours(args)
     label_img = label(contours, connectivity=contours.ndim)
@@ -113,6 +117,7 @@ def spectral_continuity(args):
     return continuity_frame
 
 
+# @profile
 def frequency_contours(args):
     derivs = spectral_derivative(args)
     derivs_abs = np.abs(derivs)
@@ -132,6 +137,7 @@ def frequency_contours(args):
     return contours
 
 
+# @profile
 def mean_frequency(args):
     fs, nfft = unroll_args(args, ['fs', 'nfft'])
     s = mtspect(args)
@@ -142,6 +148,7 @@ def mean_frequency(args):
     return x
 
 
+# @profile
 def spectral_derivative(args):
     time_deriv, freq_deriv = cached_tf_derivatives(args)
     fm = frequency_modulation(args)

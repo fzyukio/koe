@@ -3,6 +3,7 @@ import numpy as np
 from koe.features.utils import unroll_args, get_psd, get_psddb
 
 
+# @profile
 def total_energy(args):
     fs, nfft = unroll_args(args, ['fs', 'nfft'])
     psd = get_psd(args)
@@ -13,6 +14,7 @@ def total_energy(args):
     return energy
 
 
+# @profile
 def aggregate_entropy(args):
     psd = get_psd(args)
 
@@ -22,6 +24,7 @@ def aggregate_entropy(args):
     return np.sum(-ebin * np.log2(ebin))
 
 
+# @profile
 def average_entropy(args):
     psd = get_psd(args)
 
@@ -33,6 +36,7 @@ def average_entropy(args):
     return averaged_entropy
 
 
+# @profile
 def average_power(args):
     """
     Average power = sum of PSD (in decibel) divided by number of pixels
@@ -43,6 +47,7 @@ def average_power(args):
     return np.sum(psddb) / np.size(psddb)
 
 
+# @profile
 def max_power(args):
     """
     Max power is the darkest pixel in the spectrogram
@@ -53,6 +58,7 @@ def max_power(args):
     return np.max(psddb)
 
 
+# @profile
 def max_frequency(args):
     """
     Max frequency is the frequency at which max power occurs
