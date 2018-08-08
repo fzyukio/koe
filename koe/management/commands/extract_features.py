@@ -397,19 +397,19 @@ def aggregate_feature_values(segment_to_label, h5file, features):
     return dataset, sids, fnames
 
 
-def run_clustering(dataset):
-    ndim = dataset.shape[1]
-    n_components = min(50, ndim // 2)
-    pca = PCA(n_components=n_components)
-    pca_result = pca.fit_transform(dataset)
-    print('Cumulative explained variation for {} principal components: {}'
-          .format(n_components, np.sum(pca.explained_variance_ratio_)))
+def run_clustering(dataset, dim_reduce, n_components):
+    if dim_reduce:
+        dim_reduce_func = dim_reduce(n_components=n_components)
+        dataset = dim_reduce_func.fit_transform(dataset, y=None)
+        if hasattr(dim_reduce_func, 'explained_variance_ratio_'):
+            print('Cumulative explained variation for {} principal components: {}'
+                  .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
 
     time_start = time.time()
-    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000)
-    tsne_pca_results = tsne.fit_transform(pca_result)
+    tsne = TSNE(n_components=50, verbose=1, perplexity=10, n_iter=4000)
+    tsne_results = tsne.fit_transform(dataset)
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
-    return tsne_pca_results
+    return tsne_results
 
 
 def get_segment_ids_and_labels(csv_file):
@@ -500,7 +500,7 @@ class Command(BaseCommand):
             label = sid_to_label[sid]
             labels.append(label)
 
-        clusters = run_clustering(zscore(rawdata, axis=1))
+        clusters = run_clustering(zscore(rawdata, axis=1), dim_reduce=PCA, n_components=50)
 
         labels = np.array(labels)
         label_sort_ind = np.argsort(labels)
