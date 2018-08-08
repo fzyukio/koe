@@ -17,7 +17,7 @@ from pymlfunc import tictoc
 class KoeUtilsTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        with h5py.File('mtspect.h5', 'r') as hf:
+        with h5py.File('tests/mtspect.h5', 'r') as hf:
             cls.noverlap = int(hf['noverlap'].value[0][0])
             cls.nfft = int(hf['nfft'].value[0][0])
             cls.window_length = int(hf['window_length'].value[0][0])
@@ -54,7 +54,7 @@ class KoeUtilsTest(TestCase):
 
             write(cls.wav_file_path, cls.fs, data)
             cls.args = dict(wav_file_path=cls.wav_file_path, start=0, end=None, nfft=cls.nfft,
-                            win_length=cls.window_length, noverlap=cls.noverlap, fs=cls.fs)
+                            win_length=cls.window_length, noverlap=cls.noverlap, fs=cls.fs, center=False)
 
     @classmethod
     def tearDownClass(cls):

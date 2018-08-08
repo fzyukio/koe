@@ -40,7 +40,7 @@ class KoeUtilsTest(TestCase):
         self.assertTrue((segs == correct_segs).all())
 
     def test_read_segment(self):
-        filepath = 'example 1.wav'
+        filepath = 'tests/example 1.wav'
 
         fs, sig = wav_2_mono(filepath, normalised=True)
         full_siglen = len(sig)
@@ -60,7 +60,7 @@ class KoeUtilsTest(TestCase):
                 self.assertEqual(segment1_len_ms, length_ms)
 
     def test_zscore(self):
-        with h5py.File('zscore.h5', 'r') as hf:
+        with h5py.File('tests/zscore.h5', 'r') as hf:
             x = hf['x'].value.ravel()
             self.z = hf['z'].value.ravel()
             xx = hf['xx'].value.T
