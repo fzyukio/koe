@@ -5,7 +5,7 @@ from django.test import TestCase
 from scipy import signal
 
 from koe.features.utils import my_stft
-from tests.utils import tictoc
+from pymlfunc import tictoc
 
 
 class KoeUtilsTest(TestCase):

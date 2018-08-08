@@ -7,7 +7,7 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.model_utils import natural_order
 from koe.models import Coordinate, Database
-from koe.utils import normxcorr2
+from pymlfunc import normxcorr2
 from .ftxtract import extract_funcs
 
 

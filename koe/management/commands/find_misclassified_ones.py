@@ -13,7 +13,8 @@ from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
 from sklearn.tree import DecisionTreeClassifier
 
-from koe.utils import accum, sub2ind
+from koe.utils import accum
+from pymlfunc import sub2ind
 
 
 def _calc_score(predict_y, test_y, nlabels):

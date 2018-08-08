@@ -11,7 +11,7 @@ from koe.features.mt_features import mtspect, amplitude, entropy, mean_frequency
     frequency_modulation, amplitude_modulation, spectral_derivative, time_derivative, freq_derivative, find_zc, \
     frequency_contours, spectral_continuity
 from spectrum import dpss
-from tests.utils import tictoc
+from pymlfunc import tictoc
 
 
 class KoeUtilsTest(TestCase):
