@@ -65,7 +65,7 @@ f0_profile_names = f0_profiles.keys()
 amp_profile_names = amp_profiles.keys()
 
 
-def generate_chirp(f0_profile, amp_profile, duration, fs):
+def generate_chirp(f0_profile, amp_profile, nsamples):
     """
     Create a frequency sweep signal given the shape and two frequency value in time
 
@@ -90,9 +90,9 @@ def generate_chirp(f0_profile, amp_profile, duration, fs):
     :param fs:
     :return:
     """
-    # time_step = 1 / fs
-    # time_arr = np.arange(0, duration, time_step, dtype=np.float32)
-    time_arr = np.arange(0, duration * fs // 1000, dtype=np.uint32)
+    # if nsamples is None:
+    #     nsamples = duration * fs // 1000
+    time_arr = np.arange(0, nsamples, dtype=np.uint32)
     time_arr, t1f, t2, t2f, method = f0_profiles[f0_profile](time_arr)
     amp = amp_profiles[amp_profile](len(time_arr))
 

@@ -12,48 +12,52 @@ python manage.py extract_features --csv=/tmp/bellbirds.csv --h5file=bellbird-lbi
             median, std) to construct a feature matrix (9 dimensions). Store this matrix with the labels (second column
             in /tmp/bellbirds.csv) to file /tmp/mt-lbi.mat
 """
-import csv
 import json
 import os
+import time
 import uuid
 
 import h5py
 import numpy as np
-import time
-
+from django.core.management.base import BaseCommand
 from django.db.models import Case, IntegerField
 from django.db.models import F
 from django.db.models import Value
 from django.db.models import When
-
-from ced import pyed
-from django.core.management.base import BaseCommand
-from memoize import memoize
 from progress.bar import Bar
+from scipy.io import savemat
 from scipy.stats import zscore
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
+import csv
+from koe.aggregator import StatsAggregator, ChirpDtw, ChirpXcorr
 from koe.features.feature_extract import feature_extractors, feature_map
 from koe.features.feature_extract import features as full_features
-from koe.management.commands.chirp_generator import generate_chirp
 from koe.models import *
 from koe.models import SegmentFeature, Feature
 from koe.utils import get_wav_info
 from root.utils import wav_path
 
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from scipy.io import savemat
-
 nfft = 512
 noverlap = nfft * 3 // 4
 win_length = nfft
+stepsize = nfft - noverlap
+
 aggregators = [
-    np.mean, np.median, np.std,
-    ('dtw_chirp', 'pipe'),
-    ('dtw_chirp', 'squeak-up'),
-    ('dtw_chirp', 'squeak-down'),
-    ('dtw_chirp', 'squeak-convex'),
-    ('dtw_chirp', 'squeak-concave')
+    StatsAggregator(np.mean),
+    StatsAggregator(np.median),
+    StatsAggregator(np.std),
+    ChirpDtw('pipe'),
+    ChirpDtw('squeak-up'),
+    ChirpDtw('squeak-down'),
+    ChirpDtw('squeak-convex'),
+    ChirpDtw('squeak-concave'),
+    ChirpXcorr('pipe'),
+    ChirpXcorr('squeak-up'),
+    ChirpXcorr('squeak-down'),
+    ChirpXcorr('squeak-convex'),
+    ChirpXcorr('squeak-concave'),
 ]
 
 
@@ -220,7 +224,7 @@ def recalibrate_database(database_name, h5file):
 
         h5_songs_info = new_h5_songs_info
 
-        db_attrs = SegmentFeature.objects\
+        db_attrs = SegmentFeature.objects \
             .filter(segment__audio_file__database__name=database_name, segment__audio_file__name__in=song_names) \
             .values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
 
@@ -266,7 +270,8 @@ def recalibrate_database(database_name, h5file):
 
         seg_endpoints_to_ids = {
             (sname, sta, end): sid for sid, sname, sta, end in
-            Segment.objects.filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
+            Segment.objects
+            .filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
             .values_list('id', 'audio_file__name', 'start_time_ms', "end_time_ms")
         }
 
@@ -307,49 +312,14 @@ def recalibrate_database(database_name, h5file):
         return temp_h5file
 
 
-@memoize(timeout=60)
-def _cached_get_chirp(chirp_type, duration_ms, fs):
-    return generate_chirp(chirp_type, 'constant', duration_ms, fs)
-
-
-@memoize(timeout=300)
-def _cached_get_chirp_feature(feature_name, args):
-    duration_ms = args['duration']
-    fs = args['fs']
-    chirp_type = args['chirp_type']
-
-    chirp = _cached_get_chirp(chirp_type, duration_ms, fs)
-
-    args['sig'] = chirp
-    extractor = feature_extractors[feature_name]
-    feature_value = extractor(args)
-    return feature_value
-
-
-def dtw_chirp(feature, seg_feature_value, args):
-    chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
-    if feature.is_one_dimensional:
-        chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
-
-    settings = pyed.Settings(dist='euclid_squared', norm='max', compute_path=False)
-
-    if chirp_feature_value.ndim == 2:
-        assert chirp_feature_value.shape[0] == seg_feature_value.shape[0]
-        dim0 = chirp_feature_value.shape[0]
-    else:
-        dim0 = 1
-    retval = np.empty((dim0,), dtype=np.float64)
-
-    for d in range(dim0):
-        chirp_feature_array = chirp_feature_value[d, :]
-        seg_feature_array = seg_feature_value[d, :]
-        distance = pyed.Dtw(chirp_feature_array, seg_feature_array, settings=settings, args={})
-        retval[d] = distance.get_dist()
-
-    return retval
-
-
-def create_dataset(segment_to_label, h5file, features):
+def aggregate_feature_values(segment_to_label, h5file, features):
+    """
+    Compress all feature sequences into fixed-length vectors
+    :param segment_to_label:
+    :param h5file:
+    :param features:
+    :return:
+    """
     if features is None or len(features) == 0:
         features = full_features
 
@@ -376,8 +346,8 @@ def create_dataset(segment_to_label, h5file, features):
         bar = Bar('Extract features', max=n_calculations)
 
         for sfid, fname, sid, duration, fs in attrs:
-            args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, fs=fs, duration=duration, start=None,
-                        end=None, win_length=win_length)
+            args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, start=None, end=None, win_length=win_length,
+                        fs=fs, center=False)
             feature = feature_map[fname]
 
             if sid in feature_vectors:
@@ -394,16 +364,23 @@ def create_dataset(segment_to_label, h5file, features):
             else:
                 if feature.is_one_dimensional:
                     value = value.reshape(1, (max(value.shape)))
-                for aggregator in aggregators:
-                    if isinstance(aggregator, tuple) and aggregator[0] == 'dtw_chirp':
-                        chirp_type = aggregator[1]
-                        fname_modif = '{}_{}_{}'.format(fname, 'chirp', chirp_type)
 
-                        args['chirp_type'] = chirp_type
-                        aggregated = dtw_chirp(feature, value, args)
+                if value.ndim == 2:
+                    nframes = value.shape[1]
+                else:
+                    nframes = value.shape[0]
+
+                min_nsamples = nfft + (nframes - 1) * stepsize
+                args['nsamples'] = min_nsamples
+
+                for aggregator in aggregators:
+                    fname_modif = '{}_{}'.format(fname, aggregator.get_name())
+
+                    if aggregator.is_chirpy():
+                        aggregated = aggregator.process(value, args=args, feature=feature)
                     else:
-                        aggregated = aggregator(value, axis=-1)
-                        fname_modif = '{}_{}'.format(fname, aggregator.__name__)
+                        aggregated = aggregator.process(value, axis=-1)
+
                     if isinstance(aggregated, np.ndarray):
                         if len(aggregated) == 1:
                             feature_vector[fname_modif] = aggregated[0]
@@ -446,6 +423,17 @@ def run_clustering(dataset):
     tsne_pca_results = tsne.fit_transform(pca_result)
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
     return tsne_pca_results
+
+
+def get_segment_ids_and_labels(csv_file):
+    with open(csv_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        supplied_fields = reader.fieldnames
+
+        # The first field is always id, the second field is always the primary label type
+        primary_label_level = supplied_fields[1]
+
+        return {int(row['id']): row[primary_label_level] for row in reader}
 
 
 class Command(BaseCommand):
@@ -502,15 +490,7 @@ class Command(BaseCommand):
         segment_csv = options['segment_csv']
         database_name = options['database_name']
 
-        with open(segment_csv, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f, delimiter='\t')
-            supplied_fields = reader.fieldnames
-
-            # The first field is always id, the second field is always the primary label type
-            primary_label_level = supplied_fields[1]
-
-            sid_to_label = {int(row['id']): row[primary_label_level] for row in reader}
-
+        sid_to_label = get_segment_ids_and_labels(segment_csv)
         sids = sid_to_label.keys()
 
         selected_features = list(Feature.objects.filter(name__in=selected_features))
@@ -522,25 +502,24 @@ class Command(BaseCommand):
             except Exception as e:
                 os.remove(h5file)
                 raise e
-
         else:
             h5file = recalibrate_database(database_name, h5file)
 
-        dataset, sids, fnames = create_dataset(sid_to_label, h5file, selected_features)
-        dataset = zscore(dataset)
+        rawdata, sids, fnames = aggregate_feature_values(sid_to_label, h5file, selected_features)
+
         sids = np.array(sids, dtype=np.int32)
         labels = []
         for sid in sids:
             label = sid_to_label[sid]
             labels.append(label)
 
-        clusters = run_clustering(dataset)
+        clusters = run_clustering(zscore(rawdata, axis=1))
 
         labels = np.array(labels)
         label_sort_ind = np.argsort(labels)
         labels = labels[label_sort_ind]
         sids = sids[label_sort_ind]
-        dataset = dataset[label_sort_ind, :]
+        rawdata = rawdata[label_sort_ind, :]
         clusters = clusters[label_sort_ind, :]
 
-        savemat(matfile, dict(sids=sids, dataset=dataset, labels=labels, fnames=fnames, clusters=clusters))
+        savemat(matfile, dict(sids=sids, rawdata=rawdata, labels=labels, fnames=fnames, clusters=clusters))
