@@ -104,5 +104,5 @@ scikit-image
 pycspade>=0.3.2
 django-extensions
 ipython[notebook]
-pymlfunc==0.0.2
+pymlfunc==0.0.3
 nose

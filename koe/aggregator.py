@@ -1,4 +1,5 @@
 import copy
+import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -66,7 +67,11 @@ def xcorr_chirp(feature, seg_feature_value, args):
     #     raise Exception('Feature = {}. Shape{} is not the same as {}'.format(feature.name, chirp_feature_value.shape,
     #                                                                          seg_feature_value.shape))
 
-    retval = np.max(normxcorr2(chirp_feature_value, seg_feature_value))
+    if chirp_feature_value.shape[1] <= seg_feature_value.shape[1]:
+        retval = np.max(normxcorr2(chirp_feature_value, seg_feature_value))
+    else:
+        retval = np.max(normxcorr2(seg_feature_value, chirp_feature_value))
+
     return retval
 
 
@@ -133,3 +138,29 @@ class ChirpXcorr(Aggregator):
 
     def is_chirpy(self):
         return True
+
+
+aggregators_by_type = {
+    'stats': [
+        StatsAggregator(np.mean),
+        StatsAggregator(np.median),
+        StatsAggregator(np.std),
+    ],
+    'dtw': [
+        ChirpDtw('pipe'),
+        ChirpDtw('squeak-up'),
+        ChirpDtw('squeak-down'),
+        ChirpDtw('squeak-convex'),
+        ChirpDtw('squeak-concave'),
+    ],
+    'xcorr': [
+        ChirpXcorr('pipe'),
+        ChirpXcorr('squeak-up'),
+        ChirpXcorr('squeak-down'),
+        ChirpXcorr('squeak-convex'),
+        ChirpXcorr('squeak-concave'),
+    ]
+}
+
+aggregators = list(itertools.chain.from_iterable(aggregators_by_type.values()))
+aggregators_by_type['all'] = list(itertools.chain.from_iterable(aggregators_by_type.values()))

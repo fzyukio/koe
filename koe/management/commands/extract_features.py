@@ -31,7 +31,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 import csv
-from koe.aggregator import StatsAggregator, ChirpDtw, ChirpXcorr
+from koe.aggregator import aggregators_by_type
 from koe.features.feature_extract import feature_extractors, feature_map
 from koe.features.feature_extract import features as full_features
 from koe.models import *
@@ -43,22 +43,7 @@ nfft = 512
 noverlap = nfft * 3 // 4
 win_length = nfft
 stepsize = nfft - noverlap
-
-aggregators = [
-    StatsAggregator(np.mean),
-    StatsAggregator(np.median),
-    StatsAggregator(np.std),
-    ChirpDtw('pipe'),
-    ChirpDtw('squeak-up'),
-    ChirpDtw('squeak-down'),
-    ChirpDtw('squeak-convex'),
-    ChirpDtw('squeak-concave'),
-    ChirpXcorr('pipe'),
-    ChirpXcorr('squeak-up'),
-    ChirpXcorr('squeak-down'),
-    ChirpXcorr('squeak-convex'),
-    ChirpXcorr('squeak-concave'),
-]
+aggregators = aggregators_by_type['all']
 
 
 def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, features):

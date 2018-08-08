@@ -2,7 +2,8 @@ r"""
 For a specific classifier and data source, for each set of features and aggregators, run classification on the data
 and export the result.
 """
-
+import datetime
+import itertools
 import numpy as np
 from django.core.management.base import BaseCommand
 from dotmap import DotMap
@@ -10,19 +11,13 @@ from progress.bar import Bar
 from scipy.io import loadmat
 from scipy.stats import zscore
 
+from koe.aggregator import aggregators_by_type
 from koe.features.feature_extract import feature_whereabout, feature_map
 from koe.management.commands.run_kfold_validation import run_nfolds, classifiers
 
-aggregator_groups = {
-    'stats': [np.mean, np.median, np.std, ],
-    'dtw_chirp': [
-        ('dtw_chirp', 'pipe'),
-        ('dtw_chirp', 'squeak-up'),
-        ('dtw_chirp', 'squeak-down'),
-        ('dtw_chirp', 'squeak-convex'),
-        ('dtw_chirp', 'squeak-concave')
-    ]
-}
+feature_groups = {x: y for x, y in feature_whereabout.items()}
+# feature_groups = {}
+feature_groups['all'] = list(itertools.chain.from_iterable(feature_whereabout.values()))
 
 
 class Command(BaseCommand):
@@ -48,20 +43,22 @@ class Command(BaseCommand):
 
         saved = DotMap(loadmat(matfile))
         sids = saved.sids.ravel()
-        dataset = saved.dataset
+        rawdata = saved.get('dataset', saved.rawdata)
         labels = saved.labels
-        haslabel_ind = np.where(labels != '                              ')[0]
+        labels = np.array([x.strip() for x in labels])
+        haslabel_ind = np.where(labels != '')[0]
 
         labels = labels[haslabel_ind]
         labels = np.array([x.strip() for x in labels])
         sids = sids[haslabel_ind]
 
-        dataset = dataset[haslabel_ind]
-        meas = zscore(dataset)
+        rawdata = rawdata[haslabel_ind]
+        normed = zscore(rawdata)
+        normed[np.where(np.isnan(normed))] = 0
 
         data_sources = {
-            'raw': dataset,
-            'norm': meas
+            'raw': rawdata,
+            'norm': normed
         }
 
         data = data_sources[source]
@@ -76,13 +73,18 @@ class Command(BaseCommand):
         done = []
 
         if csv_filename is None:
-            csv_filename = 'multiple_{}_{}.csv'.format(clsf_type, source)
+            csv_filename = 'csv/multiple.csv'
 
-        with open(csv_filename, 'w', encoding='utf-8') as f:
+        with open(csv_filename, 'a', encoding='utf-8') as f:
+            f.write('\nRun time: {}\n'.format(datetime.datetime.now()))
+            f.write('Classifier={}, source={}, nfolds={}, niters={}\n'.format(clsf_type, source, nfolds, niters))
             f.write('Feature group, Aggratation method, Recognition rate\n')
-            for aggregators_name, aggregators in aggregator_groups.items():
-                for ftgroup_module, ftgroup in feature_whereabout.items():
-                    ftgroup_name = ftgroup_module.__name__[len('koe.features.'):]
+            for aggregators_name, aggregators in aggregators_by_type.items():
+                for ftgroup_module, ftgroup in feature_groups.items():
+                    if isinstance(ftgroup_module, str):
+                        ftgroup_name = ftgroup_module
+                    else:
+                        ftgroup_name = ftgroup_module.__name__[len('koe.features.'):]
                     ft_names = [x[0] for x in ftgroup]
                     fnames_modifs = []
 
@@ -96,7 +98,7 @@ class Command(BaseCommand):
                                     chirp_type = aggregator[1]
                                     fnames_modif = '{}_{}_{}'.format(ft_name, 'chirp', chirp_type)
                                 else:
-                                    fnames_modif = '{}_{}'.format(ft_name, aggregator.__name__)
+                                    fnames_modif = '{}_{}'.format(ft_name, aggregator.get_name())
                                 fnames_modifs.append(fnames_modif)
 
                     matched = []
@@ -114,12 +116,14 @@ class Command(BaseCommand):
                     if ft_inds_key not in done:
                         done.append(ft_inds_key)
 
-                        bar = Bar('Running {} on {}...'.format(clsf_type, source))
+                        bar = Bar('Running {} on {}, feature={}, aggregator={}...'
+                                  .format(clsf_type, source, ftgroup_name, aggregators_name))
                         data_ = data[:, ft_inds]
                         label_prediction_scores, _, _ = run_nfolds(data_, nsyls, nfolds, niters, enum_labels, nlabels,
                                                                    classifier, bar)
                         rate = np.nanmean(label_prediction_scores)
-                        result = '{},{},{}'.format(ftgroup_name, aggregators_name, rate)
+                        std = np.nanstd(label_prediction_scores)
+                        result = '{},{},{},{}'.format(ftgroup_name, aggregators_name, rate, std)
                         print(result)
                         f.write(result)
                         f.write('\n')
