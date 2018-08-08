@@ -1,49 +1,56 @@
-from librosa import feature as rosaft
+import numpy as np
+from librosa import feature as rosaft, power_to_db
+from librosa import filters
+from memoize import memoize
 
-from koe.features.utils import unroll_args, psd_or_sig, get_sig
+from koe.features.utils import unroll_args, get_psd, get_sig
+
+
+@memoize(timeout=60 * 60 * 24)
+def _cached_get_mel_filter(sr, n_fft, n_mels):
+    return filters.mel(sr=sr, n_fft=n_fft, n_mels=n_mels)
 
 
 def spectral_flatness(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
     hopsize = nfft - noverlap
-
-    return rosaft.spectral_flatness(y=sig, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.spectral_flatness(y=None, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def spectral_bandwidth(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.spectral_bandwidth(y=sig, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.spectral_bandwidth(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def spectral_centroid(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.spectral_centroid(y=sig, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.spectral_centroid(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def spectral_contrast(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.spectral_contrast(y=sig, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.spectral_contrast(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def spectral_rolloff(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.spectral_rolloff(y=sig, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.spectral_rolloff(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def chroma_stft(args):
-    psd, sig = psd_or_sig(args)
+    psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.chroma_stft(y=sig, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    return rosaft.chroma_stft(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def chroma_cqt(args):
@@ -61,16 +68,21 @@ def chroma_cens(args):
 
 
 def mfcc(args):
-    sig = get_sig(args)
-    fs = args['fs']
-    return rosaft.mfcc(y=sig, sr=fs, S=None, n_mfcc=26)
+    psd = get_psd(args) ** 2
+    fs, nfft = unroll_args(args, ['fs', 'nfft'])
+
+    # Build a Mel filter
+    mel_basis = _cached_get_mel_filter(sr=fs, n_fft=nfft, n_mels=128)
+    melspect = np.dot(mel_basis, psd)
+    S = power_to_db(melspect)
+    return np.dot(filters.dct(20, S.shape[0]), S)
 
 
 def zero_crossing_rate(args):
     sig = get_sig(args)
     nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.zero_crossing_rate(y=sig, frame_length=2048, hop_length=hopsize)
+    return rosaft.zero_crossing_rate(y=sig, frame_length=nfft, hop_length=hopsize, center=False)
 
 
 def tonnetz(args):

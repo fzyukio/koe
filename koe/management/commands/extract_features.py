@@ -63,7 +63,7 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, fe
 
     duration_ms = length * 1000 / fs
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
-                win_length=win_length)
+                win_length=win_length, center=False)
 
     with h5py.File(h5file, 'a') as hf:
         for feature in features:

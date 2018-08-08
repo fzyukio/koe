@@ -21,26 +21,25 @@ def _cached_get_window(name, nfft):
             return tapers[:, 1]
 
 
-def stft_from_sig(sig, nfft, noverlap, win_length, window_name):
+def stft_from_sig(sig, nfft, noverlap, win_length, window_name, center):
     window = _cached_get_window(window_name, nfft)
     hopsize = win_length - noverlap
-    center = len(sig) < win_length
+    center |= len(sig) < win_length
 
     return stft(y=sig, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
                 dtype=np.complex128)
 
 
-def psd_or_sig(args):
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
+def get_psd(args):
+    wav_file_path, fs, start, end, nfft, noverlap, win_length, center = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length', 'center'])
+
     if wav_file_path:
-        psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
-        sig = None
+        psd = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft, center)
     else:
         sig = args['sig']
-        psd = None
-
-    return psd, sig
+        psd = np.abs(stft_from_sig(sig, nfft, noverlap, win_length, 'hann', center))
+    return psd
 
 
 def get_sig(args):
@@ -53,26 +52,15 @@ def get_sig(args):
 
 
 def maybe_cached_stft(args, window_name):
-    wav_file_path, fs, start, end, nfft, noverlap, win_length = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length'])
+    wav_file_path, fs, start, end, nfft, noverlap, win_length, center = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length', 'center'])
     if wav_file_path:
-        tapered = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name)
+        tapered = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name, center)
     else:
         sig = args['sig']
-        tapered = stft_from_sig(sig, nfft, noverlap, win_length, window_name)
+        tapered = stft_from_sig(sig, nfft, noverlap, win_length, window_name, center)
 
     return tapered
-
-
-def get_psd(args):
-    wav_file_path, fs, start, end, nfft, noverlap = \
-        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap'])
-    if wav_file_path:
-        spect = get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, nfft)
-    else:
-        complex_spect = maybe_cached_stft(args, window_name='hann')
-        spect = np.abs(complex_spect)
-    return spect
 
 
 def get_psddb(args):
@@ -81,13 +69,13 @@ def get_psddb(args):
 
 
 @memoize(timeout=60)
-def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name):
+def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name, center):
     fs, chunk, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
-    return stft_from_sig(chunk, nfft, noverlap, win_length, window_name)
+    return stft_from_sig(chunk, nfft, noverlap, win_length, window_name, center)
 
 
-def get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, win_length):
-    spect__ = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name='hann')
+def get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, win_length, center):
+    spect__ = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'hann', center)
 
     return np.abs(spect__)
 
