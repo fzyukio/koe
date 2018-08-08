@@ -25,3 +25,4 @@ backups/
 notebooks/.ipynb_checkpoints/
 csv/
 .env
+*.deploy

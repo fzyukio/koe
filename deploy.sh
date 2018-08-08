@@ -24,12 +24,21 @@ On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
 PACKAGE_NAME=package-`date "+%Y-%m-%d_%H-%M-%S"`.tar.gz
-REMOTE_ADDRESS=130.123.248.84
-REMOTE_USER=yukio
-WORKSPACE=/www/koe
-SSH_EXTRA_CREDENTIAL=''
 APP_NAME=koe
 
+CFG_FILE=$1
+
+if [ -z "$CFG_FILE" ]; then
+    echo "Usage: deploy.sh deploy-config-file"
+    exit 0
+fi
+
+if [ ! -f $CFG_FILE ]; then
+    echo "File $CFG_FILE not found!"
+    exit 1
+fi
+
+source $CFG_FILE
 source ./.venv/bin/activate
 
 echo -e "${Yellow}${On_Purple}Remove old asset bundles before building a new one.${Color_Off}"
@@ -87,8 +96,8 @@ fi
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
     echo -e "${Yellow}${On_Purple}Now, run the app remotely ${Color_Off}"
-    echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"$WORKSPACE/post-deploy.sh\"${Color_Off}"
-    ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "$WORKSPACE/post-deploy.sh"
+    echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"source ~/.profile $WORKSPACE/post-deploy.sh\"${Color_Off}"
+    ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "source ~/.profile $WORKSPACE/post-deploy.sh"
 else
     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
     exit

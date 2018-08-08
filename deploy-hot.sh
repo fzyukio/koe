@@ -24,12 +24,21 @@ On_Cyan='\033[46m'        # Cyan
 On_White='\033[47m'       # White
 
 PACKAGE_NAME=package-`date "+%Y-%m-%d_%H-%M-%S"`.tar.gz
-REMOTE_ADDRESS=130.123.248.84
-REMOTE_USER=yukio
-WORKSPACE=/www/koe
-SSH_EXTRA_CREDENTIAL=''
 APP_NAME=koe
 
+CFG_FILE=$1
+
+if [ -z "$CFG_FILE" ]; then
+    echo "Usage: deploy.sh deploy-config-file"
+    exit 0
+fi
+
+if [ ! -f $CFG_FILE ]; then
+    echo "File $CFG_FILE not found!"
+    exit 1
+fi
+
+source $CFG_FILE
 source ./.venv/bin/activate
 
 echo -e "${Yellow}${On_Purple}Make sure the server's code is up-to-date${Color_Off}"
