@@ -227,3 +227,59 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
             out[s] = func(vals[s])
 
     return out
+
+
+def split_kfold_classwise(labels, k):
+    """
+    Create a training set indices and test set indices such that the k-ratio is preserved for all classes
+    This function is better suited for unbalanced data, e.g. some classes only have very few instances, such that
+     the normal way (randomised then split k-ways) might end up having some instances having no instances in the
+     training or test set
+    :param labels: 1-D array (int) contains enumerated labels
+    :param k:
+    :return: k-item array. Each element is a dict(test=test_indices, train=train_indices). The indices are randomised
+    """
+    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
+
+    label_sorted_indices = np.argsort(labels)
+    sorted_labels = labels[label_sorted_indices]
+
+    uniques, counts = np.unique(sorted_labels, return_counts=True)
+
+    if np.any(counts < k):
+        raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'.format(k, k))
+
+    nclasses = len(uniques)
+    folds = []
+    for i in range(k):
+        folds.append(dict(train=[], test=[]))
+
+    for i in range(nclasses):
+        ninstances = counts[i]
+        nremainings = ninstances
+        label = uniques[i]
+        instance_indices = np.where(labels == label)[0]
+        np.random.shuffle(instance_indices)
+        test_ind_start = 0
+
+        for k_ in range(k):
+            fold = folds[k_]
+
+            ntests = nremainings // (k - k_)
+            nremainings -= ntests
+
+            fold['test'].append(instance_indices[test_ind_start: test_ind_start + ntests])
+            fold['train'].append(np.concatenate((instance_indices[0:test_ind_start],
+                                                 instance_indices[test_ind_start + ntests:])))
+
+            test_ind_start += ntests
+        assert nremainings == 0
+
+    for fold in folds:
+        fold['test'] = np.concatenate(fold['test'])
+        fold['train'] = np.concatenate(fold['train'])
+
+        np.random.shuffle(fold['test'])
+        np.random.shuffle(fold['train'])
+
+    return folds

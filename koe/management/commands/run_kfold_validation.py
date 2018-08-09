@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
 from sklearn.tree import DecisionTreeClassifier
 
-from koe.utils import accum
+from koe.utils import accum, split_kfold_classwise
 
 
 def _calc_score(predict_y, test_y, nlabels):
@@ -106,19 +106,11 @@ def run_nfolds(data, nsyls, nfolds, niters, enum_labels, nlabels, classifier, ba
     ind = 0
 
     for i in range(niters):
-        scrambled_syl_idx = np.arange(nsyls, dtype=np.int)
-        np.random.shuffle(scrambled_syl_idx)
+        folds = split_kfold_classwise(enum_labels, nfolds)
 
-        fold_inds = np.linspace(0, nsyls, nfolds + 1, dtype=np.int)
-        fold_inds = list(zip(fold_inds[:-1], fold_inds[1:]))
-
-        for k in range(nfolds):
-            start_idx, end_idx = fold_inds[k]
-            test_inds = np.arange(start_idx, end_idx)
-            train_inds = np.concatenate((np.arange(0, start_idx), np.arange(end_idx, nsyls)))
-
-            train_syl_idx = scrambled_syl_idx[train_inds]
-            test_syl_idx = scrambled_syl_idx[test_inds]
+        for fold in folds:
+            test_syl_idx = fold['test']
+            train_syl_idx = fold['train']
 
             train_y = enum_labels[train_syl_idx]
             test_y = enum_labels[test_syl_idx]

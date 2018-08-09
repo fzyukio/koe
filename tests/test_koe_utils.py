@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
-from koe.utils import segments
+from koe.utils import segments, split_kfold_classwise
 
 
 @memoize(timeout=60)
@@ -20,6 +20,10 @@ def _cached_foo(arg1, arg2, args):
 
 
 _cached_foo.cached = {}
+
+
+def one_randint(limit=10):
+    return np.random.randint(limit, size=1)[0]
 
 
 class KoeUtilsTest(TestCase):
@@ -87,3 +91,49 @@ class KoeUtilsTest(TestCase):
 
         cached4 = _cached_foo(2, 2, dict(x=1, y=2, z=1))
         self.assertEqual('#1:2-2-x=1-y=2-z=1', cached4)
+
+    def test_split_kfold_classwise(self):
+        nclasses = 10
+        k = 10
+        max_ninstances = 100
+        min_ninstances = k
+
+        labels = []
+        for i in range(nclasses):
+            ninstances = min_ninstances + one_randint(max_ninstances - min_ninstances)
+            labels += [i] * ninstances
+
+        labels = np.array(labels, dtype=int)
+        np.random.shuffle(labels)
+        folds_iter1 = split_kfold_classwise(labels, k)
+        folds_iter2 = split_kfold_classwise(labels, k)
+
+        sorted_indices = np.arange(len(labels))
+        self.assertEqual(len(folds_iter1), k)
+        self.assertEqual(len(folds_iter2), k)
+
+        for i in range(k):
+            fold1 = folds_iter1[i]
+            fold2 = folds_iter2[i]
+
+            test1 = fold1['test']
+            train1 = fold1['train']
+
+            test2 = fold2['test']
+            train2 = fold2['train']
+
+            all1 = np.concatenate((test1, train1))
+            all1.sort()
+
+            all2 = np.concatenate((test2, train2))
+            all2.sort()
+
+            self.assertEqual(len(np.intersect1d(test1, train1)), 0)
+            self.assertTrue(np.all(sorted_indices == all1))
+
+            self.assertEqual(len(np.intersect1d(test2, train2)), 0)
+            self.assertTrue(np.all(sorted_indices == all2))
+
+            self.assertTrue(np.all(all1 == all2))
+            self.assertFalse(len(test1) != len(test2) or np.all(test1 == test2))
+            self.assertFalse(len(train1) != len(train2) or np.all(train1 == train2))
