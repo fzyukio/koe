@@ -283,3 +283,59 @@ def split_kfold_classwise(labels, k):
         np.random.shuffle(fold['train'])
 
     return folds
+
+
+def lcm(x, y):
+    if x > y:
+        z = x
+    else:
+        z = y
+
+    while True:
+        if z % x == 0 and z % y == 0:
+            lcm = z
+            break
+        z += 1
+
+    return lcm
+
+
+def divide_conquer(arr, ndivs):
+    """
+    Divide the array into n equal-length divisions
+    If the array length is not divided by n, upsample it to the least common multiple.
+    However, if the array is long enough (>= 10n) - divide them unequally is fine
+    :param arr:
+    :param ndivs:
+    :return:
+    """
+    arr_len = arr.shape[-1]
+    need_reshape = arr.ndim == 1
+    if need_reshape:
+        arr = arr.reshape((1, arr_len))
+
+    arr_proper_len = arr_len if arr_len // ndivs >= 10 else lcm(arr_len, ndivs)
+
+    if arr_len != arr_proper_len:
+        multiply_factor = arr_proper_len // arr_len
+        new_arr_shape = list(arr.shape)
+        new_arr_shape[-1] = arr_proper_len
+        new_arr = np.ndarray(new_arr_shape, dtype=arr.dtype)
+        for i in range(arr_len):
+            for j in range(i * multiply_factor, (i + 1) * multiply_factor):
+                new_arr[:, j] = arr[:, i]
+    else:
+        new_arr = arr
+
+    div_len = arr_proper_len / ndivs
+    divs = []
+    for i in range(ndivs):
+        start = int(np.floor(i * div_len))
+        end = int(np.ceil((i + 1) * div_len))
+        div = new_arr[:, start:end]
+        if need_reshape:
+            div = div.ravel()
+
+        divs.append(div)
+
+    return divs

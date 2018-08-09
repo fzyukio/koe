@@ -8,6 +8,8 @@ from ced import pyed
 from koe.features.feature_extract import feature_extractors
 from koe.management.commands.chirp_generator import generate_chirp
 from pymlfunc import normxcorr2
+
+from koe.utils import divide_conquer
 from memoize import memoize
 
 
@@ -98,7 +100,7 @@ class StatsAggregator(Aggregator):
         return self.name
 
     def process(self, input, **kwargs):
-        return self.method(input, **kwargs)
+        return self.method(input, axis=-1)
 
     def is_chirpy(self):
         return False
@@ -140,6 +142,23 @@ class ChirpXcorr(Aggregator):
         return True
 
 
+class DivideConquer(Aggregator):
+    def __init__(self, method, ndivs):
+        self.method = method
+        self.ndivs = ndivs
+        self.name = 'divcon_{}_{}'.format(ndivs, method.__name__)
+
+    def get_name(self):
+        return self.name
+
+    def process(self, input, **kwargs):
+        divs = divide_conquer(input, self.ndivs)
+        return np.array([self.method(div, axis=-1) for div in divs]).ravel()
+
+    def is_chirpy(self):
+        return False
+
+
 aggregators_by_type = {
     'stats': [
         StatsAggregator(np.mean),
@@ -159,6 +178,9 @@ aggregators_by_type = {
         ChirpXcorr('squeak-down'),
         ChirpXcorr('squeak-convex'),
         ChirpXcorr('squeak-concave'),
+    ],
+    'divcon': [
+        DivideConquer(np.mean, 5)
     ]
 }
 

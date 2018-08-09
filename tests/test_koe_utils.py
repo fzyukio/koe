@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
-from koe.utils import segments, split_kfold_classwise
+from koe.utils import segments, split_kfold_classwise, divide_conquer
 
 
 @memoize(timeout=60)
@@ -137,3 +137,26 @@ class KoeUtilsTest(TestCase):
             self.assertTrue(np.all(all1 == all2))
             self.assertFalse(len(test1) != len(test2) or np.all(test1 == test2))
             self.assertFalse(len(train1) != len(train2) or np.all(train1 == train2))
+
+    def test_divide_conquer(self):
+        n = 3
+
+        # case 1: array's length is smaller than 10n
+        arr_len = 2
+        arr = np.arange(1, arr_len + 1)
+        divs = divide_conquer(arr, n)
+
+        divs_ = [np.array([1, 1]), np.array([1, 2]), np.array([2, 2])]
+
+        for i in range(n):
+            self.assertTrue(np.allclose(divs[i], divs_[i]))
+
+        # case 1: array's length is larger than 10n
+        arr_len = 32
+        arr = np.arange(1, arr_len + 1)
+        divs = divide_conquer(arr, n)
+
+        divs_ = [np.arange(1, 12), np.arange(11, 23), np.arange(22, 33)]
+
+        for i in range(n):
+            self.assertTrue(np.allclose(divs[i], divs_[i]))

@@ -366,7 +366,7 @@ def aggregate_feature_values(segment_to_label, h5file, features):
                     if aggregator.is_chirpy():
                         aggregated = aggregator.process(value, args=args, feature=feature)
                     else:
-                        aggregated = aggregator.process(value, axis=-1)
+                        aggregated = aggregator.process(value)
 
                     if isinstance(aggregated, np.ndarray):
                         if len(aggregated) == 1:
@@ -406,7 +406,7 @@ def run_clustering(dataset, dim_reduce, n_components):
                   .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
 
     time_start = time.time()
-    tsne = TSNE(n_components=50, verbose=1, perplexity=10, n_iter=4000)
+    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000)
     tsne_results = tsne.fit_transform(dataset)
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
     return tsne_results
@@ -465,7 +465,7 @@ class Command(BaseCommand):
             '--features',
             action='store',
             dest='selected_features',
-            required=False,
+            default='',
             type=str,
             help='List of features to be extracted',
         )
