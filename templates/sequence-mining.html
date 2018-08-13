@@ -18,13 +18,21 @@
                 <div class="slider-group">
                     <div class="input-group">
                         <span class="input-group-addon">Use syllable's start time as event ID</span>
-                        <input id="mingap-slider-enabled" type="checkbox"/>
+                        <input id="slider-enabled" type="checkbox"/>
                     </div>
+                    <div class="input-group-addon">Max gap: <span
+                            id="maxgap-slider-value">1000</span><span>ms</span></div>
                     <div class="input-group">
-                        <span class="input-group-addon">Max gap: <span id="mingap-slider-value">3</span><span>ms</span></span>
-                        <input id="mingap-slider" type="text" data-slider-enabled="false"
+                        <input id="maxgap-slider" type="text" data-slider-enabled="false"
                                data-slider-min="10" data-slider-max="1000" data-slider-step="10"
-                               data-slider-value="10" data-slider-tooltip="hide"/>
+                               data-slider-value="1000" data-slider-tooltip="hide"/>
+                    </div>
+                    <div class="input-group-addon">Min gap: <span
+                            id="mingap-slider-value">0</span><span>ms</span></div>
+                    <div class="input-group">
+                        <input id="mingap-slider" type="text" data-slider-enabled="false"
+                               data-slider-min="0" data-slider-max="100" data-slider-step="1"
+                               data-slider-value="0" data-slider-tooltip="hide"/>
                     </div>
                 </div>
             </div>

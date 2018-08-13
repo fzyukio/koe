@@ -53,35 +53,37 @@ class Grid extends FlexibleGrid {
 export const grid = new Grid();
 let cls = $('#sequence-mining-grid').attr('cls');
 let fromUser = $('#sequence-mining-grid').attr('from_user');
-const mingapSlider = $('#mingap-slider');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
-const initSlider = function () {
-    mingapSlider.slider({
+const initSlider = function (name) {
+    const slider = $(`#${name}-slider`);
+
+    slider.slider({
         scale: 'logarithmic',
     });
 
-    $('#mingap-slider-enabled').click(function () {
+    $('#slider-enabled').click(function () {
         if (this.checked) {
-            mingapSlider.slider('enable');
-            extraArgs.useGap = true;
+            slider.slider('enable');
+            extraArgs.usegap = true;
+            extraArgs[name] = parseInt(slider.val());
         }
         else {
-            mingapSlider.slider('disable');
-            extraArgs.useGap = false;
+            slider.slider('disable');
+            extraArgs.usegap = false;
+            extraArgs[name] = undefined;
         }
-        extraArgs.maxGap = parseInt(mingapSlider.val());
         loadGrid();
     });
 
-    mingapSlider.on('slide', function (slideEvt) {
-        document.getElementById('mingap-slider-value').textContent = slideEvt.value;
+    slider.on('slide', function (slideEvt) {
+        document.getElementById(`${name}-slider-value`).textContent = slideEvt.value;
     });
 
-    mingapSlider.on('slideStop', function(slideEvt) {
-        document.getElementById('mingap-slider-value').textContent = slideEvt.value;
-        extraArgs.maxGap = slideEvt.value;
+    slider.on('slideStop', function(slideEvt) {
+        document.getElementById(`${name}-slider-value`).textContent = slideEvt.value;
+        extraArgs[name] = slideEvt.value;
         loadGrid();
     });
 };
@@ -144,8 +146,9 @@ const focusOnGridOnInit = function () {
 let extraArgs = {
     cls,
     'from_user': fromUser,
-    'use_gap': false,
-    'max_gap': null,
+    'usegap': false,
+    'maxgap': null,
+    'mingap': null,
 };
 
 const loadGrid = function () {
@@ -162,7 +165,8 @@ export const run = function () {
         loadGrid();
     });
 
-    initSlider();
+    initSlider('mingap');
+    initSlider('maxgap');
 };
 
 

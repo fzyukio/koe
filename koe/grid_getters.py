@@ -438,8 +438,9 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     cls = extras.cls
     _, current_database = get_user_databases(extras.user)
     from_user = extras.from_user
-    use_gap = extras.useGap
-    max_gap = extras.maxGap if use_gap else 1
+    use_gap = extras.usegap
+    maxgap = extras.maxgap if use_gap else 1
+    mingap = extras.mingap if use_gap else -99999
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)
@@ -492,10 +493,18 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         segs_info.append(seg_info)
 
     for song_id, segs_info in songs.items():
-        sequence_labels = []
+        # sequence_labels = []
         song_sequence = []
         has_unlabelled = False
+
+        # This helps keep track of the current position of the syllable when the song is rid of syllable duration and
+        # only gaps are retained.
         accum_gap = 0
+
+        # This helps keep track of the gap between this current syllable and the previous one,
+        # such that we can decide to merge two syllables if their gap is too small (could also be negative)
+        gap = 0
+
         last_syl_end = None
         for ind, seg_info in enumerate(segs_info):
             if use_gap:
@@ -504,15 +513,21 @@ def bulk_get_song_sequence_associations(all_songs, extras):
                     gap = 0
                 else:
                     gap = start - last_syl_end
+
                 last_syl_end = end
                 accum_gap += gap
-                eid = accum_gap
+
+                # If the gap is too small, merge this one with the previous one, which means the eid stays the same
+                if ind > 0 and gap < mingap:
+                    song_sequence[-1][2].append(label2enum)
+                else:
+                    eid = accum_gap
+                    song_sequence.append([sequence_ind, eid, [label2enum]])
             else:
                 label2enum = seg_info
                 eid = ind + 1
+                song_sequence.append([sequence_ind, eid, [label2enum]])
 
-            sequence_labels.append(label2enum)
-            song_sequence.append((sequence_ind, eid, (label2enum,)))
             if label2enum is None:
                 has_unlabelled = True
                 break
@@ -531,7 +546,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     if len(sequences) == 0:
         return ids, rows
 
-    result = cspade(data=sequences, support=0.01, maxgap=max_gap)
+    result = cspade(data=sequences, support=0.01, maxgap=maxgap)
     mined_objects = result['mined_objects']
     nseqs = result['nsequences']
 
@@ -541,7 +556,14 @@ def bulk_get_song_sequence_associations(all_songs, extras):
             continue
         conf = -1 if seq.confidence is None else seq.confidence
         lift = -1 if seq.lift is None else seq.lift
-        assocrule = '->'.join([enums2labels[item.elements[0]] for item in items])
+
+        items_str = []
+        for item in items:
+            item_str = '{}' if len(item.elements) == 1 else '({})'
+            labels = ' -&- '.join([enums2labels[element] for element in item.elements])
+            item_str = item_str.format(labels)
+            items_str.append(item_str)
+        assocrule = ' => '.join(items_str)
 
         row = dict(id=idx, chainlength=len(items), transcount=seq.noccurs, accumoccurs=seq.accum_occurs,
                    confidence=conf, lift=lift, support=seq.noccurs / nseqs, assocrule=assocrule)
