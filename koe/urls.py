@@ -55,6 +55,9 @@ urlpatterns += \
         url(r'^song-partition/(?P<track_id>[0-9]+)/$',
             login_required(views.SongPartitionView.as_view()),
             name='song-partition'),
+
+        url(r'^tsne/$', views.TensorvizView.as_view(), name='tsne'),
+
         re_path(r'^cms/', include(wagtailadmin_urls)),
         re_path(r'^documents/', include(wagtaildocs_urls)),
         re_path(r'', include(wagtail_urls))

@@ -1,0 +1,71 @@
+<dom-module id="vz-projector-legend">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   .item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.shape {
+  width: 10px;
+  height: 10px;
+  margin-right: 10px;
+  margin-top: 5px;
+  border-radius: 50%;
+}
+
+.label {
+  flex-grow: 1;
+}
+
+.gradient {
+  width: 100%;
+  height: 10px;
+}
+
+.gradient-boundaries {
+  display: flex;
+  justify-content: space-between;
+}
+  </style>
+  <template is="dom-repeat" items="[[renderInfo.items]]">
+   <div class="item">
+    <div class="shape" style="background-color: [[item.color]];">
+    </div>
+    <div class="label">
+     [[item.label]]
+    </div>
+    <div class="info" style="color: [[item.color]];">
+     [[item.count]]
+    </div>
+   </div>
+  </template>
+  <template if="[[renderInfo.thresholds]]" is="dom-if">
+   <svg class="gradient">
+    <defs>
+     <linearGradient id="gradient" x1="0%" x2="100%" y1="100%" y2="100%">
+     </linearGradient>
+    </defs>
+    <rect height="10" style="fill: url('#gradient');">
+    </rect>
+   </svg>
+   <div class="gradient-boundaries">
+    <div>
+     [[renderInfo.thresholds.0.value]]
+    </div>
+    <div>
+     [[_getLastThreshold(renderInfo.thresholds)]]
+    </div>
+   </div>
+  </template>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-legend.js
+var Ud=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),Vd=function(a){function b(){return null!==a&&a.apply(this,arguments)||this}Ud(b,a);b.prototype._renderInfoChanged=function(){var a=this;null!=this.renderInfo&&this.renderInfo.thresholds&&
+this.async(function(){return a.setupLinearGradient()})};b.prototype._getLastThreshold=function(){if(null!=this.renderInfo&&null!=this.renderInfo.thresholds)return this.renderInfo.thresholds[this.renderInfo.thresholds.length-1].value};b.prototype.getOffset=function(a){var b=this.renderInfo.thresholds[0].value;return(100*(a-b)/(this.renderInfo.thresholds[this.renderInfo.thresholds.length-1].value-b)).toFixed(2)+"%"};b.prototype.setupLinearGradient=function(){var a=this,b=this.querySelector("#gradient"),
+e=this.querySelector("svg.gradient").clientWidth;this.querySelector("svg.gradient rect").style.width=e+"px";b.innerHTML="";this.renderInfo.thresholds.forEach(function(b){var c=document.createElementNS("http://www.w3.org/2000/svg","stop");c.setAttribute("offset",a.getOffset(b.value));c.setAttribute("stop-color",b.color)})};return b}(Polymer.Class({is:"vz-projector-legend",properties:{renderInfo:{type:Object,observer:"_renderInfoChanged"}}}));document.registerElement(Vd.prototype.is,Vd);
+ </script>
+</dom-module>

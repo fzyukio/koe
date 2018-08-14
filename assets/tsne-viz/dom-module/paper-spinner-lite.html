@@ -1,0 +1,26 @@
+<dom-module id="paper-spinner-lite">
+ <template>
+  <style include="paper-spinner-styles">
+  </style>
+  <div class-name="[[__computeContainerClasses(active, __coolingDown)]]" id="spinnerContainer">
+   <div class="spinner-layer">
+    <div class="circle-clipper left">
+     <div class="circle">
+     </div>
+    </div>
+    <div class="gap-patch">
+     <div class="circle">
+     </div>
+    </div>
+    <div class="circle-clipper right">
+     <div class="circle">
+     </div>
+    </div>
+   </div>
+  </div>
+ </template>
+ <script>
+  //~~WEBPATH~~/paper-spinner/paper-spinner-lite.html.js
+Polymer({is:"paper-spinner-lite",behaviors:[Polymer.PaperSpinnerBehavior]});
+ </script>
+</dom-module>

@@ -1,0 +1,169 @@
+<dom-module id="vz-projector-bookmark-panel">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   #title {
+  background-color: #fafafa;
+  color: black;
+  font-weight: 500;
+  left: 0;
+  line-height: 60px;
+  padding-left: 24px;
+  position: absolute;
+  width: 276px;
+}
+#bookmark-container {
+  background-color: #fafafa;
+}
+#icon-container {
+  line-height: 60px;
+  position: absolute;
+  right: 0;
+}
+#header {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+#panel {
+  background-color: #fafafa;
+  position: relative;
+  overflow-y: scroll;
+  top: 60px;
+  max-height: 50vh;
+}
+
+#save-container {
+  text-align: center;
+}
+
+.state-radio {
+  display: table-cell;
+  vertical-align: middle;
+  padding-top: 16px;
+}
+
+.state-label {
+  display: table-cell;
+  vertical-align: middle;
+  top: 14px;
+}
+
+.state-label-input {
+  width: 194px;
+}
+
+.state-clear {
+  display: table-cell;
+  vertical-align: middle;
+  padding-top: 20px;
+}
+#state-file {
+  display: none;
+}
+#no-bookmarks {
+  padding: 0 24px;
+}
+#action-buttons-container .add-icon-button {
+  background-color: #03a9f4;
+  color: white;
+  margin: 0 4px 4px auto;
+  right: 7px;
+  top: -4px;
+}
+.upload-download-icon-button {
+  padding: 0;
+}
+#action-buttons-container {
+  display: flex;
+  margin-left: 34px;
+  margin-top: 6px;
+}
+.ink-fab {
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+paper-textarea {
+  --paper-input-container-input: {
+    font-size: 12px;
+  }
+  --paper-font-caption: {
+    display: none
+  }
+}
+  </style>
+  <div id="bookmark-container">
+   <div id="header">
+    <div id="title">
+     BOOKMARKS ([[savedStates.length]])
+     <paper-icon-button class="help-icon" icon="help">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" offset="0" position="top">
+      Open this drawer to save a set of views of the projection, including
+        selected points. A file containing the bookmarks can then be saved and
+        later loaded to view them.
+     </paper-tooltip>
+    </div>
+    <div id="icon-container">
+     <paper-icon-button icon="expand-less" id="expand-more" on-tap="_expandMore">
+     </paper-icon-button>
+     <paper-icon-button icon="expand-more" id="expand-less" on-tap="_expandLess" style="display: none">
+     </paper-icon-button>
+    </div>
+   </div>
+   <iron-collapse id="panel">
+    <div id="state-section">
+     <template if="[[!savedStates.length]]" is="dom-if">
+      <p id="no-bookmarks">
+       No bookmarks yet, upload a bookmarks file or add a new bookmark by clicking the "+" below.
+       <template is="dom-repeat" items="{{savedStates}}">
+       </template>
+      </p>
+      <div class="state-row">
+       <div class="state-radio">
+        <template if="{{item.isSelected}}" is="dom-if">
+         <paper-icon-button icon="radio-button-checked">
+         </paper-icon-button>
+        </template>
+        <template if="{{!item.isSelected}}" is="dom-if">
+         <paper-icon-button data-index$="{{index}}" icon="radio-button-unchecked" on-tap="_radioButtonHandler">
+         </paper-icon-button>
+        </template>
+       </div>
+       <div class="state-label">
+        <paper-textarea autoresizing="" class="state-label-input" data-index$="[[index]]" on-keyup="_labelChange" value="[[item.label]]">
+        </paper-textarea>
+       </div>
+       <div class="state-clear">
+        <paper-icon-button data-index$="{{index}}" icon="clear" on-tap="_clearButtonHandler">
+        </paper-icon-button>
+       </div>
+      </div>
+     </template>
+     <div id="action-buttons-container">
+      <paper-icon-button class="upload-download-icon-button" disabled="[[!hasStates]]" icon="save" on-tap="_downloadFile" title="Save bookmarks">
+      </paper-icon-button>
+      <paper-icon-button class="upload-download-icon-button" icon="file-upload" on-tap="_uploadFile" title="Load bookmarks">
+      </paper-icon-button>
+      <paper-icon-button class="add-icon-button ink-fab" icon="add" on-tap="_addBookmark" title="Add bookmark">
+      </paper-icon-button>
+      <input id="state-file" name="state-file" type="file"/>
+     </div>
+    </div>
+   </iron-collapse>
+  </div>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-bookmark-panel.js
+var Rd=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),Sd=function(a){function b(){var b=null!==a&&a.apply(this,arguments)||this;b.hasStates=!1;return b}Rd(b,a);b.prototype.ready=function(){this.savedStates=[];this.setupUploadButton();
+this.ignoreNextProjectionEvent=!1;this.expandLessButton=this.querySelector("#expand-less");this.expandMoreButton=this.querySelector("#expand-more")};b.prototype.initialize=function(a,b){var c=this;this.projector=a;b.registerProjectionChangedListener(function(){c.ignoreNextProjectionEvent?c.ignoreNextProjectionEvent=!1:c.clearStateSelection()})};b.prototype.setSelectedTensor=function(a,b,e){var c=this;this.addStates(null);b&&b.bookmarksPath?e.getBookmarks(a,b.tensorName,function(a){c.addStates(a);
+c._expandMore()}):this._expandLess()};b.prototype._expandMore=function(){this.$.panel.show();this.expandMoreButton.style.display="none";this.expandLessButton.style.display=""};b.prototype._expandLess=function(){this.$.panel.hide();this.expandMoreButton.style.display="";this.expandLessButton.style.display="none"};b.prototype._addBookmark=function(){var a=this.projector.getCurrentState();a.label="State "+this.savedStates.length;a.isSelected=!0;this.selectedState=this.savedStates.length;for(var b=0;b<
+this.savedStates.length;b++)this.savedStates[b].isSelected=!1,this.notifyPath("savedStates."+b+".isSelected",!1,!1);this.push("savedStates",a);this.updateHasStates()};b.prototype._downloadFile=function(){var a=this.serializeAllSavedStates(),a=window.URL.createObjectURL(new Blob([a],{type:"text/plain"})),b=document.createElement("a");document.body.appendChild(b);b.style.display="none";b.href=a;b.download="state";b.click();document.body.removeChild(b);window.URL.revokeObjectURL(a)};b.prototype._uploadFile=
+function(){this.$$("#state-file").click()};b.prototype.setupUploadButton=function(){var a=this,b=this.querySelector("#state-file");b.onchange=function(){var c=b.files[0];b.value="";var d=new FileReader;d.onload=function(){var b=JSON.parse(d.result);a.savedStatesValid(b)?(a.addStates(b),a.loadSavedState(0)):mc("Unable to load bookmarks: wrong dataset, expected dataset "+("with shape ("+b[0].dataSetDimensions+")."))};d.readAsText(c)}};b.prototype.addStates=function(a){if(null==a)this.savedStates=
+[];else for(var b=0;b<a.length;b++)a[b].isSelected=!1,this.push("savedStates",a[b]);this.updateHasStates()};b.prototype.clearStateSelection=function(){for(var a=0;a<this.savedStates.length;a++)this.setSelectionState(a,!1)};b.prototype._radioButtonHandler=function(a){a=this.getParentDataIndex(a);this.loadSavedState(a);this.setSelectionState(a,!0)};b.prototype.loadSavedState=function(a){for(var b=0;b<this.savedStates.length;b++)this.savedStates[b].isSelected?this.setSelectionState(b,!1):a===b&&(this.setSelectionState(b,
+!0),this.ignoreNextProjectionEvent=!0,this.projector.loadState(this.savedStates[b]))};b.prototype.setSelectionState=function(a,b){this.savedStates[a].isSelected=b;this.notifyPath("savedStates."+a+".isSelected",b,!1)};b.prototype.getParentDataIndex=function(a){for(var b=0;b<a.path.length;b++){var c=a.path[b].getAttribute("data-index");if(null!=c)return+c}return-1};b.prototype._clearButtonHandler=function(a){a=this.getParentDataIndex(a);this.splice("savedStates",a,1);this.updateHasStates()};b.prototype._labelChange=
+function(a){var b=this.getParentDataIndex(a);this.savedStates[b].label=a.target.value};b.prototype._isSelectedState=function(a){return a===this.selectedState};b.prototype._isNotSelectedState=function(a){return a!==this.selectedState};b.prototype.serializeAllSavedStates=function(){return JSON.stringify(this.savedStates)};b.prototype.loadSavedStates=function(a){this.savedStates=JSON.parse(a);this.updateHasStates()};b.prototype.updateHasStates=function(){this.hasStates=0!==this.savedStates.length};b.prototype.savedStatesValid=
+function(a){for(var b=0;b<a.length;b++)if(a[b].dataSetDimensions[0]!==this.projector.dataSet.dim[0]||a[b].dataSetDimensions[1]!==this.projector.dataSet.dim[1])return!1;return!0};return b}(Polymer.Class({is:"vz-projector-bookmark-panel",properties:{savedStates:Object,hasStates:{type:Boolean,value:!1},selectedState:Number}}));document.registerElement(Sd.prototype.is,Sd);
+ </script>
+</dom-module>

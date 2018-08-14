@@ -1,0 +1,55 @@
+<dom-module id="vz-projector-input">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   .info {
+  color: rgba(0, 0, 0, 0.5);
+  display: block;
+  font-size: 11px;
+}
+
+.toggle {
+  font-size: 12px;
+  height: 21px;
+  margin: 0px;
+  min-width: 0px;
+  min-height: 0px;
+  padding: 0;
+  width: 17px;
+}
+
+.toggle[active] {
+  background-color: #880E4F;
+  color: white;
+}
+  </style>
+  <paper-input label="[[label]]">
+   <div class="slash" prefix="">
+    /
+   </div>
+   <div class="slash" suffix="">
+    /
+   </div>
+   <div suffix="">
+    <paper-button class="toggle" id="regex" toggles="">
+     .*
+    </paper-button>
+   </div>
+  </paper-input>
+  <paper-tooltip animation-delay="0" fit-to-visible-bounds="" for="regex" position="bottom">
+   Enable/disable regex mode.
+  </paper-tooltip>
+  <span class="info">
+   [[message]]
+  </span>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-input.js
+var Yd=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),Zd=function(a){function b(){return null!==a&&a.apply(this,arguments)||this}Yd(b,a);b.prototype.registerInputChangedListener=function(a){this.textChangedListeners.push(a)};b.prototype.ready=
+function(){var a=this;this.inRegexMode=!1;this.textChangedListeners=[];this.paperInput=this.querySelector("paper-input");this.inRegexModeButton=this.querySelector("paper-button");this.paperInput.setAttribute("error-message","Invalid regex");this.paperInput.addEventListener("input",function(){a.onTextChanged()});this.paperInput.addEventListener("keydown",function(a){a.stopPropagation()});this.inRegexModeButton.addEventListener("click",function(){return a.onClickRegexModeButton()});this.updateRegexModeDisplaySlashes();
+this.onTextChanged()};b.prototype.onClickRegexModeButton=function(){this.inRegexMode=this.inRegexModeButton.active;this.updateRegexModeDisplaySlashes();this.onTextChanged()};b.prototype.notifyInputChanged=function(a,b){this.textChangedListeners.forEach(function(c){return c(a,b)})};b.prototype.onTextChanged=function(){try{this.inRegexMode&&new RegExp(this.paperInput.value)}catch(c){this.paperInput.setAttribute("invalid","true");this.message="";this.notifyInputChanged(null,!0);return}this.paperInput.removeAttribute("invalid");
+this.notifyInputChanged(this.paperInput.value,this.inRegexMode)};b.prototype.updateRegexModeDisplaySlashes=function(){for(var a=this.paperInput.querySelectorAll(".slash"),b=this.inRegexMode?"":"none",e=0;e<a.length;e++)a[e].style.display=b};b.prototype.getValue=function(){return this.paperInput.value};b.prototype.getInRegexMode=function(){return this.inRegexMode};b.prototype.set=function(a,b){this.inRegexModeButton.active=b;this.paperInput.value=a;this.onClickRegexModeButton()};return b}(Polymer.Class({is:"vz-projector-input",
+properties:{label:String,message:String}}));document.registerElement(Zd.prototype.is,Zd);
+ </script>
+</dom-module>

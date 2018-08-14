@@ -1,0 +1,16 @@
+<dom-module id="paper-material">
+ <template>
+  <style include="paper-material-shared-styles">
+  </style>
+  <style>
+   :host([animated]) {
+        @apply --shadow-transition;
+      }
+      :host {
+        @apply --paper-material;
+      }
+  </style>
+  <slot>
+  </slot>
+ </template>
+</dom-module>

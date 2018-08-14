@@ -1,0 +1,532 @@
+<dom-module id="vz-projector-data-panel">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   .container {
+  padding: 10px 20px 20px 20px;
+}
+
+input[type=file] {
+  display: none;
+}
+
+.file-name {
+  margin-right: 10px;
+}
+
+.dirs {
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+}
+
+.dirs table tr {
+  vertical-align: top;
+}
+
+.dirs table tr td {
+  padding-bottom: 10px;
+}
+
+paper-item {
+  --paper-item-disabled: {
+    border-bottom: 1px solid black;
+    justify-content: center;
+    font-size: 12px;
+    line-height: normal;
+    min-height: 0px;
+  };
+}
+
+.item-details {
+  margin-left: 5px;
+  color: gray;
+  font-size: 12px;
+}
+
+paper-dropdown-menu {
+  width: 100%;
+}
+
+paper-dropdown-menu paper-item {
+  justify-content: space-between;
+}
+
+.title {
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  color: black;
+  display: flex;
+  font-weight: 500;
+  height: 59px;
+  padding-left: 20px;
+}
+
+#normalize-data-checkbox {
+  margin: 10px 0;
+}
+
+#projector-config-template {
+  --paper-input-container-input: {
+    line-height: 13px;
+    font-family: monospace;
+    font-size: 12px;
+  };
+}
+
+#generate-share-url {
+  padding: 16px;
+  margin-left: 24px;
+}
+
+#projector-share-button-container {
+  margin: 10px 0;
+}
+
+.config-checkbox {
+  display: inline-block;
+  font-size: 11px;
+  margin-left: 10px;
+}
+
+.projector-config-options {
+  margin-top: 12px;
+}
+
+.projector-config-dialog-container {
+  padding: 24px;
+}
+
+.code {
+  background-color: #f7f7f7;
+  display: table;
+  font-family: monospace;
+  margin-top: 7px;
+  padding: 15px;
+}
+
+.delimiter {
+  color: #B71C1C;
+}
+
+.upload-step {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.upload-step paper-button {
+  margin-left: 30px;
+}
+
+.step-label {
+  color: rgb(38, 180, 226);
+}
+
+.scrollable-container {
+  margin-top: 0;
+  min-width: 400px;
+}
+
+#projectorConfigDialog p {
+  margin: 8px 0 8px;
+}
+
+.data-step {
+  margin-top: 40px;
+}
+
+.data-step-contents {
+  display: table;
+  width: 100%;
+}
+
+.data-step-contents-contents {
+  display: table-cell;
+  margin-top: 6px;
+}
+
+.data-step-contents-upload {
+  display: table-cell;
+  text-align: right;
+  vertical-align: bottom;
+}
+
+#demo-data-buttons-container {
+  display: none;
+}
+
+.colorby-container {
+  margin-bottom: 10px;
+}
+  </style>
+  <div class="title">
+   DATA
+  </div>
+  <div class="container">
+   <template if="[[_hasChoices(runNames)]]" is="dom-if">
+    <paper-dropdown-menu label="[[_getNumRunsLabel(runNames)]] found" no-animations="">
+     <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedRun}}">
+      <template is="dom-repeat" items="[[runNames]]">
+       <paper-item label="[[item]]" value="[[item]]">
+        [[item]]
+       </paper-item>
+      </template>
+     </paper-listbox>
+    </paper-dropdown-menu>
+   </template>
+   <template if="[[tensorNames]]" is="dom-if">
+    <paper-dropdown-menu label="[[_getNumTensorsLabel(tensorNames)]] found" no-animations="">
+     <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedTensor}}">
+      <template is="dom-repeat" items="[[tensorNames]]">
+       <paper-item label="[[item.name]]" value="[[item.name]]">
+        [[item.name]]
+        <span class="item-details">
+         [[item.shape.0]]x[[item.shape.1]]
+        </span>
+       </paper-item>
+      </template>
+     </paper-listbox>
+    </paper-dropdown-menu>
+   </template>
+   <template if="[[_hasChoices(labelOptions)]]" is="dom-if">
+    <paper-dropdown-menu label="Label by" no-animations="">
+     <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedLabelOption}}">
+      <template is="dom-repeat" items="[[labelOptions]]">
+       <paper-item label="[[item]]" value="[[item]]">
+        [[item]]
+       </paper-item>
+      </template>
+     </paper-listbox>
+    </paper-dropdown-menu>
+   </template>
+   <div class="colorby-container" hidden$="[[!_hasChoices(colorOptions)]]">
+    <paper-dropdown-menu id="colorby" label="Color by" no-animations="">
+     <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedColorOptionName}}">
+      <template is="dom-repeat" items="[[colorOptions]]">
+       <paper-item class$="[[getSeparatorClass(item.isSeparator)]]" disabled="[[item.isSeparator]]" label="[[item.name]]" value="[[item.name]]">
+        [[item.name]]
+        <span class="item-details">
+         [[item.desc]]
+        </span>
+       </paper-item>
+      </template>
+     </paper-listbox>
+    </paper-dropdown-menu>
+    <div hidden$="[[!showForceCategoricalColorsCheckbox]]">
+     <paper-checkbox id="force-categorical-checkbox">
+     </paper-checkbox>
+     Use categorical coloring
+     <paper-icon-button class="help-icon" icon="help">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" position="bottom">
+      For metadata fields that have many unique values we use a gradient color map
+        by default. This checkbox allows you to force categorical coloring by a given
+        metadata field.
+     </paper-tooltip>
+    </div>
+    <template dom-if="[[colorLegendRenderInfo]]">
+     <vz-projector-legend render-info="[[colorLegendRenderInfo]]">
+     </vz-projector-legend>
+    </template>
+   </div>
+   <paper-checkbox checked="{{normalizeData}}" id="normalize-data-checkbox">
+    Sphereize data
+    <paper-icon-button class="help-icon" icon="help">
+    </paper-icon-button>
+    <paper-tooltip animation-delay="0" fit-to-visible-bounds="" position="bottom">
+     The data is normalized by shifting each point by the centroid and making
+      it unit norm.
+    </paper-tooltip>
+   </paper-checkbox>
+   <p id="demo-data-buttons-container">
+    <span>
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" position="bottom">
+      Load data from your computer
+     </paper-tooltip>
+     <paper-button class="ink-button" id="upload" onclick="dataDialog.open()">
+      Load data
+     </paper-button>
+    </span>
+    <span id="publish-container">
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" position="bottom">
+      Publish your embedding visualization and data
+     </paper-tooltip>
+     <paper-button class="ink-button" id="host-embedding" onclick="projectorConfigDialog.open()">
+      Publish
+     </paper-button>
+    </span>
+   </p>
+   <div>
+    <paper-dialog id="dataDialog" with-backdrop="">
+     <h2>
+      Load data from your computer
+     </h2>
+     <paper-dialog-scrollable class="scrollable-container">
+      <div class="data-step" id="upload-tensors-step-container">
+       <div class="upload-step">
+        <div>
+         <b>
+          <span class="step-label">
+           Step 1:
+          </span>
+          Load a TSV file of vectors.
+         </b>
+        </div>
+       </div>
+       <div class="data-step-contents">
+        <div class="data-step-contents-contents">
+         Example of 3 vectors with dimension 4:
+         <div class="code">
+          0.1
+          <span class="delimiter">
+           \t
+          </span>
+          0.2
+          <span class="delimiter">
+           \t
+          </span>
+          0.5
+          <span class="delimiter">
+           \t
+          </span>
+          0.9
+          <br/>
+          0.2
+          <span class="delimiter">
+           \t
+          </span>
+          0.1
+          <span class="delimiter">
+           \t
+          </span>
+          5.0
+          <span class="delimiter">
+           \t
+          </span>
+          0.2
+          <br/>
+          0.4
+          <span class="delimiter">
+           \t
+          </span>
+          0.1
+          <span class="delimiter">
+           \t
+          </span>
+          7.0
+          <span class="delimiter">
+           \t
+          </span>
+          0.8
+         </div>
+        </div>
+        <div class="data-step-contents-upload">
+         <paper-button id="upload-tensors" title="Choose a TSV tensor file">
+          Choose file
+         </paper-button>
+         <input id="file" name="file" type="file"/>
+        </div>
+       </div>
+      </div>
+      <div class="data-step">
+       <div class="upload-step">
+        <div>
+         <span class="step-label" id="upload-metadata-label">
+          <b>
+           Step 2
+          </b>
+          (optional):
+         </span>
+         <b>
+          Load a TSV file of metadata.
+         </b>
+        </div>
+       </div>
+       <div class="data-step-contents">
+        <div class="data-step-contents-contents">
+         Example of 3 data points and 2 columns.
+         <br/>
+         <i>
+          Note: If there is more than one column, the first row will be parsed as column labels.
+         </i>
+         <div class="code">
+          <b>
+           Pokémon
+           <span class="delimiter">
+            \t
+           </span>
+           Species
+          </b>
+          <br/>
+          Wartortle
+          <span class="delimiter">
+           \t
+          </span>
+          Turtle
+          <br/>
+          Venusaur
+          <span class="delimiter">
+           \t
+          </span>
+          Seed
+          <br/>
+          Charmeleon
+          <span class="delimiter">
+           \t
+          </span>
+          Flame
+         </div>
+        </div>
+        <div class="data-step-contents-upload">
+         <paper-button class="ink-button" id="upload-metadata" title="Choose a TSV metadata file">
+          Choose file
+         </paper-button>
+         <input id="file-metadata" name="file-metadata" type="file"/>
+        </div>
+       </div>
+      </div>
+     </paper-dialog-scrollable>
+     <div class="dismiss-dialog-note">
+      Click outside to dismiss.
+     </div>
+    </paper-dialog>
+    <paper-dialog id="projectorConfigDialog" with-backdrop="">
+     <h2>
+      Publish your embedding visualization and data
+     </h2>
+     <paper-dialog-scrollable class="scrollable-container">
+      <div>
+       <p>
+        If you'd like to share your visualization with the world, follow these simple steps.
+            See
+        <a href="https://www.tensorflow.org/get_started/embedding_viz" target="_blank">
+         this tutorial
+        </a>
+        for more.
+       </p>
+       <h4>
+        <span class="step-label">
+         Step 1:
+        </span>
+        Make data public
+       </h4>
+       <p>
+        Host tensors, metadata, sprite image, and bookmarks TSV files
+        <i>
+         publicly
+        </i>
+        on the web.
+       </p>
+       <p>
+        One option is using a
+        <a href="https://gist.github.com/" target="_blank">
+         github gist
+        </a>
+        .
+            If you choose this approach, make sure to link directly to the raw file.
+       </p>
+      </div>
+      <div>
+       <h4>
+        <span class="step-label">
+         Step 2:
+        </span>
+        Projector config
+       </h4>
+       <div class="projector-config-options">
+        <i>
+         Optional:
+        </i>
+        <div class="config-checkbox">
+         <paper-checkbox checked="" id="config-metadata-checkbox">
+          Metadata
+         </paper-checkbox>
+        </div>
+        <div class="config-checkbox">
+         <paper-checkbox id="config-sprite-checkbox">
+          Sprite
+         </paper-checkbox>
+        </div>
+        <div class="config-checkbox">
+         <paper-checkbox id="config-bookmarks-checkbox">
+          Bookmarks
+         </paper-checkbox>
+        </div>
+       </div>
+      </div>
+      <paper-textarea id="projector-config-template" label="template_projector_config.json">
+      </paper-textarea>
+      <div>
+       <h4>
+        <span class="step-label">
+         Step 3:
+        </span>
+        Host projector config
+       </h4>
+       After you have hosted the projector config JSON file you built above, paste the URL to the config below.
+      </div>
+      <paper-input id="projector-config-url" label="Path to projector config">
+      </paper-input>
+      <paper-input id="projector-share-url" label="Your shareable URL" readonly="">
+      </paper-input>
+      <div id="projector-share-button-container">
+       <a id="projector-share-url-link" target="_blank">
+        <paper-button class="ink-button" title="Test your shareable URL">
+         Test your shareable URL
+        </paper-button>
+       </a>
+      </div>
+     </paper-dialog-scrollable>
+     <div class="dismiss-dialog-note">
+      Click outside to dismiss.
+     </div>
+    </paper-dialog>
+   </div>
+   <div class="dirs">
+    <table>
+     <tbody>
+      <tr>
+       <td>
+        Checkpoint:
+       </td>
+       <td>
+        <span id="checkpoint-file">
+        </span>
+       </td>
+      </tr>
+      <tr>
+       <td>
+        Metadata:
+       </td>
+       <td>
+        <span id="metadata-file">
+        </span>
+       </td>
+      </tr>
+     </tbody>
+    </table>
+   </div>
+  </div>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-data-panel.js
+var Wd=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),Xd=function(a){function b(){var b=null!==a&&a.apply(this,arguments)||this;b.forceCategoricalColoring=!1;return b}Wd(b,a);b.prototype.ready=function(){this.normalizeData=!0};
+b.prototype.initialize=function(a,b){var c=this;this.projector=a;this.dataProvider=b;this.setupUploadButtons();this.querySelector("#normalize-data-checkbox").addEventListener("change",function(){c.projector.setNormalizeData(c.normalizeData)});var d=this.querySelector("#force-categorical-checkbox");d.addEventListener("change",function(){c.setForceCategoricalColoring(d.checked)});this.dataProvider.retrieveRuns(function(a){c.runNames=a;0<c.runNames.length&&(c.selectedRun=a[0])})};b.prototype.setForceCategoricalColoring=
+function(a){this.forceCategoricalColoring=a;this.querySelector("#force-categorical-checkbox").checked=this.forceCategoricalColoring;this.updateMetadataUI(this.spriteAndMetadata.stats,this.metadataFile);this._selectedColorOptionNameChanged()};b.prototype.getSeparatorClass=function(a){return a?"separator":null};b.prototype.metadataChanged=function(a,b){this.spriteAndMetadata=a;this.metadataFile=b;this.updateMetadataUI(this.spriteAndMetadata.stats,this.metadataFile);this.selectedColorOptionName=this.colorOptions[0].name};
+b.prototype.addWordBreaks=function(a){return null==a?"":a.replace(/([\/=-_,])/g,"$1\x3cwbr\x3e")};b.prototype.updateMetadataUI=function(a,b){var c=this,d=this.querySelector("#metadata-file");d.innerHTML=this.addWordBreaks(b);d.title=b;var h=-1;this.labelOptions=a.map(function(a,b){a.isNumeric||-1!==h||(h=b);return a.name});this.selectedLabelOption=this.labelOptions[Math.max(0,h)];b=[{name:"No color map"}];a=a.filter(function(a){return!a.tooManyUniqueValues||a.isNumeric}).map(function(a){var b=c.forceCategoricalColoring||
+!a.tooManyUniqueValues;if(b){var d=d3.scaleOrdinal(d3.schemeCategory20);var e=d.range(),g=e.map(function(a,b){return e[3*b%e.length]});var h=a.uniqueEntries;d.range(g).domain(h.map(function(a){return a.label}))}else{var k=[{color:"#ffffdd",value:a.min},{color:"#1f2d86",value:a.max}];d=d3.scaleLinear().domain(k.map(function(a){return a.value})).range(k.map(function(a){return a.color}))}return{name:a.name,desc:b?a.uniqueEntries.length+(20<a.uniqueEntries.length?" non-unique":"")+" colors":"gradient",
+map:d,items:h,thresholds:k,tooManyUniqueValues:a.tooManyUniqueValues}});0<a.length&&b.push({name:"Metadata",isSeparator:!0});this.colorOptions=b.concat(a)};b.prototype.setNormalizeData=function(a){this.normalizeData=a};b.prototype._selectedTensorChanged=function(){var a=this;this.projector.updateDataSet(null,null,null);null!=this.selectedTensor&&(this.dataProvider.retrieveTensor(this.selectedRun,this.selectedTensor,function(b){var c=a.getEmbeddingInfoByName(a.selectedTensor).metadataPath;a.dataProvider.retrieveSpriteAndMetadata(a.selectedRun,
+a.selectedTensor,function(d){a.projector.updateDataSet(b,d,c)})}),this.projector.setSelectedTensor(this.selectedRun,this.getEmbeddingInfoByName(this.selectedTensor)))};b.prototype._selectedRunChanged=function(){var a=this;this.dataProvider.retrieveProjectorConfig(this.selectedRun,function(b){a.projectorConfig=b;b=a.projectorConfig.embeddings.map(function(a){return a.tensorName}).filter(function(b){b=a.getEmbeddingInfoByName(b).tensorShape;return 2===b.length&&1<b[0]&&1<b[1]}).sort(function(b,c){var d=
+a.getEmbeddingInfoByName(b),e=a.getEmbeddingInfoByName(c),g=!!d.metadataPath,h=!!e.metadataPath;if(!(!g&&!h||g&&h))return d.metadataPath?-1:1;g=Hc(c);h=Hc(b);if(!(!h&&!g||h&&g))return g?-1:1;d=d.tensorShape[0];e=e.tensorShape[0];return d!==e?e-d:b<=c?-1:1});a.tensorNames=b.map(function(b){return{name:b,shape:a.getEmbeddingInfoByName(b).tensorShape}});var c=a.addWordBreaks(a.projectorConfig.modelCheckpointPath),d=a.querySelector("#checkpoint-file");d.innerHTML=c;d.title=a.projectorConfig.modelCheckpointPath;
+b="demo"===a.projector.servingMode?a.projectorConfig.embeddings[0].tensorName:b[0];a.selectedTensor===b?a._selectedTensorChanged():a.selectedTensor=b})};b.prototype._selectedLabelOptionChanged=function(){this.projector.setSelectedLabelOption(this.selectedLabelOption)};b.prototype._selectedColorOptionNameChanged=function(){for(var a,b=0;b<this.colorOptions.length;b++)if(this.colorOptions[b].name===this.selectedColorOptionName){a=this.colorOptions[b];break}a&&(this.showForceCategoricalColorsCheckbox=
+!!a.tooManyUniqueValues,this.colorLegendRenderInfo=null==a.map?null:a.items?{items:a.items.map(function(b){return{color:a.map(b.label),label:b.label,count:b.count}}),thresholds:null}:{items:null,thresholds:a.thresholds},this.projector.setSelectedColorOption(a))};b.prototype.tensorWasReadFromFile=function(a,b){var c=this;gd(a,function(a){var d=c.querySelector("#checkpoint-file");d.innerText=b;d.title=b;c.projector.updateDataSet(a)})};b.prototype.metadataWasReadFromFile=function(a,b){var c=this;id(a,
+function(a){c.projector.updateDataSet(c.projector.dataSet,a,b)})};b.prototype.getEmbeddingInfoByName=function(a){for(var b=0;b<this.projectorConfig.embeddings.length;b++){var c=this.projectorConfig.embeddings[b];if(c.tensorName===a)return c}};b.prototype.setupUploadButtons=function(){var a=this,b=this.querySelector("#file");b.onchange=function(){var c=b.files[0];b.value="";var d=new FileReader;d.onload=function(){a.tensorWasReadFromFile(d.result,c.name)};d.readAsArrayBuffer(c)};this.querySelector("#upload-tensors").onclick=
+function(){b.click()};var e=this.querySelector("#file-metadata");e.onchange=function(){var b=e.files[0];e.value="";var c=new FileReader;c.onload=function(){a.metadataWasReadFromFile(c.result,b.name)};c.readAsArrayBuffer(b)};this.querySelector("#upload-metadata").onclick=function(){e.click()};"demo"!==this.projector.servingMode&&(this.$$("#publish-container").style.display="none",this.$$("#upload-tensors-step-container").style.display="none",this.$$("#upload-metadata-label").style.display="none");
+this.$$("#demo-data-buttons-container").style.display="block";var g=this.$$("#projector-config-template"),h={embeddings:[{tensorName:"My tensor",tensorShape:[1E3,50],tensorPath:"https://raw.githubusercontent.com/.../tensors.tsv",metadataPath:"https://raw.githubusercontent.com/.../optional.metadata.tsv"}]};this.setProjectorConfigTemplateJson(g,h);var k=this.$$("#config-sprite-checkbox");k.onchange=function(){k.checked?h.embeddings[0].sprite={imagePath:"https://github.com/.../optional.sprite.png",singleImageDim:[32,
+32]}:delete h.embeddings[0].sprite;a.setProjectorConfigTemplateJson(g,h)};var l=this.$$("#config-bookmarks-checkbox");l.onchange=function(){l.checked?h.embeddings[0].bookmarksPath="https://raw.githubusercontent.com/.../bookmarks.txt":delete h.embeddings[0].bookmarksPath;a.setProjectorConfigTemplateJson(g,h)};var m=this.$$("#config-metadata-checkbox");m.onchange=function(){m.checked?h.embeddings[0].metadataPath="https://raw.githubusercontent.com/.../optional.metadata.tsv":delete h.embeddings[0].metadataPath;
+a.setProjectorConfigTemplateJson(g,h)};var p=this.$$("#projector-config-url"),r=this.$$("#projector-share-url"),n=this.$$("#projector-share-url-link");p.onchange=function(){var a=location.protocol+"//"+location.host+location.pathname+"?config\x3d"+p.value;r.value=a;n.href=a}};b.prototype.setProjectorConfigTemplateJson=function(a,b){a.value=JSON.stringify(b,null,2)};b.prototype._getNumTensorsLabel=function(){return 1===this.tensorNames.length?"1 tensor":this.tensorNames.length+" tensors"};b.prototype._getNumRunsLabel=
+function(){return 1===this.runNames.length?"1 run":this.runNames.length+" runs"};b.prototype._hasChoices=function(a){return 1<a.length};return b}(Polymer.Class({is:"vz-projector-data-panel",properties:{selectedTensor:{type:String,observer:"_selectedTensorChanged"},selectedRun:{type:String,observer:"_selectedRunChanged"},selectedColorOptionName:{type:String,notify:!0,observer:"_selectedColorOptionNameChanged"},selectedLabelOption:{type:String,notify:!0,observer:"_selectedLabelOptionChanged"},normalizeData:Boolean,
+showForceCategoricalColorsCheckbox:Boolean}}));document.registerElement(Xd.prototype.is,Xd);
+ </script>
+</dom-module>

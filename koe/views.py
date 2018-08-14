@@ -1,4 +1,5 @@
 import json
+import os
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -230,3 +231,14 @@ class SongPartitionView(FormView):
 
         rendered = render(self.request, 'partials/track-info-form.html', context=context)
         return HttpResponse(json.dumps(dict(message=rendered.content.decode('utf-8'))))
+
+
+class TensorvizView(TemplateView):
+    template_name = "tensorviz.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(TensorvizView, self).get_context_data(**kwargs)
+        config = get_or_error(self.request.GET, 'cfg')
+
+        context['config_file'] = os.path.join(settings.MEDIA_URL, 'oss_data', '{}.json'.format(config))
+        return context

@@ -1,0 +1,60 @@
+<dom-module id="vz-projector-app">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   #appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  color: white;
+  background: #560731;
+}
+
+#appbar .logo {
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.icons {
+  display: flex;
+}
+
+.icons a {
+  color: white;
+}
+
+vz-projector {
+  height: calc(100% - 60px);
+}
+
+#container {
+  height: 100%;
+}
+  </style>
+  <div id="container">
+   <div id="appbar">
+    <div>
+     Cluster visualisation and analysis
+    </div>
+    <div class="icons">
+     <a href="[[documentationLink]]" target="_blank" title="Documentation">
+      <paper-icon-button icon="help-outline">
+      </paper-icon-button>
+      <paper-tooltip animation-delay="0" fit-to-visible-bounds="" position="bottom">
+       Documentation from Tensorflow
+      </paper-tooltip>
+     </a>
+    </div>
+   </div>
+   <vz-projector event-logging="[[eventLogging]]" page-view-logging="[[pageViewLogging]]" projector-config-json-path="[[projectorConfigJsonPath]]" route-prefix="[[routePrefix]]" serving-mode="[[servingMode]]">
+   </vz-projector>
+  </div>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-app.html.js
+Polymer({is:"vz-projector-app",properties:{pageViewLogging:{type:Boolean,value:!1},eventLogging:{type:Boolean,value:!1}}});
+ </script>
+</dom-module>

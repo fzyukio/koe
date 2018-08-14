@@ -1,0 +1,67 @@
+<dom-module id="iron-autogrow-textarea">
+ <template>
+  <style>
+   :host {
+        display: inline-block;
+        position: relative;
+        width: 400px;
+        border: 1px solid;
+        padding: 2px;
+        -moz-appearance: textarea;
+        -webkit-appearance: textarea;
+        overflow: hidden;
+      }
+
+      .mirror-text {
+        visibility: hidden;
+        word-wrap: break-word;
+      }
+
+      .fit {
+        @apply(--layout-fit);
+      }
+
+      textarea {
+        position: relative;
+        outline: none;
+        border: none;
+        resize: none;
+        background: inherit;
+        color: inherit;
+        /* see comments in template */
+        width: 100%;
+        height: 100%;
+        font-size: inherit;
+        font-family: inherit;
+        line-height: inherit;
+        text-align: inherit;
+        @apply(--iron-autogrow-textarea);
+      }
+
+      ::content textarea:invalid {
+        box-shadow: none;
+      }
+
+      textarea::-webkit-input-placeholder {
+        @apply(--iron-autogrow-textarea-placeholder);
+      }
+
+      textarea:-moz-placeholder {
+        @apply(--iron-autogrow-textarea-placeholder);
+      }
+
+      textarea::-moz-placeholder {
+        @apply(--iron-autogrow-textarea-placeholder);
+      }
+
+      textarea:-ms-input-placeholder {
+        @apply(--iron-autogrow-textarea-placeholder);
+      }
+  </style>
+  <div aria-hidden="true" class="mirror-text" id="mirror">
+  </div>
+  <div class="textarea-container fit">
+   <textarea autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" disabled$="[[disabled]]" id="textarea" inputmode$="[[inputmode]]" maxlength$="[[maxlength]]" minlength$="[[minlength]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" required$="[[required]]" rows$="[[rows]]"></textarea>
+  </div>
+ </template>
+</dom-module>

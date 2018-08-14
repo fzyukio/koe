@@ -1,0 +1,23 @@
+<dom-module id="iron-collapse">
+ <template>
+  <style>
+   :host {
+        display: block;
+        transition-duration: var(--iron-collapse-transition-duration, 300ms);
+        /* Safari 10 needs this property prefixed to correctly apply the custom property */
+        -webkit-transition-duration: var(--iron-collapse-transition-duration, 300ms);
+        overflow: visible;
+      }
+
+      :host(.iron-collapse-closed) {
+        display: none;
+      }
+
+      :host(:not(.iron-collapse-opened)) {
+        overflow: hidden;
+      }
+  </style>
+  <slot>
+  </slot>
+ </template>
+</dom-module>

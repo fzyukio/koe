@@ -1,0 +1,84 @@
+<dom-module id="vz-projector-metadata-card">
+ <template>
+  <style>
+   #metadata-card {
+  background-color: rgba(255,255,255,0.9);
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+      0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  width: 280px;
+}
+
+#header {
+  background: #e9e9e9;
+}
+
+#icon-container {
+  position: absolute;
+  right: 0;
+  top: 4px;
+}
+
+#metadata-label {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  padding: 12px 12px 8px;
+  width: 230px;
+}
+
+#metadata-table {
+  display: table;
+  padding: 8px 12px 4px;
+}
+
+.metadata-row {
+  display: table-row;
+}
+
+.metadata-key {
+  font-weight: bold;
+}
+
+.metadata-key, .metadata-value {
+  display: table-cell;
+  font-size: 12px;
+  padding: 3px 3px;
+}
+  </style>
+  <template if="[[hasMetadata]]" is="dom-if">
+   <div id="metadata-card">
+    <div id="icon-container">
+     <paper-icon-button icon="expand-more" id="expand-more" on-tap="_expandMore" style="display: none">
+     </paper-icon-button>
+     <paper-icon-button icon="expand-less" id="expand-less" on-tap="_expandLess">
+     </paper-icon-button>
+    </div>
+    <div id="header">
+     <div id="metadata-label">
+      [[label]]
+     </div>
+    </div>
+    <iron-collapse id="metadata-container" opened="">
+     <div id="metadata-table">
+      <template is="dom-repeat" items="[[metadata]]">
+       <div class="metadata-row">
+        <div class="metadata-key">
+         [[item.key]]
+        </div>
+        <div class="metadata-value">
+         [[item.value]]
+        </div>
+       </div>
+      </template>
+     </div>
+    </iron-collapse>
+   </div>
+  </template>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector-metadata-card.js
+var be=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),ce=function(a){function b(){return null!==a&&a.apply(this,arguments)||this}be(b,a);b.prototype.ready=function(){this.expandLessButton=this.querySelector("#expand-less");this.expandMoreButton=
+this.querySelector("#expand-more")};b.prototype._expandMore=function(){this.$$("#metadata-container").toggle();this.expandMoreButton.style.display="none";this.expandLessButton.style.display=""};b.prototype._expandLess=function(){this.$$("#metadata-container").toggle();this.expandMoreButton.style.display="";this.expandLessButton.style.display="none"};b.prototype.updateMetadata=function(a){this.pointMetadata=a;this.hasMetadata=null!=a;if(a){var b=[],c;for(c in a)a.hasOwnProperty(c)&&b.push({key:c,value:a[c]});
+this.metadata=b;this.label=""+this.pointMetadata[this.labelOption]}};b.prototype.setLabelOption=function(a){this.labelOption=a;this.pointMetadata&&(this.label=""+this.pointMetadata[this.labelOption])};return b}(Polymer.Class({is:"vz-projector-metadata-card",properties:{hasMetadata:{type:Boolean,value:!1},metadata:{type:Array},label:String}}));document.registerElement(ce.prototype.is,ce);
+ </script>
+</dom-module>

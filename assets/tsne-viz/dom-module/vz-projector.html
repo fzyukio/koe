@@ -1,0 +1,394 @@
+<dom-module id="vz-projector">
+ <template>
+  <style include="vz-projector-styles">
+  </style>
+  <style>
+   :host {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+#container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Main */
+
+#main {
+  position: relative;
+  flex-grow: 2;
+}
+
+#main .stage {
+  position: relative;
+  flex-grow: 2;
+}
+
+#scatter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#selector {
+  display: none;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+#left-pane {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 312px;
+  width: 312px;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fafafa;
+}
+
+#right-pane {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fafafa;
+  display: flex;
+  height: 100%;
+  min-width: 300px;
+  width: 300px;
+}
+
+.file-name {
+  margin-right: 5px;
+}
+
+.control input[type=text]:focus {
+  outline: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 1);
+}
+
+.control {
+  display: inline-block;
+  width: 45%;
+  vertical-align: top;
+  margin-right: 10px;
+  overflow-x: hidden;
+}
+
+.control.last {
+  margin-right: 0;
+}
+
+#notification-dialog {
+  width: 400px;
+  padding-bottom: 20px;
+}
+
+#notification-dialog paper-button {
+  background: none;
+  text-transform: uppercase;
+}
+
+#notification-dialog .progress {
+  --paper-spinner-color: #880E4F;
+  --paper-spinner-stroke-width: 2px;
+}
+
+#notify-msgs {
+  text-align: center;
+  display: block;
+}
+
+.notify-msg {
+  font-weight: 500;
+  margin: 0;
+  padding: 0;
+}
+
+.notify-msg.error {
+  text-align: left;
+}
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.origin text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.origin line {
+  stroke: black;
+  stroke-opacity: 0.2;
+}
+
+/* Ink Framework */
+
+/* - Buttons */
+.ink-button, ::shadow .ink-button {
+  border: none;
+  border-radius: 2px;
+  font-size: 13px;
+  padding: 10px;
+  min-width: 100px;
+  flex-shrink: 0;
+  background: #e3e3e3;
+}
+
+.status-bar-panel {
+  display: flex;
+  align-items: center;
+}
+
+.status-bar-entry {
+  border-left: 1px solid rgba(0, 0, 0, 0.5);
+  margin-left: 5px;
+  padding-left: 5px;
+}
+
+/* - Menubar */
+
+.ink-panel-menubar {
+  align-items: center;
+  position: relative;
+  height: 60px;
+  border-bottom: solid 1px #eee;
+  padding: 0 24px;
+  display: flex;
+}
+
+.ink-panel-menubar .ink-fabs {
+  position: absolute;
+  right: 12px;
+  top: 40px;
+  z-index: 1;
+}
+
+#bookmark-panel {
+  bottom: 0;
+  position: absolute;
+  width: 300px;
+}
+#bookmark-panel-container {
+  bottom: 60px;
+  position: absolute;
+}
+
+.ink-fab {
+  margin-left: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+#metadata-card {
+  position: absolute;
+  right: 5px;
+  top: 25px;
+}
+
+#help-3d-icon {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+#help3dDialog .main {
+  margin: 0;
+  padding: 20px;
+}
+
+#help3dDialog h3 {
+  margin-top: 20px;
+  margin-bottom: 5px;
+}
+
+#help3dDialog h3:first-child {
+  margin-top: 0;
+}
+
+#data-panel {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+#toast {
+  display: flex;
+  align-items: center;
+  --paper-toast-color: #eeff41;
+}
+  </style>
+  <paper-dialog id="notification-dialog" modal="">
+   <h2 id="notification-title">
+   </h2>
+   <paper-dialog-scrollable>
+    <div id="notify-msgs">
+    </div>
+   </paper-dialog-scrollable>
+   <div style="text-align: center;">
+    <paper-spinner-lite active="" class="progress">
+    </paper-spinner-lite>
+   </div>
+   <div class="buttons">
+    <paper-button autofocus="" class="close-button" dialog-confirm="">
+     Close
+    </paper-button>
+   </div>
+  </paper-dialog>
+  <div id="container">
+   <div class="ink-panel" id="left-pane">
+    <vz-projector-data-panel id="data-panel">
+    </vz-projector-data-panel>
+    <vz-projector-projections-panel id="projections-panel">
+    </vz-projector-projections-panel>
+   </div>
+   <div class="ink-panel" id="main">
+    <div class="ink-panel-menubar">
+     <paper-icon-button alt="Bounding box selection" icon="image:photo-size-select-small" id="selectMode" toggles="">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" for="selectMode" position="bottom">
+      Bounding box selection
+     </paper-tooltip>
+     <paper-icon-button alt="Enable/disable night mode" icon="image:brightness-2" id="nightDayMode" toggles="">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" for="nightDayMode" position="bottom">
+      Enable/disable night mode
+     </paper-tooltip>
+     <paper-icon-button alt="Enable/disable 3D labels mode" icon="font-download" id="labels3DMode" toggles="">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" fit-to-visible-bounds="" for="labels3DMode" position="bottom">
+      Enable/disable 3D labels mode
+     </paper-tooltip>
+     <div class="status-bar-panel">
+      <div class="status-bar-entry">
+       Points:
+       <span class="numDataPoints">
+        Loading...
+       </span>
+      </div>
+      <div class="status-bar-entry">
+       Dimension:
+       <span class="dim">
+        Loading...
+       </span>
+      </div>
+      <div class="status-bar-entry" id="status-bar" style="display: none;">
+      </div>
+     </div>
+     <div class="ink-fabs">
+      <paper-icon-button alt="Reset zoom to fit all points" class="ink-fab" icon="home" id="reset-zoom">
+      </paper-icon-button>
+      <paper-tooltip animation-delay="0" for="reset-zoom" position="left">
+       Reset zoom to fit all points
+      </paper-tooltip>
+     </div>
+    </div>
+    <div class="stage">
+     <div id="scatter">
+      <svg id="selector">
+      </svg>
+     </div>
+     <vz-projector-metadata-card id="metadata-card">
+     </vz-projector-metadata-card>
+     <paper-icon-button icon="help-outline" id="help-3d-icon" onclick="help3dDialog.open()" raised="">
+     </paper-icon-button>
+     <paper-tooltip animation-delay="0" for="help-3d-icon">
+      Help with interaction controls.
+     </paper-tooltip>
+     <paper-dialog id="help3dDialog" with-backdrop="">
+      <div autofocus="" class="main" dialog-confirm="">
+       <h3>
+        3D controls
+       </h3>
+       <b>
+        Rotate
+       </b>
+       Mouse left click.
+       <br/>
+       <b>
+        Pan
+       </b>
+       Mouse right click.
+       <br/>
+       <b>
+        Zoom
+       </b>
+       Mouse wheel.
+       <br/>
+       Holding
+       <b>
+        ctrl
+       </b>
+       reverses the mouse clicks.
+       <h3>
+        2D controls
+       </h3>
+       <b>
+        Pan
+       </b>
+       Mouse left click.
+       <br/>
+       <b>
+        Zoom
+       </b>
+       Mouse wheel.
+       <div class="dismiss-dialog-note">
+        Click anywhere to dismiss.
+       </div>
+      </div>
+     </paper-dialog>
+    </div>
+   </div>
+   <div class="ink-panel" id="right-pane">
+    <div class="ink-panel-content active">
+     <vz-projector-inspector-panel id="inspector-panel">
+     </vz-projector-inspector-panel>
+    </div>
+    <div id="bookmark-panel-container">
+     <vz-projector-bookmark-panel id="bookmark-panel">
+     </vz-projector-bookmark-panel>
+    </div>
+   </div>
+  </div>
+  <paper-toast always-on-top="" id="toast">
+  </paper-toast>
+ </template>
+ <script>
+  //~~WEBPATH~~/vz-projector/vz-projector.js
+var fe=this&&this.__extends||function(){var a=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(a,c){a.__proto__=c}||function(a,c){for(var b in c)c.hasOwnProperty(b)&&(a[b]=c[b])};return function(b,c){function d(){this.constructor=b}a(b,c);b.prototype=null===c?Object.create(c):(d.prototype=c.prototype,new d)}}(),ge=function(a){function b(){return null!==a&&a.apply(this,arguments)||this}fe(b,a);b.prototype.ready=function(){ic=this;this.analyticsLogger=new xc(this.pageViewLogging,this.eventLogging);
+this.analyticsLogger.logPageView();Ic()?(this.selectionChangedListeners=[],this.hoverListeners=[],this.projectionChangedListeners=[],this.distanceMetricChangedListeners=[],this.selectedPointIndices=[],this.neighborsOfFirstPoint=[],this.dataPanel=this.$["data-panel"],this.inspectorPanel=this.$["inspector-panel"],this.inspectorPanel.initialize(this,this),this.projectionsPanel=this.$["projections-panel"],this.projectionsPanel.initialize(this),this.bookmarkPanel=this.$["bookmark-panel"],this.bookmarkPanel.initialize(this,
+this),this.metadataCard=this.$["metadata-card"],this.statusBar=this.querySelector("#status-bar"),this.scopeSubtree(this.$$("#notification-dialog"),!0),this.setupUIControls(),this.initializeDataProvider()):(this.analyticsLogger.logWebGLDisabled(),lc("Your browser or device does not have WebGL enabled. Please enable hardware acceleration, or use a browser that supports WebGL."))};b.prototype.setSelectedLabelOption=function(a){this.selectedLabelOption=a;this.metadataCard.setLabelOption(this.selectedLabelOption);
+this.projectorScatterPlotAdapter.setLabelPointAccessor(a);this.projectorScatterPlotAdapter.updateScatterPlotAttributes();this.projectorScatterPlotAdapter.render()};b.prototype.setSelectedColorOption=function(a){this.selectedColorOption=a;this.projectorScatterPlotAdapter.setLegendPointColorer(this.getLegendPointColorer(a));this.projectorScatterPlotAdapter.updateScatterPlotAttributes();this.projectorScatterPlotAdapter.render()};b.prototype.setNormalizeData=function(a){this.normalizeData=a;this.setCurrentDataSet(this.originalDataSet.getSubset())};
+b.prototype.updateDataSet=function(a,b,e){this.dataSetFilterIndices=null;this.originalDataSet=a;if(null!=a){this.normalizeData=50<=this.originalDataSet.dim[1];b=b||{};if(null==b.pointsInfo){var c=this.makeDefaultPointsInfoAndStats(a.points),d=c[1];b.pointsInfo=c[0];b.stats=d}if(!a.mergeMetadata(b))return}null!=this.projectorScatterPlotAdapter&&(null==a?(this.projectorScatterPlotAdapter.setLabelPointAccessor(null),this.setProjection(null)):(this.projectorScatterPlotAdapter.updateScatterPlotPositions(),
+this.projectorScatterPlotAdapter.updateScatterPlotAttributes(),this.projectorScatterPlotAdapter.resize(),this.projectorScatterPlotAdapter.render()));null!=a?(this.dataPanel.setNormalizeData(this.normalizeData),this.setCurrentDataSet(a.getSubset()),this.projectorScatterPlotAdapter.setLabelPointAccessor(this.selectedLabelOption),this.inspectorPanel.datasetChanged(),this.inspectorPanel.metadataChanged(b),this.projectionsPanel.metadataChanged(b),this.dataPanel.metadataChanged(b,e),a=this.querySelector("#container"),
+a.style.height=a.clientHeight+"px"):this.setCurrentDataSet(null)};b.prototype.setSelectedTensor=function(a,b){this.bookmarkPanel.setSelectedTensor(a,b,this.dataProvider)};b.prototype.registerSelectionChangedListener=function(a){this.selectionChangedListeners.push(a)};b.prototype.filterDataset=function(a){var b=this.selectedPointIndices.length;null==this.dataSetBeforeFilter&&(this.dataSetBeforeFilter=this.dataSet);this.setCurrentDataSet(this.dataSet.getSubset(a));this.dataSetFilterIndices=a;this.projectorScatterPlotAdapter.updateScatterPlotPositions();
+this.projectorScatterPlotAdapter.updateScatterPlotAttributes();this.adjustSelectionAndHover(yc(b))};b.prototype.resetFilterDataset=function(){var a=this,b=this.selectedPointIndices.map(function(b){return a.dataSet.points[b].index});this.setCurrentDataSet(this.dataSetBeforeFilter);null!=this.projection&&(this.projection.dataSet=this.dataSetBeforeFilter);this.dataSetBeforeFilter=null;this.projectorScatterPlotAdapter.updateScatterPlotPositions();this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
+this.dataSetFilterIndices=[];this.adjustSelectionAndHover(b)};b.prototype.notifySelectionChanged=function(a){var b=this;this.selectedPointIndices=a;var c=[];1===a.length?(c=this.dataSet.findNeighbors(a[0],this.inspectorPanel.distFunc,this.inspectorPanel.numNN),this.metadataCard.updateMetadata(this.dataSet.points[a[0]].metadata)):this.metadataCard.updateMetadata(null);this.selectionChangedListeners.forEach(function(a){return a(b.selectedPointIndices,c)})};b.prototype.registerHoverListener=function(a){this.hoverListeners.push(a)};
+b.prototype.notifyHoverOverPoint=function(a){this.hoverListeners.forEach(function(b){return b(a)})};b.prototype.registerProjectionChangedListener=function(a){this.projectionChangedListeners.push(a)};b.prototype.notifyProjectionChanged=function(a){this.projectionChangedListeners.forEach(function(b){return b(a)})};b.prototype.registerDistanceMetricChangedListener=function(a){this.distanceMetricChangedListeners.push(a)};b.prototype.notifyDistanceMetricChanged=function(a){this.distanceMetricChangedListeners.forEach(function(b){return b(a)})};
+b.prototype._dataProtoChanged=function(a){a=a?JSON.parse(a):null;this.initializeDataProvider(a)};b.prototype.makeDefaultPointsInfoAndStats=function(a){var b=[];a.forEach(function(a){var c={};c.__index__=a.index;b.push(c)});return[b,[{name:"__index__",isNumeric:!1,tooManyUniqueValues:!0,min:0,max:b.length-1}]]};b.prototype.initializeDataProvider=function(a){if("demo"===this.servingMode){if(a=window.location.search){a=-1!==a.indexOf("?")?a.split("?")[1]:a;a.indexOf("#")&&(a=a.split("#")[0]);a=a.split("\x26");
+for(var b={},c=0;c<a.length;c++){var g=a[c].split("\x3d");b[g[0].toLowerCase()]=decodeURIComponent(g[1])}a=b}else a={};this.dataProvider=new td("config"in a?a.config:this.projectorConfigJsonPath)}else if("server"===this.servingMode){if(!this.routePrefix)throw"route-prefix is a required parameter";this.dataProvider=new vd(this.routePrefix)}else"proto"===this.servingMode&&null!=a&&(this.dataProvider=new ud(a));this.dataPanel.initialize(this,this.dataProvider)};b.prototype.getLegendPointColorer=function(a){var b=
+this;return null==a||null==a.map?null:function(c,d){c=c.points[d].metadata[b.selectedColorOption.name];return null==c?"black":a.map(c)}};b.prototype.get3DLabelModeButton=function(){return this.querySelector("#labels3DMode")};b.prototype.get3DLabelMode=function(){return this.get3DLabelModeButton().active};b.prototype.adjustSelectionAndHover=function(a){this.notifySelectionChanged(a);this.notifyHoverOverPoint(void 0);this.setMouseMode(Ed.CAMERA_AND_CLICK_SELECT)};b.prototype.setMouseMode=function(a){this.querySelector("#selectMode").active=
+a===Ed.AREA_SELECT;this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(a)};b.prototype.setCurrentDataSet=function(a){this.adjustSelectionAndHover([]);null!=this.dataSet&&this.dataSet.stopTSNE();null!=a&&this.normalizeData&&a.normalize();this.dim=null==a?0:a.dim[1];this.querySelector("span.numDataPoints").innerText=null==a?"0":""+a.dim[0];this.querySelector("span.dim").innerText=null==a?"0":""+a.dim[1];this.dataSet=a;this.projectionsPanel.dataSetUpdated(this.dataSet,this.originalDataSet,this.dim);
+this.projectorScatterPlotAdapter.setDataSet(this.dataSet);this.projectorScatterPlotAdapter.scatterPlot.setCameraParametersForNextCameraCreation(null,!0)};b.prototype.setupUIControls=function(){var a=this;this.querySelector("#reset-zoom").addEventListener("click",function(){a.projectorScatterPlotAdapter.scatterPlot.resetZoom();a.projectorScatterPlotAdapter.scatterPlot.startOrbitAnimation()});var b=this.querySelector("#selectMode");b.addEventListener("click",function(){a.setMouseMode(b.active?Ed.AREA_SELECT:
+Ed.CAMERA_AND_CLICK_SELECT)});var e=this.querySelector("#nightDayMode");e.addEventListener("click",function(){a.projectorScatterPlotAdapter.scatterPlot.setDayNightMode(e.active)});this.get3DLabelModeButton().addEventListener("click",function(){a.projectorScatterPlotAdapter.set3DLabelMode(a.get3DLabelMode())});window.addEventListener("resize",function(){var b=a.querySelector("#container");b.style.height=b.parentNode.clientHeight+"px";a.projectorScatterPlotAdapter.resize()});this.projectorScatterPlotAdapter=
+new Qd(this.getScatterContainer(),this);this.projectorScatterPlotAdapter.setLabelPointAccessor(this.selectedLabelOption);this.projectorScatterPlotAdapter.scatterPlot.onCameraMove(function(){return a.bookmarkPanel.clearStateSelection()});this.registerHoverListener(function(b){return a.onHover(b)});this.registerSelectionChangedListener(function(b,c){return a.onSelectionChanged(b,c)})};b.prototype.onHover=function(a){this.hoverPointIndex=a;var b=null;null!=a&&(a=this.dataSet.points[a],a.metadata[this.selectedLabelOption]&&
+(b=a.metadata[this.selectedLabelOption].toString()));0===this.selectedPointIndices.length&&(this.statusBar.style.display=b?null:"none",this.statusBar.innerText=b)};b.prototype.getScatterContainer=function(){return this.querySelector("#scatter")};b.prototype.onSelectionChanged=function(a,b){this.selectedPointIndices=a;this.neighborsOfFirstPoint=b;a=this.selectedPointIndices.length+b.length;this.statusBar.innerText="Selected "+a+" points";this.statusBar.style.display=0<a?null:"none"};b.prototype.setProjection=
+function(a){this.projection=a;null!=a&&this.analyticsLogger.logProjectionChanged(a.projectionType);this.notifyProjectionChanged(a)};b.prototype.notifyProjectionPositionsUpdated=function(){this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated()};b.prototype.getCurrentState=function(){var a=new cd;a.projections=[];for(var b=0;b<this.dataSet.points.length;b++){for(var e=this.dataSet.points[b],g={},h=Object.keys(e.projections),k=0;k<h.length;++k)g[h[k]]=e.projections[h[k]];a.projections.push(g)}a.selectedProjection=
+this.projection.projectionType;a.dataSetDimensions=this.dataSet.dim;a.tSNEIteration=this.dataSet.tSNEIteration;a.selectedPoints=this.selectedPointIndices;a.filteredPoints=this.dataSetFilterIndices;this.projectorScatterPlotAdapter.populateBookmarkFromUI(a);a.selectedColorOptionName=this.dataPanel.selectedColorOptionName;a.forceCategoricalColoring=this.dataPanel.forceCategoricalColoring;a.selectedLabelOption=this.selectedLabelOption;this.projectionsPanel.populateBookmarkFromUI(a);return a};b.prototype.loadState=
+function(a){this.setProjection(null);this.projectionsPanel.disablePolymerChangesTriggerReprojection();null!=this.dataSetBeforeFilter&&this.resetFilterDataset();null!=a.filteredPoints&&this.filterDataset(a.filteredPoints);this.projectionsPanel.enablePolymerChangesTriggerReprojection();for(var b=0;b<a.projections.length;b++){var c=this.dataSet.points[b];var g=a.projections[b];for(var h=Object.keys(g),k=0;k<h.length;++k)c.projections[h[k]]=g[h[k]]}this.dataSet.hasTSNERun="tsne"===a.selectedProjection;
+this.dataSet.tSNEIteration=a.tSNEIteration;this.projectionsPanel.restoreUIFromBookmark(a);this.inspectorPanel.restoreUIFromBookmark(a);this.dataPanel.selectedColorOptionName=a.selectedColorOptionName;this.dataPanel.setForceCategoricalColoring(!!a.forceCategoricalColoring);this.selectedLabelOption=a.selectedLabelOption;this.projectorScatterPlotAdapter.restoreUIFromBookmark(a);switch(a.selectedProjection){case "pca":g=a.pcaComponentDimensions.slice();break;case "tsne":g=[0,1];a.tSNEis3d&&g.push(2);
+break;case "custom":g=["x","y"];break;default:throw Error("Unexpected fallthrough");}b=dd(a.selectedProjection,g);g=new bd(a.selectedProjection,b,g.length,this.dataSet);this.setProjection(g);this.notifySelectionChanged(a.selectedPoints)};return b}(Polymer.Class({is:"vz-projector",properties:{routePrefix:String,dataProto:{type:String,observer:"_dataProtoChanged"},servingMode:String,projectorConfigJsonPath:String,pageViewLogging:Boolean,eventLogging:Boolean}}));
+document.registerElement(ge.prototype.is,ge);
+ </script>
+</dom-module>
