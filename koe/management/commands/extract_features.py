@@ -26,13 +26,12 @@ from django.db.models import Value
 from django.db.models import When
 from progress.bar import Bar
 from scipy.io import savemat
-from scipy.stats import zscore
-from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 import csv
 from koe.aggregator import aggregators_by_type
-from koe.features.feature_extract import feature_extractors, feature_map
+from koe.features.feature_extract import feature_extractors
+from koe.features.feature_extract import feature_whereabout as feature_groups, feature_map
 from koe.features.feature_extract import features as full_features
 from koe.models import *
 from koe.models import SegmentFeature, Feature
@@ -43,7 +42,6 @@ nfft = 512
 noverlap = nfft * 3 // 4
 win_length = nfft
 stepsize = nfft - noverlap
-aggregators = aggregators_by_type['all']
 
 
 # @profile
@@ -299,7 +297,7 @@ def recalibrate_database(database_name, h5file):
 
 
 # @profile
-def aggregate_feature_values(segment_to_label, h5file, features):
+def aggregate_feature_values(segment_to_label, h5file, features, ftgroup_name, aggregators, aggregators_name):
     """
     Compress all feature sequences into fixed-length vectors
     :param segment_to_label:
@@ -325,7 +323,8 @@ def aggregate_feature_values(segment_to_label, h5file, features):
         n_calculations = sum(list(segment_features.values_list('n_features', flat=True)))
         attrs = segment_features.values_list('id', 'feature__name', 'segment', 'duration', 'segment__audio_file__fs')
 
-        bar = Bar('Extract features', max=n_calculations)
+        bar = Bar('Extract features type {}, aggrenator type {}'.format(ftgroup_name, aggregators_name),
+                  max=n_calculations)
 
         for sfid, fname, sid, duration, fs in attrs:
             args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, start=None, end=None, win_length=win_length,
@@ -374,9 +373,6 @@ def aggregate_feature_values(segment_to_label, h5file, features):
                         feature_vector[fname_modif] = aggregated
                     bar.next()
         bar.finish()
-
-    assert max([len(x.values()) for x in feature_vectors.values()]) == min(
-        [len(x.values()) for x in feature_vectors.values()])
 
     sids = []
     dataset = []
@@ -432,20 +428,14 @@ class Command(BaseCommand):
         parser.add_argument('--matfile', action='store', dest='matfile', required=False, type=str,
                             help='Name of the .mat file to store extracted feature values for Matlab', )
 
-        parser.add_argument('--features', action='store', dest='selected_features', default='', type=str,
-                            help='List of features to be extracted', )
-
     def handle(self, *args, **options):
-        selected_features = options['selected_features'].split(';')
         matfile = options['matfile']
         h5file = options['h5file']
         segment_csv = options['segment_csv']
         database_name = options['database_name']
 
         sid_to_label = get_segment_ids_and_labels(segment_csv)
-        sids = sid_to_label.keys()
-
-        selected_features = list(Feature.objects.filter(name__in=selected_features))
+        sids = list(sid_to_label.keys())
 
         if not os.path.isfile(h5file):
             try:
@@ -457,7 +447,7 @@ class Command(BaseCommand):
         else:
             h5file = recalibrate_database(database_name, h5file)
 
-        rawdata, sids, fnames = aggregate_feature_values(sid_to_label, h5file, selected_features)
+        data = dict()
 
         sids = np.array(sids, dtype=np.int32)
         labels = []
@@ -465,13 +455,21 @@ class Command(BaseCommand):
             label = sid_to_label[sid]
             labels.append(label)
 
-        clusters = run_clustering(zscore(rawdata, axis=1), dim_reduce=PCA, n_components=50)
+        for aggregators_name, aggregators in aggregators_by_type.items():
+            data_this_aggregators = {}
+            data[aggregators_name] = data_this_aggregators
 
-        labels = np.array(labels)
-        label_sort_ind = np.argsort(labels)
-        labels = labels[label_sort_ind]
-        sids = sids[label_sort_ind]
-        rawdata = rawdata[label_sort_ind, :]
-        clusters = clusters[label_sort_ind, :]
+            for ftgroup_module, ftgroup in feature_groups.items():
+                if isinstance(ftgroup_module, str):
+                    ftgroup_name = ftgroup_module
+                else:
+                    ftgroup_name = ftgroup_module.__name__[len('koe.features.'):]
 
-        savemat(matfile, dict(sids=sids, rawdata=rawdata, labels=labels, fnames=fnames, clusters=clusters))
+                selected_features = list(Feature.objects.filter(name__in=[ft[0] for ft in ftgroup]))
+
+                rawdata, sids, fnames = aggregate_feature_values(sid_to_label, h5file, selected_features, ftgroup_name,
+                                                                 aggregators, aggregators_name)
+
+                data_this_aggregators[ftgroup_name] = rawdata, fnames
+
+        savemat(matfile, dict(sids=sids, data=data, labels=labels))

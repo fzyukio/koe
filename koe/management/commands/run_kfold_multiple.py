@@ -11,13 +11,15 @@ from progress.bar import Bar
 from scipy.io import loadmat
 from scipy.stats import zscore
 
-from koe.aggregator import aggregators_by_type
+from koe.aggregator import aggregators_by_type as aggregators_by_type_
 from koe.features.feature_extract import feature_whereabout, feature_map
 from koe.management.commands.run_kfold_validation import run_nfolds, classifiers
 
 feature_groups = {x: y for x, y in feature_whereabout.items()}
-# feature_groups = {}
 feature_groups['all'] = list(itertools.chain.from_iterable(feature_whereabout.values()))
+
+aggregators_by_type = {x: y for x, y in aggregators_by_type_.items()}
+aggregators_by_type['all'] = list(itertools.chain.from_iterable(aggregators_by_type.values()))
 
 
 class Command(BaseCommand):
@@ -94,11 +96,7 @@ class Command(BaseCommand):
                             fnames_modifs.append(ft_name)
                         else:
                             for aggregator in aggregators:
-                                if isinstance(aggregator, tuple) and aggregator[0] == 'dtw_chirp':
-                                    chirp_type = aggregator[1]
-                                    fnames_modif = '{}_{}_{}'.format(ft_name, 'chirp', chirp_type)
-                                else:
-                                    fnames_modif = '{}_{}'.format(ft_name, aggregator.get_name())
+                                fnames_modif = '{}_{}'.format(ft_name, aggregator.get_name())
                                 fnames_modifs.append(fnames_modif)
 
                     matched = []
