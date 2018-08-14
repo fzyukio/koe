@@ -58,8 +58,8 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, h5file, fe
     with h5py.File(h5file, 'a') as hf:
         for feature in features:
             extractor = feature_extractors[feature.name]
-            existing_features = SegmentFeature.objects \
-                .filter(segment__in=segment_ids, feature=feature).values_list('id', flat=True)
+            existing_features = SegmentFeature.objects.filter(segment__in=segment_ids, feature=feature) \
+                .values_list('id', flat=True)
 
             for sfid in existing_features:
                 sfid = str(sfid)
@@ -116,21 +116,23 @@ def view_feature_values(h5file):
             feature = segment_feature.feature
 
             if feature.is_fixed_length:
-                print('Segment[{}={}] of wav[{}] - feature[{}] value= [{}]'.format(
-                    segment.start_time_ms, segment.end_time_ms, segment.audio_file.name,
-                    feature.name, segment_feature_value
-                ))
+                print('Segment[{}={}] of wav[{}] - feature[{}] value= [{}]'
+                      .format(segment.start_time_ms,
+                              segment.end_time_ms,
+                              segment.audio_file.name, feature.name,
+                              segment_feature_value))
             else:
-                print('Segment[{}={}] of wav[{}] - feature[{}] shape= [{}]'.format(
-                    segment.start_time_ms, segment.end_time_ms, segment.audio_file.name,
-                    feature.name, segment_feature_value.shape
-                ))
+                print('Segment[{}={}] of wav[{}] - feature[{}] shape= [{}]'
+                      .format(segment.start_time_ms,
+                              segment.end_time_ms,
+                              segment.audio_file.name, feature.name,
+                              segment_feature_value.shape))
 
 
 def extract_segment_features_for_segments(sids, h5file, features):
     segments = Segment.objects.filter(id__in=sids)
 
-    vals = segments.order_by('audio_file', 'start_time_ms') \
+    vals = segments.order_by('audio_file', 'start_time_ms')\
         .values_list('audio_file__name', 'id', 'start_time_ms', 'end_time_ms')
     af_to_segments = {}
 
@@ -158,8 +160,8 @@ def store_segment_info_in_h5(h5file):
         if info:
             return
         sfids = list(map(int, sfids))
-        db_attrs = SegmentFeature.objects.filter(id__in=sfids). \
-            values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
+        db_attrs = SegmentFeature.objects.filter(id__in=sfids)\
+            .values_list('id', 'segment__audio_file__name', 'segment__start_time_ms','segment__end_time_ms', 'feature')
 
         songs_info = {}
         for sfid, song_name, start, end, ft_id in db_attrs:
@@ -256,8 +258,7 @@ def recalibrate_database(database_name, h5file):
 
         seg_endpoints_to_ids = {
             (sname, sta, end): sid for sid, sname, sta, end in
-            Segment.objects
-            .filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
+            Segment.objects.filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
             .values_list('id', 'audio_file__name', 'start_time_ms', "end_time_ms")
         }
 
@@ -293,8 +294,7 @@ def recalibrate_database(database_name, h5file):
             nhf.create_dataset('info', data=json.dumps(info, indent=4))
 
         print('File seems to be exported from somewhere else. '
-              'A copy that has been made consistent with the current database has been exported to ',
-              temp_h5file)
+              'A copy that has been made consistent with the current database has been exported to ', temp_h5file)
         return temp_h5file
 
 
@@ -314,18 +314,13 @@ def aggregate_feature_values(segment_to_label, h5file, features):
     feature_vectors = {}
 
     with h5py.File(h5file, 'r') as hf:
-        segment_features = SegmentFeature.objects.filter(feature__in=features, segment__in=segment_ids) \
+        segment_features = SegmentFeature.objects \
+            .filter(feature__in=features, segment__in=segment_ids) \
             .annotate(duration=F('segment__end_time_ms') - F('segment__start_time_ms')) \
-            .annotate(
-            n_features=Case(
-                When(
-                    feature__is_fixed_length=True,
-                    then=Value(1)
-                ),
-                default=Value(len(aggregators)),
-                output_field=IntegerField()
-            )
-        ).order_by('duration', 'feature__name')
+            .annotate(n_features=Case(
+                When(feature__is_fixed_length=True, then=Value(1)), default=Value(len(aggregators)),
+                output_field=IntegerField())) \
+            .order_by('duration', 'feature__name')
 
         n_calculations = sum(list(segment_features.values_list('n_features', flat=True)))
         attrs = segment_features.values_list('id', 'feature__name', 'segment', 'duration', 'segment__audio_file__fs')
@@ -425,50 +420,20 @@ def get_segment_ids_and_labels(csv_file):
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--database-name',
-            action='store',
-            dest='database_name',
-            required=True,
-            type=str,
-            help='E.g Bellbird, Whale, ..., case insensitive',
-        )
+        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
+                            help='E.g Bellbird, Whale, ..., case insensitive', )
 
-        parser.add_argument(
-            '--csv',
-            action='store',
-            dest='segment_csv',
-            required=True,
-            type=str,
-            help='CSV file containing IDs + labels of the segments to be extracted',
-        )
+        parser.add_argument('--csv', action='store', dest='segment_csv', required=True, type=str,
+                            help='CSV file containing IDs + labels of the segments to be extracted', )
 
-        parser.add_argument(
-            '--h5file',
-            action='store',
-            dest='h5file',
-            required=True,
-            type=str,
-            help='Name of the h5 file to store extracted feature values',
-        )
+        parser.add_argument('--h5file', action='store', dest='h5file', required=True, type=str,
+                            help='Name of the h5 file to store extracted feature values', )
 
-        parser.add_argument(
-            '--matfile',
-            action='store',
-            dest='matfile',
-            required=False,
-            type=str,
-            help='Name of the .mat file to store extracted feature values for Matlab',
-        )
+        parser.add_argument('--matfile', action='store', dest='matfile', required=False, type=str,
+                            help='Name of the .mat file to store extracted feature values for Matlab', )
 
-        parser.add_argument(
-            '--features',
-            action='store',
-            dest='selected_features',
-            default='',
-            type=str,
-            help='List of features to be extracted',
-        )
+        parser.add_argument('--features', action='store', dest='selected_features', default='', type=str,
+                            help='List of features to be extracted', )
 
     def handle(self, *args, **options):
         selected_features = options['selected_features'].split(';')

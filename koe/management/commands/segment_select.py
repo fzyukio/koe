@@ -18,66 +18,24 @@ from collections import Counter
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--database-name',
-            action='store',
-            dest='database_name',
-            required=True,
-            type=str,
-            help='E.g Bellbird, Whale, ..., case insensitive',
-        )
+        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
+                            help='E.g Bellbird, Whale, ..., case insensitive', )
 
-        parser.add_argument(
-            '--startswith',
-            action='store',
-            dest='startswith',
-            required=False,
-            type=str,
-        )
+        parser.add_argument('--startswith', action='store', dest='startswith', required=False, type=str, )
 
-        parser.add_argument(
-            '--owner',
-            action='store',
-            dest='username',
-            default='superuser',
-            type=str,
-            help='Name of the person who owns this database, case insensitive',
-        )
+        parser.add_argument('--owner', action='store', dest='username', default='superuser', type=str,
+                            help='Name of the person who owns this database, case insensitive', )
 
-        parser.add_argument(
-            '--label-level',
-            action='store',
-            dest='label_level',
-            default='label',
-            type=str,
-            help='Level of labelling to use',
-        )
+        parser.add_argument('--label-level', action='store', dest='label_level', default='label', type=str,
+                            help='Level of labelling to use', )
 
-        parser.add_argument(
-            '--min-occur',
-            action='store',
-            dest='min_occur',
-            default=2,
-            type=int,
-            help='Ignore syllable classes that have less than this number of instances',
-        )
+        parser.add_argument('--min-occur', action='store', dest='min_occur', default=2, type=int,
+                            help='Ignore syllable classes that have less than this number of instances', )
 
-        parser.add_argument(
-            '--labels-to-ignore',
-            action='store',
-            dest='labels_to_ignore',
-            default='',
-            type=str,
-            help='labels to be ignored, case insensitive',
-        )
+        parser.add_argument('--labels-to-ignore', action='store', dest='labels_to_ignore', default='', type=str,
+                            help='labels to be ignored, case insensitive', )
 
-        parser.add_argument(
-            '--csv-file',
-            action='store',
-            dest='csv_file',
-            required=True,
-            type=str,
-        )
+        parser.add_argument('--csv-file', action='store', dest='csv_file', required=True, type=str, )
 
     def handle(self, *args, **options):
         database_name = options['database_name']
@@ -100,8 +58,8 @@ class Command(BaseCommand):
         segment_to_primary_label = {
             x: y.lower() for x, y in
             ExtraAttrValue.objects
-            .filter(attr__name=primary_label_level, owner_id__in=segment_ids, user__username__iexact=username)
-            .values_list('owner_id', 'value')
+                .filter(attr__name=primary_label_level, owner_id__in=segment_ids, user__username__iexact=username)
+                .values_list('owner_id', 'value')
             if y.lower() not in labels_to_ignore
         }
 
