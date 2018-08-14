@@ -179,10 +179,15 @@ aggregators_by_type = {
         ChirpXcorr('squeak-convex'),
         ChirpXcorr('squeak-concave'),
     ],
-    'divcon': [
+    'divcon-3': [
+        DivideConquer(np.mean, 3)
+    ],
+    'divcon-5': [
         DivideConquer(np.mean, 5)
+    ],
+    'divcon-7': [
+        DivideConquer(np.mean, 7)
     ]
 }
 
 aggregators = list(itertools.chain.from_iterable(aggregators_by_type.values()))
-aggregators_by_type['all'] = list(itertools.chain.from_iterable(aggregators_by_type.values()))
