@@ -159,7 +159,7 @@ def store_segment_info_in_h5(h5file):
             return
         sfids = list(map(int, sfids))
         db_attrs = SegmentFeature.objects.filter(id__in=sfids)\
-            .values_list('id', 'segment__audio_file__name', 'segment__start_time_ms','segment__end_time_ms', 'feature')
+            .values_list('id', 'segment__audio_file__name', 'segment__start_time_ms', 'segment__end_time_ms', 'feature')
 
         songs_info = {}
         for sfid, song_name, start, end, ft_id in db_attrs:
@@ -254,11 +254,11 @@ def recalibrate_database(database_name, h5file):
 
         to_update.update(to_keep)
 
-        seg_endpoints_to_ids = {
-            (sname, sta, end): sid for sid, sname, sta, end in
-            Segment.objects.filter(audio_file__database__name=database_name, audio_file__name__in=song_names)
+        segment_info = Segment.objects\
+            .filter(audio_file__database__name=database_name, audio_file__name__in=song_names)\
             .values_list('id', 'audio_file__name', 'start_time_ms', "end_time_ms")
-        }
+
+        seg_endpoints_to_ids = {(sname, sta, end): sid for sid, sname, sta, end in segment_info}
 
         for song_name, h5_info in to_add.items():
             for sta, end, ft_id, sfid in h5_info:
@@ -297,10 +297,10 @@ def recalibrate_database(database_name, h5file):
 
 
 # @profile
-def aggregate_feature_values(segment_to_label, h5file, features, ftgroup_name, aggregators, aggregators_name):
+def aggregate_feature_values(sid_to_label, h5file, features, ftgroup_name, aggregators, aggregators_name):
     """
     Compress all feature sequences into fixed-length vectors
-    :param segment_to_label:
+    :param sid_to_label:
     :param h5file:
     :param features:
     :return:
@@ -308,7 +308,7 @@ def aggregate_feature_values(segment_to_label, h5file, features, ftgroup_name, a
     if features is None or len(features) == 0:
         features = full_features
 
-    segment_ids = segment_to_label.keys()
+    segment_ids = sid_to_label.keys()
     feature_vectors = {}
 
     with h5py.File(h5file, 'r') as hf:
@@ -385,6 +385,7 @@ def aggregate_feature_values(segment_to_label, h5file, features, ftgroup_name, a
         dataset.append(feature_vector_values)
 
     dataset = np.array(dataset)
+    sids = np.array(sids)
     return dataset, sids, fnames
 
 
@@ -450,14 +451,13 @@ class Command(BaseCommand):
         data = dict()
 
         sids = np.array(sids, dtype=np.int32)
+        sids.sort()
         labels = []
         for sid in sids:
             label = sid_to_label[sid]
             labels.append(label)
 
         for aggregators_name, aggregators in aggregators_by_type.items():
-            data_this_aggregators = {}
-            data[aggregators_name] = data_this_aggregators
 
             for ftgroup_module, ftgroup in feature_groups.items():
                 if isinstance(ftgroup_module, str):
@@ -465,11 +465,23 @@ class Command(BaseCommand):
                 else:
                     ftgroup_name = ftgroup_module.__name__[len('koe.features.'):]
 
+                data_key = 'rawdata:{}:{}'.format(aggregators_name, ftgroup_name)
+                fnames_key = 'fnames:{}:{}'.format(aggregators_name, ftgroup_name)
+
                 selected_features = list(Feature.objects.filter(name__in=[ft[0] for ft in ftgroup]))
 
-                rawdata, sids, fnames = aggregate_feature_values(sid_to_label, h5file, selected_features, ftgroup_name,
-                                                                 aggregators, aggregators_name)
+                rawdata, unsorted_sids, fnames = aggregate_feature_values(sid_to_label, h5file, selected_features,
+                                                                          ftgroup_name, aggregators, aggregators_name)
 
-                data_this_aggregators[ftgroup_name] = rawdata, fnames
+                # Must sort data according to the sort order of sids
+                sort_order = np.argsort(unsorted_sids)
+                assert np.allclose(sids, unsorted_sids[sort_order])
 
-        savemat(matfile, dict(sids=sids, data=data, labels=labels))
+                rawdata = rawdata[sort_order, :]
+                data[data_key] = rawdata.astype(np.float32)
+                data[fnames_key] = fnames
+
+        data['sids'] = sids
+        data['labels'] = labels
+
+        savemat(matfile, data)
