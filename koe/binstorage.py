@@ -243,7 +243,7 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
     os.remove(bak_value_file)
 
 
-def retrieve(lookup_ids, index_filename, value_filename):
+def retrieve(lookup_ids, index_filename, value_filename, flat=False):
     with open(index_filename, 'rb') as f:
         index_arr = np.fromfile(f, dtype=np.int32)
 
@@ -273,7 +273,7 @@ def retrieve(lookup_ids, index_filename, value_filename):
             fid.seek(begin * 4)
             chunk_size = end - begin
             data = np.fromfile(fid, dtype=np.float32, count=chunk_size)
-            data = reshape(dim0, dim1, data)
+            if not flat:
+                data = reshape(dim0, dim1, data)
             retval[sorted_i] = data
-
     return retval
