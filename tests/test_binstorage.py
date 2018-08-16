@@ -59,16 +59,13 @@ class BinStorageTest(TestCase):
 
     def test(self):
         try:
-            with tictoc('Test storing'):
-                self._test_store()
+            self._test_store()
 
-            for nupdate in np.logspace(np.log10(1), np.log10(len(self.ids)), 10, dtype=np.int32):
-                with tictoc('Test update {} items'.format(nupdate)):
-                    self._test_update(nupdate)
+            for nselected in np.logspace(np.log10(10), np.log10(len(self.ids)), 10, dtype=np.int32):
+                self._test_retrieve(nselected)
 
-            for nselected in np.logspace(np.log10(1), np.log10(len(self.ids)), 10, dtype=np.int32):
-                with tictoc('Test retrieving {} items'.format(nselected)):
-                    self._test_retrieve(nselected)
+            for nupdate in np.logspace(np.log10(10), np.log10(len(self.ids)), 10, dtype=np.int32):
+                self._test_update(nupdate)
 
             self._test_retrieve_error()
 
@@ -77,7 +74,8 @@ class BinStorageTest(TestCase):
             os.remove(self.value_filename)
 
     def _test_store(self):
-        bs.store(self.ids, self.arrs, self.index_filename, self.value_filename)
+        with tictoc('Test storing'):
+            bs.store(self.ids, self.arrs, self.index_filename, self.value_filename)
         index_filesize = os.path.getsize(self.index_filename)
         index_memory_usage = len(self.ids) * bs.INDEX_FILE_NCOLS * 4
 
@@ -93,14 +91,10 @@ class BinStorageTest(TestCase):
 
             self.assertEqual(nids, len(self.ids))
 
-            sort_order = np.argsort(self.ids)
-            sorted_ids = self.ids[sort_order]
-            sorted_arrs = [self.arrs[i] for i in sort_order]
-
             index_arr = index_arr.reshape((nids, bs.INDEX_FILE_NCOLS))
             for i in range(nids):
-                id = sorted_ids[i]
-                arr = sorted_arrs[i]
+                id = self.ids[i]
+                arr = self.arrs[i]
 
                 arr_size = np.size(arr)
                 id_, beg, end, dim0, dim1 = index_arr[i]
@@ -113,9 +107,9 @@ class BinStorageTest(TestCase):
 
         with open(self.value_filename, 'rb') as f:
             value_arr = np.fromfile(f, dtype=np.float32)
-            self.assertEqual(len(value_arr), sum([np.size(arr) for arr in sorted_arrs]))
+            self.assertEqual(len(value_arr), sum([np.size(arr) for arr in self.arrs]))
 
-            arrs_ravel = np.concatenate([x.ravel() for x in sorted_arrs])
+            arrs_ravel = np.concatenate([x.ravel() for x in self.arrs])
             self.assertTrue(np.allclose(value_arr, arrs_ravel))
 
     def _test_update(self, nupdate):
@@ -141,7 +135,8 @@ class BinStorageTest(TestCase):
 
         self.arrs = [id2arr[i] for i in self.ids]
 
-        bs.store(new_ids, new_arrs, self.index_filename, self.value_filename)
+        with tictoc('Test update {} items'.format(nupdate)):
+            bs.store(new_ids, new_arrs, self.index_filename, self.value_filename)
 
         retrieved_arrs = bs.retrieve(self.ids, self.index_filename, self.value_filename)
         for id, retrieved_arr in zip(self.ids, retrieved_arrs):
@@ -154,7 +149,9 @@ class BinStorageTest(TestCase):
 
         selected_ids_inds = [np.where(self.ids == x)[0][0] for x in selected_ids]
         selected_arrs = [self.arrs[i] for i in selected_ids_inds]
-        retrieved_arrs = bs.retrieve(selected_ids, self.index_filename, self.value_filename)
+
+        with tictoc('Test retrieving {} items'.format(nselected)):
+            retrieved_arrs = bs.retrieve(selected_ids, self.index_filename, self.value_filename)
 
         self.assertEqual(len(selected_ids), len(retrieved_arrs))
         for i in range(len(selected_ids)):
