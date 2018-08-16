@@ -8,12 +8,11 @@ from pymlfunc import tictoc
 
 import koe.binstorage as bs
 
-
 NUM_POINTS = 10000
 
 
 def one_randint(max=100, min=1):
-    return min + np.random.randint((max-min), size=1)[0]
+    return min + np.random.randint((max - min), size=1)[0]
 
 
 def one_randbool():
@@ -35,12 +34,16 @@ def create_random_id_based_dataset(npoints=NUM_POINTS, max_len=100):
 
     for i in range(npoints):
         arr_len = one_randint(max_len)
-        is_two_dims = one_randbool()
-        if is_two_dims:
-            arr_len2 = one_randint(max_len)
-            arr = np.random.randn(arr_len, arr_len2)
+        is_scalar = one_randbool()
+        if is_scalar:
+            arr = np.random.randn(1)[0]
         else:
-            arr = np.random.randn(arr_len)
+            is_two_dims = one_randbool()
+            if is_two_dims:
+                arr_len2 = one_randint(max_len)
+                arr = np.random.randn(arr_len, arr_len2)
+            else:
+                arr = np.random.randn(arr_len)
         arrs.append(arr)
 
     return ids, arrs
@@ -104,9 +107,9 @@ class BinStorageTest(TestCase):
 
                 self.assertEqual(id, id_)
                 self.assertEqual(end - beg, arr_size)
-                self.assertEqual(dim0, arr.shape[0])
+                self.assertEqual(dim0, arr.shape[0] if arr.ndim >= 1 else 0)
                 self.assertEqual(dim1, arr.shape[1] if arr.ndim == 2 else 0)
-                self.assertEqual(dim0 * max(dim1, 1), arr_size)
+                self.assertEqual(max(1, dim0) * max(dim1, 1), arr_size)
 
         with open(self.value_filename, 'rb') as f:
             value_arr = np.fromfile(f, dtype=np.float32)

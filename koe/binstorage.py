@@ -27,16 +27,16 @@ def store_or_update(ids, arrs, index_filename, value_filename):
         id = ids[idx]
 
         arr = arrs[idx]
-
-        assert isinstance(arr, np.ndarray)
-        assert 0 < arr.ndim < 3, 'Only one or two dims arrays are supported'
+        assert arr.ndim < 3, 'Only scalar, one or two dims arrays are supported'
 
         arr_len = np.size(arr)
         end = begin + arr_len
 
-        dim0 = arr.shape[0]
-
+        dim0 = arr.shape[0] if arr.ndim > 0 else 0
         dim1 = arr.shape[1] if arr.ndim == 2 else 0
+
+        # This is somehow necessary - sometimes shape is non-zero even when size is - maybe a numpy bug
+        assert arr_len == max(1, dim0) * max(1, dim1)
 
         index_arr.append([id, begin, end, dim0, dim1])
         value_arr.append(arr.ravel())
@@ -91,8 +91,13 @@ def store(new_ids, new_arrs, index_filename, value_filename):
 
     for id, start, end, dim0, dim1 in index_arr:
         if id not in new_id2arr:
-            shape = (dim0, dim1) if dim1 != 0 else (dim0,)
-            arr = value_bin[start: end].reshape(shape)
+            arr = value_bin[start: end]
+            if dim0 > 0:
+                shape = (dim0, dim1) if dim1 != 0 else (dim0,)
+                arr = arr.reshape(shape)
+            else:
+                assert np.size(arr) == 1
+                arr = arr[0]
             new_id2arr[id] = arr
 
     ids = np.array(list(new_id2arr.keys()), dtype=np.int32)
@@ -141,12 +146,17 @@ def retrieve(lookup_ids, index_filename, value_filename):
     with open(value_filename, 'rb') as fid:
         for i in lookup_ids_rows:
             _, begin, end, dim0, dim1 = index_arr[i, :]
-            shape = (dim0, dim1) if dim1 != 0 else (dim0,)
 
             fid.seek(begin * 4)
             chunk_size = end - begin
             data = np.fromfile(fid, dtype=np.float32, count=chunk_size)
-            data = data.reshape(shape)
+
+            if dim0 > 0:
+                shape = (dim0, dim1) if dim1 != 0 else (dim0,)
+                data = data.reshape(shape)
+            else:
+                assert np.size(data) == 1
+                data = data[0]
 
             retval.append(data)
     return retval
