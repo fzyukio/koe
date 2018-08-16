@@ -9,6 +9,7 @@ from koe.features.feature_extract import feature_extractors
 from koe.management.commands.chirp_generator import generate_chirp
 from pymlfunc import normxcorr2
 
+from koe.models import Aggregation
 from koe.utils import divide_conquer
 from memoize import memoize
 
@@ -39,8 +40,13 @@ def dtw_chirp(feature, seg_feature_value, args):
         dim0 = 1
 
     chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
+
     if feature.is_one_dimensional:
-        chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
+        if chirp_feature_value.ndim == 1:
+            chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
+
+        if seg_feature_value.ndim == 1:
+            seg_feature_value = seg_feature_value.reshape(1, (max(seg_feature_value.shape)))
 
     settings = pyed.Settings(dist='euclid_squared', norm='max', compute_path=False)
 
@@ -51,8 +57,8 @@ def dtw_chirp(feature, seg_feature_value, args):
     retval = np.empty((dim0,), dtype=np.float64)
 
     for d in range(dim0):
-        chirp_feature_array = chirp_feature_value[d, :]
-        seg_feature_array = seg_feature_value[d, :]
+        chirp_feature_array = chirp_feature_value[d]
+        seg_feature_array = seg_feature_value[d]
         distance = pyed.Dtw(chirp_feature_array, seg_feature_array, settings=settings, args={})
         retval[d] = distance.get_dist()
 
@@ -63,6 +69,7 @@ def xcorr_chirp(feature, seg_feature_value, args):
     chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
     if feature.is_one_dimensional:
         chirp_feature_value = chirp_feature_value.reshape(1, (max(chirp_feature_value.shape)))
+        seg_feature_value = seg_feature_value.reshape(1, (max(seg_feature_value.shape)))
 
     # if chirp_feature_value.shape != seg_feature_value.shape:
     #     chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
@@ -191,3 +198,8 @@ aggregators_by_type = {
 }
 
 aggregators = list(itertools.chain.from_iterable(aggregators_by_type.values()))
+
+for group in aggregators_by_type.values():
+    for aggregator in group:
+        aggregator_name = aggregator.get_name()
+        aggregation, _ = Aggregation.objects.get_or_create(name=aggregator_name)

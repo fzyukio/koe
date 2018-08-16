@@ -426,6 +426,10 @@ class SegmentFeature(SimpleModel):
         unique_together = ('segment', 'feature')
 
 
+class Aggregation(SimpleModel):
+    name = models.CharField(max_length=255, unique=True)
+
+
 @receiver(post_delete, sender=HistoryEntry)
 def _history_delete(sender, instance, **kwargs):
     """
