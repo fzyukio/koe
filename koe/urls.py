@@ -11,6 +11,7 @@ from wagtail.core import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from koe import views
+from koe.request_handlers import tensorviz
 from root import urls as root_urls
 from root import views as root_views
 
@@ -56,7 +57,9 @@ urlpatterns += \
             login_required(views.SongPartitionView.as_view()),
             name='song-partition'),
 
-        url(r'^tsne/$', views.TensorvizView.as_view(), name='tsne'),
+        url(r'^feature-extraction/$', login_required(views.FeatureExtrationView.as_view()), name='feature-extraction'),
+        url(r'^tsne/(?P<tensor_name>[0-9a-z]+)/$', views.TensorvizView.as_view(), name='tsne'),
+        url(r'^tsne/(?P<tensor_name>[0-9a-z]+)/meta/$', tensorviz.get_metadata, name='tsne-meta'),
 
         re_path(r'^cms/', include(wagtailadmin_urls)),
         re_path(r'^documents/', include(wagtaildocs_urls)),

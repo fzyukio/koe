@@ -14,8 +14,10 @@ from root.exceptions import CustomAssertionError
 from root.models import SimpleModel, User, MagicChoices
 from root.utils import history_path, ensure_parent_folder_exists, pickle_path, wav_path, audio_path
 
-__all__ = ['NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
-           'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry']
+__all__ = [
+    'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
+    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry'
+]
 
 
 class NumpyArrayField(models.TextField):
@@ -417,17 +419,62 @@ class Feature(SimpleModel):
     is_fixed_length = models.BooleanField()
     is_one_dimensional = models.BooleanField()
 
-
-class SegmentFeature(SimpleModel):
-    segment = models.ForeignKey(Segment, on_delete=models.CASCADE)
-    feature = models.ForeignKey(Feature, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('segment', 'feature')
+    def __str__(self):
+        return self.name
 
 
 class Aggregation(SimpleModel):
     name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class TensorData(SimpleModel):
+    name = models.CharField(max_length=255, unique=True)
+    created = models.DateTimeField(auto_now_add=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
+    features_hash = models.CharField(max_length=255)
+    aggregations_hash = models.CharField(max_length=255)
+
+    class Meta:
+        abstract = True
+
+
+class FullTensorData(TensorData):
+    def get_cols_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.cols'.format(self.name))[1:]
+
+    def get_ids_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.ids'.format(self.name))[1:]
+
+    def get_bytes_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.bytes'.format(self.name))[1:]
+
+
+class DerivedTensorData(TensorData):
+    full_tensor = models.ForeignKey(FullTensorData, on_delete=models.CASCADE, null=True, blank=True)
+    dimreduce = models.CharField(max_length=255)
+    ndims = models.IntegerField(null=True, blank=True)
+    annotator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annotator')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='creator')
+
+    def get_config_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.json'.format(self.name))[1:]
+
+    def get_bytes_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.bytes'.format(self.name))[1:]
+
+
+# class TensorData(SimpleModel):
+#     name = models.CharField(max_length=255, unique=True)
+#     full_tensor = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+#     annotator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+#     database = models.ForeignKey(Database, on_delete=models.CASCADE)
+#     features_hash = models.CharField(max_length=255)
+#     aggregations_hash = models.CharField(max_length=255)
+#     dimreduce = models.CharField(max_length=255)
+#     ndims = models.IntegerField(null=True, blank=True)
 
 
 @receiver(post_delete, sender=HistoryEntry)

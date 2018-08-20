@@ -112,10 +112,6 @@ a {
   overflow-y: hidden;
 }
 
-#content-wrapper-offset-holder {
-  height: 100000px;
-}
-
 .main-content {
   padding: $main-content-padding-top $main-content-padding $main-content-padding-bottom;
   display: flex;
@@ -130,6 +126,7 @@ a {
   }
   &.has-footer {
     height: calc(100% - #{$navbar-height} - #{$bottom-height});
+    overflow-y: hidden;
   }
 }
 

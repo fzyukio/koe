@@ -1,0 +1,16 @@
+{% if tensors %}
+    <option value="">---------</option>
+    {% for tensor in tensors %}
+        <option value="{{ tensor.id }}">
+            Created by {{ tensor.creator.username }} at {{ tensor.created }} |
+            Annotator: {{ tensor.annotator.username }} |
+            {% if tensor.dimreduce == 'none' %}
+                No reduction
+            {% else %}
+                Reuduction: {{ tensor.dimreduce }}, {{ tensor.ndims }} dims
+            {% endif %}
+        </option>
+    {% endfor %}
+{% else %}
+    <option value="">No data matrix available - contact admin</option>
+{% endif %}

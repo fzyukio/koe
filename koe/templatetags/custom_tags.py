@@ -93,10 +93,13 @@ def get_navbar_urls():
             dict(text='Using family', is_single=True, url=reverse('songs', args=['label_family'])),
             dict(text='Using subfamily', is_single=True, url=reverse('songs', args=['label_subfamily'])),
         ]),
-        dict(text='Seq-Mining', is_single=False, url=reverse('sequence-mining'), subpages=[
-            dict(text='Using label', is_single=True, url=reverse('sequence-mining', args=['label'])),
-            dict(text='Using family', is_single=True, url=reverse('sequence-mining', args=['label_family'])),
-            dict(text='Using subfamily', is_single=True, url=reverse('sequence-mining', args=['label_subfamily'])),
+        dict(text='Analysis', is_single=False, url=reverse('sequence-mining'), subpages=[
+            dict(text='Feature extraction & clustering', is_single=True, url=reverse('feature-extraction')),
+            dict(text='Sequence mining by label', is_single=True, url=reverse('sequence-mining', args=['label'])),
+            dict(text='Sequence mining by family', is_single=True,
+                 url=reverse('sequence-mining', args=['label_family'])),
+            dict(text='Sequence mining by subfamily', is_single=True,
+                 url=reverse('sequence-mining', args=['label_subfamily'])),
         ]),
     ]
 

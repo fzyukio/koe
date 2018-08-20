@@ -1,0 +1,14 @@
+{% if tensors %}
+    <option value="">---------</option>
+    {% for annotator, info in annotation_info.items %}
+
+        <option value="{{ annotator.id }}">
+            {{ annotator.username }} | Completed:
+            Label: {{ info.label | floatformat }},
+            Family: {{ info.label_family | floatformat }},
+            Subfamily: {{ info.label_subfamily | floatformat }},
+        </option>
+    {% endfor %}
+{% else %}
+    <option value="">No data matrix available - contact admin</option>
+{% endif %}

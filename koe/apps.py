@@ -65,6 +65,7 @@ class KoeConfig(AppConfig):
                     register_app_modules(self.name, 'request_handlers.history')
                     register_app_modules(self.name, 'request_handlers.audio')
                     register_app_modules(self.name, 'request_handlers.database')
+                    register_app_modules(self.name, 'request_handlers.tensorviz')
                     register_app_modules(self.name, 'models')
                     register_app_modules(self.name, 'grid_getters')
 

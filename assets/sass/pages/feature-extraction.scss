@@ -1,0 +1,16 @@
+@import "../variables";
+
+#selection-form-wrapper {
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+}
+
+.search-options {
+  display: block;
+  overflow: hidden;
+}
+
+.main-content {
+  .content-center {
+    overflow-y: auto;
+  }
+}

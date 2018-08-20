@@ -2,6 +2,21 @@ import {getCache} from './utils';
 require('selectize/dist/js/selectize.js');
 
 
+export const initSelectizeSimple = function ($select) {
+    $select.selectize({
+        sortField: 'text',
+        valueField: 'value',
+        labelField: 'text',
+        searchField: 'text',
+        create: true,
+        selectOnTab: true,
+        dropdownDirection: 'auto',
+    });
+
+    return $select[0].selectize;
+};
+
+
 export const initSelectize = function ($select, field, defaultValue) {
     let selectableColumns = getCache('selectableOptions');
     let selectableOptions = selectableColumns[field];
@@ -10,8 +25,10 @@ export const initSelectize = function ($select, field, defaultValue) {
     for (let option in selectableOptions) {
         if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
             let count = selectableOptions[option];
-            options.push({option,
-                count});
+            options.push({
+                option,
+                count
+            });
         }
     }
 
@@ -30,8 +47,10 @@ export const initSelectize = function ($select, field, defaultValue) {
             }
         },
         sortField: [
-            {field: 'count',
-                direction: 'desc'}, {field: '$score'}
+            {
+                field: 'count',
+                direction: 'desc'
+            }, {field: '$score'}
         ],
         items: [defaultValue]
     });
@@ -59,8 +78,7 @@ export const SelectizeEditor = function (args) {
     let $select, defaultValue;
 
     this.init = function () {
-        $(args.container).find('select').
-            remove();
+        $(args.container).find('select').remove();
         $select = $('<SELECT tabIndex=\'0\' class=\'selectize\'></SELECT>');
         $select.appendTo(args.container);
 

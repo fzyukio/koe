@@ -49,6 +49,7 @@ def _cached_get_segment_audio_data(audio_file_name, fs, start, end):
     out = io.BytesIO()
     audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
     binary_content = out.getvalue()
+    out.close()
 
     response = HttpResponse()
     response.write(binary_content)

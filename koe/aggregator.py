@@ -1,5 +1,4 @@
 import copy
-import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -197,9 +196,13 @@ aggregators_by_type = {
     ]
 }
 
-aggregators = list(itertools.chain.from_iterable(aggregators_by_type.values()))
+aggregators = []
+aggregator_map = {}
 
 for group in aggregators_by_type.values():
     for aggregator in group:
         aggregator_name = aggregator.get_name()
         aggregation, _ = Aggregation.objects.get_or_create(name=aggregator_name)
+
+        aggregators.append(aggregator)
+        aggregator_map[aggregator_name] = aggregator

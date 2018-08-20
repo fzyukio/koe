@@ -319,6 +319,9 @@ $(document).ready(function () {
     else if (pageName.startsWith('/sequence-mining/')) {
         page = require('sequence-mining-page')
     }
+    else if (pageName.startsWith('/feature-extraction/')) {
+        page = require('feature-extraction-page')
+    }
 
     _preRun();
 

@@ -30,7 +30,8 @@ from koe.aggregator import aggregators_by_type
 from koe.features.feature_extract import feature_extractors
 from koe.features.feature_extract import feature_whereabout as feature_groups
 from koe.features.feature_extract import features as full_features
-from koe.models import Feature, Segment
+from koe.model_utils import get_or_error
+from koe.models import Feature, Segment, Database
 from koe.utils import get_wav_info
 from root.utils import wav_path, data_path, ensure_parent_folder_exists, mkdirp
 
@@ -270,8 +271,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         database_name = options['database_name']
+        database = get_or_error(Database, dict(name__iexact=database_name))
 
-        segments = Segment.objects.filter(audio_file__database__name__iexact=database_name)
+        segments = Segment.objects.filter(audio_file__database=database)
         sids = segments.values_list('id', flat=True)
         saved_path = '/tmp/saved.f2vals'
         if os.path.isfile(saved_path):

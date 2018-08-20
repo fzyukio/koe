@@ -1,14 +1,16 @@
 import json
-import os
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.views.generic import TemplateView, FormView
 
-from koe.forms import SongPartitionForm
+from koe.forms import SongPartitionForm, FeatureExtration
 from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
-from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermission, AccessRequest, AudioTrack
+from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermission, AccessRequest, AudioTrack,\
+    DerivedTensorData, FullTensorData
+from koe.ts_utils import make_subtensor
 from root.models import User, ExtraAttrValue
 
 
@@ -20,7 +22,7 @@ def populate_context(obj, context, kwargs, with_similarity=False):
 
     inaccessible_databases = Database.objects.exclude(id__in=databases)
 
-    databases_own = DatabaseAssignment.objects \
+    databases_own = DatabaseAssignment.objects\
         .filter(user=user, permission__gte=DatabasePermission.ASSIGN_USER).values_list('database', flat=True)
 
     pending_requests = AccessRequest.objects.filter(database__in=databases_own, resolved=False)
@@ -149,8 +151,8 @@ class SegmentationView(TemplateView):
             'Gender': individual.gender if individual else 'Unknown'
         }
 
-        song_extra_attr_values_list = ExtraAttrValue.objects \
-            .filter(user=user, attr__klass=AudioFile.__name__, owner_id=audio_file.id) \
+        song_extra_attr_values_list = ExtraAttrValue.objects\
+            .filter(user=user, attr__klass=AudioFile.__name__, owner_id=audio_file.id)\
             .values_list('attr__name', 'value')
 
         for attr, value in song_extra_attr_values_list:
@@ -234,11 +236,48 @@ class SongPartitionView(FormView):
 
 
 class TensorvizView(TemplateView):
-    template_name = "tensorviz.html"
+    template_name = 'tensorviz.html'
 
     def get_context_data(self, **kwargs):
         context = super(TensorvizView, self).get_context_data(**kwargs)
-        config = get_or_error(self.request.GET, 'cfg')
+        tensor_name = get_or_error(kwargs, 'tensor_name')
+        tensor = get_or_error(DerivedTensorData, dict(name=tensor_name))
 
-        context['config_file'] = os.path.join(settings.MEDIA_URL, 'oss_data', '{}.json'.format(config))
+        context['config_file'] = '/' + tensor.get_config_path()
         return context
+
+
+class FeatureExtrationView(FormView):
+    form_class = FeatureExtration
+    template_name = 'feature-extraction.html'
+
+    def form_invalid(self, form):
+        context = self.get_context_data()
+        rendered = render_to_string('partials/feature-selection-form.html', context=context)
+
+        return HttpResponse(json.dumps(dict(message=dict(html=rendered))))
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+
+        tensor_id = form_data.get('preset', None)
+        tensor = None
+        if tensor_id:
+            tensor = get_or_error(DerivedTensorData, dict(id=int(tensor_id)))
+
+        if tensor is None:
+            features = form_data['features'].order_by('id')
+            aggregations = form_data['aggregations'].order_by('id')
+
+            database = form_data['database']
+            full_tensor = get_or_error(FullTensorData, dict(database=database))
+
+            annotator_id = form_data['annotator']
+            dimreduce = form_data['dimreduce']
+            ndims = form_data.get('ndims', None)
+
+            annotator = get_or_error(User, dict(id=annotator_id))
+
+            tensor = make_subtensor(self.request.user, full_tensor, annotator, features, aggregations, dimreduce, ndims)
+
+        return HttpResponse(json.dumps(dict(message=tensor.name)))

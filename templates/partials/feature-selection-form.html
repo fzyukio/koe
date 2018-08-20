@@ -1,0 +1,68 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+{% csrf_token %}
+<div class="form-group selectize">
+    <label for="{{ form.database.id_for_label }}" class="control-label">Database</label>
+    {{ form.database|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.database.errors }}
+</div>
+
+<div class="form-group selectize">
+    <label for="{{ form.preset.id_for_label }}" class="control-label">Preset</label>
+    {{ form.preset|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.preset.errors }}
+</div>
+
+<div class="form-group selectize">
+    <label for="{{ form.annotator.id_for_label }}" class="control-label">Annotator</label>
+    {{ form.annotator|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.annotator.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.features.id_for_label }}" class="control-label">Features</label>
+    <div class="row no-margin" id="{{ form.features.auto_id }}">
+        {% for choice in form.features %}
+            <label class=" col-xs-6 col-sm-4 col-md-3 col-lg-2">
+                {{ choice }}
+            </label>
+        {% endfor %}
+    </div>
+    {{ form.features.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.aggregations.id_for_label }}" class="control-label">Aggregation methods</label>
+    <div class="row no-margin" id="{{ form.aggregations.auto_id }}">
+        {% for choice in form.aggregations %}
+            <label class=" col-xs-6 col-sm-4 col-md-3 col-lg-2">
+                {{ choice }}
+            </label>
+        {% endfor %}
+    </div>
+    {{ form.aggregations.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.dimreduce.id_for_label }}" class="control-label">Dimensionality reduction
+        method</label>
+    <div class="row no-margin" id="{{ form.dimreduce.id_for_label }}">
+        {% for choice in form.dimreduce %}
+            <div class="form-check form-check-inline col-xs-6 col-sm-4 col-md-3 col-lg-2">
+                <input class="form-check-input" type="radio" name="dimreduce"
+                       id="{{ choice.id_for_label }}"
+                       value="{{ choice.data.value }}">
+                <label class="form-check-label" for="inlineRadio1">{{ choice.data.label }}</label>
+            </div>
+
+        {% endfor %}
+    </div>
+    {{ form.dimreduce.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.ndims.id_for_label }}" class="control-label">Number of dimensions</label>
+    {{ form.ndims|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.ndims.errors }}
+</div>

@@ -1,0 +1,42 @@
+{% extends 'base-with-footer.html' %}
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+
+{% block title %}Feature Extraction{% endblock %}
+
+
+{% block content-center %}
+    <div id="selection-form-wrapper">
+        <form role="form" method="post" id="feature-extraction-form" url="{% url 'feature-extraction' %}">
+            <div class="replaceable">
+                {% include 'partials/feature-selection-form.html' %}
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block bottom %}
+    <div class="btn-group btn-group-justified" role="group" aria-label="...">
+        <div class="btn-group" role="group">
+            <button id="request-extract-btn" type="button" class="btn btn-black" disabled>Request extraction</button>
+        </div>
+        <div class="btn-group dropup" role="group">
+            <button type="button" class="btn btn-black dropdown-toggle" data-toggle="dropdown" disabled
+                    aria-haspopup="true" aria-expanded="false">
+                Download
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="download-mat" id="download-mat-btn" data-download-type="all">Matlab format</a></li>
+                <li><a class="download-bin" id="download-bin-btn" data-download-type="all">Binary format</a></li>
+            </ul>
+        </div>
+        <div class="btn-group" role="group">
+            <button id="visualise-btn" type="button" class="btn btn-black" page-url="{% url 'tsne' tensor_name='replaceme'%}">Visualise
+            </button>
+        </div>
+    </div>
+{% endblock %}
+

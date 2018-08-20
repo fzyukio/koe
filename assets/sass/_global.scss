@@ -4,6 +4,7 @@
 .form-control.has-error {
   border: 1px solid #cf0000;
 }
+
 span.error-label,
 div.has-error span.error-label {
   font-size: 0.8em;
@@ -16,4 +17,13 @@ div.has-error span.error-label {
 
 ul.errorlist {
   list-style-type: none
+}
+
+.errorlist {
+  padding-left: 0;
+
+  li {
+    color: #cf0000;
+    font-size: .8em;
+  }
 }
