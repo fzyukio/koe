@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <div class="col-xs-8 col-sm-9 col-md-10 no-padding">
+        <div class="col-xs-8 col-sm-9 col-md-10 col-lg-4 no-padding">
             <div class="input-group">
                 <span class="input-group-addon left">Filter</span>
                 <input id="sequence-mining-grid-filter" type="text" class="form-control middle">
@@ -47,6 +47,10 @@
             </div>
 
             <div class="has-grid" id="sequence-mining-grid" cls="{{ cls }}" from_user="{{ from_user.username }}"></div>
+        </div>
+
+        <div class="col-lg-6 no-padding" id="graph">
+            <svg></svg>
         </div>
     </div>
 

@@ -69,3 +69,23 @@
     display: none;
   }
 }
+
+#graph {
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .link {
+    stroke: #999;
+    stroke-opacity: 0.6;
+    fill: none;
+  }
+
+  .nodes circle {
+    stroke: #fff;
+    stroke-width: 1.5px;
+  }
+}
