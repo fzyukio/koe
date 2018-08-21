@@ -1,5 +1,10 @@
 # Use an official Python runtime as a base image
-FROM tensorflow/tensorflow:latest-gpu-py3 as koeapp
+FROM tensorflow/tensorflow:latest-gpu-py3 as tsfimg
+
+# Second step of the build, start with an empty image
+FROM scratch
+# Copy the data from the original image
+COPY --from=tsfimg / /
 
 MAINTAINER Yukio Fukuzawa
 

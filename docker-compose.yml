@@ -23,11 +23,11 @@ services:
     networks:
       - default
       - web
-    ports:
-      - "${VIRTUAL_HOST}:${APP_HTTP_PORT}:8000"
-      - "${VIRTUAL_HOST}:${NOTEBOOK_HTTP_PORT}:8001"
+#    ports:
+#      - "${VIRTUAL_HOST}:${APP_HTTP_PORT}:8000"
+#      - "0.0.0.0:${NOTEBOOK_HTTP_PORT}:8001"
     environment:
-      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - VIRTUAL_HOST=${DOMAIN}
       - VIRTUAL_PROTO=uwsgi
 # Uncomment below to DELETE and re-create the database from fixtures
 #      - RESET_DB=true
