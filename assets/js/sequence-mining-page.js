@@ -236,8 +236,12 @@ const constructGraphContent = function(slickGrid) {
     let maxLift = 0;
     let maxSize = 20;
     let minSize = 10;
-    let maxValue = 10;
-    let minValue = 1;
+    let maxLinkThickness = 5;
+    let minLinkThickness = 1;
+    let minLinkOpacity = 0.2;
+    let maxLinkOpacity = 1;
+    let minDistance = 100;
+    let maxDistance = 200;
     let maxInLinkCount = 0;
     let maxOutLinkCount = 0;
     let maxTotalLinkCount = 0;
@@ -264,6 +268,9 @@ const constructGraphContent = function(slickGrid) {
 
     let nodes = [];
     let links = [];
+    let nodeDicts = {};
+    let nodeIds = {};
+    let nodeId = 0;
 
     for (let node in nodesInfo) {
         if (Object.prototype.hasOwnProperty.call(nodesInfo, node)) {
@@ -274,27 +281,47 @@ const constructGraphContent = function(slickGrid) {
             let totalLinkCount = inLinkCount + outLinkCount;
             let colourIntensity = nodeInfo.totalLinkCount / maxTotalLinkCount;
 
-            nodes.push({
-                id: node,
+            let nodeObject = {
                 name: node,
                 size,
                 inLinkCount,
                 outLinkCount,
                 totalLinkCount,
                 colourIntensity
-            });
+            };
+            nodes.push(nodeObject);
+
+            nodeDicts[node] = nodeObject;
+            nodeIds[node] = ++nodeId;
+
             let secondNodesInfo = nodeInfo.secondNodesInfo;
             for (let i = 0; i < secondNodesInfo.length; i++) {
                 let secondNodeInfo = secondNodesInfo[i];
-                let lift = Math.round(minValue + (secondNodeInfo.lift / maxLift) * (maxValue - minValue));
+                let linkThickness = Math.round(minLinkThickness + (secondNodeInfo.lift / maxLift) * (maxLinkThickness - minLinkThickness));
+                let linkOpacity = minLinkOpacity + (secondNodeInfo.lift / maxLift) * (maxLinkOpacity - minLinkOpacity);
+                let distance = minDistance + ((secondNodeInfo.lift / maxLift)) * (maxDistance - minDistance);
+                let source = node;
+                let target = secondNodeInfo.secondNode;
+
                 links.push({
-                    'source': node,
-                    'target': secondNodeInfo.secondNode,
-                    'value': lift
+                    source,
+                    target,
+                    selfLink: source === target,
+                    lift: secondNodeInfo.lift,
+                    linkThickness,
+                    linkOpacity,
+                    distance
                 });
             }
         }
     }
+
+    for (let i = 0; i < links.length; i++) {
+        let link = links[i];
+        link.targetSize = nodeDicts[link.target].size;
+        link.targetId = nodeIds[link.target];
+    }
+
     return {nodes,
         links};
 };
@@ -308,33 +335,69 @@ const displayGraph = function (data) {
     svg.selectAll('*').remove();
     let width = $(svg._groups[0][0]).width();
     let height = $(svg._groups[0][0]).height();
+    let margin = 20;
 
-    let color = d3.scaleSequential(d3.interpolateReds);
+    let nodeColour = d3.scaleSequential(d3.interpolateReds);
+    let linkColour = d3.scaleSequential(d3.interpolateGreys);
 
-    svg.append('svg:defs').append('svg:marker').
-        attr('id', 'arrowhead').
-        attr('viewBox', '-0 -5 10 10').
-        attr('refX', 16).
-        attr('refY', -1).
+    svg.append('svg:defs').selectAll('.x').data(data.links).enter().
+        append('svg:marker').
+        attr('id', function (d) {
+            return 'marker-' + d.targetId;
+        }).
+        attr('viewBox', '0 0 10 10').
+
+        attr('refX', function (d) {
+            return d.targetSize + 12;
+        }).
+        attr('refY', 5).
+        attr('markerWidth', 8).
+        attr('markerHeight', 8).
         attr('orient', 'auto').
-        attr('markerWidth', 6).
-        attr('markerHeight', 6).
-        attr('xoverflow', 'visible').
-        append('svg:path').
-        attr('d', 'M0,-5L10,0L0,5').
-        attr('fill', '#999').
-        style('stroke', 'none');
+
+        attr('markerUnits', 'userSpaceOnUse').
+        append('svg:polyline').
+        attr('points', '0,0 10,5 0,10 1,5').
+
+        style('stroke', function(d) {
+            return linkColour(d.linkOpacity);
+        }).
+        style('fill', function(d) {
+            return linkColour(d.linkOpacity);
+        }).
+        style('opacity', 1);
 
     let simulation = d3.forceSimulation().
-        force('link', d3.forceLink().id(function (d) {
-            return d.id;
-        }).distance(100)).
-        force('charge', d3.forceManyBody().strength(-30)).
+        force('link', d3.forceLink().
+        // Use names of the target and destination as ID
+            id(function (d) {
+                return d.name;
+            }).
+            distance(function () {
+                // return d.distance;
+                return 100;
+            })).
+        force('collide', d3.forceCollide(function (d) {
+            return d.size;
+        })).
+        force('charge', d3.forceManyBody().strength(function (d) {
+            return -d.size * 5;
+        })).
         force('center', d3.forceCenter(width / 2, height / 2));
 
-    let link = svg.selectAll('.link').data(data.links).enter().append('path').attr('class', 'link').attr('marker-end', 'url(#arrowhead)').
+    let link = svg.selectAll('.link').data(data.links).enter().append('path').
+        attr('class', 'link').
+        attr('marker-end', function (d) {
+            if (d.target !== d.source) {
+                return `url(#marker-${d.targetId})`;
+            }
+            return null;
+        }).
         attr('stroke-width', function (d) {
-            return Math.sqrt(d.value);
+            return d.linkThickness;
+        }).
+        attr('stroke', function (d) {
+            return linkColour(d.linkOpacity);
         });
 
     let enterSelection = svg.append('g').
@@ -348,7 +411,7 @@ const displayGraph = function (data) {
             return d.size + 'px';
         }).
         attr('fill', function (d) {
-            return color(d.colourIntensity);
+            return nodeColour(d.colourIntensity);
         });
 
     enterSelection.
@@ -366,57 +429,55 @@ const displayGraph = function (data) {
     simulation.force('link').
         links(data.links);
 
+    let xRotation = 45;
+    let theta = 90 - (180 - Math.abs(xRotation)) / 2;
+    let sinTheta = Math.abs(Math.sin(theta));
+
     /**
      * This function is invoked for each node and link
      * This is where we draw the arc arrow
      */
     function tickAction() {
+
         link.attr('d', function(d) {
-            let x1 = d.source.x,
-                y1 = d.source.y,
-                x2 = d.target.x,
-                y2 = d.target.y,
-                dx = x2 - x1,
-                dy = y2 - y1,
-                dr = Math.sqrt(dx * dx + dy * dy),
+            let x1 = Math.round(d.source.x);
+            let y1 = Math.round(d.source.y);
+            let radius = d.source.size;
+            let offset = sinTheta * (radius);
+            let startX = Math.round(x1 - offset);
+            let startY = Math.round(y1 - offset);
 
-                // Defaults for normal edge.
-                drx = dr,
-                dry = dr,
-                // degrees
-                xRotation = 0,
-                // 1 or 0
-                largeArc = 0,
-                // 1 or 0
-                sweep = 1;
+            if (d.source === d.target) {
 
-            // Self edge.
-            if (x1 === x2 && y1 === y2) {
-            // Fiddle with this angle to get loop oriented.
-                xRotation = -45;
+
+                let sweep = 1;
 
                 // Needs to be 1.
-                largeArc = 1;
+                let largeArc = 1;
 
                 // Change sweep to change orientation of loop.
                 // sweep = 0;
 
                 // Make drx and dry different to get an ellipse
                 // instead of a circle.
-                drx = 30;
-                dry = 20;
+                let drx = 10;
+                let dry = 10;
 
                 // For whatever reason the arc collapses to a point if the beginning
                 // and ending points of the arc are the same, so kludge it.
-                x2 += 1;
-                y2 += 1;
+                // return 'M' + x1 + ',' + y1 + 'A' + drx + ',' + dry + ' ' + xRotation + ',' + largeArc + ',' + sweep + ' ' + x2 + ',' + y2;
+                return `M${startX},${startY}A${drx},${dry} ${xRotation},${largeArc},${sweep} ${startX + 1},${startY - 1}`
             }
-            return 'M' + x1 + ',' + y1 + 'A' + drx + ',' + dry + ' ' + xRotation + ',' + largeArc + ',' + sweep + ' ' + x2 + ',' + y2;
+            else {
+                let x2 = Math.round(d.target.x);
+                let y2 = Math.round(d.target.y);
+                return `M${x1},${y1}L${x2},${y2}`
+            }
         });
 
         enterSelection.attr('transform', function(d) {
-            let x = Math.max(d.size, Math.min(width - d.size, d.x));
-            let y = Math.max(d.size, Math.min(height - d.size, d.y));
+            let x = Math.max(d.size + margin, Math.min(width - d.size - margin, d.x));
+            let y = Math.max(d.size + margin, Math.min(height - d.size - margin, d.y));
             d.x = x;
             d.y = y;
             return 'translate(' + x + ',' + y + ')';
@@ -439,8 +500,14 @@ const displayGraph = function (data) {
      * @param d
      */
     function dragged(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
+        // d.fx = d3.event.x;
+        // d.fy = d3.event.y;
+
+        let x = Math.max(d.size + margin, Math.min(width - d.size - margin, d3.event.x));
+        let y = Math.max(d.size + margin, Math.min(height - d.size - margin, d3.event.y));
+
+        d.fx = x;
+        d.fy = y;
     }
 
     /**
