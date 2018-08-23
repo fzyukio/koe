@@ -365,8 +365,8 @@ export const handleDatabaseChange = function () {
 const extractRanges = function(nodes) {
     let maxLift = 0;
     let minLift = 999999;
-    let maxRadius = 20;
-    let minRadius = 10;
+    let maxRadius = 40;
+    let minRadius = 20;
     let maxLinkThickness = 5;
     let minLinkThickness = 1;
     let maxInLinkCount = 0;
@@ -374,8 +374,8 @@ const extractRanges = function(nodes) {
     let maxTotalLinkCount = 0;
     let maxOccurs = 0;
     let minOccurs = 999999;
-    let minDistance = 50;
-    let maxDistance = 300;
+    let minDistance = 70;
+    let maxDistance = 500;
     let minCharge = -10;
     let maxCharge = -50;
 
@@ -459,7 +459,7 @@ const displayGraph = function (graph) {
         //     return 100;
         // })).
         force('collide', d3.forceCollide(function (node) {
-            return radius(node.nOccurs) * 3;
+            return radius(node.nOccurs) * 2;
         })).
         // force('charge', d3.forceManyBody().strength(function (node) {
         //     if (node.isPseudoStart) {
@@ -481,7 +481,7 @@ const displayGraph = function (graph) {
         attr('viewBox', '0 0 10 10').
 
         attr('refX', function (link) {
-            return radius(link.target.nOccurs) + 12;
+            return radius(link.target.nOccurs) + 15;
         }).
         attr('refY', 5).
         attr('markerWidth', 8).

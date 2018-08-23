@@ -1,10 +1,16 @@
 @import "../variables";
 
+$sequence-mining-cspade-controller-height: 130px;
+
 #sequence-mining-grid {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$sequence-mining-cspade-controller-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
 }
 
-#sequence-mining-controller-wrapper {
+#sequence-mining-cspade-controller {
+  height: $sequence-mining-cspade-controller-height;
+}
+
+#sequence-mining-filter-controller {
   height: $controller-wrapper-height;
   & > div {
     display: inline-block;
@@ -85,7 +91,7 @@
   }
 
   .nodes circle {
-    stroke: #fff;
-    stroke-width: 1.5px;
+    stroke: none;
+    //stroke-width: 1.5px;
   }
 }
