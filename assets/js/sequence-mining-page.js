@@ -65,18 +65,14 @@ class Grid extends FlexibleGrid {
             let {singletRows, realRows, pseudoRows} = separateRows(rows);
             self.rows = realRows;
 
+            self.nodesDict = constructNodeDictionary(singletRows);
+            fillInSecondNodesInfo(self.nodesDict, pseudoRows);
+
             updateSlickGridData(self.mainGrid, realRows);
             if (doCacheSelectableOptions) {
                 self.cacheSelectableOptions();
             }
             focusOnGridOnInit();
-
-            let nodesDict = constructNodeDictionary(singletRows);
-            fillInSecondNodesInfo(nodesDict, realRows);
-            fillInSecondNodesInfo(nodesDict, pseudoRows);
-
-            let graph = constructRealGraphContent(nodesDict);
-            displayGraph(graph);
         };
 
         postRequest({
@@ -204,12 +200,24 @@ const subscribeFlexibleEvents = function () {
  * screen orientation or size
  */
 const subscribeSlickEvents = function () {
-
     grid.subscribeDv('onRowCountChanged', function (e, args) {
         let currentRowCount = args.current;
         gridStatusNTotal.html(currentRowCount);
-    });
 
+
+        // Update the graph when the table changes because of filtering
+        let rows = [];
+        let dataView = args.dataView;
+        let nItems = dataView.getLength();
+        if (nItems > 0) {
+            for (let i = 0; i < nItems; i++) {
+                rows.push(dataView.getItem(i));
+            }
+            fillInSecondNodesInfo(grid.nodesDict, rows);
+            let graph = constructRealGraphContent(grid.nodesDict);
+            displayGraph(graph);
+        }
+    });
 };
 
 /**
@@ -233,8 +241,6 @@ let extraArgs = {
  */
 const loadGrid = function () {
     grid.initMainGridContent({}, extraArgs);
-    subscribeSlickEvents();
-    subscribeFlexibleEvents();
 };
 
 export const run = function () {
@@ -243,6 +249,8 @@ export const run = function () {
     grid.init(cls);
     grid.initMainGridHeader({}, extraArgs, function () {
         loadGrid();
+        subscribeSlickEvents();
+        subscribeFlexibleEvents();
     });
 
     initSlider();
@@ -259,7 +267,6 @@ const constructNodeDictionary = function(singletRows) {
             nOccurs: row.transcount,
             inLinkCount: 0,
             outLinkCount: 0,
-            secondNodesInfo: {}
         };
 
         if (!pseudoStartFound) {
@@ -267,6 +274,7 @@ const constructNodeDictionary = function(singletRows) {
                 pseudoStartFound = true;
                 node.isPseudoStart = true;
                 node.nOccurs = 0;
+                node.secondNodesInfo = {}
             }
         }
 
@@ -276,6 +284,11 @@ const constructNodeDictionary = function(singletRows) {
 };
 
 const fillInSecondNodesInfo = function(nodesDict, rows) {
+    $.each(nodesDict, function (firstNodeName, firstNode) {
+        if (!firstNode.isPseudoStart) {
+            firstNode.secondNodesInfo = {};
+        }
+    });
     $.each(rows, function(idx, row) {
         if (row.chainlength == 2) {
             let ab = row.assocrule.split(' => ');
@@ -321,27 +334,32 @@ const constructRealGraphContent = function(nodesDict) {
         if (totalLinkCount > 0 || firstNode.isPseudoStart) {
             firstNode.totalLinkCount = totalLinkCount;
             nodes.push(firstNode);
-            $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
-                let centres;
-                if (secondNodeName in centreDict) {
-                    centres = centreDict[secondNodeName];
-                }
-                else {
-                    centres = {nodes: [],
-                        lifts: []};
-                    centreDict[secondNodeName] = centres;
-                }
-                centres.nodes.push(firstNode);
-                centres.lifts.push(lift);
+        }
+    });
 
+    $.each(nodesDict, function(firstNodeName, firstNode) {
+        $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
+            let centres;
+            if (secondNodeName in centreDict) {
+                centres = centreDict[secondNodeName];
+            }
+            else {
+                centres = {nodes: [],
+                    lifts: []};
+                centreDict[secondNodeName] = centres;
+            }
+            centres.nodes.push(firstNode);
+            centres.lifts.push(lift);
+
+            if (!firstNode.isPseudoStart || (firstNode.isPseudoStart && secondNode.totalLinkCount)) {
                 links.push({
                     source: firstNode.id,
                     target: secondNode.id,
                     selfLink: firstNode == secondNode,
                     lift,
                 });
-            });
-        }
+            }
+        });
     });
 
     $.each(centreDict, function(name, centres) {
