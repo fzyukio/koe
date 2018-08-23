@@ -1,7 +1,8 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initAudioContext} from './audio-handler';
-import {debug, deepCopy} from './utils';
+import {debug, deepCopy, updateSlickGridData, argmax} from './utils';
 import d3 from './d3-importer';
+import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
@@ -47,6 +48,43 @@ class Grid extends FlexibleGrid {
             });
         }
     }
+
+    initMainGridContent(defaultArgs, extraArgs) {
+        let self = this;
+        self.defaultArgs = defaultArgs || {};
+        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions || true;
+
+        let args = deepCopy(self.defaultArgs);
+        args['grid-type'] = self.gridType;
+
+        if (extraArgs) {
+            args.extras = JSON.stringify(extraArgs);
+        }
+
+        let onSuccess = function (rows) {
+            let {singletRows, realRows, pseudoRows} = separateRows(rows);
+            self.rows = realRows;
+
+            updateSlickGridData(self.mainGrid, realRows);
+            if (doCacheSelectableOptions) {
+                self.cacheSelectableOptions();
+            }
+            focusOnGridOnInit();
+
+            let nodesDict = constructNodeDictionary(singletRows);
+            fillInSecondNodesInfo(nodesDict, realRows);
+            fillInSecondNodesInfo(nodesDict, pseudoRows);
+
+            let graph = constructRealGraphContent(nodesDict);
+            displayGraph(graph);
+        };
+
+        postRequest({
+            requestSlug: 'get-grid-content',
+            data: args,
+            onSuccess
+        });
+    }
 }
 
 export const grid = new Grid();
@@ -54,6 +92,38 @@ let cls = $('#sequence-mining-grid').attr('cls');
 let fromUser = $('#sequence-mining-grid').attr('from_user');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
+
+
+/**
+ * There are 3 pieces of useful info we wanna process separately:
+ * - Rows that contains only one syllable will be used to construct a dictionary of all syllables
+ * - Rows that starts with a pseudo start will be used to visualise node's probability to be a start
+ * - Anything else will be used to display in the table and visualis node's connectivity
+ * @param rows
+ * @returns {{singletRows: Array, realRows: Array, pseudoRows: Array}}
+ */
+const separateRows = function(rows) {
+    let singletRows = [];
+    let realRows = [];
+    let pseudoRows = [];
+
+    $.each(rows, function(idx, row) {
+        let sequence = row.assocrule;
+        if (row.chainlength == 1) {
+            singletRows.push(row);
+        }
+        else if (sequence.startsWith('__PSEUDO_BEGIN__')) {
+            pseudoRows.push(row);
+        }
+        else {
+            realRows.push(row)
+        }
+    });
+
+    return {singletRows,
+        realRows,
+        pseudoRows};
+};
 
 /**
  * Reload the grid if the slider configurations change
@@ -162,11 +232,7 @@ let extraArgs = {
  * Query grid content, extract graph content, display graph, and resubscribe events
  */
 const loadGrid = function () {
-    grid.initMainGridContent({}, extraArgs, function() {
-        focusOnGridOnInit();
-        let graph = constructGraphContent(grid.mainGrid);
-        displayGraph(graph);
-    });
+    grid.initMainGridContent({}, extraArgs);
     subscribeSlickEvents();
     subscribeFlexibleEvents();
 };
@@ -182,145 +248,111 @@ export const run = function () {
     initSlider();
 };
 
+const constructNodeDictionary = function(singletRows) {
+    let nodesDict = {};
+    let pseudoStartFound = false;
+    $.each(singletRows, function(idx, row) {
+        let name = row.assocrule;
+        let node = {
+            id: idx,
+            name,
+            nOccurs: row.transcount,
+            inLinkCount: 0,
+            outLinkCount: 0,
+            secondNodesInfo: {}
+        };
+
+        if (!pseudoStartFound) {
+            if (name === '__PSEUDO_BEGIN__') {
+                pseudoStartFound = true;
+                node.isPseudoStart = true;
+                node.nOccurs = 0;
+            }
+        }
+
+        nodesDict[name] = node;
+    });
+    return nodesDict;
+};
+
+const fillInSecondNodesInfo = function(nodesDict, rows) {
+    $.each(rows, function(idx, row) {
+        if (row.chainlength == 2) {
+            let ab = row.assocrule.split(' => ');
+            let a = ab[0];
+            let b = ab[1];
+            let nodeA = nodesDict[a];
+            let nodeB = nodesDict[b];
+
+            let secondNodesInfo = nodeA.secondNodesInfo;
+            if (!nodeA.isPseudoStart) {
+                nodeA.outLinkCount += row.transcount;
+                nodeB.inLinkCount += row.transcount;
+            }
+            if (b in secondNodesInfo) {
+                secondNodesInfo[b].lift = Math.max(secondNodesInfo[b].lift, row.lift);
+            }
+            else {
+                secondNodesInfo[b] = {
+                    secondNode: nodeB,
+                    lift: row.lift
+                }
+            }
+        }
+    });
+};
+
 /**
  * For all 2-syllable sequences in the grid, extract their two nodes, lift and occurrence count
  * Use these information to construct graph content, which is a dict(nodes=[], links=[])
- * @param slickGrid
  * @returns {{nodes: Array, links: Array}}
+ * @param nodesDict
  */
-const constructGraphContent = function(slickGrid) {
-    let items = slickGrid.getData().getItems();
-    let nodesInfo = {};
-
-    for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        if (item.chainlength == 2) {
-            let ab = item.assocrule.split(' => ');
-            let a = ab[0];
-            let b = ab[1];
-            let nodeInfo;
-            let secondNodesInfo;
-
-            if (!Object.prototype.hasOwnProperty.call(nodesInfo, b)) {
-                nodesInfo[b] = {nOccurs: 0,
-                    inLinkCount: 0,
-                    outLinkCount: 0,
-                    secondNodesInfo: []};
-            }
-
-            if (Object.prototype.hasOwnProperty.call(nodesInfo, a)) {
-                nodeInfo = nodesInfo[a];
-                secondNodesInfo = nodeInfo.secondNodesInfo;
-            }
-            else {
-                secondNodesInfo = [];
-                nodeInfo = {nOccurs: 0,
-                    inLinkCount: 0,
-                    outLinkCount: 0,
-                    secondNodesInfo};
-                nodesInfo[a] = nodeInfo;
-            }
-
-            nodeInfo.nOccurs += item.transcount;
-            nodeInfo.outLinkCount++;
-            nodesInfo[b].inLinkCount++;
-
-            secondNodesInfo.push({
-                'secondNode': b,
-                'lift': item.lift
-            });
-        }
-    }
-
-    let maxnOccurs = 0;
-    let maxLift = 0;
-    let maxSize = 20;
-    let minSize = 10;
-    let maxLinkThickness = 5;
-    let minLinkThickness = 1;
-    let minLinkOpacity = 0.2;
-    let maxLinkOpacity = 1;
-    let minDistance = 100;
-    let maxDistance = 200;
-    let maxInLinkCount = 0;
-    let maxOutLinkCount = 0;
-    let maxTotalLinkCount = 0;
-
-    for (let node in nodesInfo) {
-        if (Object.prototype.hasOwnProperty.call(nodesInfo, node)) {
-            let nodeInfo = nodesInfo[node];
-
-            let inLinkCount = nodeInfo.inLinkCount;
-            let outLinkCount = nodeInfo.outLinkCount;
-            let totalLinkCount = inLinkCount + outLinkCount;
-
-            maxLift = Math.max(maxLift, Math.max(...nodeInfo.secondNodesInfo.map(function(o) {
-                return o.lift;
-            })));
-            maxnOccurs = Math.max(maxnOccurs, nodeInfo.nOccurs);
-
-            maxInLinkCount = Math.max(maxInLinkCount, inLinkCount);
-            maxOutLinkCount = Math.max(maxOutLinkCount, outLinkCount);
-            maxTotalLinkCount = Math.max(maxTotalLinkCount, totalLinkCount);
-            nodeInfo.totalLinkCount = totalLinkCount;
-        }
-    }
-
+const constructRealGraphContent = function(nodesDict) {
     let nodes = [];
     let links = [];
-    let nodeDicts = {};
-    let nodeIds = {};
-    let nodeId = 0;
 
-    for (let node in nodesInfo) {
-        if (Object.prototype.hasOwnProperty.call(nodesInfo, node)) {
-            let nodeInfo = nodesInfo[node];
-            let size = Math.round(minSize + (nodeInfo.nOccurs / maxnOccurs) * (maxSize - minSize));
-            let inLinkCount = nodeInfo.inLinkCount;
-            let outLinkCount = nodeInfo.outLinkCount;
-            let totalLinkCount = inLinkCount + outLinkCount;
-            let colourIntensity = nodeInfo.totalLinkCount / maxTotalLinkCount;
+    // Designate a center of orbit for each node to make them locate around that point.
+    // The CoO is the source points with highest lift.
+    let centreDict = {};
 
-            let nodeObject = {
-                name: node,
-                size,
-                inLinkCount,
-                outLinkCount,
-                totalLinkCount,
-                colourIntensity
-            };
-            nodes.push(nodeObject);
-
-            nodeDicts[node] = nodeObject;
-            nodeIds[node] = ++nodeId;
-
-            let secondNodesInfo = nodeInfo.secondNodesInfo;
-            for (let i = 0; i < secondNodesInfo.length; i++) {
-                let secondNodeInfo = secondNodesInfo[i];
-                let linkThickness = Math.round(minLinkThickness + (secondNodeInfo.lift / maxLift) * (maxLinkThickness - minLinkThickness));
-                let linkOpacity = minLinkOpacity + (secondNodeInfo.lift / maxLift) * (maxLinkOpacity - minLinkOpacity);
-                let distance = minDistance + ((secondNodeInfo.lift / maxLift)) * (maxDistance - minDistance);
-                let source = node;
-                let target = secondNodeInfo.secondNode;
+    $.each(nodesDict, function(firstNodeName, firstNode) {
+        let totalLinkCount = firstNode.inLinkCount + firstNode.outLinkCount;
+        if (totalLinkCount > 0 || firstNode.isPseudoStart) {
+            firstNode.totalLinkCount = totalLinkCount;
+            nodes.push(firstNode);
+            $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
+                let centres;
+                if (secondNodeName in centreDict) {
+                    centres = centreDict[secondNodeName];
+                }
+                else {
+                    centres = {nodes: [],
+                        lifts: []};
+                    centreDict[secondNodeName] = centres;
+                }
+                centres.nodes.push(firstNode);
+                centres.lifts.push(lift);
 
                 links.push({
-                    source,
-                    target,
-                    selfLink: source === target,
-                    lift: secondNodeInfo.lift,
-                    linkThickness,
-                    linkOpacity,
-                    distance
+                    source: firstNode.id,
+                    target: secondNode.id,
+                    selfLink: firstNode == secondNode,
+                    lift,
                 });
-            }
+            });
         }
-    }
+    });
 
-    for (let i = 0; i < links.length; i++) {
-        let link = links[i];
-        link.targetSize = nodeDicts[link.target].size;
-        link.targetId = nodeIds[link.target];
-    }
+    $.each(centreDict, function(name, centres) {
+        let maxLiftIndex = argmax(centres.lifts);
+        if (maxLiftIndex >= 0) {
+            nodesDict[name].centre = centres.nodes[maxLiftIndex];
+        }
+        else {
+            nodesDict[name].centre = null;
+        }
+    });
 
     return {nodes,
         links};
@@ -330,104 +362,182 @@ export const handleDatabaseChange = function () {
     location.reload();
 };
 
-const displayGraph = function (data) {
+const extractRanges = function(nodes) {
+    let maxLift = 0;
+    let minLift = 999999;
+    let maxRadius = 20;
+    let minRadius = 10;
+    let maxLinkThickness = 5;
+    let minLinkThickness = 1;
+    let maxInLinkCount = 0;
+    let maxOutLinkCount = 0;
+    let maxTotalLinkCount = 0;
+    let maxOccurs = 0;
+    let minOccurs = 999999;
+    let minDistance = 50;
+    let maxDistance = 300;
+    let minCharge = -10;
+    let maxCharge = -50;
+
+    $.each(nodes, function(idx, node) {
+        maxInLinkCount = Math.max(maxInLinkCount, node.inLinkCount);
+        maxOutLinkCount = Math.max(maxOutLinkCount, node.outLinkCount);
+        maxTotalLinkCount = Math.max(maxTotalLinkCount, node.totalLinkCount);
+
+        maxOccurs = Math.max(maxOccurs, node.nOccurs);
+        minOccurs = Math.min(minOccurs, node.nOccurs);
+
+        $.each(node.secondNodesInfo, function (secondNodeName, {lift}) {
+            maxLift = Math.max(maxLift, lift);
+            minLift = Math.min(minLift, lift);
+        });
+    });
+
+    let thickness = d3.scaleLinear().domain([minLift, maxLift]).range([minLinkThickness, maxLinkThickness]);
+    let distance = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([maxDistance, minDistance]);
+    let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
+    let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
+    // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
+    let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount, 0]);
+    let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([maxLift, 0]);
+
+    return {thickness,
+        distance,
+        charge,
+        radius,
+        nodeColour,
+        linkColour}
+};
+
+const displayGraph = function (graph) {
     let svg = d3.select('#graph svg');
     svg.selectAll('*').remove();
     let width = $(svg._groups[0][0]).width();
     let height = $(svg._groups[0][0]).height();
     let margin = 20;
 
-    let nodeColour = d3.scaleSequential(d3.interpolateReds);
-    let linkColour = d3.scaleSequential(d3.interpolateGreys);
+    let {thickness, distance, radius, nodeColour, linkColour} = extractRanges(graph.nodes);
 
-    svg.append('svg:defs').selectAll('.x').data(data.links).enter().
+    $.each(graph.nodes, function(idx, node) {
+        if (node.isPseudoStart) {
+            node.fy = height / 2;
+            node.fx = width / 2;
+        }
+    });
+
+    let radial = d3.forceRadial();
+    radial.radius(function(node) {
+        if (node.isPseudoStart) {
+            return null;
+        }
+        return distance(node.nOccurs);
+    });
+    radial.x(function(node) {
+        if (node.isPseudoStart) {
+            return null;
+        }
+        return node.centre ? node.centre.x : (width / 2)
+    });
+    radial.y(function(node) {
+        if (node.isPseudoStart) {
+            return null;
+        }
+        return node.centre ? node.centre.y : (height / 2)
+    });
+
+    let simulation = d3.forceSimulation();
+    simulation.nodes(graph.nodes);
+    simulation.
+        force('link', d3.forceLink().
+            id(function (node) {
+                return node.id;
+            })).
+        // distance(function (node) {
+        //     if (node.isPseudoStart) {
+        //         return Math.min(width, height) / 4;
+        //     }
+        //     return 100;
+        // })).
+        force('collide', d3.forceCollide(function (node) {
+            return radius(node.nOccurs) * 3;
+        })).
+        // force('charge', d3.forceManyBody().strength(function (node) {
+        //     if (node.isPseudoStart) {
+        //         return -500;
+        //     }
+        //     return charge(node.nOccurs);
+        // })).
+        force('center', d3.forceCenter(width / 2, height / 2));
+
+    simulation.on('tick', tickAction);
+
+    simulation.force('link').
+        links(graph.links);
+    svg.append('svg:defs').selectAll('.x').data(graph.links).enter().
         append('svg:marker').
-        attr('id', function (d) {
-            return 'marker-' + d.targetId;
+        attr('id', function (link) {
+            return `marker-${link.source.id}-${link.target.id}`;
         }).
         attr('viewBox', '0 0 10 10').
 
-        attr('refX', function (d) {
-            return d.targetSize + 12;
+        attr('refX', function (link) {
+            return radius(link.target.nOccurs) + 12;
         }).
         attr('refY', 5).
         attr('markerWidth', 8).
         attr('markerHeight', 8).
         attr('orient', 'auto').
-
         attr('markerUnits', 'userSpaceOnUse').
         append('svg:polyline').
         attr('points', '0,0 10,5 0,10 1,5').
-
-        style('stroke', function(d) {
-            return linkColour(d.linkOpacity);
-        }).
-        style('fill', function(d) {
-            return linkColour(d.linkOpacity);
+        style('fill', function(link) {
+            return linkColour(link.lift);
         }).
         style('opacity', 1);
 
-    let simulation = d3.forceSimulation().
-        force('link', d3.forceLink().
-        // Use names of the target and destination as ID
-            id(function (d) {
-                return d.name;
-            }).
-            distance(function () {
-                // return d.distance;
-                return 100;
-            })).
-        force('collide', d3.forceCollide(function (d) {
-            return d.size;
-        })).
-        force('charge', d3.forceManyBody().strength(function (d) {
-            return -d.size * 5;
-        })).
-        force('center', d3.forceCenter(width / 2, height / 2));
-
-    let link = svg.selectAll('.link').data(data.links).enter().append('path').
+    let links = svg.selectAll('.link').data(graph.links).enter().append('path').
         attr('class', 'link').
-        attr('marker-end', function (d) {
-            if (d.target !== d.source) {
-                return `url(#marker-${d.targetId})`;
+        attr('marker-end', function (link) {
+            if (!link.selfLink && !link.source.isPseudoStart) {
+                return `url(#marker-${link.source.id}-${link.target.id})`;
             }
             return null;
         }).
-        attr('stroke-width', function (d) {
-            return d.linkThickness;
+        attr('stroke-width', function (link) {
+            return thickness(link.lift);
         }).
-        attr('stroke', function (d) {
-            return linkColour(d.linkOpacity);
+        attr('stroke', function (link) {
+            if (link.source.isPseudoStart) {
+                return '#eee';
+            }
+            return linkColour(link.lift);
         });
+
+    simulation.force('radial', radial);
 
     let enterSelection = svg.append('g').
         attr('class', 'nodes').
         selectAll('circle').
-        data(data.nodes).
-        enter().append('g');
+        data(graph.nodes).enter().filter(function(node) {
+            return !node.isPseudoStart;
+        }).
+        append('g');
 
     enterSelection.append('circle').
-        attr('r', function(d) {
-            return d.size + 'px';
+        attr('r', function(node) {
+            return radius(node.nOccurs)
         }).
-        attr('fill', function (d) {
-            return nodeColour(d.colourIntensity);
+        attr('fill', function (node) {
+            return nodeColour(node.totalLinkCount);
         });
 
     enterSelection.
         append('text').
-        text(function(d) {
-            return d.name;
+        text(function(node) {
+            return node.name;
         }).
         style('font-size', '12px').
         attr('dy', '.35em');
-
-    simulation.
-        nodes(data.nodes).
-        on('tick', tickAction);
-
-    simulation.force('link').
-        links(data.links);
 
     let xRotation = 45;
     let theta = 90 - (180 - Math.abs(xRotation)) / 2;
@@ -439,15 +549,15 @@ const displayGraph = function (data) {
      */
     function tickAction() {
 
-        link.attr('d', function(d) {
-            let x1 = Math.round(d.source.x);
-            let y1 = Math.round(d.source.y);
-            let radius = d.source.size;
-            let offset = sinTheta * (radius);
+        links.attr('d', function(link) {
+            let x1 = Math.round(link.source.x);
+            let y1 = Math.round(link.source.y);
+            let r = radius(link.source.nOccurs);
+            let offset = sinTheta * (r);
             let startX = Math.round(x1 - offset);
             let startY = Math.round(y1 - offset);
 
-            if (d.source === d.target) {
+            if (link.selfLink) {
 
 
                 let sweep = 1;
@@ -469,54 +579,65 @@ const displayGraph = function (data) {
                 return `M${startX},${startY}A${drx},${dry} ${xRotation},${largeArc},${sweep} ${startX + 1},${startY - 1}`
             }
             else {
-                let x2 = Math.round(d.target.x);
-                let y2 = Math.round(d.target.y);
+                let x2 = Math.round(link.target.x);
+                let y2 = Math.round(link.target.y);
                 return `M${x1},${y1}L${x2},${y2}`
             }
         });
 
-        enterSelection.attr('transform', function(d) {
-            let x = Math.max(d.size + margin, Math.min(width - d.size - margin, d.x));
-            let y = Math.max(d.size + margin, Math.min(height - d.size - margin, d.y));
-            d.x = x;
-            d.y = y;
-            return 'translate(' + x + ',' + y + ')';
-        });
-        enterSelection.call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
+        enterSelection.
+            filter(function (node) {
+                return !node.isPseudoStart;
+            }).
+            attr('transform', function(node) {
+                let r = radius(node.nOccurs);
+                let x = Math.max(r + margin, Math.min(width - r - margin, node.x));
+                let y = Math.max(r + margin, Math.min(height - r - margin, node.y));
+                node.x = x;
+                node.y = y;
+
+                if (isNaN(x) || isNaN(y)) {
+                    throw Error('Here');
+                }
+
+                return 'translate(' + x + ',' + y + ')';
+            });
+        enterSelection.filter(function (node) {
+            return !node.isPseudoStart;
+        }).
+            call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
     }
 
     /**
      * Fix (fx, fy) location of a node when starts being dragged to prevent it from wiggling
-     * @param d
+     * @param node
      */
-    function dragstarted(d) {
+    function dragstarted(node) {
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+        node.fx = node.x;
+        node.fy = node.y;
     }
 
     /**
      * Update fixed coordinate as being dragged
-     * @param d
+     * @param node
      */
-    function dragged(d) {
-        // d.fx = d3.event.x;
-        // d.fy = d3.event.y;
+    function dragged(node) {
+        let r = radius(node.nOccurs);
+        let x = Math.max(r + margin, Math.min(width - r - margin, d3.event.x));
+        let y = Math.max(r + margin, Math.min(height - r - margin, d3.event.y));
 
-        let x = Math.max(d.size + margin, Math.min(width - d.size - margin, d3.event.x));
-        let y = Math.max(d.size + margin, Math.min(height - d.size - margin, d3.event.y));
-
-        d.fx = x;
-        d.fy = y;
+        node.fx = x;
+        node.fy = y;
     }
 
     /**
      * Once the drag finishes, unset fixed coordinate to allow it move by gravity again
-     * @param d
+     * @param node
      */
-    function dragended(d) {
+    function dragended(node) {
         if (!d3.event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        node.fx = null;
+        node.fy = null;
     }
 };

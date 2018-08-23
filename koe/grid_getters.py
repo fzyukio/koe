@@ -464,7 +464,12 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     seg_id_to_label = {x: y for x, y in labels}
     label_set = set(seg_id_to_label.values())
     labels2enums = {y: x + 1 for x, y in enumerate(label_set)}
+
     enums2labels = {x: y for y, x in labels2enums.items()}
+    # pseudo_end_id = len(label_set) + 1
+    # enums2labels[pseudo_end_id] = '__PSEUDO_END__'
+    enums2labels[0] = '__PSEUDO_BEGIN__'
+
     seg_id_to_label_enum = {x: labels2enums[y] for x, y in seg_id_to_label.items()}
 
     # Bagging song syllables by song name
@@ -493,13 +498,12 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         segs_info.append(seg_info)
 
     for song_id, segs_info in songs.items():
-        # sequence_labels = []
         song_sequence = []
         has_unlabelled = False
 
         # This helps keep track of the current position of the syllable when the song is rid of syllable duration and
         # only gaps are retained.
-        accum_gap = 0
+        accum_gap = 10
 
         # This helps keep track of the gap between this current syllable and the previous one,
         # such that we can decide to merge two syllables if their gap is too small (could also be negative)
@@ -531,14 +535,14 @@ def bulk_get_song_sequence_associations(all_songs, extras):
             if label2enum is None:
                 has_unlabelled = True
                 break
+
+        pseudo_start = max(0, song_sequence[0][1] - 1)
+        song_sequence.insert(0, [sequence_ind, pseudo_start, [0]])
+        # song_sequence.append([sequence_ind, eid + 1, [pseudo_end_id]])
+
         if not has_unlabelled:
             sequences += song_sequence
             sequence_ind += 1
-        # else:
-        #     print('Skip song {} due to having unlabelled data'.format(song_id))
-
-    # for sid, eid, label in sequences:
-    #     print('{} {} {} {}'.format(sid, eid, 1, label[0]))
 
     ids = []
     rows = []
@@ -552,8 +556,6 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
     for idx, seq in enumerate(mined_objects):
         items = seq.items
-        if len(items) == 1:
-            continue
         conf = -1 if seq.confidence is None else seq.confidence
         lift = -1 if seq.lift is None else seq.lift
 

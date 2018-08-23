@@ -1376,6 +1376,15 @@ d3-force@1:
     d3-quadtree "1"
     d3-timer "1"
 
+"d3-force@git+https://git@github.com/fzyukio/d3-force.git":
+  version "1.1.0"
+  resolved "git+https://git@github.com/fzyukio/d3-force.git#326245bc4f2ba4e75d8e72bea5adab22e81d0f0f"
+  dependencies:
+    d3-collection "1"
+    d3-dispatch "1"
+    d3-quadtree "1"
+    d3-timer "1"
+
 d3-format@1:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/d3-format/-/d3-format-1.2.2.tgz#1a39c479c8a57fe5051b2e67a3bee27061a74e7a"
