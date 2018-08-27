@@ -214,7 +214,7 @@ const subscribeSlickEvents = function () {
                 rows.push(dataView.getItem(i));
             }
             fillInSecondNodesInfo(grid.nodesDict, rows);
-            let graph = constructRealGraphContent(grid.nodesDict);
+            let graph = constructRealGraphContent({nodesDict: grid.nodesDict, withCentres: true, removeOrphans: true});
             displayGraph(graph);
         }
     });
@@ -287,6 +287,7 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
     $.each(nodesDict, function (firstNodeName, firstNode) {
         if (!firstNode.isPseudoStart) {
             firstNode.secondNodesInfo = {};
+            firstNode.isOrphan = true;
         }
     });
     $.each(rows, function(idx, row) {
@@ -301,6 +302,11 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
             if (!nodeA.isPseudoStart) {
                 nodeA.outLinkCount += row.transcount;
                 nodeB.inLinkCount += row.transcount;
+                nodeB.isOrphan = false;
+                nodeA.isOrphan = false;
+            }
+            else {
+                nodeA.isOrphan = false;
             }
             if (b in secondNodesInfo) {
                 secondNodesInfo[b].lift = Math.max(secondNodesInfo[b].lift, row.lift);
@@ -315,27 +321,10 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
     });
 };
 
-/**
- * For all 2-syllable sequences in the grid, extract their two nodes, lift and occurrence count
- * Use these information to construct graph content, which is a dict(nodes=[], links=[])
- * @returns {{nodes: Array, links: Array}}
- * @param nodesDict
- */
-const constructRealGraphContent = function(nodesDict) {
-    let nodes = [];
-    let links = [];
-
-    // Designate a center of orbit for each node to make them locate around that point.
+const findRadialCentres = function(nodesDict) {
+     // Designate a center of orbit for each node to make them locate around that point.
     // The CoO is the source points with highest lift.
     let centreDict = {};
-
-    $.each(nodesDict, function(firstNodeName, firstNode) {
-        let totalLinkCount = firstNode.inLinkCount + firstNode.outLinkCount;
-        if (totalLinkCount > 0 || firstNode.isPseudoStart) {
-            firstNode.totalLinkCount = totalLinkCount;
-            nodes.push(firstNode);
-        }
-    });
 
     $.each(nodesDict, function(firstNodeName, firstNode) {
         $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
@@ -344,36 +333,83 @@ const constructRealGraphContent = function(nodesDict) {
                 centres = centreDict[secondNodeName];
             }
             else {
-                centres = {nodes: [],
-                    lifts: []};
+                centres = {nodes: [], lifts: []};
                 centreDict[secondNodeName] = centres;
             }
             centres.nodes.push(firstNode);
             centres.lifts.push(lift);
-
-            if (!firstNode.isPseudoStart || (firstNode.isPseudoStart && secondNode.totalLinkCount)) {
-                links.push({
-                    source: firstNode.id,
-                    target: secondNode.id,
-                    selfLink: firstNode == secondNode,
-                    lift,
-                });
-            }
         });
     });
 
     $.each(centreDict, function(name, centres) {
         let maxLiftIndex = argmax(centres.lifts);
         if (maxLiftIndex >= 0) {
-            nodesDict[name].centre = centres.nodes[maxLiftIndex];
+            centres.centre = centres.nodes[maxLiftIndex];
         }
         else {
-            nodesDict[name].centre = null;
+            centres.centre = null;
         }
     });
 
-    return {nodes,
-        links};
+    return centreDict;
+};
+
+/**
+ * For all 2-syllable sequences in the grid, extract their two nodes, lift and occurrence count
+ * Use these information to construct graph content, which is a dict(nodes=[], links=[])
+ * @returns {{nodes: Array, links: Array}}
+ * @param nodesDict
+ * @param removeOrphans if true, nodes without links to other nodes or only has link to the pseudo start node will
+ *                      be removed
+ * @param withCentres if true, designate the parent node with highest lift to be the centre of orbit for each child node
+ */
+const constructRealGraphContent = function({nodesDict, removeOrphans=false, withCentres=true}) {
+    let nodes = [];
+    let links = [];
+
+    $.each(nodesDict, function(firstNodeName, firstNode) {
+        let totalLinkCount = firstNode.inLinkCount + firstNode.outLinkCount;
+        if (totalLinkCount > 0 || firstNode.isPseudoStart) {
+            firstNode.totalLinkCount = totalLinkCount;
+
+            if (!(removeOrphans && firstNode.isOrphan)) {
+                nodes.push(firstNode);
+            }
+        }
+    });
+
+    $.each(nodes, function(idx, firstNode){
+        $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
+            if (!firstNode.isPseudoStart || (firstNode.isPseudoStart && secondNode.totalLinkCount)) {
+                if (!(removeOrphans && secondNode.isOrphan)) {
+                    links.push({
+                        source: firstNode.id,
+                        target: secondNode.id,
+                        selfLink: firstNode == secondNode,
+                        lift,
+                    });
+                }
+            }
+        });
+    });
+
+    if (withCentres) {
+        let centres = findRadialCentres(nodesDict);
+
+        if (withCentres) {
+            $.each(nodes, function (idx, node) {
+                let centreInfo = centres[node.name];
+                if (centreInfo) {
+                    node.centre = centres[node.name].centre;
+                }
+                else {
+                    node.centre = null;
+                }
+            });
+        }
+    }
+
+    return {nodes, links};
 };
 
 export const handleDatabaseChange = function () {
