@@ -331,7 +331,7 @@ const findRadialCentres = function(nodesDict) {
     let centreDict = {};
 
     $.each(nodesDict, function(firstNodeName, firstNode) {
-        $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
+        $.each(firstNode.secondNodesInfo, function(secondNodeName, {lift}) {
             let centres;
             if (secondNodeName in centreDict) {
                 centres = centreDict[secondNodeName];
@@ -442,6 +442,8 @@ const extractRanges = function(nodes) {
     let maxDistance = 500;
     let minCharge = -10;
     let maxCharge = -50;
+    let minStrength = 0.01;
+    let maxStrength = 1;
 
     $.each(nodes, function(idx, node) {
         maxInLinkCount = Math.max(maxInLinkCount, node.inLinkCount);
@@ -461,16 +463,18 @@ const extractRanges = function(nodes) {
     let distance = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([maxDistance, minDistance]);
     let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
     let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
-    // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
     let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount, 0]);
     let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([maxLift, 0]);
+    let linkStrength = d3.scaleLinear().domain([minLift, maxLift]).range([minStrength, maxStrength]);
 
     return {thickness,
         distance,
         charge,
         radius,
         nodeColour,
-        linkColour}
+        linkColour,
+        linkStrength
+    }
 };
 
 const displayGraph = function (graph) {
@@ -480,7 +484,7 @@ const displayGraph = function (graph) {
     let height = $(svg._groups[0][0]).height();
     let margin = 20;
 
-    let {thickness, distance, radius, nodeColour, linkColour} = extractRanges(graph.nodes);
+    let {thickness, distance, radius, nodeColour, linkColour, linkStrength} = extractRanges(graph.nodes);
 
     $.each(graph.nodes, function(idx, node) {
         if (node.isPseudoStart) {
@@ -515,6 +519,12 @@ const displayGraph = function (graph) {
         force('link', d3.forceLink().
             id(function (node) {
                 return node.id;
+            }).
+            strength(function (link) {
+                if (link.source.isPseudoStart) {
+                    return 1;
+                }
+                return linkStrength(link.lift);
             })).
         // distance(function (node) {
         //     if (node.isPseudoStart) {
@@ -535,8 +545,7 @@ const displayGraph = function (graph) {
 
     simulation.on('tick', tickAction);
 
-    simulation.force('link').
-        links(graph.links);
+    simulation.force('link').links(graph.links);
     svg.append('svg:defs').selectAll('.x').data(graph.links).enter().
         append('svg:marker').
         attr('id', function (link) {
@@ -577,7 +586,7 @@ const displayGraph = function (graph) {
             return linkColour(link.lift);
         });
 
-    simulation.force('radial', radial);
+    // simulation.force('radial', radial);
 
     let enterSelection = svg.append('g').
         attr('class', 'nodes').
