@@ -244,6 +244,8 @@ def save_segmentation(request):
 
         for segment, label, family, subfamily, note in new_segments:
             segment.save()
+            segment.tid = segment.id
+            segment.save()
             if label:
                 ExtraAttrValue.objects.create(user=user, attr=label_attr, owner_id=segment.id, value=label)
             if family:
@@ -367,7 +369,7 @@ def copy_audio_files(request):
 
     segments = Segment.objects.filter(audio_file__in=songs_old_id_to_new_id.keys())
     segments_values = segments.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
-                                           'audio_file__name', 'audio_file__id')
+                                           'audio_file__name', 'audio_file__id', 'tid')
 
     # We need this to map old and new IDs of Segments so that we can copy their ExtraAttrValue later
     # The only reliable way to map new to old Segments is through the pair (start_time_ms, end_time_ms, song_name)
@@ -375,8 +377,8 @@ def copy_audio_files(request):
     segments_old_id_to_start_end = {x[0]: (x[1], x[2], x[6]) for x in segments_values}
 
     new_segments_info = {}
-    for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, song_old_id in segments_values:
-        segment_info = (seg_id, start, end, mean_ff, min_ff, max_ff)
+    for seg_id, start, end, mean_ff, min_ff, max_ff, song_name, song_old_id, tid in segments_values:
+        segment_info = (seg_id, start, end, mean_ff, min_ff, max_ff, tid)
         if song_old_id not in new_segments_info:
             new_segments_info[song_old_id] = [segment_info]
         else:
@@ -384,11 +386,10 @@ def copy_audio_files(request):
 
     segments_to_copy = []
     for song_old_id, segment_info in new_segments_info.items():
-        for seg_id, start, end, mean_ff, min_ff, max_ff in segment_info:
+        for seg_id, start, end, mean_ff, min_ff, max_ff, tid in segment_info:
             song_new_id = songs_old_id_to_new_id[song_old_id]
-
             segment = Segment(start_time_ms=start, end_time_ms=end, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
-                              audio_file_id=song_new_id)
+                              audio_file_id=song_new_id, tid=tid)
             segments_to_copy.append(segment)
 
     Segment.objects.bulk_create(segments_to_copy)

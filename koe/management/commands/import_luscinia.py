@@ -215,6 +215,8 @@ def import_syllables(conn):
             segment.end_time_ms = syllable[1]
             segment.audio_file = audio_file
             segment.save()
+            segment.tid = segment.id
+            segment.save()
 
         # print('Processed song {}'.format(song))
         bar.next()

@@ -46,18 +46,18 @@ def save_segmentation_history(database, user, zip_file):
     """
     segment_values = Segment.objects.filter(audio_file__database=database) \
         .values_list('id', 'audio_file__name', 'audio_file', 'start_time_ms', 'end_time_ms',
-                     'mean_ff', 'min_ff', 'max_ff')
+                     'mean_ff', 'min_ff', 'max_ff', 'tid')
 
     seg_ids = []
     song_ids = []
     song_info = {}
-    for seg_id, song_name, song_id, start, end, mean_ff, min_ff, max_ff in segment_values:
+    for seg_id, song_name, song_id, start, end, mean_ff, min_ff, max_ff, tid in segment_values:
         seg_ids.append(seg_id)
         if song_name not in song_info:
             song_ids.append(song_id)
             song_info[song_name] = (song_id, [])
 
-        song_info[song_name][1].append((seg_id, start, end, mean_ff, min_ff, max_ff))
+        song_info[song_name][1].append((seg_id, start, end, mean_ff, min_ff, max_ff, tid))
 
     zip_file.writestr('songinfo.json', json.dumps(song_info, indent=4))
     save_label_history(database, user, zip_file, seg_ids, song_ids)
@@ -202,16 +202,23 @@ def import_history_with_segmentation(database, user, filelist):
         seg_key_to_new_id = {}
         seg_key_to_old_id = {}
         seg_key_to_extras = {}
-        for song_name, (_song_id, _info) in _song_info.items():
+        for song_name, (_song_id, _syls_info) in _song_info.items():
 
             # Ignore songs that exist in the saved but not in this database
             if song_name not in song_name_to_new_id:
                 continue
 
-            for _seg_id, start, end, mean_ff, min_ff, max_ff in _info:
+            for syl_info in _syls_info:
+                _seg_id, start, end, mean_ff, min_ff, max_ff = syl_info[:6]
+
+                # New version also save Segment's TID
+                if len(syl_info) == 7:
+                    tid = syl_info[6]
+                else:
+                    tid = None
                 seg_key = (start, end, song_name)
                 seg_key_to_old_id[seg_key] = _seg_id
-                seg_key_to_extras[seg_key] = (mean_ff, min_ff, max_ff)
+                seg_key_to_extras[seg_key] = (mean_ff, min_ff, max_ff, tid)
 
             if song_name in song_info:
                 song_id, info = song_info[song_name]
@@ -228,16 +235,21 @@ def import_history_with_segmentation(database, user, filelist):
                 seg_old_to_new_id[_seg_id] = seg_id
             else:
                 start, end, song_name = seg_key
-                mean_ff, min_ff, max_ff = seg_key_to_extras[seg_key]
+                mean_ff, min_ff, max_ff, tid = seg_key_to_extras[seg_key]
                 song_id = song_name_to_new_id[song_name]
                 new_segments.append(Segment(start_time_ms=start, end_time_ms=end, audio_file_id=song_id,
-                                            mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff))
+                                            mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff, tid=tid))
 
-        Segment.objects.bulk_create(new_segments)
-        seg_key_to_new_id = {
-            (x[0], x[1], x[2]): x[3] for x in Segment.objects.filter(audio_file__id__in=song_name_to_new_id.values())
-            .values_list('start_time_ms', 'end_time_ms', 'audio_file__name', 'id')
-        }
+        seg_key_to_new_id = {}
+        with transaction.atomic():
+            for segment in new_segments:
+                segment.save()
+                if segment.tid is None:
+                    segment.tid = segment.id
+                    segment.save()
+
+                seg_key = (segment.start_time_ms, segment.end_time_ms, segment.audio_file.name)
+                seg_key_to_new_id[seg_key] = segment.id
 
         for seg_key, _seg_id in seg_key_to_old_id.items():
             if seg_key in seg_key_to_new_id:

@@ -223,7 +223,7 @@ class Segment(SimpleModel):
     """
 
     # Time ID - unique for each combination of (song name, start and end). Recalculate if end/begin changes
-    tid = models.IntegerField()
+    tid = models.IntegerField(null=True, blank=False)
 
     start_time_ms = models.IntegerField()
     end_time_ms = models.IntegerField()
