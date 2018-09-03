@@ -24,7 +24,7 @@ RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free 
 deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
 
 # Install extra packages.
-RUN apt-get update && apt-get install -y --no-install-recommends git vim mysql-client libmysqlclient-dev ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
+RUN add-apt-repository -y ppa:jonathonf/ffmpeg-4 && apt-get update && apt-get install -y --no-install-recommends git vim mysql-client libmysqlclient-dev ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
 RUN rm -f /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 
 COPY requirements.txt /
