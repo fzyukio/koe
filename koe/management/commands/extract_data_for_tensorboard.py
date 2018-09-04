@@ -12,7 +12,6 @@ from pymlfunc import tictoc
 
 from koe import binstorage
 from koe.aggregator import aggregator_map
-from koe.features.feature_extract import feature_map
 from koe.model_utils import get_or_error
 from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, DerivedTensorData
 from koe.ts_utils import ndarray_to_bytes, write_config
@@ -50,21 +49,12 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     return rawdata, col_inds
 
 
-def get_features_from_hash(hash):
-    fids = list(map(int, hash.split('-')))
-    feature_names = Feature.objects.filter(id__in=fids).values_list('name', flat=True)
-    features = [feature_map[x] for x in feature_names]
-    return features
-
-
-def get_aggregators_from_hash(hash):
-    aids = list(map(int, hash.split('-')))
-    aggregator_names = Aggregation.objects.filter(id__in=aids).values_list('name', flat=True)
-    aggregators = [aggregator_map[x] for x in aggregator_names]
-    return aggregators
-
-
 def get_sids_tids(database):
+    """
+    Get ids and tids from all syllables in this database
+    :param database:
+    :return: sids, tids. sorted by sids
+    """
     segments = Segment.objects.filter(audio_file__database=database)
     segments_info = segments.values_list('id', 'tid')
 
@@ -82,10 +72,14 @@ def get_sids_tids(database):
     return sids, tids
 
 
-def extract_tensor_data(tids, feature_hash, aggregation_hash):
-    features = get_features_from_hash(feature_hash)
-    aggregators = get_aggregators_from_hash(aggregation_hash)
-
+def get_binstorage_locations(features, aggregators):
+    """
+    Deduce the locations of feature binary files and feature-aggregator binary files from their names
+    Then return these locations in two dictionaries for lookup convenience
+    :param features:
+    :param aggregators:
+    :return:
+    """
     # feature to binstorage's files
     f2bs = {}
     # feature+aggregation to binstorage's files
@@ -106,8 +100,7 @@ def extract_tensor_data(tids, feature_hash, aggregation_hash):
             index_filename = data_path(folder, '{}.idx'.format(aggregator_name), for_url=False)
             value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
             fa2bs[feature][aggregator] = (index_filename, value_filename)
-
-    return extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
+    return f2bs, fa2bs
 
 
 class Command(BaseCommand):
@@ -122,9 +115,12 @@ class Command(BaseCommand):
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
         admin = get_or_error(User, dict(username__iexact='superuser'))
 
-        features_hash = '-'.join(list(map(str, Feature.objects.order_by('id').values_list('id', flat=True))))
-        aggregations_hash = '-'.join(
-            list(map(str, Aggregation.objects.order_by('id').values_list('id', flat=True))))
+        features = Feature.objects.all().order_by('id')
+        aggregations = Aggregation.objects.all().order_by('id')
+        aggregators = [aggregator_map[x.name] for x in aggregations]
+
+        features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
+        aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
 
         existing_tensor = DerivedTensorData.objects.filter(database=database, annotator=annotator,
                                                            features_hash=features_hash,
@@ -144,7 +140,8 @@ class Command(BaseCommand):
         full_cols_path = full_tensor.get_cols_path()
 
         sids, tids = get_sids_tids(database)
-        data, col_inds = extract_tensor_data(tids, features_hash, aggregations_hash)
+        f2bs, fa2bs = get_binstorage_locations(features, aggregators)
+        data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
 
         ndarray_to_bytes(data, full_bytes_path)
         ndarray_to_bytes(sids, full_ids_path)

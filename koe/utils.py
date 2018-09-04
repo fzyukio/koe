@@ -229,6 +229,59 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
     return out
 
 
+def split_classwise(labels, test_ratio):
+    """
+    Split the dataset into training set, test set, and (optionally) validate set.
+    These ratios are maintained for each class - so unbalanced dataset can still be split reliably
+    :param labels:
+    :param test_ratio:
+    :param validate_ratio:
+    :return:
+    """
+    assert test_ratio < 1.
+    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
+    label_sorted_indices = np.argsort(labels)
+    sorted_labels = labels[label_sorted_indices]
+
+    uniques, counts = np.unique(sorted_labels, return_counts=True)
+    nclasses = len(uniques)
+
+    # To make sure we always have at least one instance per class, we need a minimum number of instances such that
+    # the test_ratio and validate_ratio each yields at least 1
+    # E.g, if test ratio is 0.1, there must be at least 10 instances
+    train_ratio = 1. - test_ratio
+    min_count = np.floor(1 / min(test_ratio, train_ratio))
+
+    if np.any(counts < min_count):
+        where = np.where(counts < min_count)[0]
+        err = 'The following classes don\'t have enough instances to guarantee one per train/test sets:\n'
+        for ind in where:
+            err += 'class: {} -- {} instances\n'.format(uniques[ind], counts[ind])
+        raise ValueError(err)
+
+    train = []
+    test = []
+
+    for i in range(nclasses):
+        ninstances = counts[i]
+        label = uniques[i]
+        instance_indices = np.where(labels == label)[0]
+        np.random.shuffle(instance_indices)
+
+        ntrains = int(np.floor(ninstances * train_ratio))
+        ntests = ninstances - ntrains
+
+        train.append(instance_indices[:ntrains])
+        test.append(instance_indices[ntrains:ntrains + ntests])
+
+    train = np.concatenate(train)
+    test = np.concatenate(test)
+    np.random.shuffle(train)
+    np.random.shuffle(test)
+
+    return train, test
+
+
 def split_kfold_classwise(labels, k):
     """
     Create a training set indices and test set indices such that the k-ratio is preserved for all classes
@@ -269,8 +322,8 @@ def split_kfold_classwise(labels, k):
             nremainings -= ntests
 
             fold['test'].append(instance_indices[test_ind_start: test_ind_start + ntests])
-            fold['train'].append(np.concatenate((instance_indices[0:test_ind_start],
-                                                 instance_indices[test_ind_start + ntests:])))
+            fold['train'].append(
+                np.concatenate((instance_indices[0:test_ind_start], instance_indices[test_ind_start + ntests:])))
 
             test_ind_start += ntests
         assert nremainings == 0
@@ -339,3 +392,21 @@ def divide_conquer(arr, ndivs):
         divs.append(div)
 
     return divs
+
+
+def one_hot(labels):
+    """
+    Return 1-hot encoded labels.
+    E.g. labels = ['A', 'BC', 'D', 'BC'] # 3 classes
+         encoded = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 0]]
+    :param return_dict: if True also return the lookup dict (label -> encoded)
+    :param return_reserved_dict: if True also return the reversed lookup dict (encoded -> label)
+    :param labels: a list of labels - can be number or string
+    :return:
+    """
+    unique_labels, enum_labels = np.unique(labels, return_inverse=True)
+    num_classes = len(unique_labels)
+    one_hot_unique = np.eye(num_classes)
+    encoded = np.squeeze(one_hot_unique[enum_labels.reshape(-1)])
+
+    return encoded, unique_labels, enum_labels

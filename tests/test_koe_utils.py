@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
-from koe.utils import segments, split_kfold_classwise, divide_conquer
+from koe.utils import segments, split_kfold_classwise, divide_conquer, one_hot
 
 
 @memoize(timeout=60)
@@ -160,3 +160,10 @@ class KoeUtilsTest(TestCase):
 
         for i in range(n):
             self.assertTrue(np.allclose(divs[i], divs_[i]))
+
+    def test_one_hot(self):
+        labels = ['A', 'BC', 'D', 'BC']
+        correct = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 0]]
+
+        encoded_labels, _ = one_hot(labels)
+        self.assertTrue(np.allclose(correct, encoded_labels))

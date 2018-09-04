@@ -252,13 +252,15 @@ def retrieve(lookup_ids, index_filename, value_filename, flat=False):
 
     ids_cols = index_arr[:, 0]
     sorted_ids, sort_order = np.unique(ids_cols, return_index=True)
-    lookup_ids_rows = np.searchsorted(sorted_ids, lookup_ids)
 
-    non_existing_idx = np.where(lookup_ids_rows >= len(sorted_ids))[0]
-    if len(non_existing_idx) > 0:
-        non_existing_ids = lookup_ids[non_existing_idx]
+    non_existing_idx = np.where(np.logical_not(np.isin(lookup_ids, sorted_ids)))
+    non_existing_ids = lookup_ids[non_existing_idx]
+
+    if len(non_existing_ids) > 0:
         err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
         raise ValueError(err_msg)
+
+    lookup_ids_rows = np.searchsorted(sorted_ids, lookup_ids)
 
     # We sort the lookup row indices by their start time to minimise number of seek
     sort_order_by_start = np.argsort(index_arr[lookup_ids_rows, 1])
