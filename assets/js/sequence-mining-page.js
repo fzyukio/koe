@@ -214,7 +214,11 @@ const subscribeSlickEvents = function () {
                 rows.push(dataView.getItem(i));
             }
             fillInSecondNodesInfo(grid.nodesDict, rows);
-            let graph = constructRealGraphContent({nodesDict: grid.nodesDict, withCentres: true, removeOrphans: true});
+            let graph = constructRealGraphContent({
+                nodesDict: grid.nodesDict,
+                withCentres: true,
+                removeOrphans: true
+            });
             displayGraph(graph);
         }
     });
@@ -299,13 +303,13 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
             let nodeB = nodesDict[b];
 
             let secondNodesInfo = nodeA.secondNodesInfo;
-            if (!nodeA.isPseudoStart) {
-                nodeA.outLinkCount += row.transcount;
-                nodeB.inLinkCount += row.transcount;
-                nodeB.isOrphan = false;
+            if (nodeA.isPseudoStart) {
                 nodeA.isOrphan = false;
             }
             else {
+                nodeA.outLinkCount += row.transcount;
+                nodeB.inLinkCount += row.transcount;
+                nodeB.isOrphan = false;
                 nodeA.isOrphan = false;
             }
             if (b in secondNodesInfo) {
@@ -322,7 +326,7 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
 };
 
 const findRadialCentres = function(nodesDict) {
-     // Designate a center of orbit for each node to make them locate around that point.
+    // Designate a center of orbit for each node to make them locate around that point.
     // The CoO is the source points with highest lift.
     let centreDict = {};
 
@@ -333,7 +337,10 @@ const findRadialCentres = function(nodesDict) {
                 centres = centreDict[secondNodeName];
             }
             else {
-                centres = {nodes: [], lifts: []};
+                centres = {
+                    nodes: [],
+                    lifts: []
+                };
                 centreDict[secondNodeName] = centres;
             }
             centres.nodes.push(firstNode);
@@ -363,7 +370,7 @@ const findRadialCentres = function(nodesDict) {
  *                      be removed
  * @param withCentres if true, designate the parent node with highest lift to be the centre of orbit for each child node
  */
-const constructRealGraphContent = function({nodesDict, removeOrphans=false, withCentres=true}) {
+const constructRealGraphContent = function({nodesDict, removeOrphans = false, withCentres = true}) {
     let nodes = [];
     let links = [];
 
@@ -378,7 +385,7 @@ const constructRealGraphContent = function({nodesDict, removeOrphans=false, with
         }
     });
 
-    $.each(nodes, function(idx, firstNode){
+    $.each(nodes, function(idx, firstNode) {
         $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
             if (!firstNode.isPseudoStart || (firstNode.isPseudoStart && secondNode.totalLinkCount)) {
                 if (!(removeOrphans && secondNode.isOrphan)) {
@@ -409,7 +416,10 @@ const constructRealGraphContent = function({nodesDict, removeOrphans=false, with
         }
     }
 
-    return {nodes, links};
+    return {
+        nodes,
+        links
+    };
 };
 
 export const handleDatabaseChange = function () {
