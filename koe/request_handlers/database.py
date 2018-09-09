@@ -479,7 +479,7 @@ def delete_segments(request):
         if os.path.isfile(seg_mask_path):
             os.remove(seg_mask_path)
 
-    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=ids).delete()
+    # ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=ids).delete()
     segments.delete()
     return True
 

@@ -324,13 +324,15 @@ def read(file, beg_ms=0, end_ms=None, normalised=True, mono=False):
                 str1 = fid.read(24)
                 cuepointid, type, start, end, fraction, playcount = struct.unpack('<iiiiii', str1)
                 loops.append([start, end])
-        else:
+        elif len(chunk_id) > 0:
             try:
                 chunk_id_printable = chunk_id.decode('utf-8')
             except UnicodeDecodeError:
                 chunk_id_printable = str(chunk_id)
             warnings.warn("Chunk " + chunk_id_printable + " skipped", WavFileWarning)
             _skip_unknown_chunk(fid)
+        else:
+            break
     fid.close()
 
     if data.ndim == 1 and not mono:

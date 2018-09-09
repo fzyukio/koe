@@ -29,4 +29,7 @@ class Command(BaseCommand):
 
         for audio_file in missing_segment_audio_file:
             print('Re-extract segment spectrograms for file: {}'.format(audio_file.name))
-            extract_spectrogram(audio_file)
+            try:
+                extract_spectrogram(audio_file)
+            except FileNotFoundError as e:
+                print('File not found, skip')
