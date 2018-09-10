@@ -1,5 +1,5 @@
 import {line} from 'd3-shape';
-import {scaleLinear, scaleSequential} from 'd3-scale';
+import {scaleLinear, scaleLog, scaleSequential} from 'd3-scale';
 import {interpolateViridis, interpolatePlasma} from 'd3-scale-chromatic';
 import {axisBottom} from 'd3-axis';
 import {select, selectAll, event} from 'd3-selection';
@@ -13,6 +13,7 @@ export default {
     line,
     scaleLinear,
     scaleSequential,
+    scaleLog,
     forceSimulation,
     forceLink,
     forceManyBody,

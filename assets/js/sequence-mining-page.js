@@ -463,7 +463,7 @@ const extractRanges = function(nodes) {
     let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
     // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
     let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount * 2, 0]);
-    let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([maxLift, 0]);
+    let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([Math.log10(maxLift), 0]);
 
     return {thickness,
         distance,
@@ -555,7 +555,7 @@ const displayGraph = function (graph) {
         append('svg:polyline').
         attr('points', '0,0 10,5 0,10 1,5').
         style('fill', function(link) {
-            return linkColour(link.lift);
+            return linkColour(Math.log10(link.lift));
         }).
         style('opacity', 1);
 
@@ -574,7 +574,7 @@ const displayGraph = function (graph) {
             if (link.source.isPseudoStart) {
                 return '#eee';
             }
-            return linkColour(link.lift);
+            return linkColour(Math.log10(link.lift));
         });
 
     simulation.force('radial', radial);
