@@ -225,7 +225,7 @@ TEST_RUNNER = 'tests.test_nodb.NoDbTestRunner'
 
 NOTEBOOK_ARGUMENTS = [
     '--ip={}'.format(envconf['jupyter']['ip']),
-    '--port=8001',
+    '--port={}'.format(envconf['jupyter'].get('port', 8001)),
     '--no-browser',
     '--allow-root',
     '--config', './jupyter_notebook_config.py',
