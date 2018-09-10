@@ -29,7 +29,7 @@ from koe import binstorage
 from koe.aggregator import aggregators_by_type
 from koe.features.feature_extract import feature_extractors
 from koe.features.feature_extract import feature_whereabout as feature_groups
-from koe.features.feature_extract import features as full_features
+# from koe.features.feature_extract import features as full_features
 from koe.model_utils import get_or_error
 from koe.models import Feature, Segment, Database
 from koe.utils import get_wav_info
@@ -148,8 +148,7 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
         segs[0].append(tid)
         segs[1].append(fs)
 
-    bar = Bar('Extract features type {}, aggrenator type {}'.format(ftgroup_name, aggregators_name),
-              max=n_calculations)
+    bar = Bar('Extract features type {}, aggrenator type {}'.format(ftgroup_name, aggregators_name), max=n_calculations)
 
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, start=None, end=None, win_length=win_length,
                 center=False)
@@ -264,6 +263,15 @@ def store_feature_values(ids, feature, values_arr):
     binstorage.store(ids, values_arr, index_filename, value_filename)
 
 
+def exclude_already_extracted(tids, full_features, f2bs, fa2bs):
+    for feature in full_features:
+        feature_name = feature.name
+        index_filename = data_path('binary/features', '{}.idx'.format(feature_name), for_url=False)
+        value_filename = data_path('binary/features', '{}.val'.format(feature_name), for_url=False)
+
+        pass
+
+
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
@@ -276,16 +284,19 @@ class Command(BaseCommand):
         segments = Segment.objects.filter(audio_file__database=database)
         sids = segments.values_list('id', flat=True)
         saved_path = '/tmp/saved.f2vals'
-        if os.path.isfile(saved_path):
-            with open(saved_path, 'rb') as f:
-                saved = pickle.load(f)
-                tids = saved['tids']
-                f2vals = saved['f2vals']
-        else:
-            tid2fvals = extract_segment_features_for_segments(sids, full_features)
-            tids, f2vals = extract_tids_fvals(tid2fvals, full_features)
-            with open(saved_path, 'wb') as f:
-                pickle.dump(dict(tids=tids, f2vals=f2vals), f, pickle.HIGHEST_PROTOCOL)
+
+        full_features = Feature.objects.all().order_by('id')
+
+        # if os.path.isfile(saved_path):
+        #     with open(saved_path, 'rb') as f:
+        #         saved = pickle.load(f)
+        #         tids = saved['tids']
+        #         f2vals = saved['f2vals']
+        # else:
+        tid2fvals = extract_segment_features_for_segments(sids, full_features)
+        tids, f2vals = extract_tids_fvals(tid2fvals, full_features)
+        with open(saved_path, 'wb') as f:
+            pickle.dump(dict(tids=tids, f2vals=f2vals), f, pickle.HIGHEST_PROTOCOL)
 
         # feature to binstorage's files
         f2bs = {}
@@ -329,7 +340,9 @@ class Command(BaseCommand):
                 else:
                     ftgroup_name = ftgroup_module.__name__[len('koe.features.'):]
 
-                selected_features = list(Feature.objects.filter(name__in=[ft[0] for ft in ftgroup]))
+                all_features_in_group = list(Feature.objects.filter(name__in=[ft[0] for ft in ftgroup]))
+                selected_features = [x for x in full_features if x in all_features_in_group]
 
-                aggregate_feature_values(sids, f2bs, fa2bs, selected_features, ftgroup_name, aggregators,
-                                         aggregators_name)
+                if len(selected_features) > 0:
+                    aggregate_feature_values(sids, f2bs, fa2bs, selected_features, ftgroup_name, aggregators,
+                                             aggregators_name)
