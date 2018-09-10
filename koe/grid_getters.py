@@ -546,13 +546,15 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
     ids = []
     rows = []
+    nsequences = len(sequences)
 
-    if len(sequences) == 0:
+    if nsequences == 0:
         return ids, rows
 
-    result = cspade(data=sequences, support=0.01, maxgap=maxgap)
+    support = max(int(len(sequences) * 0.001), 3)
+
+    result = cspade(data=sequences, support=support, maxgap=maxgap)
     mined_objects = result['mined_objects']
-    nseqs = result['nsequences']
 
     for idx, seq in enumerate(mined_objects):
         items = seq.items
@@ -568,7 +570,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         assocrule = ' => '.join(items_str)
 
         row = dict(id=idx, chainlength=len(items), transcount=seq.noccurs, accumoccurs=seq.accum_occurs,
-                   confidence=conf, lift=lift, support=seq.noccurs / nseqs, assocrule=assocrule)
+                   confidence=conf, lift=lift, support=seq.noccurs / nsequences, assocrule=assocrule)
 
         rows.append(row)
         ids.append(idx)
