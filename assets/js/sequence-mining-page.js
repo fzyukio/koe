@@ -313,12 +313,14 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
                 nodeA.isOrphan = false;
             }
             if (b in secondNodesInfo) {
-                secondNodesInfo[b].lift = Math.max(secondNodesInfo[b].lift, row.lift);
+                // secondNodesInfo[b].lift = Math.max(secondNodesInfo[b].lift, row.lift);
+                secondNodesInfo[b].transcount = row.transcount;
             }
             else {
                 secondNodesInfo[b] = {
                     secondNode: nodeB,
-                    lift: row.lift
+                    lift: row.lift,
+                    transcount: row.transcount
                 }
             }
         }
@@ -386,7 +388,7 @@ const constructRealGraphContent = function({nodesDict, removeOrphans = false, wi
     });
 
     $.each(nodes, function(idx, firstNode) {
-        $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift}) {
+        $.each(firstNode.secondNodesInfo, function(secondNodeName, {secondNode, lift, transcount}) {
             if (!firstNode.isPseudoStart || (firstNode.isPseudoStart && secondNode.totalLinkCount)) {
                 if (!(removeOrphans && secondNode.isOrphan)) {
                     links.push({
@@ -394,6 +396,7 @@ const constructRealGraphContent = function({nodesDict, removeOrphans = false, wi
                         target: secondNode.id,
                         selfLink: firstNode == secondNode,
                         lift,
+                        transcount
                     });
                 }
             }
@@ -426,7 +429,7 @@ export const handleDatabaseChange = function () {
     location.reload();
 };
 
-const extractRanges = function(nodes) {
+const extractRanges = function({nodes, links}, wiggleRoom) {
     let maxLift = 0;
     let minLift = 999999;
     let maxRadius = 40;
@@ -438,10 +441,18 @@ const extractRanges = function(nodes) {
     let maxTotalLinkCount = 0;
     let maxOccurs = 0;
     let minOccurs = 999999;
-    let minDistance = 70;
-    let maxDistance = 500;
+    let maxTransCount = 0;
+    let minTransCount = 9999999;
+
     let minCharge = -10;
     let maxCharge = -50;
+    let minStrength = -0.001;
+    let maxStrength = 1;
+
+    let nNodes = nodes.length;
+    let averageDistance = wiggleRoom / Math.sqrt(nNodes);
+    let distanceMinLift = Math.min(averageDistance, 250);
+    let distanceMaxLift = distanceMinLift / 5;
 
     $.each(nodes, function(idx, node) {
         maxInLinkCount = Math.max(maxInLinkCount, node.inLinkCount);
@@ -457,20 +468,28 @@ const extractRanges = function(nodes) {
         });
     });
 
+    $.each(links, function (idx, link) {
+        maxTransCount = Math.max(maxTransCount, link.transcount);
+        minTransCount = Math.min(minTransCount, link.transcount);
+    });
+
     let thickness = d3.scaleLinear().domain([minLift, maxLift]).range([minLinkThickness, maxLinkThickness]);
-    let distance = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([maxDistance, minDistance]);
+    let distance = d3.scaleLinear().domain([maxLift, minLift]).range([distanceMaxLift, distanceMinLift]);
     let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
     let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
     // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
-    let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount * 2, 0]);
-    let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([maxLift, 0]);
+    let nodeColour = d3.scaleSequential(d3.interpolateYlOrRd).domain([minOccurs, maxOccurs]);
+    let linkColour = d3.scaleSequential(d3.interpolateGreys).domain([-maxLift, maxLift]);
+    let linkStrength = d3.scaleLinear().domain([minTransCount, maxTransCount]).range([minStrength, maxStrength]);
 
     return {thickness,
         distance,
         charge,
         radius,
         nodeColour,
-        linkColour}
+        linkColour,
+        linkStrength
+    }
 };
 
 const displayGraph = function (graph) {
@@ -479,8 +498,11 @@ const displayGraph = function (graph) {
     let width = $(svg._groups[0][0]).width();
     let height = $(svg._groups[0][0]).height();
     let margin = 20;
+    let circleRadius = 10;
 
-    let {thickness, distance, radius, nodeColour, linkColour} = extractRanges(graph.nodes);
+    let wiggleRoom = Math.min(width, height) - margin * 2;
+
+    let {thickness, distance, nodeColour, linkColour} = extractRanges(graph, wiggleRoom);
 
     $.each(graph.nodes, function(idx, node) {
         if (node.isPseudoStart) {
@@ -489,64 +511,44 @@ const displayGraph = function (graph) {
         }
     });
 
-    let radial = d3.forceRadial();
-    radial.radius(function(node) {
-        if (node.isPseudoStart) {
-            return null;
-        }
-        return distance(node.nOccurs);
+    let forceLink = d3.forceLink();
+    let defaultLinkStrength = forceLink.strength();
+    forceLink.id(function (node) {
+        return node.id;
     });
-    radial.x(function(node) {
-        if (node.isPseudoStart) {
+    forceLink.strength(function (link) {
+        if (link.source.isPseudoStart) {
+            // We don't want the pseudo start to have any real effect on the nodes
             return null;
         }
-        return node.centre ? node.centre.x : (width / 2)
+        return defaultLinkStrength(link);
     });
-    radial.y(function(node) {
-        if (node.isPseudoStart) {
+    forceLink.distance(function (link) {
+        if (link.source.isPseudoStart) {
+            // Same reason
             return null;
         }
-        return node.centre ? node.centre.y : (height / 2)
+        return distance(link.lift);
     });
 
     let simulation = d3.forceSimulation();
+    simulation.velocityDecay(0.1);
     simulation.nodes(graph.nodes);
-    simulation.
-        force('link', d3.forceLink().
-            id(function (node) {
-                return node.id;
-            })).
-        // distance(function (node) {
-        //     if (node.isPseudoStart) {
-        //         return Math.min(width, height) / 4;
-        //     }
-        //     return 100;
-        // })).
-        force('collide', d3.forceCollide(function (node) {
-            return radius(node.nOccurs) * 2;
-        })).
-        // force('charge', d3.forceManyBody().strength(function (node) {
-        //     if (node.isPseudoStart) {
-        //         return -500;
-        //     }
-        //     return charge(node.nOccurs);
-        // })).
-        force('center', d3.forceCenter(width / 2, height / 2));
+    simulation.force('charge', d3.forceManyBody().strength(-10));
+    simulation.force('link', forceLink);
+    simulation.force('collide', d3.forceCollide(circleRadius * 1.5));
+    simulation.force('center', d3.forceCenter(width / 2, height / 2));
 
     simulation.on('tick', tickAction);
 
-    simulation.force('link').
-        links(graph.links);
+    simulation.force('link').links(graph.links);
     svg.append('svg:defs').selectAll('.x').data(graph.links).enter().
         append('svg:marker').
         attr('id', function (link) {
             return `marker-${link.source.id}-${link.target.id}`;
         }).
         attr('viewBox', '0 0 10 10').
-
-        attr('refX', function (link) {
-            return radius(link.target.nOccurs) + 15;
-        }).
+        attr('refX', 21).
         attr('refY', 5).
         attr('markerWidth', 8).
         attr('markerHeight', 8).
@@ -577,8 +579,6 @@ const displayGraph = function (graph) {
             return linkColour(link.lift);
         });
 
-    simulation.force('radial', radial);
-
     let enterSelection = svg.append('g').
         attr('class', 'nodes').
         selectAll('circle').
@@ -588,24 +588,23 @@ const displayGraph = function (graph) {
         append('g');
 
     enterSelection.append('circle').
-        attr('r', function(node) {
-            return radius(node.nOccurs)
-        }).
+        attr('r', circleRadius).
         attr('fill', function (node) {
-            return nodeColour(node.totalLinkCount);
-        });
+            return nodeColour(node.nOccurs);
+        }).
+        attr('border', 'black');
 
     enterSelection.
         append('text').
         text(function(node) {
             return node.name;
         }).
-        style('font-size', '12px').
-        attr('dy', '.35em');
+        style('font-size', '12px').attr('dy', '.35em').attr('dx', '1em');
 
     let xRotation = 45;
     let theta = 90 - (180 - Math.abs(xRotation)) / 2;
     let sinTheta = Math.abs(Math.sin(theta));
+    let offset = sinTheta * (circleRadius);
 
     /**
      * This function is invoked for each node and link
@@ -616,8 +615,6 @@ const displayGraph = function (graph) {
         links.attr('d', function(link) {
             let x1 = Math.round(link.source.x);
             let y1 = Math.round(link.source.y);
-            let r = radius(link.source.nOccurs);
-            let offset = sinTheta * (r);
             let startX = Math.round(x1 - offset);
             let startY = Math.round(y1 - offset);
 
@@ -634,7 +631,7 @@ const displayGraph = function (graph) {
 
                 // Make drx and dry different to get an ellipse
                 // instead of a circle.
-                let drx = 10;
+                let drx = 15;
                 let dry = 10;
 
                 // For whatever reason the arc collapses to a point if the beginning
@@ -654,9 +651,8 @@ const displayGraph = function (graph) {
                 return !node.isPseudoStart;
             }).
             attr('transform', function(node) {
-                let r = radius(node.nOccurs);
-                let x = Math.max(r + margin, Math.min(width - r - margin, node.x));
-                let y = Math.max(r + margin, Math.min(height - r - margin, node.y));
+                let x = Math.max(circleRadius + margin, Math.min(width - circleRadius - margin, node.x));
+                let y = Math.max(circleRadius + margin, Math.min(height - circleRadius - margin, node.y));
                 node.x = x;
                 node.y = y;
 
@@ -665,10 +661,7 @@ const displayGraph = function (graph) {
                 }
 
                 return 'translate(' + x + ',' + y + ')';
-            });
-        enterSelection.filter(function (node) {
-            return !node.isPseudoStart;
-        }).
+            }).
             call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
     }
 
@@ -687,9 +680,8 @@ const displayGraph = function (graph) {
      * @param node
      */
     function dragged(node) {
-        let r = radius(node.nOccurs);
-        let x = Math.max(r + margin, Math.min(width - r - margin, d3.event.x));
-        let y = Math.max(r + margin, Math.min(height - r - margin, d3.event.y));
+        let x = Math.max(circleRadius + margin, Math.min(width - circleRadius - margin, d3.event.x));
+        let y = Math.max(circleRadius + margin, Math.min(height - circleRadius - margin, d3.event.y));
 
         node.fx = x;
         node.fy = y;

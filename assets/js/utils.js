@@ -1788,3 +1788,24 @@ export const argmax = function(arr) {
 
     return maxIndex;
 };
+
+/**
+ * Sort an array ascendingly
+ * @param arr
+ */
+export const sort = function (arr) {
+    arr.sort(function (a, b) {
+        return a - b;
+    });
+};
+
+/**
+ * Find median of an sorted array
+ * @param arr
+ */
+export const median = function (arr) {
+    if (arr.length === 0) return 0;
+    let half = Math.floor(arr.length / 2);
+    if (arr.length % 2) return arr[half];
+    else return (arr[half - 1] + arr[half]) / 2.0;
+};

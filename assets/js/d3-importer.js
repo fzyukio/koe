@@ -1,6 +1,6 @@
 import {line} from 'd3-shape';
 import {scaleLinear, scaleSequential} from 'd3-scale';
-import {interpolateViridis, interpolatePlasma} from 'd3-scale-chromatic';
+import {interpolateYlOrRd, interpolateGreys} from 'd3-scale-chromatic';
 import {axisBottom} from 'd3-axis';
 import {select, selectAll, event} from 'd3-selection';
 import {extent} from 'd3-array';
@@ -19,8 +19,8 @@ export default {
     forceCenter,
     forceCollide,
     forceRadial,
-    interpolateViridis,
-    interpolatePlasma,
+    interpolateYlOrRd,
+    interpolateGreys,
     drag,
     axisBottom,
     select,
