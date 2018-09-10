@@ -93,15 +93,15 @@ else
     exit
 fi
 
-RESULT=$?
-if [ $RESULT -eq 0 ]; then
-    echo -e "${Yellow}${On_Purple}Now, run the app remotely ${Color_Off}"
-    echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"source ~/.profile $WORKSPACE/post-deploy.sh\"${Color_Off}"
-    ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "source ~/.profile $WORKSPACE/post-deploy.sh"
-else
-    echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
-    exit
-fi
+# RESULT=$?
+# if [ $RESULT -eq 0 ]; then
+#     echo -e "${Yellow}${On_Purple}Now, run the app remotely ${Color_Off}"
+#     echo -e "${Green}${On_Black}ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS \"source ~/.profile $WORKSPACE/post-deploy.sh\"${Color_Off}"
+#     ssh $SSH_EXTRA_CREDENTIAL $REMOTE_USER@$REMOTE_ADDRESS "source ~/.profile; $WORKSPACE/post-deploy.sh"
+# else
+#     echo -e "${White}${On_Red}FAILED!!!! Exit.${Color_Off}"
+#     exit
+# fi
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
