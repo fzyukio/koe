@@ -462,7 +462,7 @@ const extractRanges = function(nodes) {
     let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
     let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
     // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
-    let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount, 0]);
+    let nodeColour = d3.scaleSequential(d3.interpolateViridis).domain([maxTotalLinkCount * 2, 0]);
     let linkColour = d3.scaleSequential(d3.interpolatePlasma).domain([maxLift, 0]);
 
     return {thickness,
