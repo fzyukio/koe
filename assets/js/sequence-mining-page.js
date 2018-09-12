@@ -319,7 +319,7 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
             else {
                 secondNodesInfo[b] = {
                     secondNode: nodeB,
-                    lift: row.lift,
+                    lift: Math.max(0, row.lift),
                     transcount: row.transcount
                 }
             }
@@ -534,7 +534,13 @@ const displayGraph = function (graph) {
     let simulation = d3.forceSimulation();
     simulation.velocityDecay(0.1);
     simulation.nodes(graph.nodes);
-    simulation.force('charge', d3.forceManyBody().strength(-10));
+    simulation.force('charge', d3.forceManyBody().strength(function (node) {
+        if (node.isPseudoStart) {
+            // Allow the start to exert a small pulling force to position the nodes better
+            return 10;
+        }
+        return -10
+    }));
     simulation.force('link', forceLink);
     simulation.force('collide', d3.forceCollide(circleRadius * 1.5));
     simulation.force('center', d3.forceCenter(width / 2, height / 2));
