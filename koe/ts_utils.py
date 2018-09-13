@@ -139,11 +139,11 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
     if not reduce_func:
         ndims = None
 
-    full_ids_path = full_tensor.get_ids_path()
+    full_sids_path = full_tensor.get_sids_path()
     full_bytes_path = full_tensor.get_bytes_path()
     full_cols_path = full_tensor.get_cols_path()
 
-    sids = bytes_to_ndarray(full_ids_path, np.int32)
+    sids = bytes_to_ndarray(full_sids_path, np.int32)
 
     full_data = get_rawdata_from_binary(full_bytes_path, len(sids))
     with open(full_cols_path, 'r', encoding='utf-8') as f:

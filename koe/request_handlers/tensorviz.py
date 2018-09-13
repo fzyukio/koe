@@ -75,8 +75,8 @@ def get_metadata(request, tensor_name):
     tensor = get_or_error(DerivedTensorData, dict(name=tensor_name))
     full_tensor = tensor.full_tensor
 
-    full_ids_path = full_tensor.get_ids_path()
-    sids = bytes_to_ndarray(full_ids_path, np.int32)
+    full_sids_path = full_tensor.get_sids_path()
+    sids = bytes_to_ndarray(full_sids_path, np.int32)
 
     metadata, headers = extract_tensor_metadata(sids, tensor.annotator)
     content = write_metadata(metadata, sids, headers)

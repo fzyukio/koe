@@ -445,8 +445,11 @@ class FullTensorData(TensorData):
     def get_cols_path(self):
         return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.cols'.format(self.name))[1:]
 
-    def get_ids_path(self):
+    def get_sids_path(self):
         return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.ids'.format(self.name))[1:]
+
+    def get_tids_path(self):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.tids'.format(self.name))[1:]
 
     def get_bytes_path(self):
         return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.bytes'.format(self.name))[1:]
