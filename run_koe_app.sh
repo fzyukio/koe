@@ -5,6 +5,8 @@ unset https_proxy
 
 cd /code
 
+IS_TENSORFLOW=$1
+
 python maintenance.py --probe-database
 
 # Always back-up the database
@@ -23,6 +25,9 @@ fi
 # Always clear the cache
 python manage.py cache --action=clear --pattern='template.cache.*'
 
-python manage.py shell_plus --notebook &
-uwsgi --ini uwsgi.ini:prod
-
+if [ "$IS_TENSORFLOW" = "tensorflow" ]; then
+  python manage.py shell_plus --notebook &
+  uwsgi --ini uwsgi.ini:tensorflow
+else
+  uwsgi --ini uwsgi.ini:prod
+fi

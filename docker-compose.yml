@@ -4,7 +4,7 @@ services:
     container_name: ${CONTAINER_DATABASE_NAME}
     image: mysql:5.7.23
     ports:
-      - "127.0.0.1:${MYSQL_GLOBAL_PORT}:${MYSQL_PORT}"
+      - $DB_PORT
     volumes:
       - "${MYSQL_VOLUME}:/var/lib/mysql"
     environment:
@@ -18,14 +18,14 @@ services:
     container_name: ${CONTAINER_APP_NAME}
     runtime: ${runtime}
     build:
+      dockerfile: $DOCKER_FILE
       context: .
       network: host
     networks:
       - default
       - web
-#    ports:
-#      - "${VIRTUAL_HOST}:${APP_HTTP_PORT}:8000"
-#      - "0.0.0.0:${NOTEBOOK_HTTP_PORT}:8001"
+    ports:
+      - $EXPOSED_PORTS
     environment:
       - VIRTUAL_HOST=${DOMAIN}
       - VIRTUAL_PROTO=uwsgi
