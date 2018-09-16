@@ -23,14 +23,14 @@ def inds2dataset(inds, data, labels, lens):
 
 
 class DataSet:
-    def __init__(self, other=None):
+    def __init__(self, origin=None):
         """
         Default and copy constructor
-        :param other: another instance of dataset from which data is copied
+        :param origin: another instance of dataset from which data is copied
         """
-        self.data = other.data if other else []
-        self.labels = other.labels if other else []
-        self.lens = other.lens if other else []
+        self.data = origin.data if origin else []
+        self.labels = origin.labels if origin else []
+        self.lens = origin.lens if origin else []
         self.batch_id = 0
         self.size = 0
 
@@ -59,12 +59,9 @@ class DataSet:
     def all(self):
         return self.data, self.labels, self.lens
 
-    def out_of_batch(self):
-        return self.batch_id == len(self.data)
-
     def next(self, batch_size):
         # Shuffle the data before repeating from batch 0
-        if self.out_of_batch():
+        if self.batch_id == len(self.data):
             self.shuffle()
             self.batch_id = 0
 
@@ -76,39 +73,62 @@ class DataSet:
         self.batch_id = next_batch_id
         return batch_data, batch_labels, batch_lens
 
-    def make_foldable(self, enum_labels):
-        return FoldedDataSet(enum_labels, self)
+    def make_trainable(self, enum_labels):
+        return TrainableSet(enum_labels, self)
 
 
-class FoldedDataSet(DataSet):
+class TrainableSet(DataSet):
     def __init__(self, enum_labels, dataset):
-        super(FoldedDataSet, self).__init__(dataset)
+        super(TrainableSet, self).__init__(dataset)
         self.folds = None
         self.fold_id = 0
         self.enum_labels = enum_labels
 
-    def split_kfold(self, k):
+    def split(self, nparts=10):
         """
-        This facilitates k-fold validation for the training process.
-        Iterate through the folds, when the last fold is called, shuffle the dataset and divide into k-folds again
-        :param k: number of folds to be divided
+        Shuffle and divide the data into two smaller sets: train and test
+        :param nparts:
         :return:
         """
-        if self.folds is None or len(self.folds) != k:
-            self.folds = split_kfold_classwise(self.enum_labels, k)
-            self.fold_id = 0
-        elif self.fold_id >= len(self.folds) - 1:
-            self.shuffle()
-            self.folds = split_kfold_classwise(self.enum_labels, k)
-            self.fold_id = 0
-        else:
-            self.fold_id += 1
+        assert nparts > 2, 'Test set must be less than training set'
+        self.shuffle()
+        train, test = split_classwise(self.enum_labels, test_ratio=1 / nparts)
 
-        fold = self.folds[self.fold_id]
-        trainset = inds2dataset(fold['train'], self.data, self.labels, self.lens)
-        validset = inds2dataset(fold['test'], self.data, self.labels, self.lens)
+        trainset = inds2dataset(train, self.data, self.labels, self.lens)
+        testset = inds2dataset(test, self.data, self.labels, self.lens)
 
-        return trainset, validset
+        return trainset, testset
+
+
+# class FoldedDataSet(DataSet):
+#     def __init__(self, enum_labels, dataset):
+#         super(FoldedDataSet, self).__init__(dataset)
+#         self.folds = None
+#         self.fold_id = 0
+#         self.enum_labels = enum_labels
+#
+#     def split_kfold(self, k):
+#         """
+#         This facilitates k-fold validation for the training process.
+#         Iterate through the folds, when the last fold is called, shuffle the dataset and divide into k-folds again
+#         :param k: number of folds to be divided
+#         :return:
+#         """
+#         if self.folds is None or len(self.folds) != k:
+#             self.folds = split_kfold_classwise(self.enum_labels, k)
+#             self.fold_id = 0
+#         elif self.fold_id >= len(self.folds) - 1:
+#             self.shuffle()
+#             self.folds = split_kfold_classwise(self.enum_labels, k)
+#             self.fold_id = 0
+#         else:
+#             self.fold_id += 1
+#
+#         fold = self.folds[self.fold_id]
+#         trainset = inds2dataset(fold['train'], self.data, self.labels, self.lens)
+#         validset = inds2dataset(fold['test'], self.data, self.labels, self.lens)
+#
+#         return trainset, validset
 
 
 class DataProvider:
@@ -141,6 +161,8 @@ class DataProvider:
                 assert 0 < ndims < 3
                 if ndims == 2:
                     shape1 = matrix.shape[1]
+                else:
+                    shape1 = 1
             else:
                 assert ndims == matrix.ndim
                 if ndims == 2:
@@ -168,6 +190,8 @@ class DataProvider:
         self.data = []
         for matrix, matrix_len in zip(data, self.lens):
             matrix = (matrix - self.mins) / data_range
+            if matrix.ndim == 1:
+                matrix = matrix.reshape((matrix.shape[0], 1))
             # Pad sequence for dimension consistency
             padding = np.zeros((max_seq_len - matrix_len, shape1))
             if use_pseudo_end:
@@ -179,20 +203,18 @@ class DataProvider:
         self.input_len = shape1
         self.output_len = self.n_classes = len(self.unique_labels)
         self.seq_max_len = max_seq_len
+        self.folds = None
 
-    def get_sets(self, test_ratio=0.1):
-        """
-        Split the data into training and test set, based on the ratio given
-        :param test_ratio: ratio of test data vs all data
-        :return: one FoldedDataset (which further splits non-test data into train and validate sets), and one Dataset
-                 containing the test set
-        """
-        assert test_ratio < 0.5, 'Test set must be less than training set'
+    def split_folds(self, nfolds):
+        self.folds = split_kfold_classwise(self.enum_labels, nfolds)
 
-        foldable, test = split_classwise(self.enum_labels, test_ratio=test_ratio)
-        foldable_enum_labels = self.enum_labels[foldable]
+    def get_fold(self, k):
+        fold = self.folds[k]
+        train = fold['train']
+        test = fold['test']
+        trainable_enum_labels = self.enum_labels[train]
 
-        foldableset = inds2dataset(foldable, self.data, self.labels, self.lens).make_foldable(foldable_enum_labels)
-        testset = inds2dataset(test, self.data, self.labels, self.lens)
+        traintestset = inds2dataset(train, self.data, self.labels, self.lens).make_trainable(trainable_enum_labels)
+        validset = inds2dataset(test, self.data, self.labels, self.lens)
 
-        return foldableset, testset
+        return traintestset, validset

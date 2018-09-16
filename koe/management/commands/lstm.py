@@ -47,7 +47,7 @@ def get_labels_by_sids(sids, label_level, annotator, min_occur):
     segment_to_labels = {}
     for segid, label in sid2lbl.items():
         if occurs[label] >= min_occur:
-            segment_to_labels[segid] = [label]
+            segment_to_labels[segid] = label
 
     labels = []
     no_label_ids = []
@@ -77,32 +77,46 @@ class Command(BaseCommand):
         parser.add_argument('--annotator-name', action='store', dest='annotator_name', default='superuser', type=str,
                             help='Name of the person who owns this database, case insensitive', )
 
+        parser.add_argument('--population', action='store', dest='population_name', required=True, type=str,
+                            help='Prefix of song name to identify population - e.g LBI, PKI', )
+
         parser.add_argument('--label-level', action='store', dest='label_level', default='label', type=str,
                             help='Level of labelling to use', )
 
         parser.add_argument('--min-occur', action='store', dest='min_occur', default=2, type=int,
                             help='Ignore syllable classes that have less than this number of instances', )
 
+        parser.add_argument('--ftids', action='store', dest='ftids', default=None, type=str,
+                            help='Comma-separated feature IDs', )
+
     def handle(self, *args, **options):
         database_name = options['database_name']
         annotator_name = options['annotator_name']
+        population_name = options['population_name']
         label_level = options['label_level']
         min_occur = options['min_occur']
+        ftids = options['ftids']
+
+        if ftids:
+            ftids = list(map(int, ftids.split(',')))
+            features = Feature.objects.filter(id__in=ftids).order_by('id')
+        else:
+            features = Feature.objects.all().order_by('id')
 
         database = get_or_error(Database, dict(name__iexact=database_name))
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
 
-        sids, tids = get_sids_tids(database)
+        sids, tids = get_sids_tids(database, population_name)
         labels, no_label_ids = get_labels_by_sids(sids, label_level, annotator, min_occur)
 
         if len(no_label_ids) > 0:
             sids, tids, labels = exclude_no_labels(sids, tids, labels, no_label_ids)
 
-        features = Feature.objects.filter(name__in=['mfcc', 'zero_crossing_rate']).order_by('id')
+        # features = Feature.objects.filter(name__in=['mfcc', 'zero_crossing_rate']).order_by('id')
 
         f2bs, fa2bs = get_binstorage_locations(features, [])
         data = extract_rawdata(f2bs, tids, features)
 
         data_provider = DataProvider(data, labels)
-        model_name = '{}_{}_{}_{}-min'.format(database_name, annotator_name, label_level, min_occur)
-        train(data_provider, max_loss=0.1, name=model_name)
+        model_name = '{}_{}_{}_{}_{}-min'.format(database_name, annotator_name, database_name, label_level, min_occur)
+        train(data_provider, name=model_name)

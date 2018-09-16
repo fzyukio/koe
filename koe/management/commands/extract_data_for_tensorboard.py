@@ -13,7 +13,7 @@ from pymlfunc import tictoc
 from koe import binstorage
 from koe.aggregator import aggregator_map
 from koe.model_utils import get_or_error
-from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, DerivedTensorData
+from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, DerivedTensorData, AudioFile
 from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary
 from root.models import User
 from root.utils import data_path
@@ -49,13 +49,16 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     return rawdata, col_inds
 
 
-def get_sids_tids(database):
+def get_sids_tids(database, population_name=None):
     """
     Get ids and tids from all syllables in this database
     :param database:
     :return: sids, tids. sorted by sids
     """
-    segments = Segment.objects.filter(audio_file__database=database)
+    audio_files = AudioFile.objects.filter(database=database)
+    if population_name:
+        audio_files = [x for x in audio_files if x.name.startswith(population_name)]
+    segments = Segment.objects.filter(audio_file__in=audio_files)
     segments_info = segments.values_list('id', 'tid')
 
     tids = []

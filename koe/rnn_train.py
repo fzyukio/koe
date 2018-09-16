@@ -9,7 +9,11 @@ import numpy as np
 import tensorflow as tf
 from numpy import random
 
+from django.conf import settings
+
 from koe.rnn_models import DataProvider
+
+num_historical = 5
 
 
 def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
@@ -58,12 +62,10 @@ def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
     return tf.matmul(outputs, weights['out']) + biases['out']
 
 
-def train(dp, max_loss=0.01, test_ratio=0.1, validation_fold=9, learning_rate=0.01, resumable=True, name='model'):
-    foldableset, testset = dp.get_sets(test_ratio=test_ratio)
-    trainset, validset = foldableset.split_kfold(validation_fold)
-
+def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='model'):
+    dp.split_folds(nfolds)
     # Parameters
-    batch_size = min(testset.size, validset.size)
+    batch_size = len(dp.data) // nfolds
     display_step = 200
 
     # Network Parameters
@@ -91,59 +93,74 @@ def train(dp, max_loss=0.01, test_ratio=0.1, validation_fold=9, learning_rate=0.
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
 
-    backup_filename = 'backups/tf/{}.ckpt'.format(name)
-    backup_index_filename = '{}.index'.format(backup_filename)
-    backup_meta_filename = '{}.meta'.format(backup_filename)
-    backup_extra_filename = '{}.extra'.format(backup_filename)
-
-    backup_exists = os.path.isfile(backup_index_filename) and \
-                    os.path.isfile(backup_meta_filename) and \
-                    os.path.isfile(backup_extra_filename)
-
     # Start training
     with tf.Session() as sess:
-        if resumable and backup_exists:
-            saver.restore(sess, backup_filename)
-            with open(backup_extra_filename, 'rb') as f:
-                extra = pickle.load(f)
-                loss = extra['loss']
-                step = extra['step']
-            print('Session restored from backup in {}'.format(backup_filename))
-        else:
-            # Run the initializer
-            sess.run(init)
-            loss = math.inf
-            step = 0
+        for k in range(nfolds):
+            backup_filename = os.path.join(settings.BASE_DIR, 'backups/tf/{}-{}.ckpt'.format(name, k))
 
-        while loss > max_loss:
-            step += 1
-            if trainset.out_of_batch():
-                trainset, validset = foldableset.split_kfold(9)
+            backup_index_filename = '{}.index'.format(backup_filename)
+            backup_meta_filename = '{}.meta'.format(backup_filename)
+            backup_extra_filename = '{}.extra'.format(backup_filename)
 
-            tr_batch_x, tr_batch_y, tr_batch_lens = trainset.next(batch_size)
+            backup_exists = os.path.isfile(backup_index_filename) and\
+                            os.path.isfile(backup_meta_filename) and\
+                            os.path.isfile(backup_extra_filename)
 
-            # Run optimization op (backprop)
-            sess.run(optimizer, feed_dict={
-                x: tr_batch_x, y: tr_batch_y,
-                lens: tr_batch_lens
-            })
-            if step % display_step == 0 or step == 1:
-                ts_batch_x, ts_batch_y, ts_batch_lens = testset.all()
-                # Calculate batch accuracy & loss
-                acc, loss = sess.run([accuracy, cost], feed_dict={x: ts_batch_x, y: ts_batch_y, lens: ts_batch_lens})
-                print('Step {}, Minibatch Loss={:.6f}, Training Accuracy={:.5f}'.format(step, loss, acc))
-                if resumable:
-                    saver.save(sess, backup_filename)
-                    with open(backup_extra_filename, 'wb') as f:
-                        pickle.dump(dict(loss=loss, step=step), f, protocol=pickle.HIGHEST_PROTOCOL)
+            if resumable and backup_exists:
+                with open(backup_extra_filename, 'rb') as f:
+                    extra = pickle.load(f)
+                    step = extra['step']
+                    accuracies = extra['accuracies']
+                    losses = extra['losses']
+                    acc_stdev = np.std(accuracies[-num_historical:])
+                    loss_stdev = np.std(losses[-num_historical:])
+                saver.restore(sess, backup_filename)
+            else:
+                sess.run(init)
+                acc_stdev = math.inf
+                loss_stdev = math.inf
+                step = 0
+                accuracies = []
+                losses = []
 
-        print('Optimization Finished!')
+            trainableset, validset = dp.get_fold(k)
 
-        # Calculate accuracy
-        test_data = testset.data
-        test_label = testset.labels
-        test_lens = testset.lens
-        print('Testing Accuracy:', sess.run(accuracy, feed_dict={x: test_data, y: test_label, lens: test_lens}))
+            while acc_stdev > eps or loss_stdev > eps:
+                step += 1
+                trainset, testset = trainableset.split(nfolds - 1)
+
+                tr_batch_x, tr_batch_y, tr_batch_lens = trainset.next(batch_size)
+
+                # Run optimization op (backprop)
+                sess.run(optimizer, feed_dict={
+                    x: tr_batch_x, y: tr_batch_y,
+                    lens: tr_batch_lens
+                })
+                if step % display_step == 0 or step == 1:
+                    ts_batch_x, ts_batch_y, ts_batch_lens = testset.all()
+                    # Calculate batch accuracy & loss
+                    acc, loss = sess.run([accuracy, cost],
+                                         feed_dict={x: ts_batch_x, y: ts_batch_y, lens: ts_batch_lens})
+
+                    accuracies.append(acc)
+                    losses.append(loss)
+                    if len(accuracies) >= num_historical:
+                        acc_stdev = np.std(accuracies[-num_historical:])
+                        loss_stdev = np.std(losses[-num_historical:])
+
+                    print('\tFold {}, Step {}, Loss={:.6f}|{:.6f}, Accuracy={:.5f}|{:.5f}'
+                          .format(k + 1, step, loss, loss_stdev, acc, acc_stdev))
+                    if resumable:
+                        saver.save(sess, backup_filename)
+                        with open(backup_extra_filename, 'wb') as f:
+                            pickle.dump(dict(losses=losses, accuracies=accuracies, step=step), f)
+
+            # Calculate accuracy
+            vl_data = validset.data
+            vl_label = validset.labels
+            vl_lens = validset.lens
+            vl_accuracy = sess.run(accuracy, feed_dict={x: vl_data, y: vl_label, lens: vl_lens})
+            print('Fold {}, Valid Accuracy: {}'.format(k + 1, vl_accuracy))
 
 
 def generate_sequences(n_samples=1000, max_seq_len=20, min_seq_len=3, max_value=1000, shape1=1):
@@ -187,4 +204,4 @@ def generate_sequences(n_samples=1000, max_seq_len=20, min_seq_len=3, max_value=
 if __name__ == '__main__':
     data, labels = generate_sequences(n_samples=1500, max_seq_len=20, min_seq_len=3, max_value=1000, shape1=1)
     data_provider = DataProvider(data, labels)
-    train(data_provider, max_loss=0.1, name='toy1')
+    train(data_provider, nfolds=10, name='toy5')

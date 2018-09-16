@@ -115,7 +115,7 @@ def get_rawdata_from_binary(filename, nrows):
     return arr.reshape((nrows, size // nrows))
 
 
-def cherrypick_tensor_data(full_data, col_inds, features, aggregations):
+def cherrypick_tensor_data_by_feature_aggreation(full_data, col_inds, features, aggregations):
     rawdata = []
 
     for feature in features:
@@ -134,6 +134,20 @@ def cherrypick_tensor_data(full_data, col_inds, features, aggregations):
     return rawdata
 
 
+def cherrypick_tensor_data_by_sids(full_data, full_sids, sids):
+    sorted_ids, sort_order = np.unique(full_sids, return_index=True)
+
+    non_existing_idx = np.where(np.logical_not(np.isin(sids, sorted_ids)))
+    non_existing_ids = sids[non_existing_idx]
+
+    if len(non_existing_ids) > 0:
+        err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
+        raise ValueError(err_msg)
+
+    lookup_ids_rows = np.searchsorted(sorted_ids, sids)
+    return full_data[lookup_ids_rows, :]
+
+
 def make_subtensor(user, full_tensor, annotator, features, aggregations, dimreduce, ndims):
     reduce_func = reduce_funcs[dimreduce]
     if not reduce_func:
@@ -149,7 +163,7 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
     with open(full_cols_path, 'r', encoding='utf-8') as f:
         col_inds = json.load(f)
 
-    new_data = cherrypick_tensor_data(full_data, col_inds, features, aggregations)
+    new_data = cherrypick_tensor_data_by_feature_aggreation(full_data, col_inds, features, aggregations)
     if reduce_func:
         dim_reduce_func = reduce_func(n_components=ndims)
         new_data = dim_reduce_func.fit_transform(new_data)

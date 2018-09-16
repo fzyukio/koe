@@ -2,58 +2,20 @@
 Run tsne with different numbers of dimensions, svm and export result
 """
 import os
-import numpy as np
 import pickle
+
+import numpy as np
 from django.core.management.base import BaseCommand
+from scipy.spatial.distance import squareform, pdist
 from scipy.stats import zscore
+from sklearn.decomposition import PCA
 from sklearn.manifold import MDS
 
+from koe.management.commands.extract_data_for_tensorboard import get_sids_tids
 from koe.management.commands.extract_features import run_clustering
 from koe.model_utils import get_or_error
-from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, AudioFile
-from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
-
-from sklearn.decomposition import PCA
-from scipy.spatial.distance import squareform, pdist
-
-
-def get_sids_tids(database, population_name):
-    """
-    Get ids and tids from all syllables in this database
-    :param database:
-    :return: sids, tids. sorted by sids
-    """
-    audio_files = AudioFile.objects.filter(database=database)
-    audio_files = [x for x in audio_files if x.name.startswith(population_name)]
-    segments = Segment.objects.filter(audio_file__in=audio_files)
-    segments_info = segments.values_list('id', 'tid')
-
-    tids = []
-    sids = []
-    for sid, tid in segments_info:
-        tids.append(tid)
-        sids.append(sid)
-    tids = np.array(tids, dtype=np.int32)
-    sids = np.array(sids, dtype=np.int32)
-    sids_sort_order = np.argsort(sids)
-    sids = sids[sids_sort_order]
-    tids = tids[sids_sort_order]
-
-    return sids, tids
-
-
-def cherrypick_tensor_data(full_data, full_sids, sids):
-    sorted_ids, sort_order = np.unique(full_sids, return_index=True)
-
-    non_existing_idx = np.where(np.logical_not(np.isin(sids, sorted_ids)))
-    non_existing_ids = sids[non_existing_idx]
-
-    if len(non_existing_ids) > 0:
-        err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
-        raise ValueError(err_msg)
-
-    lookup_ids_rows = np.searchsorted(sorted_ids, sids)
-    return full_data[lookup_ids_rows, :]
+from koe.models import Feature, Aggregation, Database, FullTensorData
+from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary, cherrypick_tensor_data_by_sids
 
 
 class Command(BaseCommand):
@@ -98,7 +60,7 @@ class Command(BaseCommand):
                 coordinate = saved['coordinate']
                 stress = saved['stress']
         else:
-            population_data = cherrypick_tensor_data(full_data, full_sids, sids).astype(np.float64)
+            population_data = cherrypick_tensor_data_by_sids(full_data, full_sids, sids).astype(np.float64)
 
             if normalised:
                 population_data = zscore(population_data)
