@@ -546,12 +546,12 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
     ids = []
     rows = []
-    nsequences = len(sequences)
+    nsequences = sequence_ind - 1
 
     if nsequences == 0:
         return ids, rows
 
-    support = max(int(len(sequences) * 0.001), 3)
+    support = max(int(nsequences * 0.01), 3)
 
     result = cspade(data=sequences, support=support, maxgap=maxgap)
     mined_objects = result['mined_objects']
