@@ -17,6 +17,7 @@ from root.models import ExtraAttrValue, User
 
 
 def extract_rawdata(f2bs, ids, features):
+    # ids = np.array([19078])
     data_by_id = {id: [] for id in ids}
 
     for feature in features:
@@ -29,7 +30,12 @@ def extract_rawdata(f2bs, ids, features):
     data = []
     for id in ids:
         feature_values = data_by_id[id]
-        feature_values = np.vstack(feature_values).T
+        try:
+            feature_values = np.vstack(feature_values).T
+        except ValueError:
+            print('Encounter error at id={}'.format(id))
+            for idx, feature in enumerate(features):
+                print('{} - {}'.format(feature.name, feature_values[idx].shape))
         data.append(feature_values)
 
     return data
@@ -86,7 +92,7 @@ class Command(BaseCommand):
         parser.add_argument('--min-occur', action='store', dest='min_occur', default=2, type=int,
                             help='Ignore syllable classes that have less than this number of instances', )
 
-        parser.add_argument('--ftids', action='store', dest='ftids', default=None, type=str,
+        parser.add_argument('--feature-names', action='store', dest='feature_names', default=None, type=str,
                             help='Comma-separated feature IDs', )
 
     def handle(self, *args, **options):
@@ -95,13 +101,15 @@ class Command(BaseCommand):
         population_name = options['population_name']
         label_level = options['label_level']
         min_occur = options['min_occur']
-        ftids = options['ftids']
+        feature_names = options['feature_names']
 
-        if ftids:
-            ftids = list(map(int, ftids.split(',')))
-            features = Feature.objects.filter(id__in=ftids).order_by('id')
+        if feature_names:
+            feature_names = feature_names.split(',')
+            features = Feature.objects.filter(name__in=feature_names).order_by('id')
         else:
             features = Feature.objects.all().order_by('id')
+
+        features = features.exclude(is_fixed_length=True)
 
         database = get_or_error(Database, dict(name__iexact=database_name))
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
@@ -118,5 +126,5 @@ class Command(BaseCommand):
         data = extract_rawdata(f2bs, tids, features)
 
         data_provider = DataProvider(data, labels)
-        model_name = '{}_{}_{}_{}_{}-min'.format(database_name, annotator_name, database_name, label_level, min_occur)
+        model_name = '{}_{}_{}_{}_{}-min'.format(database_name, annotator_name, population_name, label_level, min_occur)
         train(data_provider, name=model_name)
