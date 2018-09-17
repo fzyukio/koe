@@ -29,6 +29,24 @@ export const postRequest = function (args) {
     ajaxRequest(args)
 };
 
+
+export const downloadRequest = function (url, ArrayClass) {
+    return new Promise(function (resolve) {
+        let req = new XMLHttpRequest();
+        req.open('GET', url, true);
+        req.responseType = 'arraybuffer';
+
+        req.onload = function () {
+            let arrayBuffer = req.response;
+            let byteArray = new ArrayClass(arrayBuffer);
+            resolve(byteArray);
+        };
+
+        req.send(null);
+    });
+};
+
+
 /**
  * Shortcut to call ajaxRequest for file upload
  * @param args see ajaxRequest

@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -8,7 +10,7 @@ from koe.ts_utils import extract_tensor_metadata, write_metadata,\
     bytes_to_ndarray
 from root.models import ExtraAttrValue, ExtraAttr
 
-__all__ = ['get_annotators_and_presets', 'get_preset_config']
+__all__ = ['get_annotators_and_presets', 'get_preset_config', 'get_tensor_data_file_paths']
 
 
 def _get_annotation_info(database, annotators):
@@ -86,3 +88,16 @@ def get_metadata(request, tensor_name):
     response['Content-Type'] = 'text/tsv'
     response['Content-Length'] = len(content)
     return response
+
+
+def get_tensor_data_file_paths(request):
+    tensor_name = get_or_error(request.POST, 'tensor-name')
+    tensor = get_or_error(DerivedTensorData, dict(name=tensor_name))
+
+    sids_path = tensor.full_tensor.get_sids_path()
+    bytes_path = tensor.get_bytes_path()
+
+    if not os.path.isfile(bytes_path):
+        bytes_path = tensor.full_tensor.get_bytes_path()
+
+    return {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': tensor.database.name}
