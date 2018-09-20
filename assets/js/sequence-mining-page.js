@@ -8,6 +8,9 @@ require('bootstrap-slider/dist/bootstrap-slider.js');
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 25;
 
+const pseudoStartName = '__PSEUDO_START__';
+const pseudoEndName = '__PSEUDO_END__';
+
 class Grid extends FlexibleGrid {
     init(cls) {
 
@@ -66,7 +69,8 @@ class Grid extends FlexibleGrid {
             self.rows = realRows;
 
             self.nodesDict = constructNodeDictionary(singletRows);
-            fillInSecondNodesInfo(self.nodesDict, pseudoRows);
+            fillInNodesInfo(self.nodesDict, pseudoRows);
+            // fillInRealEndNodesInfo(self.nodesDict, pseudoEndRows);
 
             updateSlickGridData(self.mainGrid, realRows);
             if (doCacheSelectableOptions) {
@@ -108,7 +112,7 @@ const separateRows = function(rows) {
         if (row.chainlength == 1) {
             singletRows.push(row);
         }
-        else if (sequence.startsWith('__PSEUDO_BEGIN__')) {
+        else if (sequence.startsWith(pseudoStartName) || sequence.endsWith(pseudoEndName)) {
             pseudoRows.push(row);
         }
         else {
@@ -116,9 +120,11 @@ const separateRows = function(rows) {
         }
     });
 
-    return {singletRows,
+    return {
+        singletRows,
         realRows,
-        pseudoRows};
+        pseudoRows
+    };
 };
 
 /**
@@ -213,7 +219,7 @@ const subscribeSlickEvents = function () {
             for (let i = 0; i < nItems; i++) {
                 rows.push(dataView.getItem(i));
             }
-            fillInSecondNodesInfo(grid.nodesDict, rows);
+            fillInNodesInfo(grid.nodesDict, rows);
             let graph = constructRealGraphContent({
                 nodesDict: grid.nodesDict,
                 withCentres: true,
@@ -263,6 +269,7 @@ export const run = function () {
 const constructNodeDictionary = function(singletRows) {
     let nodesDict = {};
     let pseudoStartFound = false;
+    let speudoEndFound = false;
     $.each(singletRows, function(idx, row) {
         let name = row.assocrule;
         let node = {
@@ -271,14 +278,21 @@ const constructNodeDictionary = function(singletRows) {
             nOccurs: row.transcount,
             inLinkCount: 0,
             outLinkCount: 0,
+            secondNodesInfo: {}
         };
 
         if (!pseudoStartFound) {
-            if (name === '__PSEUDO_BEGIN__') {
+            if (name === pseudoStartName) {
                 pseudoStartFound = true;
                 node.isPseudoStart = true;
                 node.nOccurs = 0;
-                node.secondNodesInfo = {}
+            }
+        }
+        if (!speudoEndFound) {
+            if (name === pseudoEndName) {
+                speudoEndFound = true;
+                node.isPseudoEnd = true;
+                node.nOccurs = 0;
             }
         }
 
@@ -287,11 +301,16 @@ const constructNodeDictionary = function(singletRows) {
     return nodesDict;
 };
 
-const fillInSecondNodesInfo = function(nodesDict, rows) {
-    $.each(nodesDict, function (firstNodeName, firstNode) {
-        if (!firstNode.isPseudoStart) {
-            firstNode.secondNodesInfo = {};
-            firstNode.isOrphan = true;
+
+const fillInNodesInfo = function(nodesDict, rows) {
+    $.each(nodesDict, function (nodeName, node) {
+        if (!node.isPseudoStart && !node.isPseudoEnd) {
+            let pseudoEndNode = node.secondNodesInfo[pseudoEndName];
+            node.secondNodesInfo = {};
+            if (pseudoEndNode) {
+                node.secondNodesInfo[pseudoEndName] = pseudoEndNode;
+            }
+            node.isOrphan = true;
         }
     });
     $.each(rows, function(idx, row) {
@@ -303,8 +322,14 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
             let nodeB = nodesDict[b];
 
             let secondNodesInfo = nodeA.secondNodesInfo;
+
+            // We want to keep the start node on the graph even if it isn't connected to any other node.
+            // Thus, the start node can never be orphan
             if (nodeA.isPseudoStart) {
                 nodeA.isOrphan = false;
+            }
+            else if (nodeB.isPseudoEnd) {
+                nodeB.isOrphan = false;
             }
             else {
                 nodeA.outLinkCount += row.transcount;
@@ -312,8 +337,8 @@ const fillInSecondNodesInfo = function(nodesDict, rows) {
                 nodeB.isOrphan = false;
                 nodeA.isOrphan = false;
             }
+
             if (b in secondNodesInfo) {
-                // secondNodesInfo[b].lift = Math.max(secondNodesInfo[b].lift, row.lift);
                 secondNodesInfo[b].transcount = row.transcount;
             }
             else {
@@ -332,8 +357,8 @@ const findRadialCentres = function(nodesDict) {
     // The CoO is the source points with highest lift.
     let centreDict = {};
 
-    $.each(nodesDict, function(firstNodeName, firstNode) {
-        $.each(firstNode.secondNodesInfo, function(secondNodeName, {lift}) {
+    $.each(nodesDict, function(nodeName, node) {
+        $.each(node.secondNodesInfo, function(secondNodeName, {lift}) {
             let centres;
             if (secondNodeName in centreDict) {
                 centres = centreDict[secondNodeName];
@@ -345,7 +370,7 @@ const findRadialCentres = function(nodesDict) {
                 };
                 centreDict[secondNodeName] = centres;
             }
-            centres.nodes.push(firstNode);
+            centres.nodes.push(node);
             centres.lifts.push(lift);
         });
     });
@@ -376,13 +401,13 @@ const constructRealGraphContent = function({nodesDict, removeOrphans = false, wi
     let nodes = [];
     let links = [];
 
-    $.each(nodesDict, function(firstNodeName, firstNode) {
-        let totalLinkCount = firstNode.inLinkCount + firstNode.outLinkCount;
-        if (totalLinkCount > 0 || firstNode.isPseudoStart) {
-            firstNode.totalLinkCount = totalLinkCount;
+    $.each(nodesDict, function(nodeName, node) {
+        let totalLinkCount = node.inLinkCount + node.outLinkCount;
+        if (totalLinkCount > 0 || node.isPseudoStart || node.isPseudoEnd) {
+            node.totalLinkCount = totalLinkCount;
 
-            if (!(removeOrphans && firstNode.isOrphan)) {
-                nodes.push(firstNode);
+            if (!(removeOrphans && node.isOrphan)) {
+                nodes.push(node);
             }
         }
     });
@@ -506,8 +531,12 @@ const displayGraph = function (graph) {
 
     $.each(graph.nodes, function(idx, node) {
         if (node.isPseudoStart) {
-            node.fy = height / 2;
-            node.fx = width / 2;
+            node.fy = margin;
+            node.fx = margin;
+        }
+        else if (node.isPseudoEnd) {
+            node.fy = height - margin;
+            node.fx = width - margin;
         }
     });
 
@@ -517,14 +546,14 @@ const displayGraph = function (graph) {
         return node.id;
     });
     forceLink.strength(function (link) {
-        if (link.source.isPseudoStart) {
-            // We don't want the pseudo start to have any real effect on the nodes
+        if (link.source.isPseudoStart || link.target.isPseudoEnd) {
+            // We don't want the pseudo start & end to have any real effect on the nodes
             return null;
         }
         return defaultLinkStrength(link);
     });
     forceLink.distance(function (link) {
-        if (link.source.isPseudoStart) {
+        if (link.source.isPseudoStart || link.target.isPseudoEnd) {
             // Same reason
             return null;
         }
@@ -535,9 +564,8 @@ const displayGraph = function (graph) {
     simulation.velocityDecay(0.1);
     simulation.nodes(graph.nodes);
     simulation.force('charge', d3.forceManyBody().strength(function (node) {
-        if (node.isPseudoStart) {
-            // Allow the start to exert a small pulling force to position the nodes better
-            return 10;
+        if (node.isPseudoStart || node.isPseudoEnd) {
+            return 0;
         }
         return -10
     }));
@@ -570,7 +598,7 @@ const displayGraph = function (graph) {
     let links = svg.selectAll('.link').data(graph.links).enter().append('path').
         attr('class', 'link').
         attr('marker-end', function (link) {
-            if (!link.selfLink && !link.source.isPseudoStart) {
+            if (!link.selfLink && !link.source.isPseudoStart && !link.target.isPseudoEnd) {
                 return `url(#marker-${link.source.id}-${link.target.id})`;
             }
             return null;
@@ -579,7 +607,7 @@ const displayGraph = function (graph) {
             return thickness(link.lift);
         }).
         attr('stroke', function (link) {
-            if (link.source.isPseudoStart) {
+            if (link.source.isPseudoStart || link.target.isPseudoEnd) {
                 return '#eee';
             }
             return linkColour(link.lift);
@@ -589,7 +617,7 @@ const displayGraph = function (graph) {
         attr('class', 'nodes').
         selectAll('circle').
         data(graph.nodes).enter().filter(function(node) {
-            return !node.isPseudoStart;
+            return !node.isPseudoStart && !node.isPseudoEnd;
         }).
         append('g');
 
@@ -654,7 +682,7 @@ const displayGraph = function (graph) {
 
         enterSelection.
             filter(function (node) {
-                return !node.isPseudoStart;
+                return !node.isPseudoStart && !node.isPseudoEnd;
             }).
             attr('transform', function(node) {
                 let x = Math.max(circleRadius + margin, Math.min(width - circleRadius - margin, node.x));

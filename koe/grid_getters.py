@@ -466,9 +466,9 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     labels2enums = {y: x + 1 for x, y in enumerate(label_set)}
 
     enums2labels = {x: y for y, x in labels2enums.items()}
-    # pseudo_end_id = len(label_set) + 1
-    # enums2labels[pseudo_end_id] = '__PSEUDO_END__'
-    enums2labels[0] = '__PSEUDO_BEGIN__'
+    pseudo_end_id = len(label_set) + 1
+    enums2labels[pseudo_end_id] = '__PSEUDO_END__'
+    enums2labels[0] = '__PSEUDO_START__'
 
     seg_id_to_label_enum = {x: labels2enums[y] for x, y in seg_id_to_label.items()}
 
@@ -538,7 +538,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
         pseudo_start = max(0, song_sequence[0][1] - 1)
         song_sequence.insert(0, [sequence_ind, pseudo_start, [0]])
-        # song_sequence.append([sequence_ind, eid + 1, [pseudo_end_id]])
+        song_sequence.append([sequence_ind, eid + 1, [pseudo_end_id]])
 
         if not has_unlabelled:
             sequences += song_sequence
