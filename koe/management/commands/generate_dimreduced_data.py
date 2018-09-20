@@ -30,7 +30,7 @@ class Command(BaseCommand):
 
     def handle(self, database_name, population_name, type, normalised, *args, **kwargs):
         database = get_or_error(Database, dict(name__iexact=database_name))
-        assert type in ['tsne', 'mds', 'mdspca']
+        assert type in ['tsne2', 'tsne3', 'mds', 'mdspca']
 
         features = Feature.objects.all().order_by('id')
         aggregations = Aggregation.objects.all().order_by('id')
@@ -82,7 +82,8 @@ class Command(BaseCommand):
                 coordinate = model.fit_transform(similarities)
                 stress = model.stress_
             else:
-                coordinate = run_clustering(population_data, PCA, 50)
+                ntsne_dims = int(type[4:])
+                coordinate = run_clustering(population_data, PCA, 50, ntsne_dims)
                 stress = None
 
         with open(file_name, 'wb') as f:

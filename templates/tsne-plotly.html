@@ -1,4 +1,4 @@
-{% extends 'base-with-footer.html' %}
+{% extends 'base.html' %}
 {% load staticfiles %}
 {% load widget_tweaks %}
 
@@ -15,5 +15,6 @@
             </div>
         </div>
     </div>
-    <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"></div>
+    <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}" database="{{ tensor.database.name }}"
+          annotator="{{ tensor.annotator.username }}"></div>
 {% endblock %}

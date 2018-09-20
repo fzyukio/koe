@@ -265,6 +265,7 @@ class TsnePlotlyView(TemplateView):
 
         context['metadata_path'] = metadata_path
         context['bytes_path'] = '/' + bytes_path
+        context['tensor'] = tensor
         return context
 
 
@@ -301,7 +302,7 @@ class FeatureExtrationView(FormView):
 
             tensor = make_subtensor(self.request.user, full_tensor, annotator, features, aggregations, dimreduce, ndims)
 
-        if tensor.dimreduce == 'tsne':
+        if tensor.dimreduce.startswith('tsne'):
             vizurl = reverse('tsne-plotly', kwargs={'tensor_name': tensor.name})
         else:
             vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})

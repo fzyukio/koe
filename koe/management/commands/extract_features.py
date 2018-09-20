@@ -216,7 +216,8 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
     bar.finish()
 
 
-def run_clustering(dataset, dim_reduce, n_components):
+def run_clustering(dataset, dim_reduce, n_components, n_dims=3):
+    assert 2 <= n_dims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
     if dim_reduce:
         dim_reduce_func = dim_reduce(n_components=n_components)
         dataset = dim_reduce_func.fit_transform(dataset, y=None)
@@ -225,7 +226,7 @@ def run_clustering(dataset, dim_reduce, n_components):
                   .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
 
     time_start = time.time()
-    tsne = TSNE(n_components=3, verbose=1, perplexity=10, n_iter=4000)
+    tsne = TSNE(n_components=n_dims, verbose=1, perplexity=10, n_iter=4000)
     tsne_results = tsne.fit_transform(dataset)
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
     return tsne_results

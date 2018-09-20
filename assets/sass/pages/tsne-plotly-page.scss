@@ -7,7 +7,7 @@ $plotly-controller-height: 38px;
 }
 
 #plotly-plot {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$plotly-controller-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$plotly-controller-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }
 
 .main-content {

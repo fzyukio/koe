@@ -35,7 +35,8 @@ def ica_reduce(data, n_components=50):
 reduce_funcs = {
     'ica': ica_reduce,
     'pca': pca_reduce,
-    'tsne': tsne_reduce,
+    'tsne3': lambda data, n_components: run_clustering(data, PCA, n_components, 3),
+    'tsne2': lambda data, n_components: run_clustering(data, PCA, n_components, 2),
     'none': None
 }
 

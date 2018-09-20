@@ -63,7 +63,10 @@ class FeatureExtrationForm(ErrorMixin, forms.Form):
     )
 
     dimreduce = forms.ChoiceField(
-        choices=(('pca', 'PCA'), ('ica', 'ICA'), ('tsne', 'TSNE'), ('none', 'No reduction')),
+        choices=(
+            ('pca', 'PCA'), ('ica', 'ICA'), ('tsne2', 'TSNE (2D)'), ('tsne3', 'TSNE (3D)'),
+            ('none', 'No reduction')
+        )
     )
 
     ndims = forms.IntegerField(

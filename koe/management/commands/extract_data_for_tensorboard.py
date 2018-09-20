@@ -9,6 +9,7 @@ import numpy as np
 from django.core.management.base import BaseCommand
 from django.urls import reverse
 from pymlfunc import tictoc
+from scipy.stats import zscore
 
 from koe import binstorage
 from koe.aggregator import aggregator_map
@@ -180,6 +181,13 @@ def create_derived_tensor(full_tensor, annotator, dim_reduce, ndims, recreate):
     derived_cfg_path = derived_tensor.get_config_path()
 
     if dim_reduce_fun:
+
+        # TSNE needs normalisation first
+        if dim_reduce.startswith('tsne'):
+            full_data = zscore(full_data)
+            full_data[np.where(np.isnan(full_data))] = 0
+            full_data[np.where(np.isinf(full_data))] = 0
+
         dim_reduced_data = dim_reduce_fun(full_data, n_components)
         derived_bytes_path = derived_tensor.get_bytes_path()
         ndarray_to_bytes(dim_reduced_data, derived_bytes_path)
@@ -213,8 +221,8 @@ class Command(BaseCommand):
                             help='Currrently support pca, ica, tsne, mds', )
         parser.add_argument('--ndims', action='store', dest='ndims', default=None, type=int,
                             help='Number of dimensions to reduce to. Required if --dim-reduce is not none', )
-        parser.add_argument('--recreate', dest='recreate', action='store_true', default=False,
-                            help='Recreate tensor & all derivatives even if exists. Tensor names are kept the same')
+        parser.add_argument('--recreate', dest='recreate', action='store', default=None, type=str,
+                            help='Choose from "all", "full", "derived". Tensor names are kept the same')
 
     def handle(self, database_name, annotator_name, dim_reduce, ndims, recreate, *args, **options):
         database = get_or_error(Database, dict(name__iexact=database_name))
@@ -223,8 +231,10 @@ class Command(BaseCommand):
         if dim_reduce != 'none' and ndims is None:
             raise Exception('ndims is required when --dim-reduce is not none')
 
-        full_tensor, ft_created = create_full_tensor(database, recreate)
-        derived_tensor, dt_created = create_derived_tensor(full_tensor, annotator, dim_reduce, ndims, recreate)
+        recreate_full = recreate in ['all', 'full']
+        recreate_derived = recreate in ['all', 'derived']
+        full_tensor, ft_created = create_full_tensor(database, recreate_full)
+        derived_tensor, dt_created = create_derived_tensor(full_tensor, annotator, dim_reduce, ndims, recreate_derived)
 
         if ft_created:
             print('Created full tensor: {}'.format(full_tensor.name))

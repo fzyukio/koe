@@ -6,13 +6,26 @@ import d3 from './d3-importer';
 let plotDiv = $('#plotly-plot');
 let metaPath = plotDiv.attr('metadata');
 let bytesPath = plotDiv.attr('bytes');
+let database = plotDiv.attr('database');
+let annotator = plotDiv.attr('annotator');
 let body = $('body');
 
-const plot = function (matrix3d, rowsMetadata, labelDatum, classType) {
+const plot = function (matrix, rowsMetadata, labelDatum, classType) {
     let traces = [];
     let class2RowIdx = labelDatum[classType];
     let nClasses = Object.keys(class2RowIdx).length;
     let colour = d3.scaleSequential(d3.interpolateRainbow).domain([0, nClasses]);
+    let ncols = matrix[0].length;
+    let plotType = 'scatter3d';
+    if (ncols == 2) {
+        plotType = 'scatter';
+    }
+
+    let plotTopBottomMargin = 40;
+    let plotWidth = plotDiv.width();
+    let plotDivHeight = plotDiv.height();
+    let plotSideMargin = (plotWidth - plotDivHeight) / 2 + plotTopBottomMargin;
+
 
     let classNames = Object.keys(class2RowIdx);
     classNames.sort();
@@ -24,18 +37,19 @@ const plot = function (matrix3d, rowsMetadata, labelDatum, classType) {
         let z = [];
         let rowsMetadataStr = [];
         $.each(ids, function (idx, rowIdx) {
-            let row = matrix3d[rowIdx];
+            let row = matrix[rowIdx];
             let rowMetadata = rowsMetadata[rowIdx];
             rowsMetadataStr.push(rowMetadata.join(', '));
             x.push(row[0]);
             y.push(row[1]);
-            z.push(row[2]);
+            if (ncols > 2) {
+                z.push(row[2]);
+            }
         });
 
         let trace = {
             x,
             y,
-            z,
             text: rowsMetadataStr,
             name: className,
             mode: 'markers',
@@ -48,24 +62,32 @@ const plot = function (matrix3d, rowsMetadata, labelDatum, classType) {
                 },
                 opacity: 1
             },
-            type: 'scatter3d'
+            type: plotType
         };
+
+        if (ncols > 2) {
+            trace.z = z;
+        }
+
         traces.push(trace);
     });
 
     let layout = {
-        title: 'Blah',
+        title: `T-SNE on ${database}, annotated by ${annotator}`,
+        hovermode: 'closest',
+        width: plotWidth,
+        height: plotDivHeight,
         margin: {
-            l: 0,
-            r: 0,
-            b: 0,
-            t: 0
+            l: plotSideMargin,
+            r: plotSideMargin,
+            b: plotTopBottomMargin,
+            t: plotTopBottomMargin
         }
     };
     plotly.newPlot('plotly-plot', traces, layout);
 };
 
-const initSelectize = function (dataMatrix, rowsMetadata, labelDatum) {
+const initSelectize = function ({dataMatrix, rowsMetadata, labelDatum}) {
     let labelTyleSelectEl = $('#label-type');
     let options = [];
     $.each(labelDatum, function (labelType) {
@@ -87,9 +109,7 @@ const initSelectize = function (dataMatrix, rowsMetadata, labelDatum) {
 
 export const run = function () {
     downloadTensorData().
-        then(function ({dataMatrix, rowsMetadata, labelDatum}) {
-            initSelectize(dataMatrix, rowsMetadata, labelDatum);
-        });
+        then(initSelectize);
 };
 
 
@@ -143,8 +163,10 @@ const downloadTensorData = function () {
         }
 
         body.removeClass('loading');
-        return {dataMatrix,
+        return {
+            dataMatrix,
             rowsMetadata,
-            labelDatum}
+            labelDatum
+        }
     });
 };
