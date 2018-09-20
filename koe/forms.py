@@ -31,7 +31,7 @@ class SongPartitionForm(ErrorMixin, forms.Form):
     )
 
 
-class FeatureExtration(ErrorMixin, forms.Form):
+class FeatureExtrationForm(ErrorMixin, forms.Form):
     database = forms.ModelChoiceField(
         to_field_name='id',
         queryset=Database.objects.all(),
@@ -63,7 +63,7 @@ class FeatureExtration(ErrorMixin, forms.Form):
     )
 
     dimreduce = forms.ChoiceField(
-        choices=(('pca', 'PCA'), ('ica', 'ICA'), ('none', 'No reduction')),
+        choices=(('pca', 'PCA'), ('ica', 'ICA'), ('tsne', 'TSNE'), ('none', 'No reduction')),
     )
 
     ndims = forms.IntegerField(

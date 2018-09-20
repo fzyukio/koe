@@ -10,15 +10,32 @@ import numpy as np
 from django.conf import settings
 from django.urls import reverse
 
+from koe.management.commands.extract_features import run_clustering
 from koe.models import Segment, DerivedTensorData
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
 
-from sklearn.decomposition import PCA as pca, FastICA as ica
+from sklearn.decomposition import PCA, FastICA
+
+
+def tsne_reduce(data, n_components=50):
+    return run_clustering(data, PCA, n_components)
+
+
+def pca_reduce(data, n_components=50):
+    dim_reduce_func = PCA(n_components=n_components)
+    return dim_reduce_func.fit_transform(data)
+
+
+def ica_reduce(data, n_components=50):
+    dim_reduce_func = FastICA(n_components=n_components)
+    return dim_reduce_func.fit_transform(data)
+
 
 reduce_funcs = {
-    'ica': ica,
-    'pca': pca,
+    'ica': ica_reduce,
+    'pca': pca_reduce,
+    'tsne': tsne_reduce,
     'none': None
 }
 
@@ -165,8 +182,7 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
 
     new_data = cherrypick_tensor_data_by_feature_aggreation(full_data, col_inds, features, aggregations)
     if reduce_func:
-        dim_reduce_func = reduce_func(n_components=ndims)
-        new_data = dim_reduce_func.fit_transform(new_data)
+        new_data = reduce_func(new_data, n_components=ndims)
 
     new_tensor_name = uuid.uuid4().hex
     features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))

@@ -322,6 +322,9 @@ $(document).ready(function () {
     else if (pageName.startsWith('/feature-extraction/')) {
         page = require('feature-extraction-page')
     }
+    else if (pageName.startsWith('/tsne/plotly/')) {
+        page = require('tsne-plotly-page')
+    }
 
     _preRun();
 

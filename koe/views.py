@@ -1,12 +1,14 @@
 import json
+import os
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
-from koe.forms import SongPartitionForm, FeatureExtration
+from koe.forms import SongPartitionForm, FeatureExtrationForm
 from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
 from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermission, AccessRequest, AudioTrack,\
     DerivedTensorData, FullTensorData
@@ -247,8 +249,27 @@ class TensorvizView(TemplateView):
         return context
 
 
+class TsnePlotlyView(TemplateView):
+    template_name = 'tsne-plotly.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(TsnePlotlyView, self).get_context_data(**kwargs)
+        tensor_name = get_or_error(kwargs, 'tensor_name')
+        tensor = get_or_error(DerivedTensorData, dict(name=tensor_name))
+
+        bytes_path = tensor.get_bytes_path()
+        metadata_path = reverse('tsne-meta', kwargs={'tensor_name': tensor.name})
+
+        if not os.path.isfile(bytes_path):
+            bytes_path = tensor.full_tensor.get_bytes_path()
+
+        context['metadata_path'] = metadata_path
+        context['bytes_path'] = '/' + bytes_path
+        return context
+
+
 class FeatureExtrationView(FormView):
-    form_class = FeatureExtration
+    form_class = FeatureExtrationForm
     template_name = 'feature-extraction.html'
 
     def form_invalid(self, form):
@@ -280,4 +301,9 @@ class FeatureExtrationView(FormView):
 
             tensor = make_subtensor(self.request.user, full_tensor, annotator, features, aggregations, dimreduce, ndims)
 
-        return HttpResponse(json.dumps(dict(message=tensor.name)))
+        if tensor.dimreduce == 'tsne':
+            vizurl = reverse('tsne-plotly', kwargs={'tensor_name': tensor.name})
+        else:
+            vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})
+
+        return HttpResponse(json.dumps(dict(message=vizurl)))

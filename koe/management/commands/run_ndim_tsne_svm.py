@@ -12,7 +12,14 @@ from scipy.stats import zscore
 
 from koe.management.commands.extract_features import run_clustering
 from koe.management.commands.run_kfold_validation import classifiers, run_nfolds
-from koe.ts_utils import reduce_funcs
+
+from sklearn.decomposition import PCA, FastICA
+
+reduce_funcs = {
+    'ica': FastICA,
+    'pca': PCA,
+    'none': None
+}
 
 
 class Command(BaseCommand):

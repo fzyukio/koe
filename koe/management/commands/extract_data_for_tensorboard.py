@@ -14,7 +14,7 @@ from koe import binstorage
 from koe.aggregator import aggregator_map
 from koe.model_utils import get_or_error
 from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, DerivedTensorData, AudioFile
-from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary
+from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary, reduce_funcs
 from root.models import User
 from root.utils import data_path
 
@@ -106,7 +106,9 @@ def get_binstorage_locations(features, aggregators):
     return f2bs, fa2bs
 
 
-def create_full_tensor(database, features, aggregations, recreate):
+def create_full_tensor(database, recreate):
+    features = Feature.objects.all().order_by('id')
+    aggregations = Aggregation.objects.all().order_by('id')
     features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
     aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
     aggregators = [aggregator_map[x.name] for x in aggregations]
@@ -123,7 +125,6 @@ def create_full_tensor(database, features, aggregations, recreate):
         full_tensors_name = uuid.uuid4().hex
         full_tensor = FullTensorData(name=full_tensors_name, database=database, features_hash=features_hash,
                                      aggregations_hash=aggregations_hash)
-        full_tensor.save()
 
     full_sids_path = full_tensor.get_sids_path()
     full_bytes_path = full_tensor.get_bytes_path()
@@ -139,15 +140,31 @@ def create_full_tensor(database, features, aggregations, recreate):
     with open(full_cols_path, 'w', encoding='utf-8') as f:
         json.dump(col_inds, f)
 
+    full_tensor.save()
     return full_tensor, True
 
 
-def create_derived_tensor(full_tensor, annotator, recreate):
+def create_derived_tensor(full_tensor, annotator, dim_reduce, ndims, recreate):
     admin = get_or_error(User, dict(username__iexact='superuser'))
+    full_sids_path = full_tensor.get_sids_path()
+    full_bytes_path = full_tensor.get_bytes_path()
+
+    sids = bytes_to_ndarray(full_sids_path, np.int32)
+    full_data = get_rawdata_from_binary(full_bytes_path, len(sids))
+
+    if dim_reduce != 'none':
+        dim_reduce_fun = reduce_funcs[dim_reduce]
+        n_feature_cols = full_data.shape[1]
+        n_components = min(n_feature_cols // 2, ndims)
+    else:
+        dim_reduce_fun = None
+        n_components = None
+
     derived_tensor = DerivedTensorData.objects.filter(database=full_tensor.database, full_tensor=full_tensor,
                                                       features_hash=full_tensor.features_hash,
                                                       aggregations_hash=full_tensor.aggregations_hash,
-                                                      dimreduce='none', creator=admin, annotator=annotator).first()
+                                                      ndims=n_components, dimreduce=dim_reduce, creator=admin,
+                                                      annotator=annotator).first()
     if derived_tensor and not recreate:
         print('Derived tensor {} already exists. If you want to recreate, turn on flag --recreate'
               .format(derived_tensor.name))
@@ -157,28 +174,32 @@ def create_derived_tensor(full_tensor, annotator, recreate):
         derived_tensors_name = uuid.uuid4().hex
         derived_tensor = DerivedTensorData(name=derived_tensors_name, database=full_tensor.database,
                                            full_tensor=full_tensor, features_hash=full_tensor.features_hash,
-                                           aggregations_hash=full_tensor.aggregations_hash,
-                                           dimreduce='none', creator=admin, annotator=annotator)
-        derived_tensor.save()
+                                           aggregations_hash=full_tensor.aggregations_hash, dimreduce=dim_reduce,
+                                           ndims=n_components, creator=admin, annotator=annotator)
 
     derived_cfg_path = derived_tensor.get_config_path()
 
-    full_sids_path = full_tensor.get_sids_path()
-    full_bytes_path = full_tensor.get_bytes_path()
-
-    sids = bytes_to_ndarray(full_sids_path, np.int32)
-    full_data = get_rawdata_from_binary(full_bytes_path, len(sids))
+    if dim_reduce_fun:
+        dim_reduced_data = dim_reduce_fun(full_data, n_components)
+        derived_bytes_path = derived_tensor.get_bytes_path()
+        ndarray_to_bytes(dim_reduced_data, derived_bytes_path)
+        tensor_shape = dim_reduced_data.shape
+        tensor_path = '/' + derived_bytes_path,
+    else:
+        tensor_shape = full_data.shape
+        tensor_path = '/' + full_bytes_path,
 
     # Always write config last - to make sure it's not missing anything
     embedding = dict(
         tensorName=derived_tensor.name,
-        tensorShape=full_data.shape,
-        tensorPath='/' + full_bytes_path,
+        tensorShape=tensor_shape,
+        tensorPath=tensor_path,
         metadataPath=reverse('tsne-meta', kwargs={'tensor_name': derived_tensor.name}),
     )
     config = dict(embeddings=[embedding])
     write_config(config, derived_cfg_path)
 
+    derived_tensor.save()
     return derived_tensor, True
 
 
@@ -188,17 +209,22 @@ class Command(BaseCommand):
                             help='E.g Bellbird, Whale, ..., case insensitive', )
         parser.add_argument('--annotator', action='store', dest='annotator_name', default='superuser', type=str,
                             help='Name of the person who labels this dataset, case insensitive', )
+        parser.add_argument('--dim-reduce', action='store', dest='dim_reduce', default='none', type=str,
+                            help='Currrently support pca, ica, tsne, mds', )
+        parser.add_argument('--ndims', action='store', dest='ndims', default=None, type=int,
+                            help='Number of dimensions to reduce to. Required if --dim-reduce is not none', )
         parser.add_argument('--recreate', dest='recreate', action='store_true', default=False,
                             help='Recreate tensor & all derivatives even if exists. Tensor names are kept the same')
 
-    def handle(self, database_name, annotator_name, recreate, *args, **options):
+    def handle(self, database_name, annotator_name, dim_reduce, ndims, recreate, *args, **options):
         database = get_or_error(Database, dict(name__iexact=database_name))
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
-        features = Feature.objects.all().order_by('id')
-        aggregations = Aggregation.objects.all().order_by('id')
+        assert dim_reduce in reduce_funcs.keys(), 'Unknown function: {}'.format(dim_reduce)
+        if dim_reduce != 'none' and ndims is None:
+            raise Exception('ndims is required when --dim-reduce is not none')
 
-        full_tensor, ft_created = create_full_tensor(database, features, aggregations, recreate)
-        derived_tensor, dt_created = create_derived_tensor(full_tensor, annotator, recreate)
+        full_tensor, ft_created = create_full_tensor(database, recreate)
+        derived_tensor, dt_created = create_derived_tensor(full_tensor, annotator, dim_reduce, ndims, recreate)
 
         if ft_created:
             print('Created full tensor: {}'.format(full_tensor.name))

@@ -51,6 +51,7 @@
         {% for choice in form.dimreduce %}
             <div class="form-check form-check-inline col-xs-6 col-sm-4 col-md-3 col-lg-2">
                 <input class="form-check-input" type="radio" name="dimreduce"
+                       {% if choice.data.value == 'tsne' %}disabled{% endif %}
                        id="{{ choice.id_for_label }}"
                        value="{{ choice.data.value }}">
                 <label class="form-check-label" for="inlineRadio1">{{ choice.data.label }}</label>

@@ -58,8 +58,9 @@ urlpatterns += \
             name='song-partition'),
 
         url(r'^feature-extraction/$', login_required(views.FeatureExtrationView.as_view()), name='feature-extraction'),
-        url(r'^tsne/(?P<tensor_name>[0-9a-z]+)/$', views.TensorvizView.as_view(), name='tsne'),
-        url(r'^tsne/(?P<tensor_name>[0-9a-z]+)/meta/$', tensorviz.get_metadata, name='tsne-meta'),
+        url(r'^tsne/plotly/(?P<tensor_name>[0-9a-z]{32})/$', views.TsnePlotlyView.as_view(), name='tsne-plotly'),
+        url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
+        url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
 
         re_path(r'^cms/', include(wagtailadmin_urls)),
         re_path(r'^documents/', include(wagtaildocs_urls)),

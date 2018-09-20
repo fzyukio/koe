@@ -174,11 +174,9 @@ export const postRun = function () {
     });
 
 
-    let visualiseCallback = function (tensorName) {
+    let visualiseCallback = function (visualisationUrl) {
         let baseUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '');
-        let pageUrl = visualiseBtn.attr('page-url');
-        let tensorUrl = baseUrl + pageUrl.replace('replaceme', tensorName);
-
+        let tensorUrl = baseUrl + visualisationUrl;
         window.open(tensorUrl, '_blank');
     };
 
@@ -197,6 +195,7 @@ export const postRun = function () {
         form.submit();
 
     });
+
     downloadBtn.click(function () {
         form.callback = downloadCallback;
         form.submit();

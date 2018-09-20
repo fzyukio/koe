@@ -2,8 +2,8 @@ import {getCache} from './utils';
 require('selectize/dist/js/selectize.js');
 
 
-export const initSelectizeSimple = function ($select) {
-    $select.selectize({
+export const initSelectizeSimple = function ($select, options) {
+    let args = {
         sortField: 'text',
         valueField: 'value',
         labelField: 'text',
@@ -11,7 +11,11 @@ export const initSelectizeSimple = function ($select) {
         create: true,
         selectOnTab: true,
         dropdownDirection: 'auto',
-    });
+    };
+    if (options) {
+        args.options = options;
+    }
+    $select.selectize(args);
 
     return $select[0].selectize;
 };

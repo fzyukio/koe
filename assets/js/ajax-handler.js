@@ -30,16 +30,28 @@ export const postRequest = function (args) {
 };
 
 
-export const downloadRequest = function (url, ArrayClass) {
+/**
+ * Make a request to download file by GET
+ * @param url
+ * @param ArrayClass if not null, the response is converted to the typed array of this class
+ * @returns {Promise}
+ */
+export const downloadRequest = function (url, ArrayClass = null) {
     return new Promise(function (resolve) {
         let req = new XMLHttpRequest();
         req.open('GET', url, true);
-        req.responseType = 'arraybuffer';
+        if (ArrayClass) {
+            req.responseType = 'arraybuffer';
+        }
 
         req.onload = function () {
-            let arrayBuffer = req.response;
-            let byteArray = new ArrayClass(arrayBuffer);
-            resolve(byteArray);
+            if (ArrayClass) {
+                let byteArray = new ArrayClass(req.response);
+                resolve(byteArray);
+            }
+            else {
+                resolve(req.response);
+            }
         };
 
         req.send(null);
