@@ -1,6 +1,6 @@
+/* global Plotly */
 import {downloadRequest} from './ajax-handler';
 import {initSelectizeSimple} from './selectize-formatter';
-const plotly = require('plotly.js');
 import d3 from './d3-importer';
 
 let plotDiv = $('#plotly-plot');
@@ -84,7 +84,7 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
             t: plotTopBottomMargin
         }
     };
-    plotly.newPlot('plotly-plot', traces, layout);
+    Plotly.newPlot('plotly-plot', traces, layout);
 };
 
 const initSelectize = function ({dataMatrix, rowsMetadata, labelDatum}) {

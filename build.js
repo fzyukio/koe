@@ -14,9 +14,12 @@ const configFile = productionMode ? "webpack.prod.config.js": "webpack.local.con
 
 console.log(`Build in ${mode} mode on ${osType} system using ${configFile}`);
 
+let command;
 if (osType === 'Linux' || osType == 'Darwin')
-    exec(`NODE_ENV=${mode} webpack -p --progress --colors --config ${configFile} --bail`, log);
+    command = `NODE_ENV=${mode} webpack -p --progress --colors --config ${configFile} --bail`;
 else if (os.type() === 'Windows_NT')
-    exec(`set NODE_ENV=${mode} & webpack -p --progress --colors --config ${configFile} --bail`, log);
+    command = `set NODE_ENV=${mode} & webpack -p --progress --colors --config ${configFile} --bail`;
 else
     throw new Error("Unsupported OS found: " + os.type());
+console.log(command);
+exec(command, log);

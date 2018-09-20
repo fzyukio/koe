@@ -18,3 +18,7 @@
     <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}" database="{{ tensor.database.name }}"
           annotator="{{ tensor.annotator.username }}"></div>
 {% endblock %}
+
+{% block scripts %}
+    <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+{% endblock %}
