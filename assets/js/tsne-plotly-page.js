@@ -9,6 +9,17 @@ let bytesPath = plotDiv.attr('bytes');
 let database = plotDiv.attr('database');
 let annotator = plotDiv.attr('annotator');
 let body = $('body');
+let plotlyOptions = {
+    modeBarButtonsToAdd: [
+        {
+            name: 'saveSVG',
+            icon: Plotly.Icons.camera,
+            click (gd) {
+                Plotly.downloadImage(gd, {format: 'svg'})
+            }
+        }
+    ]
+};
 
 const plot = function (matrix, rowsMetadata, labelDatum, classType) {
     let traces = [];
@@ -24,7 +35,8 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
     let plotTopBottomMargin = 40;
     let plotWidth = plotDiv.width();
     let plotDivHeight = plotDiv.height();
-    let plotSideMargin = (plotWidth - plotDivHeight) / 2 + plotTopBottomMargin;
+    let plotLeftMargin = 50;
+    let plotRightMargin = plotWidth - plotDivHeight - plotLeftMargin + plotTopBottomMargin;
 
 
     let classNames = Object.keys(class2RowIdx);
@@ -78,13 +90,13 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
         width: plotWidth,
         height: plotDivHeight,
         margin: {
-            l: plotSideMargin,
-            r: plotSideMargin,
+            l: plotLeftMargin,
+            r: plotRightMargin,
             b: plotTopBottomMargin,
             t: plotTopBottomMargin
         }
     };
-    Plotly.newPlot('plotly-plot', traces, layout);
+    Plotly.newPlot('plotly-plot', traces, layout, plotlyOptions);
 };
 
 const initSelectize = function ({dataMatrix, rowsMetadata, labelDatum}) {
