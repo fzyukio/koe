@@ -2,6 +2,8 @@
 import {downloadRequest} from './ajax-handler';
 import {initSelectizeSimple} from './selectize-formatter';
 import d3 from './d3-importer';
+import {queryAndPlayAudio, initAudioContext} from "./audio-handler";
+import {getUrl} from "./utils";
 
 let plotDiv = $('#plotly-plot');
 let metaPath = plotDiv.attr('metadata');
@@ -9,6 +11,9 @@ let bytesPath = plotDiv.attr('bytes');
 let database = plotDiv.attr('database');
 let annotator = plotDiv.attr('annotator');
 let body = $('body');
+let sylSpects = $('#syl-spects');
+
+
 let plotlyOptions = {
     modeBarButtonsToAdd: [
         {
@@ -35,12 +40,12 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
     let plotTopBottomMargin = 40;
     let plotWidth = plotDiv.width();
     let plotDivHeight = plotDiv.height();
-    let plotLeftMargin = 50;
-    let plotRightMargin = plotWidth - plotDivHeight - plotLeftMargin + plotTopBottomMargin;
+    let plotRightMargin = 50;
+    let plotLeftMargin = plotWidth - plotDivHeight - plotRightMargin + plotTopBottomMargin;
 
 
     let classNames = Object.keys(class2RowIdx);
-    classNames.sort();
+    // classNames.sort();
 
     $.each(classNames, function (classNo, className) {
         let ids = class2RowIdx[className];
@@ -68,10 +73,6 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
             marker: {
                 size: 5,
                 color: colour(classNo),
-                line: {
-                    color: '#ffffff',
-                    width: 0.5
-                },
                 opacity: 1
             },
             type: plotType
@@ -119,9 +120,44 @@ const initSelectize = function ({dataMatrix, rowsMetadata, labelDatum}) {
     labelTyleSelecthandler.setValue('label');
 };
 
+const handleClick = function ({points, event}) {
+    let pointText = points[0].text;
+    let pointId = parseInt(pointText.substr(0, pointText.indexOf(',')));
+    console.log(pointId);
+    let data = {'segment-id': pointId};
+
+    let args_ = {
+        url: getUrl('send-request', 'koe/get-segment-audio-data'),
+        cacheKey: pointId,
+        postData: data
+    };
+
+    queryAndPlayAudio(args_);
+};
+
+const handleHover = function ({points}) {
+    let pointText = points[0].text;
+    let pointId = pointText.substr(0, pointText.indexOf(','));
+    let children = sylSpects.children();
+    let nChildren = children.length;
+    if (nChildren>5) {
+        for (let i=5; i<nChildren; i++) {
+            children[i].remove();
+        }
+    }
+    sylSpects.prepend(`<img src="/user_data/spect/fft/syllable/${pointId}.png">`);
+};
+
 export const run = function () {
-    downloadTensorData().
-        then(initSelectize);
+    initAudioContext();
+
+    downloadTensorData()
+    .then(initSelectize)
+    .then(function () {
+        plotDiv[0].
+            on('plotly_click', handleClick).
+            on('plotly_hover', handleHover);
+    });
 };
 
 

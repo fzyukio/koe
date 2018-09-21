@@ -7,15 +7,17 @@
 
 {% block content-center %}
     <div class="row no-margin">
-        <div class="col-md-2 col-lg-1 no-padding">
+        <div class="col-md-4 col-lg-2 no-padding">
             <div id="plotly-controller">
                 <label for="label-type" class="col-form-label">Label by</label>
-
                 <select class="" id="label-type" tabindex="-1">
                 </select>
             </div>
+            <div id="syl-spects">
+
+            </div>
         </div>
-        <div class="col-md-10 col-lg-11 no-padding">
+        <div class="col-md-8 col-lg-10 no-padding">
             <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
                  database="{{ tensor.database.name }}"
                  annotator="{{ tensor.annotator.username }}"></div>
