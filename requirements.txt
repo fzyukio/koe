@@ -88,7 +88,6 @@ mysqlclient
 Markdown
 python-markdown-oembed
 djangorestframework==3.8.2
-wagtail==2.1
 pydub
 flake8-docstrings
 uwsgi

@@ -308,3 +308,7 @@ class FeatureExtrationView(FormView):
             vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})
 
         return HttpResponse(json.dumps(dict(message=vizurl)))
+
+
+class HomePageView(TemplateView):
+    template_name = 'home_page.html'

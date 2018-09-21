@@ -6,7 +6,6 @@ from django.conf import settings
 from django.urls import NoReverseMatch
 from django.urls import reverse
 
-from cms.models import HomePage
 from root.models import MagicChoices
 
 register = template.Library()
@@ -104,18 +103,6 @@ def get_navbar_urls():
     ]
 
     return pages
-
-
-@register.simple_tag
-def get_pages():
-    """
-    Return all the child pages of the first home page (The welcome page)
-    :return: a list of HomePage instances that are children of the first HomePage
-    """
-    home_page_root = HomePage.objects.first()
-    if home_page_root:
-        return home_page_root.get_children().filter(live__exact=True)
-    return None
 
 
 @register.filter

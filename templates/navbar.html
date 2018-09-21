@@ -2,93 +2,80 @@
 {% load cache %}
 {% load custom_tags %}
 
-<div id="navbar" class="navbar {% if transparent_bg == True %}transparent{% endif %} navbar-fixed-top" role="navigation">
+<div id="navbar" class="navbar {% if transparent_bg == True %}transparent{% endif %} navbar-fixed-top"
+     role="navigation">
     <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
-        <a href="/" class="navbar-brand brand-image"><img class="pull-left" alt="Brand" src="{% static "images/favicon/android-icon-36x36.png" %}"></a>
+        <a href="/" class="navbar-brand brand-image"><img class="pull-left" alt="Brand"
+                                                          src="{% static "images/favicon/android-icon-36x36.png" %}"></a>
         <a href="/" class="navbar-brand">声KOE</a>
     </div>
     <div class="collapse navbar-collapse">
-        {% cache None navbar page subpage%}
-        <ul class="nav navbar-nav">
-            {% get_navbar_urls as pages %}
-            {% for page_ in pages %}
-                {% include "partials/navbar-menu.html" with page=page_ current_page=page current_subpage=subpage%}
-            {% endfor %}
-
-          {# Display all child pages of the Welcome page (from the CMS system)#}
-            <li class="dropdown {% if page.is_cms_page %}active{% endif %}">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help<span class="caret"></span></a>
-                <ul class="dropdown-menu">
-                {% get_pages as pages %}
-                 {# We must use page_ to not shadow the page variable that is given by the view #}
+        {% cache None navbar page subpage %}
+            <ul class="nav navbar-nav">
+                {% get_navbar_urls as pages %}
                 {% for page_ in pages %}
-                    {% if page.slug == page_.slug %}
-                        <li class="active"><a href="{{ page_.url }}">{{ page_.title|title }}</a></li>
-                    {% else %}
-                        <li><a href="{{ page_ | get_default_url }}">{{ page_.title|title }}</a></li>
-                    {% endif %}
+                    {% include "partials/navbar-menu.html" with page=page_ current_page=page current_subpage=subpage %}
                 {% endfor %}
-                </ul>
-            </li>
-        </ul>
+            </ul>
         {% endcache %}
         <ul id="user-card" class="nav navbar-nav navbar-right">
             <li class="dropdown">
                 {% if user.is_authenticated %}
                     {% cache 300 navbar-user-authenticated request.user.username %}
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <span class="glyphicon glyphicon-user"></span> 
-                        <strong>{{ user.username }}</strong>
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <div class="navbar-login row">
-                                <div class="user-avatar col-xs-3">
-                                    <img src="{{ user.get_avatar }}"/>
-                                </div>
-                                <div class="user-detail col-xs-9">
-                                    <p class="text-left"><strong>{{ user.get_full_name }}</strong></p>
-                                    <p class="text-left small">{{ user.email }}</p>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                            <div class="navbar-login navbar-login-session">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <a href="{% url 'logout' %}" class="btn btn-primary btn-block">Log out</a>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span class="glyphicon glyphicon-user"></span> 
+                            <strong>{{ user.username }}</strong>
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <div class="navbar-login row">
+                                    <div class="user-avatar col-xs-3">
+                                        <img src="{{ user.get_avatar }}"/>
+                                    </div>
+                                    <div class="user-detail col-xs-9">
+                                        <p class="text-left"><strong>{{ user.get_full_name }}</strong></p>
+                                        <p class="text-left small">{{ user.email }}</p>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
-                    </ul>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <div class="navbar-login navbar-login-session">
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <a href="{% url 'logout' %}" class="btn btn-primary btn-block">Log out</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
                     {% endcache %}
                 {% else %}
-                    {% cache None navbar-user-notauthenticated%}
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <span class="glyphicon glyphicon-user"></span> 
-                        <strong>Guest</strong>
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <div class="navbar-login navbar-login-session">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <a href="{% url 'login' %}" class="btn btn-primary btn-block">Log in</a>
-                                        <a href="{% url 'register' %}" class="btn btn-primary btn-block">Register</a>
+                    {% cache None navbar-user-notauthenticated %}
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span class="glyphicon glyphicon-user"></span> 
+                            <strong>Guest</strong>
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <div class="navbar-login navbar-login-session">
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <a href="{% url 'login' %}" class="btn btn-primary btn-block">Log in</a>
+                                            <a href="{% url 'register' %}"
+                                               class="btn btn-primary btn-block">Register</a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
                     {% endcache %}
                 {% endif %}
             </li>

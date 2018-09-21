@@ -5,10 +5,6 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseServerError
 from django.shortcuts import render
-from django.urls import re_path, include
-from wagtail.admin import urls as wagtailadmin_urls
-from wagtail.core import urls as wagtail_urls
-from wagtail.documents import urls as wagtaildocs_urls
 
 from koe import views
 from koe.request_handlers import tensorviz
@@ -62,7 +58,5 @@ urlpatterns += \
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
 
-        re_path(r'^cms/', include(wagtailadmin_urls)),
-        re_path(r'^documents/', include(wagtaildocs_urls)),
-        re_path(r'', include(wagtail_urls))
+        url(r'^$', views.HomePageView.as_view(), name='homepage'),
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

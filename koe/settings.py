@@ -38,31 +38,12 @@ INSTALLED_APPS = [
     'webpack_loader',
     'widget_tweaks',
     'tz_detect',
-
-    'wagtail.contrib.forms',
-    'wagtail.contrib.redirects',
-    'wagtail.embeds',
-    'wagtail.sites',
-    'wagtail.users',
-    'wagtail.snippets',
-    'wagtail.documents',
-    'wagtail.images',
-    'wagtail.search',
-    'wagtail.admin',
-    'wagtail.core',
-
-    'modelcluster',
-    'taggit',
-
     'root',
     'koe',
-    'cms',
     'django_extensions'
 ]
 
 MIDDLEWARE = [
-    'wagtail.core.middleware.SiteMiddleware',
-    'wagtail.contrib.redirects.middleware.RedirectMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -188,8 +169,6 @@ else:  # assume we have fully-specified smtp configuration
 DATABASES = {
     'default': dj_database_url.parse(envconf['database_url'])
 }
-
-WAGTAIL_SITE_NAME = 'Koe'
 
 JSONEncoder_olddefault = JSONEncoder.default
 

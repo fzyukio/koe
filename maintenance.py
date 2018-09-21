@@ -19,18 +19,6 @@ fixture_list = [
     'root.user',
     'root.extraattr',
     'root.columnactionvalue',
-    'wagtailembeds',
-    'wagtailsites',
-    'wagtailusers',
-    'wagtailsnippets',
-    'wagtailimages',
-    'wagtailsearch',
-    'wagtailadmin',
-    'wagtailcore',
-    'wagtaildocs',
-    'wagtailredirects',
-    'wagtailforms',
-    'taggit',
     'cms',
     'koe.database',
     'koe.accessrequest',
@@ -466,18 +454,6 @@ def apply_migrations():
     run_command('python manage.py migrate --database=default')
 
 
-def delete_wagtail_pages():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'koe.settings')
-    import django
-    django.setup()
-
-    from wagtail.core.models import Page, Site, GroupPagePermission, Collection
-    Page.objects.all().delete()
-    Site.objects.all().delete()
-    GroupPagePermission.objects.all().delete()
-    Collection.objects.all().delete()
-
-
 def backup_database_using_fixtures():
     with zipfile.ZipFile(backup_file, 'w', zipfile.ZIP_BZIP2, False) as zip_file:
         for fixture_name in fixture_list:
@@ -607,7 +583,6 @@ if __name__ == '__main__':
 
     if reset_db:
         apply_migrations()
-        delete_wagtail_pages()
 
     if restore_db:
         empty_database()
