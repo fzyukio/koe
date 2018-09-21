@@ -1,7 +1,7 @@
 @import "../variables";
 
 #plotly-plot {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
+  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }
 
 .main-content {

@@ -5,14 +5,15 @@ import os
 import pickle
 
 import numpy as np
+import time
 from django.core.management.base import BaseCommand
 from scipy.spatial.distance import squareform, pdist
 from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS
+from sklearn.manifold import TSNE
 
 from koe.management.commands.extract_data_for_tensorboard import get_sids_tids
-from koe.management.commands.extract_features import run_clustering
 from koe.model_utils import get_or_error
 from koe.models import Feature, Aggregation, Database, FullTensorData
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary, cherrypick_tensor_data_by_sids
@@ -26,9 +27,11 @@ class Command(BaseCommand):
                             help='Name of the person who labels this dataset, case insensitive', )
         parser.add_argument('--type', action='store', dest='type', required=True, type=str,
                             help='MDS or TSNE', )
+        parser.add_argument('--perplexity', action='store', dest='perplexity', default=10, type=int,
+                            help='Only used for TSNE', )
         parser.add_argument('--normalised', dest='normalised', action='store_true', default=False)
 
-    def handle(self, database_name, population_name, type, normalised, *args, **kwargs):
+    def handle(self, database_name, population_name, type, perplexity, normalised, *args, **kwargs):
         database = get_or_error(Database, dict(name__iexact=database_name))
         assert type in ['tsne2', 'tsne3', 'mds', 'mdspca']
 
@@ -53,7 +56,10 @@ class Command(BaseCommand):
         sids, tids = get_sids_tids(database, population_name)
 
         normalised_str = 'normed' if normalised else 'raw'
-        file_name = '{}_{}_{}_{}.pkl'.format(database_name, population_name, type, normalised_str)
+        if type.startswith('tsne'):
+            file_name = '{}_{}_{}_{}_{}.pkl'.format(database_name, population_name, type, perplexity, normalised_str)
+        else:
+            file_name = '{}_{}_{}_{}.pkl'.format(database_name, population_name, type, normalised_str)
         if os.path.isfile(file_name):
             with open(file_name, 'rb') as f:
                 saved = pickle.load(f)
@@ -83,7 +89,16 @@ class Command(BaseCommand):
                 stress = model.stress_
             else:
                 ntsne_dims = int(type[4:])
-                coordinate = run_clustering(population_data, PCA, 50, ntsne_dims)
+                dim_reduce_func = PCA(n_components=50)
+                population_data = dim_reduce_func.fit_transform(population_data, y=None)
+
+                print('Cumulative explained variation: {}'
+                      .format(np.sum(dim_reduce_func.explained_variance_ratio_)))
+
+                time_start = time.time()
+                tsne = TSNE(n_components=ntsne_dims, verbose=1, perplexity=perplexity, n_iter=4000)
+                coordinate = tsne.fit_transform(population_data)
+                print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
                 stress = None
 
         with open(file_name, 'wb') as f:

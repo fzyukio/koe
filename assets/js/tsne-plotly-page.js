@@ -1,6 +1,9 @@
 /* global Plotly, d3 */
+import {queryAndPlayAudio, initAudioContext} from './audio-handler';
+import {getUrl} from './utils';
 import {downloadRequest} from './ajax-handler';
-import {initSelectizeSimple} from './selectize-formatter';
+// import {initSelectizeSimple} from './selectize-formatter';
+
 
 let plotDiv = $('#plotly-plot');
 let metaPath = plotDiv.attr('metadata');
@@ -8,6 +11,9 @@ let bytesPath = plotDiv.attr('bytes');
 let database = plotDiv.attr('database');
 let annotator = plotDiv.attr('annotator');
 let body = $('body');
+let sylSpects = $('#syl-spects');
+
+
 let plotlyOptions = {
     modeBarButtonsToAdd: [
         {
@@ -31,53 +37,59 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
         plotType = 'scatter';
     }
 
-    let plotTopBottomMargin = 40;
+    let plotBottomMargin = 0;
+    let plotTopMargin = 40;
     let plotWidth = plotDiv.width();
     let plotDivHeight = plotDiv.height();
-    let plotLeftMargin = 50;
-    let plotRightMargin = plotWidth - plotDivHeight - plotLeftMargin + plotTopBottomMargin;
+    let plotRightMargin = 60;
+    let plotLeftMargin = plotWidth - plotDivHeight - plotRightMargin + plotTopMargin;
 
 
     let classNames = Object.keys(class2RowIdx);
-    classNames.sort();
+    let allX = [];
+    let allY = [];
+    let allZ = [];
 
     $.each(classNames, function (classNo, className) {
         let ids = class2RowIdx[className];
-        let x = [];
-        let y = [];
-        let z = [];
+        let xs = [];
+        let ys = [];
+        let zs = [];
+        let x, y, z;
         let rowsMetadataStr = [];
         $.each(ids, function (idx, rowIdx) {
             let row = matrix[rowIdx];
             let rowMetadata = rowsMetadata[rowIdx];
             rowsMetadataStr.push(rowMetadata.join(', '));
-            x.push(row[0]);
-            y.push(row[1]);
+            x = row[0];
+            y = row[1];
+            xs.push(x);
+            ys.push(y);
+            allX.push(x);
+            allY.push(y);
             if (ncols > 2) {
-                z.push(row[2]);
+                z = row[2];
+                zs.push(z);
+                allZ.push(z);
             }
         });
 
         let trace = {
-            x,
-            y,
+            x: xs,
+            y: ys,
             text: rowsMetadataStr,
             name: className,
             mode: 'markers',
             marker: {
                 size: 5,
                 color: colour(classNo),
-                line: {
-                    color: '#ffffff',
-                    width: 0.5
-                },
                 opacity: 1
             },
             type: plotType
         };
 
         if (ncols > 2) {
-            trace.z = z;
+            trace.z = zs;
         }
 
         traces.push(trace);
@@ -91,34 +103,99 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
         margin: {
             l: plotLeftMargin,
             r: plotRightMargin,
-            b: plotTopBottomMargin,
-            t: plotTopBottomMargin
+            b: plotBottomMargin,
+            t: plotTopMargin
+        },
+        xaxis: {
+            range: [Math.min(...allX), Math.max(...allX)],
+            showgrid: false,
+            zeroline: false,
+            showline: false,
+            autotick: false,
+            showticklabels: false
+        },
+        yaxis: {
+            range: [Math.min(...allY), Math.max(...allY)],
+            showgrid: false,
+            zeroline: false,
+            showline: false,
+            autotick: false,
+            showticklabels: false
         }
     };
+
+    if (ncols > 2) {
+        layout.zaxis = {
+            range: [Math.min(...allZ), Math.max(...allZ)],
+            showgrid: false,
+            zeroline: false,
+            showline: false,
+            autotick: false,
+            showticklabels: false
+        };
+    }
+
     Plotly.newPlot('plotly-plot', traces, layout, plotlyOptions);
 };
 
 const initSelectize = function ({dataMatrix, rowsMetadata, labelDatum}) {
     let labelTyleSelectEl = $('#label-type');
-    let options = [];
     $.each(labelDatum, function (labelType) {
-        options.push({
-            value: labelType,
-            text: labelType
-        });
+        if (labelType !== 'id') {
+            let option = `<li class="not-active"><a href="#" value="${labelType}">${labelType}</a></li>`;
+            labelTyleSelectEl.append(option);
+        }
     });
 
-    let labelTyleSelecthandler = initSelectizeSimple(labelTyleSelectEl, options);
-
-    labelTyleSelectEl.change(function () {
-        let labelType = labelTyleSelectEl.val();
+    /**
+     * Change the granularity and replot
+     * @param labelType
+     */
+    function setValue(labelType) {
+        labelTyleSelectEl.find('li').removeClass('active').addClass('non-active');
+        labelTyleSelectEl.find(`a[value="${labelType}"]`).parent().removeClass('non-active').addClass('active');
         plot(dataMatrix, rowsMetadata, labelDatum, labelType);
+        plotDiv[0].on('plotly_click', handleClick).on('plotly_hover', handleHover);
+    }
+
+    labelTyleSelectEl.find('li a').click(function() {
+        setValue($(this).attr('value'));
     });
 
-    labelTyleSelecthandler.setValue('label');
+    setValue('label');
 };
 
+const handleClick = function ({points}) {
+    let pointText = points[0].text;
+    let pointId = parseInt(pointText.substr(0, pointText.indexOf(',')));
+    let data = {'segment-id': pointId};
+
+    let args_ = {
+        url: getUrl('send-request', 'koe/get-segment-audio-data'),
+        cacheKey: pointId,
+        postData: data
+    };
+
+    queryAndPlayAudio(args_);
+};
+
+const handleHover = function ({points}) {
+    let pointText = points[0].text;
+    let pointId = pointText.substr(0, pointText.indexOf(','));
+    let children = sylSpects.children();
+    let nChildren = children.length;
+    if (nChildren > 5) {
+        for (let i = 5; i < nChildren; i++) {
+            children[i].remove();
+        }
+    }
+    sylSpects.prepend(`<img src="/user_data/spect/fft/syllable/${pointId}.png">`);
+};
+
+
 export const run = function () {
+    initAudioContext();
+
     downloadTensorData().
         then(initSelectize);
 };

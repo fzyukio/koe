@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base-with-sidebar.html' %}
 {% load staticfiles %}
 {% load widget_tweaks %}
 
@@ -7,15 +7,12 @@
 
 {% block content-center %}
     <div class="row no-margin">
-        <div class="col-md-2 col-lg-1 no-padding">
-            <div id="plotly-controller">
-                <label for="label-type" class="col-form-label">Label by</label>
+        <div class="col-md-4 col-lg-2 no-padding">
+            <div id="syl-spects">
 
-                <select class="" id="label-type" tabindex="-1">
-                </select>
             </div>
         </div>
-        <div class="col-md-10 col-lg-11 no-padding">
+        <div class="col-md-8 col-lg-10 no-padding">
             <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
                  database="{{ tensor.database.name }}"
                  annotator="{{ tensor.annotator.username }}"></div>

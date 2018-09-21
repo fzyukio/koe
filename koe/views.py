@@ -213,6 +213,7 @@ class TsnePlotlyView(TemplateView):
         context['metadata_path'] = metadata_path
         context['bytes_path'] = '/' + bytes_path
         context['tensor'] = tensor
+        context['page'] = 'tsne-plotly'
         return context
 
 
