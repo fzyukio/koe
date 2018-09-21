@@ -1,8 +1,8 @@
+/* global d3*/
 /* eslint consistent-this: off, no-console: off */
 import {spectToUri} from './visual-utils';
 
 const FFT = require('fft.js');
-import d3 from './d3-importer';
 
 import {stopAudio, playAudioDataArray} from './audio-handler';
 

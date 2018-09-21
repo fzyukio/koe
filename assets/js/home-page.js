@@ -1,6 +1,7 @@
 /* eslint require-jsdoc: off*/
+/* global anime */
 
-const Anime = require('animejs/anime.min.js');
+const Anime = anime;
 
 const birds = [
     [

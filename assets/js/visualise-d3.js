@@ -1,6 +1,6 @@
+/* global d3*/
 /* eslint consistent-this: off, no-console: off */
 const FFT = require('fft.js');
-import d3 from './d3-importer';
 import {stopAudio, queryAndPlayAudio} from './audio-handler';
 import {defaultCm} from './colour-map';
 

@@ -70,8 +70,9 @@
 {% endif %}
 {# django-js-reverse #}
 <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
+<script src="//cdn.ravenjs.com/3.15.0/raven.min.js" crossorigin="anonymous"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.2/bluebird.min.js"></script>
 
-<script src="https://cdn.ravenjs.com/3.15.0/raven.min.js" crossorigin="anonymous"></script>
 {# Webpack rendered Javascript #}
 {% render_bundle 'main' 'js' %}
 

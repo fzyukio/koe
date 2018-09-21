@@ -1,7 +1,6 @@
-/* global Plotly */
+/* global Plotly, d3 */
 import {downloadRequest} from './ajax-handler';
 import {initSelectizeSimple} from './selectize-formatter';
-import d3 from './d3-importer';
 
 let plotDiv = $('#plotly-plot');
 let metaPath = plotDiv.attr('metadata');

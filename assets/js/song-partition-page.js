@@ -1,3 +1,4 @@
+/* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {
     changePlaybackSpeed,
@@ -10,7 +11,6 @@ import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualise} from './visualise-raw';
 
 require('bootstrap-slider/dist/bootstrap-slider.js');
-const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 

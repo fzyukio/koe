@@ -1,9 +1,9 @@
+/* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initSelectize} from './selectize-formatter';
 import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
-const keyboardJS = require('keyboardjs/dist/keyboard.min.js');
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
