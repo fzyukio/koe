@@ -62,64 +62,6 @@ def populate_context(obj, context, with_similarity=False):
             context['current_similarity'] = current_similarity
 
 
-class SyllablesView(TemplateView):
-    """
-    The view to index page
-    """
-
-    page_name = 'syllables'
-    template_name = 'syllables.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(SyllablesView, self).get_context_data(**kwargs)
-
-        populate_context(self, context, True)
-
-        return context
-
-
-class ExemplarsView(TemplateView):
-    page_name = 'exemplars'
-    template_name = "exemplars.html"
-
-    def get_context_data(self, **kwargs):
-        context = super(ExemplarsView, self).get_context_data(**kwargs)
-
-        populate_context(self, context)
-
-        return context
-
-
-class SongsView(TemplateView):
-    """
-    The view to index page
-    """
-
-    page_name = 'songs'
-    template_name = 'songs.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(SongsView, self).get_context_data(**kwargs)
-
-        populate_context(self, context)
-
-        return context
-
-
-class SequenceMiningView(TemplateView):
-    """
-    The view to index page
-    """
-
-    page_name = 'sequence-mining'
-    template_name = 'sequence-mining.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(SequenceMiningView, self).get_context_data(**kwargs)
-        populate_context(self, context)
-        return context
-
-
 class SegmentationView(TemplateView):
     """
     The view of song segmentation page
@@ -320,17 +262,19 @@ class FeatureExtrationView(FormView):
         return HttpResponse(json.dumps(dict(message=vizurl)))
 
 
-class HomePageView(TemplateView):
+def get_view(name):
     """
-    The view to index page
+    Get a generic TemplateBased view that uses only common context
+    :param name: name of the view. A `name`.html must exist in the template folder
+    :return:
     """
+    class View(TemplateView):
+        page_name = name
+        template_name = name + '.html'
 
-    page_name = 'home_page'
-    template_name = 'home_page.html'
+        def get_context_data(self, **kwargs):
+            context = super(View, self).get_context_data(**kwargs)
+            populate_context(self, context)
+            return context
 
-    def get_context_data(self, **kwargs):
-        context = super(HomePageView, self).get_context_data(**kwargs)
-
-        populate_context(self, context)
-
-        return context
+    return View.as_view()
