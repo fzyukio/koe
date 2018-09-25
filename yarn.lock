@@ -2191,10 +2191,6 @@ jquery-getscrollbarwidth@^1.0.0:
   dependencies:
     jquery ">=1.5"
 
-jquery-mousewheel@>=3.0.6:
-  version "3.1.13"
-  resolved "https://registry.yarnpkg.com/jquery-mousewheel/-/jquery-mousewheel-3.1.13.tgz#06f0335f16e353a695e7206bf50503cb523a6ee5"
-
 jquery-ui@>=1.8.0:
   version "1.12.1"
   resolved "https://registry.yarnpkg.com/jquery-ui/-/jquery-ui-1.12.1.tgz#bcb4045c8dd0539c134bc1488cdd3e768a7a9e51"
@@ -2518,12 +2514,6 @@ lru-cache@^4.0.1:
 macaddress@^0.2.8:
   version "0.2.8"
   resolved "https://registry.yarnpkg.com/macaddress/-/macaddress-0.2.8.tgz#5904dc537c39ec6dbefeae902327135fa8511f12"
-
-malihu-custom-scrollbar-plugin@^3.1.5:
-  version "3.1.5"
-  resolved "https://registry.yarnpkg.com/malihu-custom-scrollbar-plugin/-/malihu-custom-scrollbar-plugin-3.1.5.tgz#310cecc5e59415a1c29e9dfb5d2b6e01d66a29ef"
-  dependencies:
-    jquery-mousewheel ">=3.0.6"
 
 map-obj@^1.0.0, map-obj@^1.0.1:
   version "1.0.1"

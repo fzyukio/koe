@@ -345,16 +345,6 @@
   }
 }
 
-/*----------------  Scroll bar style   --------------- */
-
-.mCSB_scrollTools {
-  width: 6px;
-}
-
-.mCSB_inside > .mCSB_container {
-  margin-right: 0px;
-}
-
 /*-----------------------------chiller-theme-------------------------------------------------*/
 
 #sidebar-wrapper {
@@ -401,16 +391,5 @@
     .badge {
       background: #484848;
     }
-  }
-}
-
-.mCSB_scrollTools {
-  .mCSB_dragger {
-    .mCSB_dragger_bar, &.mCSB_dragger_onDrag .mCSB_dragger_bar, &:hover .mCSB_dragger_bar {
-      background: #636363;
-    }
-  }
-  .mCSB_draggerRail {
-    background-color: transparent;
   }
 }

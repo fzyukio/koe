@@ -18,7 +18,6 @@ window.Promise = Promise;
 
 import {isNull, SlickEditors, createCsv, downloadBlob, getUrl} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
-require('malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js');
 require('no-going-back');
 
 let page;
@@ -196,15 +195,6 @@ const initSidebar = function() {
     $('.siderbar-toggler').click(function () {
         $('#content-wrapper').toggleClass('toggled').toggleClass('not-toggled');
     });
-
-    if (!(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i).test(navigator.userAgent)) {
-        $('#sidebar-content').mCustomScrollbar({
-            axis: 'y',
-            autoHideScrollbar: true,
-            scrollInertia: 300
-        });
-        $('#sidebar-content').addClass('desktop');
-    }
 
     let currentPage = $('#sidebar-menu').attr('page');
     $('.menu-item').each(function(idx, menuItemEL) {
