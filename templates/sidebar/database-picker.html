@@ -1,0 +1,19 @@
+<div class="menu-item">
+    <label>Current database</label>
+    <div class="btn-group pull-right">
+        <button type="button" class="btn btn-xs btn-default dropdown-toggle"
+                data-toggle="dropdown"
+                data-hover="dropdown"> {{ current_database.name }}
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            {% for database in databases %}
+                <li class="{% if current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                    <a href="#" class="change-arg" key="database" value="{{ database.name }}">
+                        {{ database.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

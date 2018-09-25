@@ -17,8 +17,8 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, SlickEditors, createCsv, downloadBlob, getUrl} from './utils';
-import {postRequest} from './ajax-handler';
 import {SelectizeEditor} from './selectize-formatter';
+require('malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js');
 require('no-going-back');
 
 let page;
@@ -34,8 +34,6 @@ const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
 const databaseCombo = $('#database-select-combo');
-const currentDatabaseAttr = databaseCombo.attr('current-attr');
-const databaseClass = databaseCombo.attr('cls');
 
 const commonElements = {
     inputText,
@@ -180,76 +178,89 @@ const showCreateDatabaseDialog = function (errorMessage) {
 };
 
 
-const initDatabaseButtons = function () {
-    $('.select-database').on('click', function (e) {
-        e.preventDefault();
-
-        let parent = $(this).parent();
-        if (parent.hasClass('not-active')) {
-            let databaseId = this.getAttribute('database');
-            let postData = {
-                attr: currentDatabaseAttr,
-                klass: databaseClass,
-                value: databaseId
-            };
-            let onSuccess = function () {
-                page.handleDatabaseChange();
-            };
-
-            postRequest({
-                requestSlug: 'change-extra-attr-value',
-                data: postData,
-                onSuccess
-            });
-
-            /* Update the button */
-            databaseCombo.attr('database', databaseId);
-            $('.database-value').val(databaseId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
-            parent.removeClass('not-active').addClass('active');
+const initSidebar = function() {
+    $('.menu-item-expandable > a').click(function () {
+        $('.menu-submenu').slideUp(200);
+        if ($(this).parent().hasClass('active')) {
+            $('.menu-item-expandable').removeClass('active');
+            $(this).parent().removeClass('active');
         }
+        else {
+            $('.menu-item-expandable').removeClass('active');
+            $(this).next('.menu-submenu').slideDown(200);
+            $(this).parent().addClass('active');
+        }
+
     });
 
-    $('#create-database-btn').on('click', function (e) {
-        e.preventDefault();
-        showCreateDatabaseDialog();
+    $('.siderbar-toggler').click(function () {
+        $('#content-wrapper').toggleClass('toggled').toggleClass('not-toggled');
     });
 
-    $('.request-database').on('click', function (e) {
-        e.preventDefault();
-        let databaseId = this.getAttribute('database');
-
-        let msgGen = function (isSuccess) {
-            return isSuccess ?
-                'Requested has been posted. A database admin will response to your request.' :
-                null;
-        };
-
-        postRequest({
-            requestSlug: 'koe/request-database-access',
-            data: {'database-id': databaseId},
-            msgGen,
-            immediate: false
+    if (!(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i).test(navigator.userAgent)) {
+        $('#sidebar-content').mCustomScrollbar({
+            axis: 'y',
+            autoHideScrollbar: true,
+            scrollInertia: 300
         });
-    });
+        $('#sidebar-content').addClass('desktop');
+    }
 
-    $('.approve-request').on('click', function (e) {
-        e.preventDefault();
-        let requestId = this.getAttribute('request');
-
-        let msgGen = function (isSuccess) {
-            return isSuccess ? 'Success' : null;
-        };
-
-        postRequest({
-            requestSlug: 'koe/approve-database-access',
-            data: {'request-id': requestId},
-            immediate: false,
-            msgGen
-        });
+    let currentPage = $('#sidebar-menu').attr('page');
+    $('.menu-item').each(function(idx, menuItemEL) {
+        if (menuItemEL.getAttribute('page') === currentPage) {
+            $(menuItemEL).addClass('active');
+        }
     });
 };
 
+
+/**
+ * For all selectable options that will change GET arguments and reload the page, e.g. viewas, database, ...
+ */
+const initChangeArgSelections = function() {
+    let locationOrigin = window.location.origin;
+    let localtionPath = window.location.pathname;
+    let args = window.location.search.substr(1);
+    let argDict = {};
+    $.each(args.split('&'), function(idx, arg) {
+        if (arg !== '') {
+            let argPart = arg.split('=');
+            argDict[argPart[0]] = argPart[1];
+        }
+    });
+
+    $('.change-arg').click(function(e) {
+        e.preventDefault();
+        let key = this.getAttribute('key');
+        let value = this.getAttribute('value');
+        argDict[key] = value;
+
+        let argString = '?';
+        $.each(argDict, function(k, v) {
+            argString += `${k}=${v}&`
+        });
+        window.location.href = `${locationOrigin}${localtionPath}${argString}`;
+    });
+};
+
+
+/**
+ * Search for all "appendable urls" and append the GET arguments to them.
+ * E.g. the current url is localhost/blah?x=1&y=3
+ * A clickable URL to localhost/foo will be changed to localhost/foo?x=1&y=3
+ */
+const appendGetArguments = function () {
+    $('a.appendable').each(function (idx, a) {
+        let href = a.getAttribute('href');
+        let argsStart = href.indexOf('?');
+        if (argsStart > -1) {
+            href = href.substr(argsStart);
+        }
+
+        a.setAttribute('href', href + window.location.search);
+    });
+};
 
 /**
  * Put everything you need to run after the page has been loaded here
@@ -285,7 +296,9 @@ const _postRun = function () {
 
     countDown();
     subMenuOpenRight();
-    initDatabaseButtons();
+    initChangeArgSelections();
+    initSidebar();
+    appendGetArguments();
 };
 
 /**

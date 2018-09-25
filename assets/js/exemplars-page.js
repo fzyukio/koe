@@ -50,8 +50,8 @@ class ExemplarsGrid extends FlexibleGrid {
 }
 
 export const grid = new ExemplarsGrid();
-let cls = $('#exemplars-grid').attr('cls');
-let fromUser = $('#exemplars-grid').attr('from_user');
+let granularity = $('#exemplars-grid').attr('granularity');
+let viewas = $('#exemplars-grid').attr('viewas');
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
@@ -264,8 +264,8 @@ const focusOnGridOnInit = function () {
 
 
 let extraArgs = {
-    cls,
-    'from_user': fromUser
+    granularity,
+    viewas
 };
 
 

@@ -23,7 +23,7 @@ def bulk_get_segment_info(segs, extras):
     :return: [row]
     """
     databases, current_database = get_user_databases(extras.user)
-    from_user = extras.from_user
+    viewas = extras.viewas
     similarities, current_similarity = get_current_similarity(extras.user, current_database)
 
     rows = []
@@ -48,11 +48,11 @@ def bulk_get_segment_info(segs, extras):
     song_ids = [x[7] for x in values]
 
     extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user__username=from_user, attr__klass=Segment.__name__, owner_id__in=segids) \
+        .filter(user__username=viewas, attr__klass=Segment.__name__, owner_id__in=segids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     song_extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user__username=from_user, attr__klass=AudioFile.__name__, owner_id__in=song_ids) \
+        .filter(user__username=viewas, attr__klass=AudioFile.__name__, owner_id__in=song_ids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     extra_attr_values_lookup = {}
@@ -127,8 +127,8 @@ def bulk_get_exemplars(objs, extras):
     :param extras: must contain key 'class', value can be one of 'label', 'label_family', 'label_subfamily'
     :return:
     """
-    cls = extras.cls
-    from_user = extras.from_user
+    granularity = extras.granularity
+    viewas = extras.viewas
     _, current_database = get_user_databases(extras.user)
 
     if isinstance(objs, QuerySet):
@@ -136,8 +136,8 @@ def bulk_get_exemplars(objs, extras):
     else:
         ids = [x.id for x in objs if x.audio_file.database == current_database]
 
-    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=cls, owner_id__in=ids,
-                                           user__username=from_user) \
+    values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=granularity, owner_id__in=ids,
+                                           user__username=viewas) \
         .order_by(Lower('value'), 'owner_id').values_list('value', 'owner_id')
 
     class_to_exemplars = []
@@ -234,9 +234,9 @@ def bulk_get_song_sequences(all_songs, extras):
     :param extras:
     :return:
     """
-    cls = extras.cls
+    granularity = extras.granularity
     _, current_database = get_user_databases(extras.user)
-    from_user = extras.from_user
+    viewas = extras.viewas
 
     if isinstance(all_songs, QuerySet):
         all_songs = all_songs.filter(database=current_database)
@@ -261,15 +261,15 @@ def bulk_get_song_sequences(all_songs, extras):
                               'audio_file__individual__species__species')
     seg_ids = segs.values_list('id', flat=True)
 
-    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=from_user) \
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=granularity)
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=viewas) \
         .values_list('owner_id', 'value')
 
     seg_id_to_label = {x: y for x, y in labels}
 
     extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
     extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user__username=from_user, attr__in=extra_attrs, owner_id__in=song_ids) \
+        .filter(user__username=viewas, attr__in=extra_attrs, owner_id__in=song_ids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     extra_attr_values_lookup = {}
@@ -352,7 +352,7 @@ def bulk_get_segments_for_audio(segs, extras):
     :return: the usual stuff
     """
     file_id = extras.file_id
-    from_user = extras.user
+    viewas = extras.user
     segs = segs.filter(audio_file=file_id)
     values = segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',)
     ids = []
@@ -361,7 +361,7 @@ def bulk_get_segments_for_audio(segs, extras):
     segids = [x[0] for x in values]
 
     extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user__username=from_user, attr__klass=Segment.__name__, owner_id__in=segids) \
+        .filter(user__username=viewas, attr__klass=Segment.__name__, owner_id__in=segids) \
         .values_list('owner_id', 'attr__name', 'value')
 
     extra_attr_values_lookup = {}
@@ -435,9 +435,9 @@ def bulk_get_history_entries(hes, extras):
 
 
 def bulk_get_song_sequence_associations(all_songs, extras):
-    cls = extras.cls
+    granularity = extras.granularity
     _, current_database = get_user_databases(extras.user)
-    from_user = extras.from_user
+    viewas = extras.viewas
     use_gap = extras.usegap
     maxgap = extras.maxgap if use_gap else 1
     mingap = extras.mingap if use_gap else -99999
@@ -457,8 +457,8 @@ def bulk_get_song_sequence_associations(all_songs, extras):
 
     seg_ids = segs.values_list('id', flat=True)
 
-    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=cls)
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=from_user) \
+    label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=granularity)
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=viewas) \
         .values_list('owner_id', 'value')
 
     seg_id_to_label = {x: y for x, y in labels}

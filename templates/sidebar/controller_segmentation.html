@@ -1,0 +1,15 @@
+{% load custom_tags %}
+
+<div class="sidebar-controllers">
+    <label>Auto segmentation</label>
+    <button type="button" disabled id="apply-auto-segmentation" class="btn btn-xs btn-default btn-block">Apply</button>
+</div>
+
+<div class="sidebar-controllers last">
+    {% if db_assignment.can_modify_segments %}
+        <button type="button" disabled id="delete-segments-btn" class="btn btn-xs btn-default btn-block">Delete selected</button>
+        <button type="button" disabled id="save-segmentations-btn" class="btn btn-xs btn-default btn-block">Save segmentation</button>
+    {% endif %}
+
+    {% include "sidebar/download-csv-btns.html" %}
+</div>

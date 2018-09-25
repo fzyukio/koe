@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block content-wrapper %}
+<div id="content-wrapper" class="toggled">
+    {% include "sidebar/sidebar.html"%}
+
+    {% block main-content %}
+        <div class="main-content has-sidebar">
+            <div class="content-center">
+                {% block content-center %}{% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+</div>
+{% endblock %}

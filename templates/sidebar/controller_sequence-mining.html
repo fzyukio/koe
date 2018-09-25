@@ -1,0 +1,37 @@
+<div class="sidebar-controllers">
+    {% include "sidebar/database-picker.html" %}
+    {% include "sidebar/viewas-picker.html" %}
+</div>
+
+<div class="sidebar-controllers">
+    <div class="control-item input-group row no-margin">
+        <span class="input-group-addon no-padding-left">Separate units by actual time</span>
+        <input id="slider-enabled" type="checkbox" class="pull-right"/>
+    </div>
+
+
+    <div class="control-item slider-group row no-margin">
+        <div class="col-xs-6 no-padding slider-label">Max gap: <span
+            id="maxgap-slider-value">1000</span><span>ms</span></div>
+        <div class="col-xs-6 no-padding-left">
+            <input id="maxgap-slider" type="text" data-slider-enabled="false"
+               data-slider-min="10" data-slider-max="1000" data-slider-step="10"
+               data-slider-value="1000" data-slider-tooltip="hide"/>
+        </div>
+    </div>
+
+    <div class="control-item slider-group row no-margin">
+        <div class="col-xs-6 no-padding slider-label">Min gap: <span
+            id="mingap-slider-value">0</span><span>ms</span></div>
+        <div class="col-xs-6 no-padding-left">
+            <input id="mingap-slider" type="text" data-slider-enabled="false"
+               data-slider-min="0" data-slider-max="100" data-slider-step="1"
+               data-slider-value="0" data-slider-tooltip="hide"/>
+        </div>
+    </div>
+
+</div>
+
+<div class="sidebar-controllers last">
+    {% include "sidebar/download-csv-btns.html" %}
+</div>

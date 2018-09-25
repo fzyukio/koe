@@ -1,65 +1,22 @@
-{% extends 'base-with-grid-and-footer.html' %}
+{% extends 'base-with-sidebar-and-grid.html' %}
+{% load custom_tags %}
+
 
 {% block title %}Process raw recording{% endblock %}
 
 {% block content-grid %}
     <div class="row no-margin">
-        <div class="col-xs-4 col-sm-3 col-md-2 no-padding-left">
-            <div class="btn-group btn-group-justified" role="group" aria-label="...">
-                <div class="btn-group btn-group-sm" role="group">
-                    <button id="play-song" type="button" class="btn btn-primary">Play</button>
-                </div>
-                <div class="btn-group btn-group-sm" role="group">
-                    <button id="stop-song" type="button" class="btn btn-primary">Stop</button>
-                </div>
+        <div id="track-visualisation">
+            <div class="row no-margin">
+                <svg id="oscillogram"></svg>
             </div>
-
-            <div class="controller-item slider-group">
-                <div class="col-md-5 col-lg-4 no-padding-left">Speed</div>
-                <div class="col-md-7 col-lg-8 no-padding-left">
-                    <input id="speed-slider" type="text"
-                           data-slider-min="10" data-slider-max="100" data-slider-step="10"
-                           data-slider-value="100"/>
-                </div>
-
-            </div>
-
-            <div class="controller-item slider-group">
-                <div class="col-md-5 col-lg-4 no-padding-left">Contrast</div>
-                <div class="col-md-7 col-lg-8 no-padding-left">
-                    <input id="contrast-slider" type="text"
-                           data-slider-min="0" data-slider-max="100" data-slider-step="1"
-                           data-slider-value="0"/>
-                </div>
-
-            </div>
-            <form id="track-info" method="post" url="{% url 'song-partition' %}">
-                <div class="replaceable">
-                    {% include 'partials/track-info-form.html' %}
-                </div>
-
-                <div class="col-xs-12 input">
-                    <div class="btn-group btn-group-justified" role="group" aria-label="...">
-                        <div class="btn-group btn-group-sm">
-                            <button id="save-track-info" type="button" class="btn btn-black">
-                                Submit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-        <div class="col-xs-8 col-sm-9 col-md-10 no-padding">
-            <div id="track-visualisation">
-                <div class="row no-margin">
-                    <svg id="oscillogram"></svg>
-                </div>
-                <div class="row no-margin">
-                    <svg id="spectrogram"></svg>
-                </div>
+            <div class="row no-margin">
+                <svg id="spectrogram"></svg>
             </div>
         </div>
+        {% include 'partials/spectrogram-controller.html' %}
     </div>
+
     <div class="row no-margin">
         <div class="has-grid" id="song-partition-grid" database-id="{{ current_database.id }}">
         </div>
@@ -68,24 +25,7 @@
 
 {% block modal-dialog %}
     {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
-    {% include 'partials/upload-modal.html'%}
-{% endblock %}
-
-{% block bottom %}
-    <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        {% if db_assignment.can_delete_files %}
-            <div class="btn-group" role="group">
-                <button disabled id="delete-songs-btn" type="button" class="btn btn-black">
-                    Delete
-                </button>
-            </div>
-            <div class="btn-group" role="group">
-                <button id="save-songs-btn" disabled type="button" class="btn btn-black">Save</button>
-            </div>
-        {% endif %}
-
-        {% include "partials/download-csv-btns.html" %}
-    </div>
+    {% include 'partials/upload-modal.html' %}
 {% endblock %}
 
 {% block scripts %}

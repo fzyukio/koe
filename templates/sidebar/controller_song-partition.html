@@ -1,0 +1,24 @@
+{% load custom_tags %}
+
+<div class="sidebar-controllers">
+    <label>Track info</label>
+    <form id="track-info" method="post" url="{% url 'song-partition' %}">
+        <div class="replaceable">
+            {% include 'partials/track-info-form.html' %}
+        </div>
+
+        <button type="button" disabled id="save-track-info" class="btn btn-xs btn-default btn-block">Submit</button>
+    </form>
+</div>
+
+<div class="sidebar-controllers">
+    <label>Auto segmentation</label>
+    <button type="button" disabled id="apply-auto-segmentation" class="btn btn-xs btn-default btn-block">Apply</button>
+</div>
+
+<div class="sidebar-controllers last">
+    <button type="button" disabled id="delete-songs-btn" class="btn btn-xs btn-default btn-block">Delete</button>
+    <button type="button" disabled id="save-songs-btn" class="btn btn-xs btn-default btn-block">Save</button>
+
+    {% include "sidebar/download-csv-btns.html" %}
+</div>

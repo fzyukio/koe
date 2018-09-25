@@ -3,29 +3,20 @@
 $scrollbar-height: 15px;
 $axis-height: 18.6px;
 $gap-between-svgs: 8px;
-
-.controller-item {
-  padding-top: 10px;
-  display: inline-block;
-
-  & > div {
-    height: $controller-wrapper-child-height;
-    line-height: $controller-wrapper-child-height;
-  }
-}
+$visualisation-control-height: 32px;
 
 #track-visualisation {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 1 / 14);
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} - #{$gap-between-svgs}) * 1 / 14);
     overflow-y: hidden;
   }
 
   #spectrogram {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
     overflow-y: hidden;
 
     .brush-handle {
@@ -55,8 +46,15 @@ $gap-between-svgs: 8px;
   }
 }
 
+#visualisation-control {
+  height: $visualisation-control-height;
+  .control-item {
+    padding-top: 5px;
+  }
+}
+
 #song-partition-grid {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 10 / 14);
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 10 / 14);
 }
 
 .slider-group {
@@ -71,10 +69,7 @@ $gap-between-svgs: 8px;
   width: 100%;
 }
 
-
 #track-info {
-  padding-top: 15px;
-
   label {
     margin-bottom: 0;
   }
@@ -82,6 +77,11 @@ $gap-between-svgs: 8px;
   .form-control {
     padding: 3px 5px !important;
     border-radius: 0;
+  }
+
+  .input-group input {
+    background-color: transparent;
+    color: white;
   }
 
   .input {

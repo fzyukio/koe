@@ -105,19 +105,29 @@ def get_navbar_urls():
     return pages
 
 
-@register.filter
-def get_default_url(page):
-    """
-    Return the url according to the default site.
-    The method url() provided by Page class doesn't work correctly when called without argument from the template
-    :param page:
-    :return:
-    """
-    try:
-        site = page.get_site()
-    except Exception:
-        site = None
-    return page.relative_url(site)
+@register.simple_tag
+def get_granularity():
+    return ['label', 'label_subfamily', 'label_family']
+
+
+@register.simple_tag
+def get_auto_segment():
+    return ['Harma']
+
+
+# @register.filter
+# def get_default_url(page):
+#     """
+#     Return the url according to the default site.
+#     The method url() provided by Page class doesn't work correctly when called without argument from the template
+#     :param page:
+#     :return:
+#     """
+#     try:
+#         site = page.get_site()
+#     except Exception:
+#         site = None
+#     return page.relative_url(site)
 
 
 @register.simple_tag

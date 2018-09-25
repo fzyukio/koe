@@ -1,0 +1,12 @@
+<div class="sidebar-controllers">
+    {% include "sidebar/database-picker.html" %}
+    {% include "sidebar/viewas-picker.html" %}
+    {% include "sidebar/speed-slider.html" %}
+</div>
+
+<div class="sidebar-controllers last">
+    {% if db_assignment.can_modify_segments %}
+        <button type="button" disabled id="delete-segments-btn" class="btn btn-xs btn-default btn-block">Delete selected units</button>
+        {% include "sidebar/download-csv-btns.html" %}
+    {% endif %}
+</div>

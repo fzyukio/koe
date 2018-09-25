@@ -1,0 +1,22 @@
+{% load custom_tags %}
+
+<div class="menu-item">
+    <label>Label granularity</label>
+    <div class="btn-group pull-right">
+        <button type="button" class="btn btn-xs btn-default dropdown-toggle"
+                data-toggle="dropdown"
+                data-hover="dropdown"> {{ granularity }}
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            {% get_granularity as levels %}
+            {% for level in levels %}
+                <li class="{% if granularity == level %}active{% else %}not-active{% endif %}">
+                    <a href="#" class="change-arg" key="granularity" value="{{ level }}">
+                        {{ level }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

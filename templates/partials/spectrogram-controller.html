@@ -1,0 +1,45 @@
+<div id="visualisation-control" class="row">
+    <div class="col-lg-10 col-md-6 no-padding-right">
+        <div class="btn-group control-item" role="group" aria-label="...">
+            <button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                Zoom: 100% <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="select-zoom" href="#" frame-size=2048>400%</a></li>
+                <li><a class="select-zoom" href="#" frame-size=1024>200%</a></li>
+                <li><a class="select-zoom" href="#" frame-size=512>100%</a></li>
+                <li><a class="select-zoom" href="#" frame-size=256>50%</a></li>
+                <li><a class="select-zoom" href="#" frame-size=128>25%</a></li>
+            </ul>
+        </div>
+
+        <div class="btn-group control-item" role="group" aria-label="...">
+            <button id="play-song" type="button" class="btn btn-xs btn-primary">Play</button>
+            <button id="stop-song" type="button" class="btn btn-xs btn-primary">Stop</button>
+        </div>
+    </div>
+
+    <div class="col-xs-6 col-sm-3 col-md-2 col-lg-1 no-padding">
+        <div class="control-item slider-group">
+            <div class="col-xs-5 col-lg-4 no-padding-left">Speed</div>
+            <div class="col-xs-7 col-lg-8 no-padding-left">
+                <input id="speed-slider" type="text"
+                       data-slider-min="10" data-slider-max="100" data-slider-step="10"
+                       data-slider-value="100"/>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="col-xs-6 col-sm-3 col-md-2 col-lg-1 no-padding">
+        <div class="control-item slider-group">
+            <div class="col-xs-6 no-padding-left slider-label">Contrast</div>
+            <div class="col-xs-6 no-padding-left">
+                <input id="contrast-slider" type="text"
+                       data-slider-min="0" data-slider-max="100" data-slider-step="1"
+                       data-slider-value="0"/>
+            </div>
+        </div>
+    </div>
+</div>

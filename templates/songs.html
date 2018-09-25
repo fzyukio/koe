@@ -1,25 +1,19 @@
-{% extends 'base-with-grid-and-footer.html' %}
+{% extends 'base-with-sidebar-and-grid.html' %}
 
-{% block title %}
-    Sequence
-    {% if from_user != user %} by {{ from_user.username }}{% endif %}
-{% endblock %}
+{% block title %}View song list{% endblock %}
 
 {% block content-grid %}
 
     <div id="controller-wrapper">
-
-        <div id="grid-status">
+        <div id="menu-opener">
             <div class="input-group">
-                <span class="input-group-addon left"><span id="ntotal">0</span></span>
+                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
             </div>
         </div>
 
-        <div class="slider-group">
+        <div id="grid-status">
             <div class="input-group">
-                <span class="input-group-addon left">Speed</span>
-                <input id="speed-slider" type="text"
-                       data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
+                <span class="input-group-addon left"><span id="nselected">0</span>/<span id="ntotal">0</span></span>
             </div>
         </div>
 
@@ -27,13 +21,11 @@
             <div class="input-group">
                 <span class="input-group-addon left">Filter</span>
                 <input id="songs-grid-filter" type="text" class="form-control middle">
-
-                {% include "partials/page-controller-settings-btn.html" %}
             </div>
         </div>
     </div>
 
-    <div class="has-grid" id="songs-grid" cls="{{ cls }}" from_user="{{ from_user.username }}"></div>
+    <div class="has-grid" id="songs-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"></div>
 
     <div id="spectrogram-details-tooltip" class="hidden">
         <img src=""/>
@@ -42,49 +34,5 @@
 {% endblock %}
 
 {% block modal-dialog %}
-{% include 'partials/modal.html' with order='yes-no' yes='Yes' no='No' %}
-{% endblock %}
-
-{% block bottom %}
-    <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        {% if db_assignment.can_add_files %}
-            <div class="btn-group dropup" role="group">
-                <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
-                    <input type="file" multiple name="files" accept="audio/wav">
-                    <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
-                    <input name="cls" type="text" value="{{ cls }}">
-                    <input type="submit">
-                </form>
-                <form id="csv-upload-form" method="post" enctype="multipart/form-data" style="display: none">
-                    <input type="file" name="file" accept="text/csv">
-                    <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
-                    <input type="submit">
-                </form>
-                <button type="button" class="btn btn-black dropdown-toggle" data-toggle="dropdown"
-                        aria-haspopup="true" aria-expanded="false">
-                    Upload
-                    <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a id="upload-songs-btn" href="#">Song (WAV only)</a></li>
-                    <li><a id="upload-raw-recording-btn" href="{% url 'song-partition' %}">
-                        Raw recording</a></li>
-                    <li><a id="upload-csv-btn" href="#">Metadata (csv)</a></li>
-                </ul>
-            </div>
-
-        {% endif %}
-        {% if db_assignment.can_copy_files %}
-            <div class="btn-group" role="group">
-                <button disabled id="copy-songs-btn" type="button" class="btn btn-black">Copy</button>
-            </div>
-        {% endif %}
-        {% if db_assignment.can_delete_files %}
-            <div class="btn-group" role="group">
-                <button disabled id="delete-songs-btn" type="button" class="btn btn-black">Delete</button>
-            </div>
-        {% endif %}
-
-        {% include "partials/download-csv-btns.html" %}
-    </div>
+    {% include 'partials/modal.html' with order='yes-no' yes='Yes' no='No' %}
 {% endblock %}

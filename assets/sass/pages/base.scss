@@ -110,6 +110,7 @@ a {
   width: 100%;
   max-height: $max-screen-height;
   overflow-y: hidden;
+
 }
 
 .main-content {
@@ -117,30 +118,12 @@ a {
   display: flex;
   margin: auto;
   width: 100%;
-  height: calc(100% - #{$navbar-height});
+  height: 100vh;
 
   .content-center {
     color: black;
     margin: auto;
     width: 100%;
-  }
-  &.has-footer {
-    height: calc(100% - #{$navbar-height} - #{$bottom-height});
-    overflow-y: hidden;
-  }
-}
-
-#bottom {
-  height: $bottom-height;
-  min-height: unset;
-  width: 100%;
-  color: black;
-  margin: 0;
-
-  .btn {
-    border-radius: 0;
-    padding-left: 2px;
-    padding-right: 2px;
   }
 }
 
@@ -293,9 +276,8 @@ body.loading #loading-spinner-modal {
   padding-left: 0;
 }
 
-.grid-controller {
-  width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
-  padding-left: 20px;
+.no-padding-right {
+  padding-right: 0;
 }
 
 @-webkit-keyframes border-blink {
@@ -322,14 +304,55 @@ body.loading #loading-spinner-modal {
   }
 }
 
+.controller-item {
+  display: inline-block;
+
+  & > div {
+    height: $controller-wrapper-child-height;
+    line-height: $controller-wrapper-child-height;
+  }
+}
+
+#menu-opener {
+  width: $menu-opener-width;
+  font-size: 25px;
+}
+
+#menu-closer {
+  width: $menu-closer-width;
+  font-size: 25px;
+}
+
+#content-wrapper.not-toggled {
+  #menu-opener {
+    display: inline-block;
+  }
+  .grid-controller {
+    //width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
+    width: calc(100% - #{$grid-status-width} - #{$menu-opener-width});
+    padding-left: 20px;
+  }
+}
+
+#content-wrapper.toggled {
+  #menu-opener {
+    display: none;
+  }
+  .grid-controller {
+    //width: calc(100% - #{$grid-status-width} - #{$slider-group-width});
+    width: calc(100% - #{$grid-status-width});
+    padding-left: 20px;
+  }
+}
+
 #controller-wrapper {
   height: $controller-wrapper-height;
   & > div {
     display: inline-block;
-    margin-left: -4px;
+    margin-left: 0;
 
-    &:first-child {
-      margin-left: 0;
+    &:last-child {
+      margin-left: -8px;
     }
 
     & > div {
@@ -361,9 +384,9 @@ body.loading #loading-spinner-modal {
 
   .slider-group {
     width: $slider-group-width;
-
-    .slider-selection {
-      background: #d9230f7a;
-    }
   }
+}
+
+.slider-selection {
+  background: #d9230f7a;
 }

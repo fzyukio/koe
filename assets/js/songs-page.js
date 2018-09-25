@@ -10,7 +10,7 @@ gridOptions.rowHeight = 30;
 
 
 class Grid extends FlexibleGrid {
-    init(cls) {
+    init(granularity) {
 
         super.init({
             'grid-name': 'sequences',
@@ -19,7 +19,7 @@ class Grid extends FlexibleGrid {
             gridOptions
         });
 
-        this.cls = cls;
+        this.granularity = granularity;
     }
 
     /**
@@ -52,13 +52,14 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-let cls = $('#songs-grid').attr('cls');
-let fromUser = $('#songs-grid').attr('from_user');
+let granularity = $('#songs-grid').attr('granularity');
+let viewas = $('#songs-grid').attr('viewas');
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
 const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
+const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const uploadSongsBtn = $('#upload-songs-btn');
@@ -129,6 +130,28 @@ const selectTextForCopy = function (e, args) {
     }
 };
 
+const resetStatus = function (e, args) {
+    e.preventDefault();
+    let nRowChanged = 0;
+    if (e.type == 'row-added') {
+        nRowChanged = 1;
+    }
+    else if (e.type == 'rows-added') {
+        nRowChanged = args.rows.length;
+    }
+    else if (e.type == 'row-removed') {
+        nRowChanged = -1;
+    }
+    else if (e.type == 'rows-removed') {
+        nRowChanged = -args.rows.length;
+    }
+    let nSelectedRows = parseInt(gridStatusNSelected.html());
+    gridStatusNSelected.html(nSelectedRows + nRowChanged);
+
+    // Restore keyboard navigation to the grid
+    $($('div[hidefocus]')[0]).focus();
+};
+
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
@@ -146,7 +169,8 @@ const subscribeFlexibleEvents = function () {
     /**
      * When songs are selected, enable delete and copy button
      */
-    function onSongsAdded() {
+    function onSongsAdded(e, args) {
+        resetStatus(e, args);
         deleteSongsBtn.prop('disabled', false);
         copySongsBtn.prop('disabled', false);
     }
@@ -157,6 +181,7 @@ const subscribeFlexibleEvents = function () {
      * @param args contains 'grid' - the main SlickGrid
      */
     function onSongsRemoved(e, args) {
+        resetStatus(e, args);
         let grid_ = args.grid;
         if (grid_.getSelectedRows().length == 0) {
             deleteSongsBtn.prop('disabled', true);
@@ -404,8 +429,8 @@ const initCopySongsBtn = function () {
 
 
 let extraArgs = {
-    cls,
-    'from_user': fromUser,
+    granularity,
+    viewas,
 };
 
 let gridArgs = {
@@ -416,7 +441,7 @@ export const run = function (commonElements) {
     ce = commonElements;
     initAudioContext();
 
-    grid.init(cls);
+    grid.init(granularity);
     grid.initMainGridHeader(gridArgs, extraArgs, function () {
         grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
         subscribeSlickEvents();

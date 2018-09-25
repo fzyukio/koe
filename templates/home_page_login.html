@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block extra-css %}
+    <style>
+        .bird {
+            background-image: url('{% static "images/bird-cells.svg" %}');
+        }
+
+        #birds-container {
+            background-image: linear-gradient(to bottom, rgba(255, 56, 76, 0.6) 0%, rgba(255, 123, 13, 0.6) 100%),
+            url('{% static "images/landing.jpg" %}');
+        }
+
+        .page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: absolute;
+            place-content: center;
+            width: 100%;
+        }
+
+        .page .copyright {
+            font-size: 75%;
+            color: #555;
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .page .forgotpassword {
+            font-size: 90%;
+            text-align: center;
+            padding: 5px 0 0;
+            display: inline;
+            float: left;
+
+        }
+
+        .container {
+            display: block;
+            margin: 0 auto;
+            width: 350px;
+        }
+
+        @media (max-width: 767px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                width: 320px;
+            }
+        }
+
+        .left {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0px 0px 40px 16px rgba(0, 0, 0, 0.22);
+            position: relative;
+            padding: 20px;
+        }
+
+        @media (max-width: 767px) {
+            .left {
+                height: auto;
+                width: calc(100% - 0px);
+            }
+        }
+
+        .logos {
+            text-align: center;
+        }
+
+        .login .submit-wrapper {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .login .checkbox {
+            display: inline;
+            float: left;
+        }
+
+        .login hr {
+            clear: both;
+            margin: 0;
+            border: 0;
+        }
+
+        .login .submit {
+            float: right;
+        }
+
+        .text-intro {
+            color: #555;
+            font-weight: bold;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+{% endblock %}
+
+
+{% block main-content %}
+    <div id="birds-container">
+        <div class="bird-container bird-container--one">
+            <div class="bird bird--one"></div>
+        </div>
+
+        <div class="bird-container bird-container--two">
+            <div class="bird bird--two"></div>
+        </div>
+
+        <div class="bird-container bird-container--three">
+            <div class="bird bird--three"></div>
+        </div>
+
+        <div class="bird-container bird-container--four">
+            <div class="bird bird--four"></div>
+        </div>
+    </div>
+
+    {% block content-container %}
+        <!-- Login -->
+        <div class="page">
+            <div class="container">
+                <div class="left">
+                    <div class="logos">
+                        Login
+                    </div>
+
+                    <br>
+                    <div class="login">
+                        <form action="/action_page.php">
+                            <div class="form-group">
+                                <label for="email">Username:</label>
+                                <input type="email" class="form-control" id="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="pwd">Password:</label>
+                                <input type="password" class="form-control" id="pwd">
+                            </div>
+                            <div class="submit-wrapper">
+                                <div class="forgotpassword">
+                                    <a href="#">
+                                        <small>Lupa Password?</small>
+                                    </a>
+                                </div>
+                                <div class="submit">
+                                    <button type="submit" class="btn btn-primary">Masuk</button>
+                                </div>
+                                <hr>
+                            </div>
+                        </form>
+
+                        <a href="#" class="btn btn-default btn-block toggle-push-right">DAFTAR SEKARANG!</a>
+                        <div class="copyright">
+                            <small>Copyrights © 2018 All Rights Reserved by Hotel Online</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        {#        // Carousel Auto-Cycle#}
+        {#        $(document).ready(function () {#}
+        {#            $('.carousel').carousel({#}
+        {#                interval: 6000#}
+        {#            })#}
+        {#        });#}
+    </script>
+{% endblock %}

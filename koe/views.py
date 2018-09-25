@@ -10,42 +10,48 @@ from django.views.generic import TemplateView, FormView
 
 from koe.forms import SongPartitionForm, FeatureExtrationForm
 from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
-from koe.models import AudioFile, Database, DatabaseAssignment, DatabasePermission, AccessRequest, AudioTrack,\
-    DerivedTensorData, FullTensorData
+from koe.models import AudioFile, DatabaseAssignment, DatabasePermission, AudioTrack,\
+    DerivedTensorData, FullTensorData, Database
 from koe.ts_utils import make_subtensor
 from root.models import User, ExtraAttrValue
 
 
-def populate_context(obj, context, kwargs, with_similarity=False):
+def populate_context(obj, context, with_similarity=False):
     page_name = obj.__class__.page_name
     user = obj.request.user
+    gets = obj.request.GET
+
     databases, current_database = get_user_databases(user)
     db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
 
-    inaccessible_databases = Database.objects.exclude(id__in=databases)
+    specified_db = gets.get('database', None)
+    if specified_db and specified_db != current_database.name:
+        current_database = get_or_error(Database, dict(name=specified_db))
+        db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
 
-    databases_own = DatabaseAssignment.objects\
-        .filter(user=user, permission__gte=DatabasePermission.ASSIGN_USER).values_list('database', flat=True)
-
-    pending_requests = AccessRequest.objects.filter(database__in=databases_own, resolved=False)
+        current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database,
+                                                               owner_id=user.id, user=user).first()
+        current_database_value.value = current_database.id
+        current_database_value.save()
 
     context['databases'] = databases
     context['current_database'] = current_database
     context['current_database_owner_class'] = User.__name__
     context['current_database_owner_id'] = user.id
-    context['inaccessible_databases'] = inaccessible_databases
     context['db_assignment'] = db_assignment
-    context['pending_requests'] = pending_requests
 
-    from_user = kwargs.get('from_user', user.username)
-    from_user = get_or_error(User, dict(username=from_user))
+    viewas = gets.get('viewas', user.username)
+    viewas = get_or_error(User, dict(username=viewas))
+    other_users = DatabaseAssignment.objects.filter(database=current_database, permission__gte=DatabasePermission.VIEW)\
+        .values_list('user__id', flat=True)
+    other_users = User.objects.filter(id__in=other_users)
 
-    cls = kwargs.get('class', 'label')
-    context['from_user'] = from_user
+    granularity = gets.get('granularity', 'label')
+    context['viewas'] = viewas
+    context['other_users'] = other_users
 
-    context['cls'] = cls
-    context['page'] = '/{}/'.format(page_name)
-    context['subpage'] = '/{}/{}/'.format(page_name, cls)
+    context['granularity'] = granularity
+    context['page'] = page_name
 
     if with_similarity:
         similarities, current_similarity = get_current_similarity(user, current_database)
@@ -67,7 +73,7 @@ class SyllablesView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SyllablesView, self).get_context_data(**kwargs)
 
-        populate_context(self, context, kwargs, True)
+        populate_context(self, context, True)
 
         return context
 
@@ -79,7 +85,7 @@ class ExemplarsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(ExemplarsView, self).get_context_data(**kwargs)
 
-        populate_context(self, context, kwargs)
+        populate_context(self, context)
 
         return context
 
@@ -95,7 +101,7 @@ class SongsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(SongsView, self).get_context_data(**kwargs)
 
-        populate_context(self, context, kwargs)
+        populate_context(self, context)
 
         return context
 
@@ -110,9 +116,7 @@ class SequenceMiningView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(SequenceMiningView, self).get_context_data(**kwargs)
-
-        populate_context(self, context, kwargs)
-
+        populate_context(self, context)
         return context
 
 
@@ -184,7 +188,7 @@ class SongPartitionView(FormView):
         if AudioTrack.objects.filter(id=track_id).exists():
             context['valid'] = True
         context['track_id'] = track_id
-        populate_context(self, context, kwargs)
+        populate_context(self, context)
 
         return context
 
@@ -271,7 +275,13 @@ class TsnePlotlyView(TemplateView):
 
 class FeatureExtrationView(FormView):
     form_class = FeatureExtrationForm
+    page_name = 'feature-extraction'
     template_name = 'feature-extraction.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(FeatureExtrationView, self).get_context_data(**kwargs)
+        populate_context(self, context)
+        return context
 
     def form_invalid(self, form):
         context = self.get_context_data()
@@ -311,4 +321,16 @@ class FeatureExtrationView(FormView):
 
 
 class HomePageView(TemplateView):
+    """
+    The view to index page
+    """
+
+    page_name = 'home_page'
     template_name = 'home_page.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(HomePageView, self).get_context_data(**kwargs)
+
+        populate_context(self, context)
+
+        return context

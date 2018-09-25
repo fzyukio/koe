@@ -1,14 +1,9 @@
 @import "../variables";
 
-$sequence-mining-cspade-controller-height: 130px;
-
-#sequence-mining-grid {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$sequence-mining-cspade-controller-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+#sequence-mining-grid, #graph {
+  height: calc(#{$max-screen-height} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$main-content-padding-bottom});
 }
 
-#sequence-mining-cspade-controller {
-  height: $sequence-mining-cspade-controller-height;
-}
 
 #sequence-mining-filter-controller {
   height: $controller-wrapper-height;
@@ -77,7 +72,7 @@ $sequence-mining-cspade-controller-height: 130px;
 }
 
 #graph {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(#{$max-screen-height} - #{$main-content-padding-top} - #{$main-content-padding-bottom});
 
   svg {
     width: 100%;

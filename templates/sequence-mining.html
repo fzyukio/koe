@@ -1,57 +1,32 @@
-{% extends 'base-with-grid-and-footer.html' %}
+{% extends 'base-with-sidebar-and-grid.html' %}
 
-{% block title %}
-    Sequence mining
-    {% if from_user != user %} by {{ from_user.username }}{% endif %}
-{% endblock %}
+{% block title %}Sequence mining{% endblock %}
 
 {% block content-grid %}
     <div class="row no-margin">
-        <div class="sequence-mining-filter-controller">
-            <div class="input-group">
-                <span class="input-group-addon left">Filter</span>
-                <input id="sequence-mining-grid-filter" type="text" class="form-control middle">
-                {% include "partials/page-controller-settings-btn.html" %}
-            </div>
-        </div>
         <div class="col-md-5 col-lg-4 no-padding">
-            <div id="sequence-mining-cspade-controller">
+            <div id="controller-wrapper">
+                <div id="menu-opener">
+                    <div class="input-group">
+                        <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
+                    </div>
+                </div>
                 <div id="grid-status">
                     <div class="input-group">
-                        <span class="input-group-addon">Num sequences: <span id="ntotal">0</span></span>
+                        <span class="input-group-addon left"><span id="ntotal">0</span></span>
                     </div>
                 </div>
 
-                <div class="slider-group">
+                <div class="grid-controller">
                     <div class="input-group">
-                        <span class="input-group-addon">Use syllable's start time as event ID</span>
-                        <input id="slider-enabled" type="checkbox"/>
-                    </div>
+                        <span class="input-group-addon left">Filter</span>
+                        <input id="segment-info-filter" type="text" class="form-control middle">
 
-                    <div class="col-xs-5 no-padding">
-                        <div class="input-group-addon">Max gap: <span
-                                id="maxgap-slider-value">1000</span><span>ms</span></div>
-                        <div class="input-group">
-                            <input id="maxgap-slider" type="text" data-slider-enabled="false"
-                                   data-slider-min="10" data-slider-max="1000" data-slider-step="10"
-                                   data-slider-value="1000" data-slider-tooltip="hide"/>
-                        </div>
-
-                    </div>
-                    <div class="col-xs-2 offset-xs-2"></div>
-                    <div class="col-xs-5 no-padding">
-                        <div class="input-group-addon">Min gap: <span
-                                id="mingap-slider-value">0</span><span>ms</span></div>
-                        <div class="input-group">
-                            <input id="mingap-slider" type="text" data-slider-enabled="false"
-                                   data-slider-min="0" data-slider-max="100" data-slider-step="1"
-                                   data-slider-value="0" data-slider-tooltip="hide"/>
-                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="has-grid" id="sequence-mining-grid" cls="{{ cls }}" from_user="{{ from_user.username }}"></div>
+            <div class="has-grid" id="sequence-mining-grid" granularity="{{ granularity }}"
+                 viewas="{{ viewas.username }}"></div>
         </div>
 
         <div class="col-md-7 col-lg-8 no-padding" id="graph">
@@ -63,12 +38,6 @@
 
 {% block modal-dialog %}
     {% include 'partials/modal.html' with order='yes-no' yes='Yes' no='No' %}
-{% endblock %}
-
-{% block bottom %}
-    <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        {% include "partials/download-csv-btns.html" %}
-    </div>
 {% endblock %}
 
 {% block scripts %}

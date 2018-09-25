@@ -4,6 +4,7 @@ $scrollbar-height: 15px;
 $axis-height: 18.6px;
 $gap-between-svgs: 8px;
 $visualisation-wrapper-padding-bottom: 10px;
+$visualisation-control-height: 32px;
 
 .axis {
   text {
@@ -28,17 +29,17 @@ $visualisation-wrapper-padding-bottom: 10px;
 }
 
 #visualisation {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 1 / 14);
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 1 / 14);
     overflow-y: hidden;
   }
 
   #spectrogram {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 3 / 14 + #{$axis-height});
     overflow-y: hidden;
 
     .brush-handle {
@@ -68,18 +69,25 @@ $visualisation-wrapper-padding-bottom: 10px;
   }
 }
 
+#visualisation-control {
+  height: $visualisation-control-height;
+  .control-item {
+    padding-top: 5px;
+  }
+}
+
 #zoomed {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom}) * 10 / 14);
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$visualisation-control-height}) * 10 / 14);
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs}) * 2 / 14);
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 2 / 14);
     width: 100%;
   }
 
   #spectrogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs}) * 8 / 14);
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 8 / 14);
     width: 100%;
   }
 }
@@ -93,17 +101,7 @@ $visualisation-wrapper-padding-bottom: 10px;
 }
 
 #segments-grid {
-  height: calc((#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom}) * 10 / 14);
-}
-
-.controller-item {
-  padding-top: 10px;
-  display: inline-block;
-
-  & > div {
-    height: $controller-wrapper-child-height;
-    line-height: $controller-wrapper-child-height;
-  }
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$visualisation-control-height}) * 10 / 14);
 }
 
 .slider-group {

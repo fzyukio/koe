@@ -12,7 +12,7 @@ const pseudoStartName = '__PSEUDO_START__';
 const pseudoEndName = '__PSEUDO_END__';
 
 class Grid extends FlexibleGrid {
-    init(cls) {
+    init(granularity) {
 
         super.init({
             'grid-name': 'sequences',
@@ -21,7 +21,7 @@ class Grid extends FlexibleGrid {
             gridOptions
         });
 
-        this.cls = cls;
+        this.granularity = granularity;
     }
 
     /**
@@ -88,8 +88,8 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-let cls = $('#sequence-mining-grid').attr('cls');
-let fromUser = $('#sequence-mining-grid').attr('from_user');
+let granularity = $('#sequence-mining-grid').attr('granularity');
+let viewas = $('#sequence-mining-grid').attr('viewas');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
@@ -239,11 +239,11 @@ const focusOnGridOnInit = function () {
 };
 
 let extraArgs = {
-    cls,
-    'from_user': fromUser,
-    'usegap': false,
-    'maxgap': null,
-    'mingap': null,
+    granularity,
+    viewas,
+    usegap: false,
+    maxgap: null,
+    mingap: null,
 };
 
 /**
@@ -256,7 +256,7 @@ const loadGrid = function () {
 export const run = function () {
     initAudioContext();
 
-    grid.init(cls);
+    grid.init(granularity);
     grid.initMainGridHeader({}, extraArgs, function () {
         loadGrid();
         subscribeSlickEvents();

@@ -63,8 +63,8 @@ def get_attrs(objs, table, extras):
                 row[attr] = attrs[attr][id]
             rows.append(row)
 
-    from_user = extras.from_user
-    if not from_user or from_user == extras.user.username:
+    viewas = extras.viewas
+    if not viewas or viewas == extras.user.username:
         for column in table['columns']:
             attr = column['slug']
             editable = column['editable']
@@ -173,8 +173,8 @@ def get_grid_column_definition(request):
     table_name = request.POST['grid-type']
     table = tables[table_name]
 
-    from_user = request.POST.get('from_user', user.username)
-    user_is_editing = from_user == user.username
+    viewas = request.POST.get('viewas', user.username)
+    user_is_editing = viewas == user.username
 
     columns = []
 

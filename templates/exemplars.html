@@ -1,25 +1,20 @@
-{% extends 'base-with-grid-and-footer.html' %}
+{% extends 'base-with-sidebar-and-grid.html' %}
 
-{% block title %}
-    Exemplars
-    {% if from_user != user %} by {{ from_user.username }}{% endif %}
-{% endblock %}
+{% block title %}View exemplars{% endblock %}
 
 {% block content-grid %}
 
     <div id="controller-wrapper">
 
-        <div id="grid-status">
+        <div id="menu-opener">
             <div class="input-group">
-                <span class="input-group-addon left"><span id="nselected">0</span>/<span id="ntotal">0</span></span>
+                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
             </div>
         </div>
 
-        <div class="slider-group">
+        <div id="grid-status">
             <div class="input-group">
-                <span class="input-group-addon left">Speed</span>
-                <input id="speed-slider" type="text"
-                       data-slider-min="10" data-slider-max="100" data-slider-step="10" data-slider-value="100"/>
+                <span class="input-group-addon left"><span id="ntotal">0</span></span>
             </div>
         </div>
 
@@ -27,14 +22,11 @@
             <div class="input-group">
                 <span class="input-group-addon left">Filter</span>
                 <input id="exemplars-grid-filter" type="text" class="form-control middle">
-
-                {% include "partials/page-controller-settings-btn.html" %}
-
             </div>
         </div>
     </div>
 
-    <div class="has-grid" id="exemplars-grid" cls="{{ cls }}" from_user="{{ from_user.username }}"></div>
+    <div class="has-grid" id="exemplars-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"></div>
 
     <div id="spectrogram-details-tooltip" class="hidden">
         <img src=""/>
@@ -43,13 +35,7 @@
 {% endblock %}
 
 {% block modal-dialog %}
-{% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
-{% endblock %}
-
-{% block bottom %}
-    <div class="btn-group btn-group-justified" role="group" aria-label="...">
-        {% include "partials/download-csv-btns.html" %}
-    </div>
+    {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
 {% endblock %}
 
 {% block scripts %}

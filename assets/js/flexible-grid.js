@@ -185,7 +185,7 @@ export class FlexibleGrid {
             });
         }
 
-        setCache(self.previousRowCacheName, previousRows);
+        setCache(self.previousRowCacheName, null, previousRows);
     }
 
 
@@ -258,7 +258,7 @@ export class FlexibleGrid {
     deleteAllRows() {
         let dataView = this.mainGrid.getData();
         dataView.setItems([]);
-        setCache(this.previousRowCacheName, undefined);
+        setCache(this.previousRowCacheName, null, undefined);
     }
 
     postMainGridHeader() {

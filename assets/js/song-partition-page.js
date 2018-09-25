@@ -270,7 +270,7 @@ const initController = function () {
                     grid.deleteAllRows();
                     grid.appendRows(items);
                     saveSongsBtn.attr('disabled', true);
-                    setCache('resizeable-syl-id', undefined);
+                    setCache('resizeable-syl-id', null, undefined);
                     viz.displaySegs(items);
                 }
             };

@@ -15,27 +15,15 @@
     </style>
 {% endblock %}
 
-{% block navbar %}{% include "navbar.html" with transparent_bg=True %}{% endblock %}
-
 {% block main-content %}
-    <div id="birds-container">
-        <div class="bird-container bird-container--one">
-            <div class="bird bird--one"></div>
-        </div>
-
-        <div class="bird-container bird-container--two">
-            <div class="bird bird--two"></div>
-        </div>
-
-        <div class="bird-container bird-container--three">
-            <div class="bird bird--three"></div>
-        </div>
-
-        <div class="bird-container bird-container--four">
-            <div class="bird bird--four"></div>
-        </div>
-    </div>
+        <main class="main-content">
+            <div class="container-fluid">
+                <div class="row">
+                    <h1>Sidebar template</h1>
+                    <p>This is a responsive sidebar template with dropdown menu based on bootstrap 3 framework.</p>
+                </div>
+            </div>
+        </main>
 
     {% block content-container %}{% endblock %}
-
 {% endblock %}

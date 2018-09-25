@@ -819,7 +819,7 @@ const filterGenerator = function (paramName, type, filterContent) {
     else {
         binding = {filterValue: filterContent};
     }
-    setCache('regex-filter:' + paramName, filterContent);
+    setCache('regex-filter:' + paramName, null, filterContent);
 
     if (isNull(filterFunction)) {
         return () => {

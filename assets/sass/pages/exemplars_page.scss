@@ -2,7 +2,7 @@
 
 
 #exemplars-grid {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }
 
 #exemplars-grid-filter {

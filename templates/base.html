@@ -37,14 +37,14 @@
             background: rgba(255, 255, 255, .8) url('{% static "images/loading-fading-squares.gif" %}') 50% 50% no-repeat;
         }
     </style>
+
     {% block extra-css %}{% endblock %}
 </head>
 
 <body>
 
-<div id="content-wrapper">
-    {% block navbar %}{% include "navbar.html" %}{% endblock %}
-
+{% block content-wrapper %}
+<div id="content-wrapper" class="toggled">
     {% block main-content %}
         <div class="main-content">
             <div class="content-center">
@@ -52,8 +52,8 @@
             </div>
         </div>
     {% endblock %}
-
 </div>
+{% endblock %}
 
 <div class="modal" id="loading-spinner-modal"></div>
 

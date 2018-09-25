@@ -1,0 +1,19 @@
+<div class="menu-item">
+    <label>View as</label>
+    <div class="btn-group pull-right">
+        <button type="button" class="btn btn-xs btn-default dropdown-toggle"
+                data-toggle="dropdown"
+                data-hover="dropdown"> {{ viewas.username }}
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            {% for user in other_users %}
+                <li class="{% if viewas.id == user.id %}active{% else %}not-active{% endif %}">
+                    <a href="#" class="change-arg" key="viewas" value="{{ user.username }}">
+                        {{ user.username }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

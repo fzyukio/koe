@@ -1,0 +1,139 @@
+{% load static %}
+{% load cache %}
+{% load custom_tags %}
+
+<nav id="sidebar-wrapper">
+    <div id="sidebar-content">
+        <div id="sidebar-brand">
+            <a href="/">声KOE</a>
+            <i id="menu-closer" class="fa fa-times pull-right siderbar-toggler" aria-hidden="true"></i>
+        </div>
+
+        <div id="sidebar-header">
+            <div id="user-pic">
+                <img class="img-responsive img-rounded" src="{{ user.get_avatar }}" alt="User picture">
+            </div>
+            <div id="user-info">
+                <span id="user-name"><strong>{{ user.username }}</strong></span>
+                <span class="text-left"><strong>{{ user.get_full_name }}</strong></span>
+                <span class="text-left small">{{ user.email }}</span>
+                <a href="{% url 'logout' %}" class="btn btn-xs btn-primary btn-block">Log out</a>
+            </div>
+        </div>
+
+        {% with controller_name='sidebar/controller_'|add:page|add:".html" %}
+            {% include controller_name %}
+        {% endwith %}
+
+        <div id="sidebar-menu" page="{{ page }}">
+            <ul>
+                <li class="menu-section">
+                    <span>Views</span>
+                    <div class="menu-item">
+                        <a href="#">
+                            <span>Manage database</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="song-partition">
+                        <a class="appendable" href="{% url 'song-partition' %}">
+                            <span>Upload & split raw recordings</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="">
+                        <a href="#">
+                            <span>Upload Songs</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="segmentation">
+                        <a href="#">
+                            <span>Segment songs into units</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="feature-extraction">
+                        <a class="appendable" href="{% url 'feature-extraction' %}">
+                            <span>Measure units</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="syllables">
+                        <a class="appendable" href="{% url 'syllables' %}">
+                            <span>Classify units</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="exemplars">
+                        <a class="appendable" href="{% url 'exemplars' %}">
+                            <span>View exemplars</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="songs">
+                        <a class="appendable" href="{% url 'songs' %}">
+                            <span>View all songs</span>
+                        </a>
+                    </div>
+
+
+                    {#                        <div class="menu-item-expandable">#}
+                    {#                            <a href="#">#}
+                    {#                                <span>Songs</span>#}
+                    {#                            </a>#}
+                    {#                            <div class="menu-submenu">#}
+                    {#                                <ul>#}
+                    {#                                    <li>#}
+                    {#                                        <a href="#">View</a>#}
+                    {#                                    </li>#}
+                    {#                                    <li>#}
+                    {#                                        <a href="#">Split from raw</a>#}
+                    {#                                    </li>#}
+                    {#                                    <li>#}
+                    {#                                        <a href="#">Upload</a>#}
+                    {#                                    </li>#}
+                    {#                                </ul>#}
+                    {#                            </div>#}
+                    {#                        </div>#}
+                </li>
+
+                <li class="menu-section">
+                    <span>Analysis</span>
+                    <div class="menu-item" page="sequence-mining">
+                        <a class="appendable" href="{% url 'sequence-mining' %}">
+                            <span>Mine sequences</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="tsne-plotly">
+                        <a href="#">
+                            <span>View unit clustering</span>
+                        </a>
+                    </div>
+                </li>
+                <li class="menu-section">
+                    <span>Extra</span>
+                    <div class="menu-item" page="help">
+                        <a href="#">
+                            <span>Help</span>
+                        </a>
+                    </div>
+                    <div class="menu-item" page="contact-us">
+                        <a href="#">
+                            <span>Contact us</span>
+                        </a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <!-- sidebar-menu  -->
+    </div>
+    <!-- sidebar-content  -->
+    <div id="sidebar-footer">
+        <a href="#">
+            <i class="fa fa-github"></i>
+        </a>
+        <a href="#">
+            <i class="fa fa-facebook"></i>
+        </a>
+        <a href="#">
+            <i class="fa fa-youtube"></i>
+        </a>
+        <a href="#">
+            <i class="fa fa-envelope"></i>
+        </a>
+    </div>
+</nav>

@@ -51,7 +51,7 @@ class SegmentGrid extends FlexibleGrid {
 }
 
 export const grid = new SegmentGrid();
-let fromUser = $('#segment-info').attr('from_user');
+let viewas = $('#segment-info').attr('viewas');
 const contextMenu = $('#context-menu');
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
@@ -62,7 +62,7 @@ const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
 const speedSlider = $('#speed-slider');
 const gridStatus = $('#grid-status');
-const gridStatusNSelceted = gridStatus.find('#nselected');
+const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const similarityCombo = $('#similarity-sort-combo');
@@ -155,8 +155,8 @@ const resetStatus = function (e, args) {
     else if (e.type == 'rows-removed') {
         nRowChanged = -args.rows.length;
     }
-    let nSelectedRows = parseInt(gridStatusNSelceted.html());
-    gridStatusNSelceted.html(nSelectedRows + nRowChanged);
+    let nSelectedRows = parseInt(gridStatusNSelected.html());
+    gridStatusNSelected.html(nSelectedRows + nRowChanged);
 
     // Restore keyboard navigation to the grid
     $($('div[hidefocus]')[0]).focus();
@@ -418,7 +418,7 @@ const focusOnGridOnInit = function () {
 
 
 let extraArgs = {
-    'from_user': fromUser,
+    viewas,
 };
 
 let gridArgs = {
