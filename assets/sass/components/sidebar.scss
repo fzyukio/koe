@@ -95,10 +95,9 @@
 
 /*----------------toggeled sidebar----------------*/
 
-@media screen and (min-width: 768px) {
-  #content-wrapper.toggled .main-content.has-sidebar {
-    padding-left: 280px;
-  }
+
+#content-wrapper.toggled .main-content.has-sidebar {
+  padding-left: 280px;
 }
 
 /*----------------sidebar-wrapper----------------*/
@@ -125,7 +124,7 @@
 #sidebar-content {
   max-height: calc(100% - 30px);
   height: calc(100% - 30px);
-  overflow-y: scroll;
+  overflow-y: auto;
   position: relative;
   &.desktop {
     overflow-y: hidden;

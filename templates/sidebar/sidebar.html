@@ -15,8 +15,7 @@
             </div>
             <div id="user-info">
                 <span id="user-name"><strong>{{ user.username }}</strong></span>
-                <span class="text-left"><strong>{{ user.get_full_name }}</strong></span>
-                <span class="text-left small">{{ user.email }}</span>
+                <span class="text-left small">{{ user.email | truncatechars:20}}</span>
                 <a href="{% url 'logout' %}" class="btn btn-xs btn-primary btn-block">Log out</a>
             </div>
         </div>
