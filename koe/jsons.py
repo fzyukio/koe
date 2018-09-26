@@ -1,6 +1,6 @@
 __all__ = ['tables', 'actions', 'num_exemplars']
 
-tables = \
+tables =\
     {
         "segment-info": {
             "class": "koe.Segment",
@@ -168,7 +168,7 @@ tables = \
                     "slug": "note",
                     "type": "SHORT_TEXT",
                     "is_attribute": True,
-                    "editable": True
+                    "editable": "editability_validation"
                 },
                 {
                     "name": "Format version",
@@ -478,6 +478,93 @@ tables = \
                 }
             ]
         },
+        "database-grid": {
+            "class": "koe.Database",
+            "getter": "koe.bulk_get_database",
+            "columns": [
+                {
+                    "name": "Name",
+                    "slug": "name",
+                    "type": "SHORT_TEXT",
+                    "editable": 'editability_validation',
+                    "is_attribute": True
+                },
+                {
+                    "name": "Permission",
+                    "slug": "permission",
+                    "type": "SHORT_TEXT"
+                }
+            ]
+        },
+        "database-assignment-grid": {
+            "class": "koe.DatabaseAssignment",
+            "getter": "koe.bulk_get_database_assignment",
+            "columns": [
+                {
+                    "name": "Username",
+                    "slug": "username",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Permission",
+                    "slug": "permission",
+                    "type": "SHORT_TEXT",
+                    "editor": "Select",
+                    "css_class": "overflow",
+                    "is_attribute": True,
+                    "editable": "editability_validation"
+                }
+            ]
+        },
+        "concise-syllables-grid": {
+            "class": "koe.Segment",
+            "getter": "koe.bulk_get_concise_ssegment_info",
+            "columns": [
+                {
+                    "name": "Start",
+                    "slug": "start_time_ms",
+                    "type": "INTEGER",
+                    "is_attribute": True
+                },
+                {
+                    "name": "End",
+                    "slug": "end_time_ms",
+                    "type": "INTEGER",
+                    "is_attribute": True
+                },
+                {
+                    "name": "Duration",
+                    "slug": "duration",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "Song",
+                    "slug": "song",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Spectrogram",
+                    "slug": "spectrogram",
+                    "type": "IMAGE",
+                    "css_class": "has-image"
+                },
+                {
+                    "name": "Family",
+                    "slug": "label_family",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Subfamily",
+                    "slug": "label_subfamily",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Label",
+                    "slug": "label",
+                    "type": "SHORT_TEXT"
+                },
+            ]
+        }
     }
 
 num_exemplars = 10
@@ -503,7 +590,7 @@ for i in range(1, num_exemplars + 1):
         }
     )
 
-actions = \
+actions =\
     {
         "reorder-columns": {
             "name": "Arrange row",

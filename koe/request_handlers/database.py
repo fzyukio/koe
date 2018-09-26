@@ -1,24 +1,23 @@
-import csv
 import datetime
 import io
 import json
 import os
-from django.conf import settings
+import re
 from shutil import copyfile
 
+import csv
+from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Count
 from dotmap import DotMap
 
 from koe.grid_getters import bulk_get_segments_for_audio
-from koe.model_utils import extract_spectrogram, assert_permission, \
-    get_or_error
+from koe.model_utils import extract_spectrogram, assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.exceptions import CustomAssertionError
-from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import spect_fft_path, \
-    spect_mask_path
+from root.models import ExtraAttrValue, ExtraAttr
+from root.utils import spect_fft_path, spect_mask_path
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'approve_database_access', 'copy_audio_files', 'delete_segments']
@@ -152,24 +151,20 @@ def delete_audio_files(request):
 def create_database(request):
     user = request.user
     name = get_or_error(request.POST, 'name')
-    if name == '':
-        raise CustomAssertionError('Please provide a proper name.')
+    if not re.match("^[a-zA-Z0-9_]+$", name):
+        raise CustomAssertionError('Name must be non-empty and can only contain alphabets, numbers, and underscores')
 
-    if Database.objects.filter(name=name).exists():
+    if Database.objects.filter(name__iexact=name).exists():
         raise CustomAssertionError('Database with name {} already exists.'.format(name))
 
     database = Database(name=name)
     database.save()
 
     # Now assign this database to this user, and switch the working database to this new one
-    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER).save()
+    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)
 
-    extra_attr = ExtraAttr.objects.get(klass=User.__name__, name='current-database')
-    extra_attr_value, _ = ExtraAttrValue.objects.get_or_create(user=user, attr=extra_attr, owner_id=user.id)
-    extra_attr_value.value = database.id
-    extra_attr_value.save()
-
-    return True
+    permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
+    return [dict(id=database.id, name=name, permission=permission_str)]
 
 
 def save_segmentation(request):

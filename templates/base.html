@@ -44,22 +44,42 @@
 <body>
 
 {% block content-wrapper %}
-<div id="content-wrapper" class="toggled">
-    {% block main-content %}
-        <div class="main-content">
-            <div class="content-center">
-                {% block content-center %}{% endblock %}
+    <div id="content-wrapper" class="toggled">
+        {% block main-content %}
+            <div class="main-content {% block main-content-classes %}{% endblock %}">
+                <div class="content-center">
+                    {% block content-center %}{% endblock %}
+                </div>
             </div>
-        </div>
-    {% endblock %}
-</div>
+        {% endblock %}
+    </div>
 {% endblock %}
 
 <div class="modal" id="loading-spinner-modal"></div>
 
 {% block modal-dialog %}
-{% include 'partials/modal.html' with order='no-yes' yes='Yes' no='No' %}
+    {% include 'partials/modal.html' with order='no-yes' yes='Yes' no='No' %}
 {% endblock %}
+
+<div class="alert alert-success">
+    <button type="button" class="close" aria-label="Close">
+        <span aria-hidden="true">&times;</span></button>
+    <div class="message"></div>
+</div>
+<div class="alert alert-danger">
+    <button type="button" class="close" aria-label="Close">
+        <span aria-hidden="true">&times;</span></button>
+    <span class="message"></span>
+    <span class="report">
+        Click
+        <strong>
+            <a class="link" href="#" error-id="" onclick="showErrorDialog(this.getAttribute('error-id'));">
+                here
+            </a>
+        </strong>
+        to give a detail report.
+    </span>
+</div>
 
 {% debug_mode as is_in_debug_mode %}
 {% if user.is_superuser or is_in_debug_mode %}
@@ -90,7 +110,6 @@
 </script>
 
 {% tz_detect %}
-
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -706,40 +706,6 @@ const initDeleteSegmentsBtn = function () {
 
 
 export const postRun = function () {
-    $('.back-up-data').click(function () {
-        let backUpType = $(this).data('backup-type');
-
-        ce.inputText.val('');
-
-        ce.dialogModalTitle.html('Backing up your data...');
-        ce.dialogModalBody.html('<label>Give it a comment (optional)</label>');
-        ce.dialogModalBody.append(ce.inputText);
-
-        ce.dialogModal.modal('show');
-
-        ce.dialogModalOkBtn.one('click', function () {
-            let value = ce.inputText.val();
-            let databaseId = ce.databaseCombo.attr('database');
-            ce.inputText.val('');
-
-            ce.dialogModal.modal('hide');
-            let postData = {
-                comment: value,
-                database: databaseId,
-                type: backUpType
-            };
-            let msgGen = function (isSuccess, response) {
-                return isSuccess ?
-                    `History saved to ${response}. You can download it from the version control page` :
-                    `Something's wrong, server says ${response}. Version not saved.`;
-            };
-            postRequest({
-                requestSlug: 'koe/save-history',
-                data: postData,
-                msgGen
-            });
-        });
-    });
 
     initDeleteSegmentsBtn();
 };

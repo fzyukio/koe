@@ -23,23 +23,39 @@ export const initSelectizeSimple = function ($select, options) {
 
 export const initSelectize = function ($select, field, defaultValue) {
     let selectableColumns = getCache('selectableOptions');
-    let selectableOptions = selectableColumns[field];
-    let options = [];
+    let renderOptions = selectableColumns[`__render-options__${field}`];
+    let options;
+    let valueField = 'option';
+    let labelField = 'option';
+    let searchField = 'option';
+    let renderer = (item) => `<div><span class="badge">${item.count}</span> ${item.option}</div>`;
 
-    for (let option in selectableOptions) {
-        if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
-            let count = selectableOptions[option];
-            options.push({
-                option,
-                count
-            });
+    if (renderOptions) {
+        options = renderOptions.options;
+        valueField = renderOptions.valueField || valueField;
+        labelField = renderOptions.labelField || labelField;
+        searchField = renderOptions.valueField || searchField;
+        renderer = renderOptions.renderer || renderer;
+    }
+    else {
+        let selectableOptions = selectableColumns[field];
+        options = [];
+
+        for (let option in selectableOptions) {
+            if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
+                let count = selectableOptions[option];
+                options.push({
+                    option,
+                    count
+                });
+            }
         }
     }
 
     let control = $select.selectize({
-        valueField: 'option',
-        labelField: 'option',
-        searchField: 'option',
+        valueField,
+        labelField,
+        searchField,
         create: true,
         selectOnTab: true,
         openOnFocus: false,
@@ -47,7 +63,7 @@ export const initSelectize = function ($select, field, defaultValue) {
         dropdownDirection: 'auto',
         render: {
             option (item) {
-                return `<div><span class="badge">${item.count}</span> ${item.option}</div>`
+                return renderer(item);
             }
         },
         sortField: [

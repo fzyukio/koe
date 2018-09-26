@@ -4,7 +4,7 @@
 
 
 {% block content-grid %}
-    <div id="controller-wrapper">
+    <div class="controller-wrapper">
         <div id="menu-opener">
             <div class="input-group">
                 <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
@@ -41,32 +41,6 @@
 {% block modal-dialog %}
     {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
 {% endblock %}
-
-{#{% block bottom %}#}
-{#    <div class="btn-group btn-group-justified" role="group" aria-label="...">#}
-{#        <div class="btn-group dropup" role="group">#}
-{#            <button type="button" class="btn btn-black dropdown-toggle" data-toggle="dropdown"#}
-{#                    aria-haspopup="true" aria-expanded="false">#}
-{#                Backup#}
-{#                <span class="caret"></span>#}
-{#            </button>#}
-{#            <ul class="dropdown-menu">#}
-{#                <li><a class="back-up-data" id="save-data-btn" data-backup-type="labels">Labels, Notes</a></li>#}
-{#                <li><a class="back-up-data" id="upload-csv-btn" data-backup-type="segmentation">Labels, Notes and#}
-{#                    Endpoints</a>#}
-{#                </li>#}
-{#            </ul>#}
-{#        </div>#}
-{#        {% if db_assignment.can_modify_segments %}#}
-{#            <div class="btn-group" role="group">#}
-{#                <button disabled id="delete-segments-btn" type="button" class="btn btn-black">#}
-{#                    Delete selected#}
-{#                </button>#}
-{#            </div>#}
-{#        {% endif %}#}
-{#        {% include "partials/download-csv-btns.html" %}#}
-{#    </div>#}
-{#{% endblock %}#}
 
 {% block scripts %}
     <script src="//cdnjs.cloudflare.com/ajax/libs/keyboardjs/2.4.1/keyboard.min.js"></script>

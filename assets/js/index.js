@@ -297,7 +297,7 @@ const _postRun = function () {
 $(document).ready(function () {
     let pageName = location.pathname;
     if (pageName === '/') {
-        page = require('home-page');
+        page = require('dashboard-page');
     }
     else if (pageName === '/version/') {
         page = require('version-page');

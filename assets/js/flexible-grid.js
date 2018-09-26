@@ -221,7 +221,8 @@ export class FlexibleGrid {
             requestSlug: 'change-properties',
             data: postData,
             onSuccess,
-            onFailure
+            onFailure,
+            immediate: true
         });
     }
 
@@ -263,8 +264,16 @@ export class FlexibleGrid {
 
     postMainGridHeader() {
         let self = this;
+
         self.mainGrid.onCellChange.subscribe(function (e, args) {
-            self.rowChangeHandler(e, args);
+            self.rowChangeHandler(e, args, null, function() {
+                let column = args.grid.getColumns()[args.cell];
+                let field = column.field;
+                let oldValue = args.item[`_old_${field}`];
+                args.item[field] = oldValue;
+                args.grid.invalidateRow(args.row);
+                args.grid.render();
+            });
         });
         self.mainGrid.onMouseEnter.subscribe(function (e, args) {
             self.mouseHandler(e, args);
@@ -355,7 +364,10 @@ export class FlexibleGrid {
     initMainGridContent(defaultArgs, extraArgs, callback) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
-        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions || true;
+        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions;
+        if (doCacheSelectableOptions === undefined) {
+            doCacheSelectableOptions = true;
+        }
 
         let args = deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;

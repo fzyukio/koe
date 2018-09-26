@@ -1,18 +1,65 @@
 import os
 
 import numpy as np
+from django.conf import settings
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
 from pycspade import cspade
 
-from koe.model_utils import get_user_databases, get_current_similarity
-from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission
+from koe.model_utils import get_user_databases, get_current_similarity, get_or_error
+from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
-           'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations']
+           'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
+           'bulk_get_database', 'bulk_get_database_assignment', 'bulk_get_concise_ssegment_info']
+
+
+def bulk_get_concise_ssegment_info(segs, extras):
+    database_id = extras.database
+    user = extras.user
+    current_database = get_or_error(Database, dict(id=database_id))
+    rows = []
+    ids = []
+    if current_database is None:
+        return ids, rows
+
+    segs = segs.filter(audio_file__database=current_database.id)
+    values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'audio_file__name'))
+    segids = [x[0] for x in values]
+
+    label_attr = settings.ATTRS.segment.label
+    family_attr = settings.ATTRS.segment.family
+    subfamily_attr = settings.ATTRS.segment.subfamily
+
+    labels = ExtraAttrValue.objects.filter(user__username=user, attr=label_attr, owner_id__in=segids)\
+        .values_list('owner_id', 'value')
+    families = ExtraAttrValue.objects.filter(user__username=user, attr=family_attr, owner_id__in=segids)\
+        .values_list('owner_id', 'value')
+    subfamilies = ExtraAttrValue.objects.filter(user__username=user, attr=subfamily_attr, owner_id__in=segids)\
+        .values_list('owner_id', 'value')
+
+    labels = {x: y for x, y in labels}
+    families = {x: y for x, y in families}
+    subfamilies = {x: y for x, y in subfamilies}
+
+    for id, start, end, song_name in values:
+        ids.append(id)
+        img = spect_fft_path(id, 'syllable', for_url=True)
+        duration = end - start
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song_name, spectrogram=img)
+        if id in labels:
+            row['label'] = labels[id]
+        if id in families:
+            row['label_family'] = families[id]
+        if id in subfamilies:
+            row['label_subfamily'] = subfamilies[id]
+
+        rows.append(row)
+
+    return ids, rows
 
 
 def bulk_get_segment_info(segs, extras):
@@ -22,7 +69,7 @@ def bulk_get_segment_info(segs, extras):
     :param extras: Must specify the user to get the correct ExtraAttrValue columns
     :return: [row]
     """
-    databases, current_database = get_user_databases(extras.user)
+    _, current_database = get_user_databases(extras.user)
     viewas = extras.viewas
     similarities, current_similarity = get_current_similarity(extras.user, current_database)
 
@@ -399,10 +446,17 @@ def has_import_permission(user_id, database_id):
 
 def bulk_get_history_entries(hes, extras):
     user = extras.user
+    database = extras.database
 
     tz = extras.tz
-    values = hes.values_list('id', 'filename', 'time', 'user__username', 'user__id', 'database',
-                             'database__name', 'note', 'version', 'type')
+    if isinstance(hes, QuerySet):
+        values = hes.filter(database=database).values_list('id', 'filename', 'time', 'user__username', 'user__id',
+                                                           'database', 'database__name', 'note', 'version', 'type')
+    else:
+        values = [(
+            x.id, x.filename, x.time, x.user.username, x.user.id, x.database, x.database.name, x.note, x.version,
+            x.type) for x in hes
+        ]
 
     ids = []
     rows = []
@@ -576,6 +630,43 @@ def bulk_get_song_sequence_associations(all_songs, extras):
         ids.append(idx)
 
     return ids, rows
+
+
+def bulk_get_database(databases, extras):
+    user = extras.user
+    idx = []
+    rows = []
+
+    db_assignments = DatabaseAssignment.objects.filter(user=user)\
+        .values_list('database__id', 'database__name', 'permission')
+
+    for id, dbname, permission in db_assignments:
+        idx.append(id)
+        permission_str = DatabasePermission.get_name(permission)
+        row = dict(id=id, name=dbname, permission=permission_str)
+        rows.append(row)
+
+    return idx, rows
+
+
+def bulk_get_database_assignment(dbassignments, extras):
+    database = extras.database
+    idx = []
+    rows = []
+
+    db_assignments = dbassignments.filter(database=database).values_list('id', 'user__username', 'permission')
+
+    for id, username, permission in db_assignments:
+        idx.append(id)
+        permission_str = DatabasePermission.get_name(permission)
+        row = dict(id=id, username=username, permission=permission_str)
+        rows.append(row)
+
+    return idx, rows
+
+
+def bulk_set_database_assignment(*args, **kwargs):
+    pass
 
 
 def bulk_get_audio_file_for_raw_recording(audio_files, extras):

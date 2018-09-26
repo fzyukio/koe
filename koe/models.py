@@ -1,3 +1,5 @@
+import re
+
 import django.db.models.options as options
 import hashlib
 import numpy as np
@@ -101,6 +103,24 @@ class Database(SimpleModel):
     def __str__(self):
         return self.name
 
+    def save(self, **kwargs):
+        if not re.match("^[a-zA-Z0-9_]+$", self.name):
+            raise CustomAssertionError('Database name must be non-empty and can only contain alphabets, digits and '
+                                       'underscores')
+        super(Database, self).save(**kwargs)
+
+    @classmethod
+    def get_editability_validation(cls, databases, extras):
+        user = extras.user
+        retval = {database.id: False for database in databases}
+        editable_db = DatabaseAssignment.objects\
+            .filter(database__in=databases, user=user, permission__gte=DatabasePermission.ASSIGN_USER)\
+            .values_list('database__id', flat=True)
+
+        for id in editable_db:
+            retval[id] = True
+        return retval
+
 
 class DatabasePermission(MagicChoices):
     VIEW = 100
@@ -151,6 +171,21 @@ class DatabaseAssignment(SimpleModel):
 
     def can_assign_user(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.ASSIGN_USER
+
+    @classmethod
+    def get_editability_validation(cls, das, extras):
+        database_id = extras.database
+        user = extras.user
+        das = das.filter(database=database_id)
+
+        user_permission = das.filter(user=user).first()
+        user_is_owner = user_permission is not None and user_permission.permission >= DatabasePermission.ASSIGN_USER
+
+        retval = {da.id: user_is_owner for da in das}
+
+        # Forbid owners from changing their own permission - prevent database from having no owner at all.
+        retval[user_permission.id] = False
+        return retval
 
 
 class AudioFile(SimpleModel):
@@ -392,6 +427,14 @@ class HistoryEntry(SimpleModel):
         if not self.filename:
             self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S_%Z'))
         super(HistoryEntry, self).save(*args, **kwargs)
+
+    @classmethod
+    def get_editability_validation(cls, hes, extras):
+        database_id = extras.database
+        user = extras.user
+        hes = hes.filter(database=database_id)
+        retval = {he.id: he.user == user for he in hes}
+        return retval
 
 
 class AccessRequest(SimpleModel):

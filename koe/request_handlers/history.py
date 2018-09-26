@@ -5,7 +5,10 @@ from django.core.files import File
 from django.db import transaction
 from django.utils import timezone
 from django_bulk_update.helper import bulk_update
+from dotmap import DotMap
+from tz_detect.utils import offset_to_timezone
 
+from koe.grid_getters import bulk_get_history_entries
 from koe.model_utils import assert_permission, \
     get_or_error, assert_values, get_user_databases
 from koe.models import Segment, HistoryEntry, Database, DatabasePermission, AudioFile
@@ -105,7 +108,11 @@ def save_history(request):
     with open(filepath, 'wb') as f:
         f.write(binary_content)
 
-    return filename
+    tz_offset = request.session['detected_tz']
+    tz = offset_to_timezone(tz_offset)
+
+    _, rows = bulk_get_history_entries([he], DotMap(user=user, database=database_id, tz=tz))
+    return rows
 
 
 def delete_history(request):

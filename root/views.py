@@ -5,6 +5,7 @@ import traceback
 from collections import OrderedDict
 
 from django.conf import settings
+from django.db import IntegrityError
 from django.db.models.base import ModelBase
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.http import HttpResponseServerError
@@ -76,8 +77,8 @@ def get_attrs(objs, table, extras):
 
             for row in rows:
                 id = row['id']
-                editability = editabilities[id]
-                row[attr_editable] = editability
+                if editabilities[id]:
+                    row[attr_editable] = True
 
     return rows
 
@@ -96,11 +97,11 @@ def init_tables():
         table['class'] = klass
 
         has_bulk_getter = 'getter' in table
-        has_bulk_setter = 'setter' in table
 
         if has_bulk_getter:
             table['getter'] = global_namespace[table['getter']]
         for column in table['columns']:
+            has_setter = 'setter' in column
             is_addon = column.get('is_addon', False)
             column['is_addon'] = is_addon
 
@@ -136,15 +137,17 @@ def init_tables():
                         getter = klass.get_EXTRA_FIELD(slug)
                 column['getter'] = getter
 
-            if not has_bulk_setter:
+            if has_setter:
+                setter = global_namespace[column['getter']]
+            else:
                 setter = getattr(klass, 'set_{}'.format(slug), None)
                 if setter is None:
                     if is_attribute:
                         setter = klass.set_FIELD(slug)
                     elif is_extra_attr:
                         setter = klass.set_EXTRA_FIELD(slug)
-                if editable:
-                    column['setter'] = setter
+            if editable:
+                column['setter'] = setter
 
             if is_extra_attr:
                 ExtraAttr.objects.get_or_create(klass=klass.__name__, type=_type, name=slug)
@@ -297,7 +300,7 @@ def change_properties(request):
     klass = table['class']
     obj = klass.objects.get(pk=grid_row['id'])
 
-    if has_field(klass, 'user'):
+    if issubclass(klass, ExtraAttrValue) and has_field(klass, 'user'):
         if obj.user != request.user:
             raise CustomAssertionError('You don\' have permission to change data that doesn\'t belong to you')
 
@@ -452,10 +455,15 @@ def send_request(request, *args, **kwargs):
                 return HttpResponse(json.dumps(dict(message=response)))
             except Exception as e:
                 error_id = error_tracker.captureException()
-                if isinstance(e, CustomAssertionError):
-                    return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=str(e))))
+                if isinstance(e, IntegrityError):
+                    message = e.args[1]
+                else:
+                    message = str(e)
 
-                return HttpResponseServerError(json.dumps(dict(errid=error_id, message=str(e))))
+                if isinstance(e, CustomAssertionError):
+                    return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=message)))
+
+                return HttpResponseServerError(json.dumps(dict(errid=error_id, message=message)))
 
     return HttpResponseNotFound()
 

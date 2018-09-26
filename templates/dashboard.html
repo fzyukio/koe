@@ -1,0 +1,145 @@
+{% extends 'base-with-sidebar-and-grid.html' %}
+
+{% block title %}Manage database{% endblock %}
+
+{% block main-content-classes %}no-padding{% endblock %}
+
+{% block content-grid %}
+
+    <div class="col-sm-6 col-md-3 no-padding contain-grid">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div id="menu-opener">
+                            <div class="input-group">
+                                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
+                            </div>
+                        </div>
+
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">Database</span>
+                                <input id="database-grid-filter" type="text" class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding has-grid" id="database-grid"></div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button id="create-database-btn" type="button" class="btn btn-sm btn-black">New database
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-sm-6 col-md-3 no-padding contain-grid">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">User & Permissions</span>
+                                <input id="database-assignment-grid-filter" type="text" class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding has-grid" id="database-assignment-grid"></div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button id="create-database-btn" disabled type="button" class="btn btn-sm btn-black">Grant user
+                            permission
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-6 no-padding contain-grid">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">Saved versions</span>
+                                <input id="version-grid-filter" type="text" class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding has-grid" id="version-grid"></div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
+                            <input type="file" name="zipfile"
+                                   accept="application/zip,application/x-zip,application/x-zip-compressed">
+                            <input type="submit">
+                        </form>
+                        <button id="import-zip-btn" type="button" class="btn btn-sm btn-black">Load ZIP</button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button id="apply-version-btn" disabled type="button" class="btn btn-sm btn-black">Load selected
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button id="delete-version-btn" disabled type="button" class="btn btn-sm btn-black">Delete
+                            selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-12 no-padding contain-grid">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">Units</span>
+                                <input id="concise-syllables-grid-filter" type="text"
+                                       class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding has-grid" id="concise-syllables-grid"></div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button disabled type="button" class="btn btn-sm btn-black back-up-data"
+                                data-backup-type="labels">Quick save
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button disabled type="button" class="btn btn-sm btn-black back-up-data"
+                                data-backup-type="segmentation">Full save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block modal-dialog %}
+    {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
+{% endblock %}

@@ -1,0 +1,59 @@
+@import "../variables";
+
+$grid-button-height: 30px;
+
+.contain-grid {
+  .panel {
+    border-radius: 0;
+    border: 1px solid rgba(0, 0, 0, .125);
+    margin-bottom: $panel-margin-bottom;
+
+    .slick-header-columns {
+      border-top: none;
+    }
+  }
+
+  button {
+    border-radius: 0;
+    border-width: 0;
+    height: $grid-button-height;
+  }
+}
+
+// In mobile mode, all four grids are full screen
+#database-grid, #database-assignment-grid, #concise-syllables-grid, #version-grid {
+  height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);
+}
+
+// In tablet mode, they're organised in a 1x3 + 2x1 settings
+@media (min-width: 576px) {
+  #database-grid, #database-assignment-grid, #version-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) / 2);
+  }
+
+  #concise-syllables-grid {
+    height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);
+  }
+}
+
+// In monitor mode, they're now 2x2
+@media (min-width: 768px) {
+  #database-grid, #database-assignment-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 2 / 5);
+  }
+
+  #version-grid, #concise-syllables-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 3 / 5);
+  }
+}
+
+// Large devices (desktops, 992px and up), they are 3x1 + 1x1
+@media (min-width: 992px) {
+  #database-grid, #database-assignment-grid, #version-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 2 / 5);
+  }
+
+  #concise-syllables-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 3 / 5);
+  }
+}
