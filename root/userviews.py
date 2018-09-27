@@ -1,3 +1,5 @@
+import re
+
 from django.utils import timezone
 from django.contrib import auth
 from django.http import HttpResponseRedirect
@@ -120,6 +122,9 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
             has_error = True
         if password != re_password:
             form.add_error('re_password', 'Retyped password unmatched')
+            has_error = True
+        if not re.match("^[a-zA-Z0-9_]+$", username):
+            form.add_error('username', 'Username can only contain alphabets, numbers and underscores.')
             has_error = True
 
         if has_error:

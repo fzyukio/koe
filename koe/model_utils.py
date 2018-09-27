@@ -207,8 +207,9 @@ def get_user_databases(user):
         current_database = databases.get(pk=current_database_id)
     else:
         current_database = databases.first()
-        ExtraAttrValue.objects.create(attr=settings.ATTRS.user.current_database, owner_id=user.id, user=user,
-                                      value=current_database.id)
+        if current_database is not None:
+            ExtraAttrValue.objects.create(attr=settings.ATTRS.user.current_database, owner_id=user.id, user=user,
+                                          value=current_database.id)
 
     return databases, current_database
 
