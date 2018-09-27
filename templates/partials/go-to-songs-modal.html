@@ -1,0 +1,33 @@
+{% load static %}
+
+<div class="modal fade in" id="go-to-songs-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+     aria-hidden="true" style="display: none;" database="{{ current_database.id }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Please navigate to "View all songs" and click on the name of the song you want to segment.</h3>
+            </div>
+            <div class="modal-body">
+                <h5>
+                    Like this:
+                </h5>
+
+                <img src="{% static 'images/go-to-song-segmentation.png' %}">
+            </div>
+
+            <div class="modal-footer">
+                <div class="btn-group btn-group-justified" role="group" aria-label="group button">
+                    <div class="btn-group" role="group">
+                        <a class="btn btn-primary appendable" href="{% url 'songs' %}">
+                            Take me there
+                        </a>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-primary" data-dismiss="modal" role="button">Never mind</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

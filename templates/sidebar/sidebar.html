@@ -30,7 +30,7 @@
                     <span>Views</span>
                     <div class="menu-item" page="dashboard">
                         <a href="{% url 'dashboard' %}">
-                            <span>Dashboard</span>
+                            <span>Manage your database</span>
                         </a>
                     </div>
                     <div class="menu-item" page="song-partition">
@@ -44,7 +44,7 @@
                         </a>
                     </div>
                     <div class="menu-item" page="segmentation">
-                        <a href="#">
+                        <a href="#" data-toggle="modal" data-target="#go-to-songs-modal">
                             <span>Segment songs into units</span>
                         </a>
                     </div>
@@ -136,3 +136,5 @@
         </a>
     </div>
 </nav>
+
+{% include 'partials/go-to-songs-modal.html' %}
