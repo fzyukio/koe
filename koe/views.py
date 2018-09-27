@@ -3,7 +3,7 @@ import os
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
@@ -260,6 +260,14 @@ class FeatureExtrationView(FormView):
             vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})
 
         return HttpResponse(json.dumps(dict(message=vizurl)))
+
+
+def get_home_page(request):
+    user = request.user
+    databases, current_database = get_user_databases(user)
+    if len(databases) == 0 or current_database is None:
+        return redirect('dashboard')
+    return redirect('songs')
 
 
 def get_view(name):

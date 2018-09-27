@@ -37,7 +37,7 @@ urlpatterns += \
         url(r'^tsne/plotly/(?P<tensor_name>[0-9a-z]{32})/$', views.TsnePlotlyView.as_view(), name='tsne-plotly'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
-        url(r'^$', login_required(views.get_view('dashboard')), name='dashboard'),
-        # url(r'^$', login_required(views.get_view('home_page')), name='home_page')
+        url(r'^dashboard/$', login_required(views.get_view('dashboard')), name='dashboard'),
+        url(r'^$', login_required(views.get_home_page), name='home_page')
 
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
