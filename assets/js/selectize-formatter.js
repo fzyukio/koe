@@ -21,59 +21,87 @@ export const initSelectizeSimple = function ($select, options) {
 };
 
 
-export const initSelectize = function ($select, field, defaultValue) {
-    let selectableColumns = getCache('selectableOptions');
-    let renderOptions = selectableColumns[`__render-options__${field}`];
-    let options;
-    let valueField = 'option';
-    let labelField = 'option';
-    let searchField = 'option';
-    let renderer = (item) => `<div><span class="badge">${item.count}</span> ${item.option}</div>`;
+export const constructSelectizeOptionsForConstants = function (selectOptions, defaultValue) {
+    let options = [];
+    $.each(selectOptions, function (value, label) {
+        options.push({
+            value,
+            label
+        });
+    });
 
-    if (renderOptions) {
-        options = renderOptions.options;
-        valueField = renderOptions.valueField || valueField;
-        labelField = renderOptions.labelField || labelField;
-        searchField = renderOptions.valueField || searchField;
-        renderer = renderOptions.renderer || renderer;
-    }
-    else {
-        let selectableOptions = selectableColumns[field];
-        options = [];
-
-        for (let option in selectableOptions) {
-            if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
-                let count = selectableOptions[option];
-                options.push({
-                    option,
-                    count
-                });
-            }
-        }
-    }
-
-    let control = $select.selectize({
-        valueField,
-        labelField,
-        searchField,
-        create: true,
-        selectOnTab: true,
-        openOnFocus: false,
-        options,
+    return {
+        valueField: 'value',
+        labelField: 'label',
+        searchField: 'label',
+        create: false,
+        selectOnTab: false,
+        openOnFocus: true,
         dropdownDirection: 'auto',
         render: {
             option (item) {
-                return renderer(item);
+                return `<div>${item.label}</div>`;
+            }
+        },
+        sortField: [
+            {
+                field: 'value',
+                direction: 'asc'
+            },
+            {
+                field: '$score'
+            }
+        ],
+        items: [defaultValue],
+        options
+    };
+};
+
+export const constructSelectizeOptionsForLabellings = function(field, defaultValue) {
+    let selectableColumns = getCache('selectableOptions');
+    let selectableOptions = selectableColumns[field];
+    let options = [];
+
+    for (let option in selectableOptions) {
+        if (option && Object.prototype.hasOwnProperty.call(selectableOptions, option)) {
+            let count = selectableOptions[option];
+            options.push({
+                option,
+                count
+            });
+        }
+    }
+
+    return {
+        valueField: 'option',
+        labelField: 'option',
+        searchField: 'option',
+        create: true,
+        selectOnTab: true,
+        openOnFocus: false,
+        dropdownDirection: 'auto',
+        render: {
+            option (item) {
+                return `<div><span class="badge">${item.count}</span> ${item.option}</div>`;
             }
         },
         sortField: [
             {
                 field: 'count',
                 direction: 'desc'
-            }, {field: '$score'}
+            },
+            {
+                field: '$score'
+            }
         ],
-        items: [defaultValue]
-    });
+        items: [defaultValue],
+        options
+    };
+};
+
+
+export const initSelectize = function ($select, selectizeOptions) {
+    let control = $select.selectize(selectizeOptions);
 
     control[0].selectize.onMouseDown = function (e) {
         e.preventDefault();
@@ -102,7 +130,17 @@ export const SelectizeEditor = function (args) {
         $select = $('<SELECT tabIndex=\'0\' class=\'selectize\'></SELECT>');
         $select.appendTo(args.container);
 
-        initSelectize($select, args.column.field, args.item[args.column.field]);
+        let selectizeOptions;
+        defaultValue = args.item[args.column.field];
+
+        if (args.column._formatter == 'Select') {
+            selectizeOptions = constructSelectizeOptionsForConstants(args.column.options, defaultValue);
+        }
+        else {
+            selectizeOptions = constructSelectizeOptionsForLabellings(args.column.field, defaultValue);
+        }
+
+        initSelectize($select, selectizeOptions);
 
         $select[0].selectize.focus();
     };

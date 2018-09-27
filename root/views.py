@@ -77,8 +77,9 @@ def get_attrs(objs, table, extras):
 
             for row in rows:
                 id = row['id']
-                if editabilities[id]:
-                    row[attr_editable] = True
+                # row[attr_editable] = editabilities[id]
+                if not editabilities[id]:
+                    row[attr_editable] = False
 
     return rows
 
@@ -155,6 +156,11 @@ def init_tables():
             if 'total_label' not in column:
                 column['total_label'] = '-/-'
 
+            if column['formatter'] == 'Select':
+                choice_class = global_namespace[column['choices']]
+                choises = choice_class.as_choices()
+                column['options'] = {x: y for x, y in choises}
+
     actions = jsons.actions
     for slug in actions:
         action = actions[slug]
@@ -185,8 +191,6 @@ def get_grid_column_definition(request):
         slug = column['slug']
         is_addon = column['is_addon']
 
-        if not is_addon:
-            name = column['name']
         editable = column['editable'] and user_is_editing
         total_label = column['total_label']
         editor = column['editor']
@@ -201,17 +205,20 @@ def get_grid_column_definition(request):
         if callable(editable):
             editable = 'True'
 
-        column = dict(id=slug, field=slug, editable=editable, editor=editor, filter=filter,
-                      formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                      cssClass=css_class, copyable=copyable, exportable=exportable)
+        col_def = dict(id=slug, field=slug, editable=editable, editor=editor, filter=filter,
+                       formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
+                       cssClass=css_class, copyable=copyable, exportable=exportable)
+
+        if 'options' in column:
+            col_def['options'] = column['options']
 
         if not is_addon:
-            column['name'] = name
+            col_def['name'] = column['name']
 
         if editable:
-            column['cssClass'] += ' editable'
+            col_def['cssClass'] += ' editable'
 
-        columns.append(column)
+        columns.append(col_def)
 
     col_id_to_col = {x['id']: x for x in columns}
     action_names = list(actions.keys())

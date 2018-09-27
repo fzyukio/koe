@@ -650,16 +650,20 @@ def bulk_get_database(databases, extras):
 
 
 def bulk_get_database_assignment(dbassignments, extras):
-    database = extras.database
+    database_id = extras.database
     idx = []
     rows = []
 
-    db_assignments = dbassignments.filter(database=database).values_list('id', 'user__username', 'permission')
+    if isinstance(dbassignments, QuerySet):
+        db_assignments = dbassignments.filter(database=database_id).values_list('id', 'user__username', 'permission')
+    else:
+        db_assignments = [
+            (x.id, x.user.username, x.permission) for x in dbassignments if x.database.id == database_id
+        ]
 
     for id, username, permission in db_assignments:
         idx.append(id)
-        permission_str = DatabasePermission.get_name(permission)
-        row = dict(id=id, username=username, permission=permission_str)
+        row = dict(id=id, username=username, permission=permission)
         rows.append(row)
 
     return idx, rows

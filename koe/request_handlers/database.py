@@ -9,18 +9,19 @@ import csv
 from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Count
+from django.db.models import Q
 from dotmap import DotMap
 
-from koe.grid_getters import bulk_get_segments_for_audio
+from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest
 from root.exceptions import CustomAssertionError
-from root.models import ExtraAttrValue, ExtraAttr
+from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import spect_fft_path, spect_mask_path
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
-           'request_database_access', 'approve_database_access', 'copy_audio_files', 'delete_segments']
+           'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments']
 
 
 def import_audio_metadata(request):
@@ -161,10 +162,11 @@ def create_database(request):
     database.save()
 
     # Now assign this database to this user, and switch the working database to this new one
-    DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)
+    da = DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)
+    da.save()
 
     permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
-    return [dict(id=database.id, name=name, permission=permission_str)]
+    return dict(id=database.id, name=name, permission=permission_str)
 
 
 def save_segmentation(request):
@@ -282,35 +284,28 @@ def request_database_access(request):
     return True
 
 
-def approve_database_access(request):
+def add_collaborator(request):
     you = request.user
-
-    request_id = get_or_error(request.POST, 'request-id')
-    access_request = get_or_error(AccessRequest, dict(id=request_id))
-
-    person_asking_for_access = access_request.user
-    permission_to_grant = access_request.permission
-    database = access_request.database
+    user_name_or_email = get_or_error(request.POST, 'user')
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
 
     assert_permission(you, database, DatabasePermission.ASSIGN_USER)
 
-    database_assignment = DatabaseAssignment.objects.filter(user=person_asking_for_access, database=database).first()
+    user = User.objects.filter(Q(username__iexact=user_name_or_email) | Q(email__iexact=user_name_or_email)).first()
+    if user is None:
+        raise CustomAssertionError('This user doesn\'t exist.')
 
-    if database_assignment and database_assignment.permission >= permission_to_grant:
-        access_request.resolved = True
-        access_request.save()
-        raise CustomAssertionError('User\'s already granted equal or greater permission.')
+    already_granted = DatabaseAssignment.objects.filter(user=user, database=database).exists()
 
-    if database_assignment is None:
-        database_assignment = DatabaseAssignment(user=person_asking_for_access, database=database)
+    if already_granted:
+        raise CustomAssertionError('User\'s already been granted access. You can change their permission in the table.')
 
-    with transaction.atomic():
-        database_assignment.permission = permission_to_grant
-        database_assignment.save()
-        access_request.resolved = True
-        access_request.save()
+    database_assignment = DatabaseAssignment(user=user, database=database, permission=DatabasePermission.VIEW)
+    database_assignment.save()
 
-    return True
+    _, rows = bulk_get_database_assignment([database_assignment], DotMap(database=database.id))
+    return rows[0]
 
 
 def copy_audio_files(request):

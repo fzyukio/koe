@@ -1,6 +1,6 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {initSelectize} from './selectize-formatter';
+import {initSelectize, constructSelectizeOptionsForLabellings} from './selectize-formatter';
 import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
@@ -554,7 +554,8 @@ const setLabel = function (field) {
             let control = inputEl[0].selectize;
             if (control) control.destroy();
 
-            initSelectize(inputEl, field, defaultValue);
+            let selectizeOptions = constructSelectizeOptionsForLabellings(field, defaultValue);
+            initSelectize(inputEl, selectizeOptions);
 
             ce.dialogModal.on('shown.bs.modal', function () {
                 inputEl[0].selectize.focus();

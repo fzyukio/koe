@@ -112,7 +112,7 @@ def save_history(request):
     tz = offset_to_timezone(tz_offset)
 
     _, rows = bulk_get_history_entries([he], DotMap(user=user, database=database_id, tz=tz))
-    return rows
+    return rows[0]
 
 
 def delete_history(request):

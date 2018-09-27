@@ -98,10 +98,17 @@ export const editabilityAwareFormatter = function (row, cell, value, columnDef, 
     let field = columnDef.field;
 
     let fieldEditability = '__' + field + '_editable';
-    let editability = 'non-editable';
-    if (!isNull(item[fieldEditability])) {
-        editability = item[fieldEditability] ? 'editable' : 'non-editable';
+    let columnEditable = columnDef.editable;
+    let cellEditable = item[fieldEditability];
+    if (isNull(cellEditable)) {
+        cellEditable = columnEditable;
     }
+    else {
+        cellEditable = cellEditable && columnEditable;
+    }
+
+    let editability = cellEditable ? 'editable' : 'non-editable';
+
     if (!isNull(value)) {
         try {
             return `<div class='slick-inner-cell ${editability}'>${value}</div>`;
@@ -286,12 +293,10 @@ export const capsToTitleCase = function (allCaps) {
  */
 function SelectionFormatter(row, cell, value, columnDef, dataContext) {
     let options = columnDef.options;
-    for (let key in options) {
-        if (Object.prototype.hasOwnProperty.call(options, key)) {
-            if (parseInt(value) === options[key]) {
-                return capsToTitleCase(key);
-            }
-        }
+    let intValue = parseInt(value);
+    let label = options[intValue];
+    if (label) {
+        value = label;
     }
     return editabilityAwareFormatter(row, cell, value, columnDef, dataContext);
 }

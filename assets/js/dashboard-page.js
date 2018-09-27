@@ -17,6 +17,8 @@ const importZipBtn = $('#import-zip-btn');
 const fileUploadForm = $('#file-upload-form');
 const fileUploadBtn = fileUploadForm.find('input[type=submit]');
 const fileUploadInput = fileUploadForm.find('input[type=file]');
+const addCollaborator = $('#add-collaborator');
+const createDatabaseBtn = $('#create-database-btn');
 
 const selected = {
     databaseId: undefined
@@ -84,8 +86,8 @@ const initApplyVersionBtn = function () {
             let msgGen = function (isSuccess, response) {
                 return isSuccess ?
                     `Verison ${item.url} successfully imported` :
-                    `Something's wrong. The server says ${response}. Version not imported.
-                       But good news is your current data is still intact.`;
+                    `Something's wrong. The server says ${response}. Version not imported. 
+                    But good news is your current data is still intact.`;
             };
             ce.dialogModal.modal('hide');
             postRequest({
@@ -116,15 +118,17 @@ const initDeleteVersionBtn = function () {
                 dataView.deleteItem(item.id);
             };
             ce.dialogModal.modal('hide');
-            postRequest({requestSlug: 'koe/delete-history',
+            postRequest({
+                requestSlug: 'koe/delete-history',
                 data: {'version-id': item.id},
-                onSuccess});
+                onSuccess
+            });
         })
     });
 };
 
 
-const reloadSyllableGrid = function() {
+const reloadSyllableGrid = function () {
     syllableGrid.initMainGridHeader(syllableGridArgs, syllableExtraArgs, function () {
         syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs);
     });
@@ -173,14 +177,25 @@ const injectSelectableOptions = function () {
             value
         });
     });
-    let renderer = (item) => `<div>${item.label}</div>`;
+
+    let selectizeOptions = {
+        valueField: 'value',
+        labelField: 'label',
+        searchField: 'label',
+        create: false,
+        selectOnTab: false,
+        openOnFocus: true,
+        dropdownDirection: 'auto',
+        render: {
+            option (item) {
+                return `<div>${item.label}</div>`;
+            }
+        },
+    };
 
     let renderOptions = {
         options,
-        renderer,
-        valueField: 'value',
-        labelField: 'label',
-        searchField: 'value'
+        selectizeOptions
     };
 
     setCache('selectableOptions', '__render-options__permission', renderOptions);
@@ -229,6 +244,7 @@ export const run = function (commonElements) {
         syllableExtraArgs.database = selected.databaseId;
 
         backupBtns.prop('disabled', false);
+        addCollaborator.prop('disabled', false);
 
         dbAssignmentGrid.initMainGridHeader(dbAssignmentGridArgs, dbAssignmentExtraArgs, function () {
             dbAssignmentGrid.initMainGridContent(dbAssignmentGridArgs, dbAssignmentExtraArgs);
@@ -254,45 +270,54 @@ const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
  * When user clicks on the "create new database" button from the drop down menu, show a dialog
  * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
  * repeat this process. Only dismiss the dialog if a new database is created.
- * @param errorMessage to be shown if not undefined
  */
-const showCreateDatabaseDialog = function (error) {
-    dialogModalTitle.html('Creating a new database...');
-    dialogModalBody.html('<label>Give it a name</label>');
-    dialogModalBody.append(inputText);
-    if (error) {
-        dialogModalBody.append(`<p>${error.message}</p>`);
+function initCreateDatabaseButton() {
+
+    /**
+     * Repeat showing the dialog until the database name is valid
+     * param error to be shown in the modal if not undefined
+     */
+    function showDialog(error) {
+        dialogModalTitle.html('Creating a new database...');
+        dialogModalBody.html('<label>Give it a name</label>');
+        dialogModalBody.append(inputText);
+        if (error) {
+            dialogModalBody.append(`<p>${error.message}</p>`);
+        }
+
+        dialogModal.modal('show');
+
+        dialogModalOkBtn.one('click', function () {
+            dialogModal.modal('hide');
+            let url = getUrl('send-request', 'koe/create-database');
+            let databaseName = inputText.val();
+            inputText.val('');
+
+            $.post(url, {name: databaseName}).done(function (data) {
+                data = JSON.parse(data);
+                let row = data.message;
+                dialogModal.one('hidden.bs.modal', function () {
+                    databaseGrid.appendRowAndHighlight(row);
+                });
+                dialogModal.modal('hide');
+            }).fail(function (response) {
+                dialogModal.one('hidden.bs.modal', function () {
+                    let errorMessage = JSON.parse(response.responseText);
+                    showDialog(errorMessage);
+                });
+                dialogModal.modal('hide');
+            });
+        });
     }
 
-    dialogModal.modal('show');
-
-    dialogModalOkBtn.one('click', function () {
-        dialogModal.modal('hide');
-        let url = getUrl('send-request', 'koe/create-database');
-        let databaseName = inputText.val();
-        inputText.val('');
-
-        $.post(url, {name: databaseName}).done(function (data) {
-            data = JSON.parse(data);
-            let rows = data.message;
-            dialogModal.one('hidden.bs.modal', function () {
-                databaseGrid.appendRows(rows);
-                databaseGrid.mainGrid.gotoCell(rows[0].id, 0);
-                databaseGrid.mainGrid.scrollCellIntoView(rows[0].id, 0);
-            });
-            dialogModal.modal('hide');
-        }).fail(function (response) {
-            dialogModal.one('hidden.bs.modal', function () {
-                let errorMessage = JSON.parse(response.responseText);
-                showCreateDatabaseDialog(errorMessage);
-            });
-            dialogModal.modal('hide');
-        });
+    createDatabaseBtn.on('click', function (e) {
+        e.preventDefault();
+        showDialog();
     });
-};
+}
 
 
-const initSaveVersionBtns = function() {
+const initSaveVersionBtns = function () {
     backupBtns.click(function () {
         let backUpType = $(this).data('backup-type');
 
@@ -323,26 +348,74 @@ const initSaveVersionBtns = function() {
                 requestSlug: 'koe/save-history',
                 data: postData,
                 msgGen,
-                onSuccess(rows) {
-                    versionGrid.appendRows(rows);
-                    versionGrid.mainGrid.gotoCell(rows[0].id, 0);
-                    versionGrid.mainGrid.scrollCellIntoView(rows[0].id, 0);
+                onSuccess(row) {
+                    versionGrid.appendRowAndHighlight(row);
                 }
             });
         });
     });
 };
 
-export const postRun = function () {
-    $('#create-database-btn').on('click', function (e) {
-        e.preventDefault();
-        showCreateDatabaseDialog();
-    });
+/**
+ * When user clicks on the "Add collaborator" button, show a dialog asking for user's name or email.
+ * Send this name back to the server, if everything checks out, add the new database assignment to the table.
+ * Otherwise repeat this process. Only dismiss the dialog if successful.
+ */
+function initAddCollaboratorBtn() {
 
+    /**
+     * Repeat showing the dialog until the database name is valid
+     * param error to be shown in the modal if not undefined
+     */
+    function showDialog(error) {
+        dialogModalTitle.html('Add user as collaborator...');
+        dialogModalBody.html('<label>Name or email address of your collaborator</label>');
+        dialogModalBody.append(inputText);
+        if (error) {
+            dialogModalBody.append(`<p>${error.message}</p>`);
+        }
+
+        dialogModal.modal('show');
+
+        dialogModalOkBtn.one('click', function () {
+            dialogModal.modal('hide');
+            let url = getUrl('send-request', 'koe/add-collaborator');
+            let userNameOrEmail = inputText.val();
+            inputText.val('');
+            let postData = {
+                user: userNameOrEmail,
+                database: selected.databaseId
+            };
+
+            $.post(url, postData).done(function (data) {
+                data = JSON.parse(data);
+                let row = data.message;
+                dialogModal.one('hidden.bs.modal', function () {
+                    dbAssignmentGrid.appendRowAndHighlight(row);
+                });
+                dialogModal.modal('hide');
+            }).fail(function (response) {
+                dialogModal.one('hidden.bs.modal', function () {
+                    let errorMessage = JSON.parse(response.responseText);
+                    showDialog(errorMessage);
+                });
+                dialogModal.modal('hide');
+            });
+        });
+    }
+
+    addCollaborator.click(function (e) {
+        e.preventDefault();
+        showDialog();
+    })
+}
+
+export const postRun = function () {
+    initCreateDatabaseButton();
+    initAddCollaboratorBtn();
     initSaveVersionBtns();
     initApplyVersionBtn();
     initDeleteVersionBtn();
     initImportZipBtn();
-
     subscribeFlexibleEvents();
 };

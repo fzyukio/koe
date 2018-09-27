@@ -235,6 +235,16 @@ export class FlexibleGrid {
     }
 
     /**
+     * Append ONE row, the scroll down to that row
+     * @param row
+     */
+    appendRowAndHighlight(row) {
+        this.mainGrid.getData().addItem(row);
+        this.mainGrid.gotoCell(row.id, 0);
+        this.mainGrid.scrollCellIntoView(row.id, 0);
+    }
+
+    /**
      *
      * @param rows
      */
@@ -266,7 +276,7 @@ export class FlexibleGrid {
         let self = this;
 
         self.mainGrid.onCellChange.subscribe(function (e, args) {
-            self.rowChangeHandler(e, args, null, function() {
+            self.rowChangeHandler(e, args, undefined, function() {
                 let column = args.grid.getColumns()[args.cell];
                 let field = column.field;
                 let oldValue = args.item[`_old_${field}`];
@@ -339,7 +349,10 @@ export class FlexibleGrid {
         let columns = grid.getColumns();
         let items = grid.getData().getItems();
 
-        let selectableColumns = {};
+        let selectableColumns = getCache('selectableOptions');
+        if (isNull(selectableColumns)) {
+            selectableColumns = {};
+        }
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
             if (column._editor === 'Select') {

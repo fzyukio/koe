@@ -510,6 +510,8 @@ tables =\
                     "slug": "permission",
                     "type": "SHORT_TEXT",
                     "editor": "Select",
+                    "formatter": "Select",
+                    "choices": "koe.DatabasePermission",
                     "css_class": "overflow",
                     "is_attribute": True,
                     "editable": "editability_validation"
