@@ -329,6 +329,9 @@ $(document).ready(function () {
     else if (pageName.startsWith('/tsne/plotly/')) {
         page = require('tsne-plotly-page')
     }
+    else if (pageName === '/contact-us/') {
+        page = require('contact-us-page');
+    }
 
     _preRun();
 

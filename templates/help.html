@@ -1,0 +1,231 @@
+{% extends "base-with-sidebar.html" %}
+{% load static %}
+
+{% block content-center %}
+
+    <div id="help-content">
+        <h2>What is Koe?</h2>
+        <p><i>Koe</i> (Japanese for 'voice') is open-source software for segmenting, measuring, classifying, filtering
+            and exporting acoustic units. It is a complete acoustic database solution, suitable for any animal species
+            with distinct acoustic units.</p>
+        <p>You can use it on the web from any device at koe.io.ac.nz, which makes it ideal for collaboration, education,
+            and citizen science. (In the future the code will also be available to download and deploy on your own local
+            network or intranet, requiring minimal knowledge of Python and command line tools.)</p>
+        <h3></h3>
+        <h2>Why use Koe?</h2>
+        <p>Acoustic communication is fundamental to the behaviour of many species. If we want to understand animal
+            behaviour we need to get to grips with their vocalisations. What information are they sharing, and how is it
+            encoded?</p>
+        <p>Very often, acoustic communication is structured as a temporal sequence of distinct acoustic units
+            (syllables), where information is encoded in the types of units and sometimes their temporal arrangement
+            (syntax). In such cases, this is the flowchart for acoustic analysis:</p>
+
+        <img src="{% static 'images/help/acoustic-analysis-flowchart.jpg' %}">
+
+
+        <p>The classification of syllables into types is a key step, because once you have a dataset of labelled
+            syllables, you can analyse repertoire size, syntax and meaning and compare between individuals, sexes,
+            sites, and seasons.</p>
+        <p>Manual classification by human eye and ear remains the primary and most reliable method for most species, but
+            is hindered by a lack of tools, especially for large and diverse datasets.</p>
+        <p>That’s where Koe comes in. By facilitating the processing of acoustic units in a streamlined workflow, Koe
+            makes large-scale classification practicable and expands the possibilities for bioacoustic research.</p>
+
+        <h2>Overview of Koe workflow</h2>
+
+        <p>The workflow of <i>Koe</i> is intuitive and flexible. Here is a suggested workflow</p>
+
+        <img src="{% static 'images/help/flowchart-snakey.jpg' %}">
+
+
+        <p>Raw recordings are imported and segmented into “songs” (vocalisation bouts), which are in turn segmented into
+            “syllables” (acoustic units). Segmented syllables populate a table in Syllables view with one row per
+            syllable. The user may first run one of Koe’s algorithms to pre-sort the syllable rows by acoustic
+            similarity, thus expediting classification. The user then classifies syllables into types by eye and ear.
+            (Each syllable row has a spectrogram that plays when clicked.)</p>
+        <p>To classify, the user selects one or more rows and applies a label to the selection. Every new label type
+            gets automatically added to Exemplars view which shows one row per type, serving as a helpful reference
+            during labelling. To check accuracy of syllable labelling, the user sorts the data by label to look for ‘odd
+            ones out’, and compares types in Exemplars view to see if types need to be merged or split.</p>
+        <p>Once satisfied with the labelling, the classification should be validated. The user can produce a test
+            database to be classified by other independent observers. The labels of participants can then be collated to
+            examine concordance. Syllable measurements can also be extracted and exported to clustering software to
+            examine statistical separation of types.</p>
+        <p>The validated database can then be used to analyse repertoires, syntax, meaning, and to compare across
+            individuals, sites, or times.</p>
+
+        <h2>Create an account</h2>
+        <p>Go to koe.io.ac.nz, click on <b>Guest</b> (top right), then register an account. Use invitation code
+            FRIEND-OF-KOE.</p>
+
+        <h2>Create a new database or request access to an existing database</h2>
+        <p>Click <b>Songs &gt; Using label</b> on the navigation bar to enter Koe. Create a new database by clicking on
+            the <b>gears icon</b> (top right)<b> &gt; Database &gt; Create new database</b>.</p>
+        <p>You can request access to an existing database by clicking <b>Database &gt; Request access</b> and choosing a
+            database from the list. Once the database owner approves your request, you will be able to view and edit the
+            database (depending on your permission level).</p>
+        <h2>Upload songs</h2>
+        <p>Your new database is blank, of course, so you need to add recordings to it. If you have already-segmented
+            song files on your computer, you can upload these directly. In Songs view, click <b>Upload &gt; Audio
+                recording (WAV)</b>. Otherwise...</p>
+
+        <h2>Upload raw recordings and segment into songs</h2>
+        <p>To upload a raw recording, in Songs view, click <b>Upload &gt; Raw recording</b> on the bottom bar. Select a
+            WAV file to upload and click <b>Open</b>.<br></p>
+        <p>Once your raw recording loads, play the sound, looking for songs to segment. Change the playback speed and
+            adjust the spectrogram contrast with the sliders (top left).<br></p>
+        <p>To segment a song simply drag over the spectrogram to create a selection box. Click the selection box to play
+            it. Adjust the selection box endpoints by holding Shift and dragging the box handles that appear. For each
+            song you segment, a row appears in the table beneath. You can type in annotation columns in this table.<br>
+        </p>
+        <p>Once you’ve finished segmenting, fill in track name and record date, check all checkboxes and hit <b>Save</b>
+            to upload the songs you’ve segmented.</p>
+        <h2></h2>
+        <h2>Segment songs into syllables</h2>
+        <p>Go to <b>Songs &gt; Using label</b> on the navigation bar. You will see a grid with one song per row. To
+            segment a song into units, click its filename in the Filename column. This will take you to segmentation
+            view.</p>
+        <p>Drag over syllables on the spectrogram to segment. Mouse over a selection box to highlight that syllable’s
+            row in the table. Click a selection box for playback. Fill in annotation columns as desired. Then hit <b>Save
+                segmentation</b> to upload your syllables to the database.</p>
+        <p>You can alter the segmentation at any time by going to Songs view and clicking a song filename in the
+            Filename column to return to the segmentation view.</p>
+
+        <h2>Measuring syllables</h2>
+        <p>Koe takes a vast array of measurements on segmented syllables. There are frame-by-frame measures, taking a
+            measurement for every timestep of every unit, as well as whole-unit measures. Because they are
+            computationally expensive, currently the measurements cannot be run on the server; you will need to download
+            Koe to run on your local machine.</p><h4>Koe syllable measurements</h4>
+        <p><b>Librosa features</b>:</p>
+        <p>spectral flatness</p>
+        <p>spectral bandwidth</p>
+        <p>spectral centroid</p>
+        <p>spectral contrast</p>
+        <p>tonnetz</p>
+        <p>spectral rolloff</p>
+        <p>chroma stft</p>
+        <p>chroma cqt</p>
+        <p>chroma cens</p>
+        <p>mfcc</p>
+        <p>zero crossing rate</p>
+
+        <p><b>Raven features</b>:</p>
+        <p>total energy</p>
+        <p>aggregate entropy</p>
+        <p>average entropy</p>
+        <p>average power</p>
+        <p>max power</p>
+        <p>max frequency</p>
+
+        <p><b>Multitaper features:</b></p>
+        <p>frequency modulation</p>
+        <p>amplitude modulation</p>
+        <p>goodness of pitch</p>
+        <p>amplitude</p>
+        <p>normalise</p>
+        <p>entropy</p>
+        <p>mean frequency</p>
+        <p>spectral continuity</p>
+
+        <p><b>Other features:</b></p>
+        <p>duration</p>
+        <p>frame entropy</p>
+        <p>average frame power</p>
+        <p>max frame power</p>
+        <p>dominant frequency</p>
+
+        <h2>Classify syllables into types</h2>
+        <p>Go to <b>Syllables &gt; Label them.</b> Here in Syllables view, all your segmented units are in a table and
+            you can start classifying them by applying labels!</p><h4>Syllable view columns</h4>
+        <ul>
+            <li>ID: Unique syllable ID</li>
+            <li>Start: Start time of the syllable (milliseconds from song start).</li>
+            <li>End: End time of the syllable (milliseconds from song start).</li>
+            <li>Duration: Duration of the syllable (in milliseconds)</li>
+            <li>Song: Name of the song file the syllable comes from</li>
+            <li>Dendrogram Index: Sort by this column to group syllables by acoustic similarity.</li>
+            <li>Checkbox: This is the column you will use for selecting rows.</li>
+            <li>Spectrogram: Shows a spectrogram of the raw signal. Click to hear audio.</li>
+            <li>Label columns (Family, Subfamily, Label). These are where you label your syllables. The Family column is
+                for broad groupings, Subfamily is more specific, and Label is the most specific. Just like biological
+                taxonomy.
+            </li>
+            <li>Note: Jot down notes about a row</li>
+            <li>Date: the date of the raw recording</li>
+            <li>Gender: the sex of the bird</li>
+            <li>Quality: the quality of the song. For example, EX = Excellent, VG = Very Good, G = Good, OK = Ok, B =
+                Bad.
+            </li>
+            <li>Individual: The ID of the individual</li>
+        </ul>
+
+        <h3>Running the sort algorithm</h3>
+        <p>The first thing you want to do is run a sort algorithm, to pre-sort your syllables by spectral similarity.
+            This pre-sorting provides a major ‘leg up’ for rapid manual classification, by grouping syllables in
+            clusters that can be labelled in bulk.</p>
+        <p>Running the algorithms is a little involved – please contact Y.Fukuzawa@massey.ac.nz for instructions
+            tailored to your data.</p>
+        <p>Once pre-sort algorithms have been run, you can choose them from the list at any time from the <b>gears
+            icon</b> (top right) <b>&gt; Sort algorithm</b>. Selecting the algorithm populates the Dendrogram Index
+            column. If we sort the table by this column (by clicking the column header), Koe will group units by
+            similarity.</p>
+        <h3>Navigating the grid</h3>
+        <p>Much like in <i>Excel</i>, you can click on a cell to select it, or whizz around the grid with the arrow
+            keys. Page Up and Page Down will page through one screen-height at a time.</p>
+        <h3>Sorting by columns</h3>
+        <p>Sort by a column by clicking on its header (e.g. Duration). To sort by multiple columns at once, Shift+click
+            subsequent headers.</p>
+        <h3>Audio playback</h3>
+        <p>To hear a syllable, simply click on its spectrogram, or hit spacebar with spectrogram cell selected. There is
+            a speed slider at the top left of the screen for slowing down playback; this helps our human ears hear
+            details not apparent at full speed.</p>
+        <h3>Filtering</h3>
+        <p>The filter box at the top of the screen is a quick and powerful way to filter your data, using regex. See
+            https://www.computerhope.com/jargon/r/regex.htm for a crash course on using regex.</p>
+        <p><br>To filter rows with a certain label, right-click the Label column and click <b>Filter by this column.</b>
+            Then type a string, e.g.</p>
+        <p><br><i>label: crazysqueak</i></p>
+        <p><br>You can filter most columns in this way. You can also filter by multiple columns at once.</p>
+
+        <p><i>label: crazysqueak song: BobtheBat_1.wav</i></p>
+
+        <p>To filter numerical columns, such as ID, use '==' for 'exactly', '&gt;' and '&lt;' for 'greater than' and
+            'less than', respectively. '^$' is a handy way of finding blanks; label:^$ will find all rows with blank
+            labels.<br></p>
+        <h3>Labelling</h3>
+        <p>Labelling can be done in two ways; individually, or in bulk.</p><h4>Individual labelling</h4>
+        <p>Simply click in the label cell and start typing the label. If the label already exists you will see it in the
+            dropdown list. Click the list item you want, or use Alt+Down to navigate down the list and Enter to
+            select.<br></p><h4>Bulk labelling</h4>
+        <p>Select multiple rows of the same type by clicking their checkboxes or hitting spacebar with the checkbox cell
+            selected. When you have finished selecting rows, hit Ctrl+Shift+L to bulk label all selected rows.
+            Ctrl+Shift+F bulk labels the Family, and Ctrl+Shift+S bulk labels the Subfamily.<br><br>After choosing the
+            right label from the dropdown list, click <b>Set</b> (or stick to the keyboard with Tab followed by
+            Enter).<br></p>
+        <p>Un-select all selected rows with Ctrl+`</p>
+
+        <h3>Exemplar view</h3>
+        <p>Every new label type you create in Syllable view gets automatically added to the Exemplars view. One row per
+            type, with up to 10 exemplars for each row. Go to <b>Exemplars &gt; By label</b> on the navigation bar to
+            see your exemplars, and click on spectrograms to play the sound, just as in other views.</p>
+        <p><b><i>You can have Koe open in as many tabs as you want</i></b>, so it’s easy to have exemplars in one tab
+            and syllables in another, to help you label by comparison. If you make changes in one tab, refresh your
+            other tabs to see the changes.</p>
+
+        <h2>Songs view</h2>
+        <p>Click on <b>Songs &gt; By label</b> to access Songs view. Here you can see all your songs, with one row per
+            song. You will see the song syntax as a sequence of unit labels. Click on a unit to play it. Click the play
+            button at the start of a sequence to play the entire song. Use the filter to search for songs of a
+            particular unit sequence, e.g.</p>
+
+        <p><i>sequence:"upsqueak"-"alarmy"</i></p>
+
+        <p>This will filter for all songs with an "upsqueak" syllable immediately followed by an "alarmy" syllable.
+            Useful for exploring syntax.</p>
+        <h2>Exporting your data</h2>
+        <p>You can export the data from each view as a CSV file by clicking <b>Export</b> on the bottom bar. You will
+            see two options - either you can export the entire dataset, or a filtered subset (see Filtering section
+            above).</p>
+        </div>
+
+{% endblock %}

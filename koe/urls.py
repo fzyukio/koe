@@ -9,7 +9,6 @@ from django.shortcuts import render
 from koe import views
 from koe.request_handlers import tensorviz
 from root import urls as root_urls
-from root import views as root_views
 
 urlpatterns = [] + root_urls.urlpatterns
 
@@ -25,7 +24,6 @@ def handler500(request):
 urlpatterns += \
     [
         url(r'^admin/', admin.site.urls),
-        url(r'^version/$', login_required(root_views.get_view('version')), name='version'),
         url(r'^syllables/$', login_required(views.get_view('syllables')), name='syllables'),
         url(r'^songs/$', login_required(views.get_view('songs')), name='songs'),
         url(r'^sequence-mining/$', login_required(views.get_view('sequence-mining')), name='sequence-mining'),
@@ -38,6 +36,8 @@ urlpatterns += \
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
         url(r'^dashboard/$', login_required(views.get_view('dashboard')), name='dashboard'),
+        url(r'^help/$', login_required(views.get_view('help')), name='help'),
+        url(r'^contact-us/$', login_required(views.ContactUsView.as_view()), name='contact-us'),
         url(r'^$', login_required(views.get_home_page), name='home_page')
 
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,33 @@
+{% extends "base-with-sidebar.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content-center %}
+
+    <div id="contact-us-content">
+
+        <img src="{% static 'images/help/koe-logo.jpg' %}">
+        <h3>Questions? Comments? Suggestions?</h3>
+        <p>Koe is being developed at the Institute of Natural and Mathematical Sciences, Massey University, New Zealand
+            by biologist Wesley Webb and computer scientist Yukio Fukuzawa</p>
+        <p>We would love to hear from you. Contact us using the form below.</p>
+        <p>We hope you find Koe useful.</p>
+
+        <br>
+
+        <form id="contact-us-form" url="{% url "contact-us" %}" method="post">
+            {% csrf_token %}
+
+            <div class="replaceable">
+                {% include 'partials/contact-us-form.html' %}
+            </div>
+
+            <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                <div class="btn-group" role="group">
+                    <button type="submit" id="submit-inquiry" class="btn btn-primary">Submit</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

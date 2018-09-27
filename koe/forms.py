@@ -77,3 +77,40 @@ class FeatureExtrationForm(ErrorMixin, forms.Form):
             'value': 50
         })
     )
+
+
+class ContactUsForm(ErrorMixin, forms.Form):
+    name = forms.CharField(
+        required=True,
+        max_length=100,
+        error_messages={
+            'required': 'Please let us know your name'
+        },
+        widget=forms.TextInput(attrs={'placeholder': 'Your name'})
+    )
+
+    email = forms.EmailField(
+        required=True,
+        max_length=100,
+        error_messages={
+            'required': 'This field is required'
+        },
+        widget=forms.TextInput(attrs={'placeholder': 'Your email'}),
+    )
+
+    message = forms.CharField(
+        required=True,
+        min_length=50,
+        max_length=1000000,
+        error_messages={
+            'required': 'Please leave a message'
+        },
+        widget=forms.Textarea(
+            attrs={
+                'cols': 80,
+                'rows': 10,
+                "minlength": 50,
+                "maxlength": 1000000
+            }
+        )
+    )

@@ -8,12 +8,13 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
-from koe.forms import SongPartitionForm, FeatureExtrationForm
+from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm
 from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
 from koe.models import AudioFile, DatabaseAssignment, DatabasePermission, AudioTrack,\
     DerivedTensorData, FullTensorData, Database
 from koe.ts_utils import make_subtensor
 from root.models import User, ExtraAttrValue
+from root.utils import SendEmailThread
 
 
 def populate_context(obj, context, with_similarity=False):
@@ -260,6 +261,37 @@ class FeatureExtrationView(FormView):
             vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})
 
         return HttpResponse(json.dumps(dict(message=vizurl)))
+
+
+class ContactUsView(FormView):
+    template_name = 'contact-us.html'
+    page_name = 'contact-us'
+    form_class = ContactUsForm
+
+    def get_context_data(self, **kwargs):
+        context = super(ContactUsView, self).get_context_data(**kwargs)
+        populate_context(self, context)
+        return context
+
+    def form_invalid(self, form):
+        context = self.get_context_data()
+        rendered = render_to_string('partials/contact-us-form.html', context=context)
+
+        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+
+    def form_valid(self, form, **kwargs):
+        data = form.cleaned_data
+
+        superuser = User.objects.get(username='superuser')
+
+        subject = 'Someone just contacted Koe'
+        template = 'contact-received'
+
+        send_email_thread = SendEmailThread(subject, template, [superuser.email], context=data)
+        send_email_thread.start()
+
+        rendered = render_to_string('support-confirmation.html')
+        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
 
 
 def get_home_page(request):

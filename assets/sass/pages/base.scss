@@ -496,3 +496,18 @@ body.loading #loading-spinner-modal {
     }
   }
 }
+
+#help-content {
+  max-width: 800px;
+}
+
+#contact-us-content {
+  max-width: 500px;
+}
+
+#help-content, #contact-us-content {
+  margin: auto;
+  p {
+    text-align: justify;
+  }
+}

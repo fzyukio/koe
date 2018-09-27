@@ -1,0 +1,11 @@
+{% load staticfiles %}
+{% load custom_tags %}
+Hi,
+
+Someone's just contacted Koe. Details:
+
+Name: {{ name }}
+Email: {{ email }}
+Message: {{ message }}
+
+Best regards,
