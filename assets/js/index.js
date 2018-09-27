@@ -16,7 +16,7 @@ Promise.config({
  */
 window.Promise = Promise;
 
-import {isNull, SlickEditors, createCsv, downloadBlob, getUrl} from './utils';
+import {isNull, SlickEditors, createCsv, downloadBlob, getUrl, getGetParams} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 require('no-going-back');
 
@@ -33,6 +33,7 @@ const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
 const databaseCombo = $('#database-select-combo');
+let argDict = getGetParams();
 
 const commonElements = {
     inputText,
@@ -43,7 +44,8 @@ const commonElements = {
     dialogModalOkBtn,
     alertSuccess,
     alertFailure,
-    databaseCombo
+    databaseCombo,
+    argDict
 };
 
 
@@ -211,14 +213,6 @@ const initSidebar = function() {
 const initChangeArgSelections = function() {
     let locationOrigin = window.location.origin;
     let localtionPath = window.location.pathname;
-    let args = window.location.search.substr(1);
-    let argDict = {};
-    $.each(args.split('&'), function(idx, arg) {
-        if (arg !== '') {
-            let argPart = arg.split('=');
-            argDict[argPart[0]] = argPart[1];
-        }
-    });
 
     $('.change-arg').click(function(e) {
         e.preventDefault();
@@ -228,7 +222,9 @@ const initChangeArgSelections = function() {
 
         let argString = '?';
         $.each(argDict, function(k, v) {
-            argString += `${k}=${v}&`
+            if (k !== 'action') {
+                argString += `${k}=${v}&`;
+            }
         });
         window.location.href = `${locationOrigin}${localtionPath}${argString}`;
     });
@@ -244,11 +240,18 @@ const appendGetArguments = function () {
     $('a.appendable').each(function (idx, a) {
         let href = a.getAttribute('href');
         let argsStart = href.indexOf('?');
+
+        let argString = '?';
+        $.each(argDict, function(k, v) {
+            if (k !== 'action') {
+                argString += `${k}=${v}&`;
+            }
+        });
+
         if (argsStart > -1) {
             href = href.substr(argsStart);
         }
-
-        a.setAttribute('href', href + window.location.search);
+        a.setAttribute('href', href + argString);
     });
 };
 

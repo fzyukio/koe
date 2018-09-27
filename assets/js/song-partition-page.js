@@ -468,7 +468,7 @@ const initUploadSongsBtn = function () {
             audioData.length = sig.length;
             audioData.durationMs = audioData.length * 1000 / fs;
 
-            $('#upload-modal').modal('hide');
+            uploadModal.modal('hide');
             viz.visualise(sig, fs);
         });
     });
@@ -479,7 +479,7 @@ const initUploadSongsBtn = function () {
         reader.abort();
     });
 
-    $('#upload-modal').modal('show');
+    uploadModal.modal('show');
 };
 
 

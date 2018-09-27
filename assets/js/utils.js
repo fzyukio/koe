@@ -1814,3 +1814,17 @@ export const median = function (arr) {
     if (arr.length % 2) return arr[half];
     else return (arr[half - 1] + arr[half]) / 2.0;
 };
+
+
+export const getGetParams = function() {
+    let args = window.location.search.substr(1);
+    let argDict = {};
+    $.each(args.split('&'), function(idx, arg) {
+        if (arg !== '') {
+            let argPart = arg.split('=');
+            argDict[argPart[0]] = argPart[1];
+        }
+    });
+
+    return argDict;
+};

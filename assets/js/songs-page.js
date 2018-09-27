@@ -1,3 +1,5 @@
+/* global Dropzone */
+
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 import {debug, deepCopy, getUrl} from './utils';
@@ -67,13 +69,11 @@ const uploadCsvBtn = $('#upload-csv-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
-const audioUploadForm = $('#file-upload-form');
-const audioUploadInput = audioUploadForm.find('input[type=file]');
-const audioUploadSubmitBtn = audioUploadForm.find('input[type=submit]');
-
 const csvUploadForm = $('#csv-upload-form');
 const csvUploadInput = csvUploadForm.find('input[type=file]');
 const csvUploadSubmitBtn = csvUploadForm.find('input[type=submit]');
+
+const uploadSongsModal = $('#upload-songs-modal');
 
 let ce;
 
@@ -278,32 +278,15 @@ const focusOnGridOnInit = function () {
 const initUploadSongsBtn = function () {
 
     uploadSongsBtn.click(function () {
-        audioUploadInput.click();
+        uploadSongsModal.modal('show');
     });
 
     uploadCsvBtn.click(function () {
         csvUploadInput.click();
     });
 
-    audioUploadInput.change(function () {
-        audioUploadSubmitBtn.click();
-    });
-
     csvUploadInput.change(function () {
         csvUploadSubmitBtn.click();
-    });
-
-    audioUploadForm.submit(function (e) {
-        e.preventDefault();
-        let formData = new FormData(this);
-        let onSuccess = function (rows) {
-            grid.appendRows(rows);
-        };
-        uploadRequest({
-            requestSlug: 'koe/import-audio-files',
-            data: formData,
-            onSuccess
-        });
     });
 
     csvUploadForm.submit(function (e) {
@@ -437,13 +420,83 @@ let gridArgs = {
     multiSelect: true
 };
 
+/**
+ * Initialise the dropzone
+ */
+function setupSongsUpload() {
+    let maxFiles = 100;
+    let maxFilesize = 50;
+
+    let dropzoneSelector = '#songs-upload';
+    let databaseId = parseInt(uploadSongsModal.attr('database'));
+
+    let previewNode = document.querySelector('#template');
+    previewNode.id = '';
+    let previewTemplate = previewNode.parentNode.innerHTML;
+    previewNode.parentNode.removeChild(previewNode);
+
+    const myDropzone = new Dropzone(dropzoneSelector, {
+        url: getUrl('send-request', 'koe/import-audio-files'),
+        maxFilesize,
+        addRemoveLinks: false,
+        acceptedFiles: 'audio/wav',
+        uploadMultiple: true,
+        parallelUploads: 8,
+        maxFiles,
+        method: 'post',
+        dictDefaultMessage: `Drag and drop, or click to upload songs (WAV only). You can upload up to ${maxFiles} songs.`,
+        dictResponseError: 'Error uploading file!',
+        createImageThumbnails: false,
+        previewTemplate,
+        previewsContainer: '#previews',
+        autoQueue: false,
+        init () {
+            let self = this;
+
+            self.on('sending', function (file, xhr, formData) {
+                formData.append('database', databaseId);
+            });
+
+            self.on('maxfilesexceeded', function (file) {
+                alert(`You can only upload up to ${maxFiles} photos.`);
+                self.removeFile(file);
+            });
+
+            self.on('success', function(file, response) {
+                let rows = JSON.parse(response).message;
+                let lastRow = rows[rows.length - 1];
+                grid.appendRows(rows);
+                grid.mainGrid.gotoCell(lastRow.id, 0);
+                grid.mainGrid.scrollCellIntoView(lastRow.id, 0);
+            });
+        }
+    });
+
+    uploadSongsModal.find('.start').click(function() {
+        myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));
+    });
+
+    uploadSongsModal.find('.removel-all').click(function() {
+        myDropzone.removeAllFiles(true);
+    });
+
+    uploadSongsModal.find('.cancel').click(function() {
+        uploadSongsModal.modal('hide');
+    });
+}
+
 export const run = function (commonElements) {
     ce = commonElements;
-    initAudioContext();
+    let argDict = ce.argDict;
 
     grid.init(granularity);
     grid.initMainGridHeader(gridArgs, extraArgs, function () {
-        grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
+        grid.initMainGridContent(gridArgs, extraArgs, function() {
+            focusOnGridOnInit();
+            if (argDict.action === 'upload') {
+                uploadSongsBtn.click();
+            }
+        });
         subscribeSlickEvents();
         subscribeFlexibleEvents();
     });
@@ -452,6 +505,8 @@ export const run = function (commonElements) {
 };
 
 export const postRun = function () {
+    initAudioContext();
+    setupSongsUpload();
     initUploadSongsBtn();
     initDeleteSongsBtn();
     initCopySongsBtn();

@@ -84,7 +84,7 @@ def import_audio_files(request):
     :return:
     """
     user = request.user
-    files = request.FILES.getlist('files', None)
+    files = request.FILES.values()
 
     database_id = get_or_error(request.POST, 'database')
     database = get_or_error(Database, dict(id=database_id))

@@ -8,12 +8,6 @@
 </div>
 
 <div class="sidebar-controllers last">
-    <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
-        <input type="file" multiple name="files" accept="audio/wav">
-        <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
-        <input name="cls" type="text" value="{{ granularity }}">
-        <input type="submit">
-    </form>
     <form id="csv-upload-form" method="post" enctype="multipart/form-data" style="display: none">
         <input type="file" name="file" accept="text/csv">
         <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
@@ -21,7 +15,11 @@
     </form>
 
     {% if db_assignment.can_annotate %}
-        <button type="button" disabled id="upload-csv-btn" class="btn btn-xs btn-default btn-block">Upload metadata (csv)</button>
+        <button type="button" id="upload-csv-btn" class="btn btn-xs btn-default btn-block">Upload metadata (csv)</button>
+    {% endif %}
+
+    {% if db_assignment.can_add_files %}
+        <button type="button" id="upload-songs-btn" class="btn btn-xs btn-default btn-block">Upload songs</button>
     {% endif %}
 
     {% if db_assignment.can_copy_files %}

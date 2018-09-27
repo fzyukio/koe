@@ -4,7 +4,6 @@
   height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }
 
-
 #songs-grid-filter {
   border: 0;
   padding: 0 !important;
@@ -32,4 +31,17 @@
   &.hidden {
     display: none;
   }
+}
+
+#songs-upload {
+  border: 3px dashed #ccc;
+  border-radius: 3px;
+  margin: 0 0 2em 0;
+  min-height: unset;
+}
+
+
+#previews .file-row.dz-success .progress {
+    opacity: 0;
+    transition: opacity 0.3s linear;
 }
