@@ -360,6 +360,7 @@ body.loading #loading-spinner-modal {
 
 .controller-wrapper {
   height: $controller-wrapper-height;
+  padding-top: 3px;
   & > div {
     display: inline-block;
     margin-left: 0;

@@ -6,7 +6,7 @@
 {% block title %}Cluster visualisation{% endblock %}
 
 {% block content-center %}
-    <div class="col-md-3 no-padding contain-panel">
+    <div class="col-sm-6 col-md-3 col-lg-2 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">
@@ -29,7 +29,7 @@
             <div class="panel-footer no-padding">
                 <div class="btn-group btn-group-justified" role="group" aria-label="...">
                     <div class="btn-group dropup" role="group">
-                        <button type="button" class="btn btn-sm btn-black dropdown-toggle enable-on-lasso" data-toggle="dropdown"
+                        <button type="button" class="btn btn-sm btn-primary dropdown-toggle enable-on-lasso" data-toggle="dropdown"
                                 aria-haspopup="true" aria-expanded="false" disabled>
                             Change label
                             <span class="caret"></span>
@@ -44,12 +44,12 @@
 
 
                     <div class="btn-group" role="group">
-                        <button id="clear-highlighted-btn" type="button" class="btn btn-sm btn-black disable-on-lasso">
+                        <button id="clear-highlighted-btn" type="button" class="btn btn-sm btn-primary disable-on-lasso">
                             Clear
                         </button>
                     </div>
                     <div class="btn-group" role="group">
-                        <button id="show-highlighted-btn" disabled type="button" class="btn btn-sm btn-black enable-on-lasso"
+                        <button id="show-highlighted-btn" disabled type="button" class="btn btn-sm btn-primary enable-on-lasso"
                                 syllables-view-url="{% url 'syllables' %}">
                             Show details
                         </button>
@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <div class="col-md-9 no-padding contain-panel">
+    <div class="col-sm-6 col-md-9 col-lg-10 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">

@@ -515,3 +515,7 @@ export const postRun = function () {
 export const handleDatabaseChange = function () {
     location.reload()
 };
+
+export const viewPortChangeHandler = function () {
+    grid.mainGrid.resizeCanvas();
+};

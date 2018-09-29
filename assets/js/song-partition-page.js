@@ -563,3 +563,7 @@ export const run = function () {
 export const postRun = function () {
     subscribeFlexibleEvents();
 };
+
+export const viewPortChangeHandler = function () {
+    grid.mainGrid.resizeCanvas();
+};

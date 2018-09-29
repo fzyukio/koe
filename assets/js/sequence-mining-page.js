@@ -731,3 +731,7 @@ const displayGraph = function (graph) {
         node.fy = null;
     }
 };
+
+export const viewPortChangeHandler = function () {
+    grid.mainGrid.resizeCanvas();
+};

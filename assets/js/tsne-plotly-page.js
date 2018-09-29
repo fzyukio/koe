@@ -6,13 +6,19 @@ import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize
 
 const plotId = 'plotly-plot';
 const plotDiv = $(`#${plotId}`);
-const panel = plotDiv.parents('.panel');
 const metaPath = plotDiv.attr('metadata');
 const bytesPath = plotDiv.attr('bytes');
 const databaseId = plotDiv.attr('database');
 const body = $('body');
 const sylSpects = $('#syl-spects');
 const labelTyleSelectEl = $('#label-type');
+
+let rightContainer = plotDiv.parents('.contain-panel');
+let rightPanel = plotDiv.parents('.panel');
+let leftContainer = sylSpects.parents('.contain-panel');
+let leftPanel = sylSpects.parents('.panel');
+
+let minLeftWidth;
 
 const legendSymbols = {};
 let ce;
@@ -196,23 +202,30 @@ function generateMarkers(nClasses) {
  * @returns {{l: number, r: number, b: number, t: number}}
  */
 function calcLayout() {
-    let W = panel.innerWidth();
-    let H = plotDiv.height();
+    let windowWidth = $('.main-content').width();
+    let plotHeight = plotDiv.height();
+    let lW = leftPanel.innerWidth();
+
     let legend = plotDiv.find('.legend')[0];
     let r = legend ? legend.getBoundingClientRect().width : 200;
     let b = 0;
     let t = 0;
     let l = 0;
 
-    let w = W - r - l;
-    let h = H - t - b;
+    let h = plotHeight - t - b;
+    let plotWidth = h + r + l;
 
-    if (h > w) {
-        w = h;
-        W = w + r + l;
-        panel.width(W);
-    }
-    return {l, r, t, b, W, H}
+    let offset = windowWidth - (plotWidth + lW);
+    rightPanel.width(plotWidth);
+
+    let newLW = Math.max(minLeftWidth, lW + offset);
+    offset = newLW - lW;
+
+    leftPanel.innerWidth(leftPanel.innerWidth() + offset - 2);
+    leftContainer.innerWidth(leftContainer.innerWidth() + offset - 2);
+    rightContainer.innerWidth(rightContainer.innerWidth() - offset);
+
+    return {l, r, t, b, plotWidth, plotHeight}
 }
 
 /**
@@ -220,11 +233,11 @@ function calcLayout() {
  * E.g. when the user changes the window's size
  */
 function relayout() {
-    let {l, r, t, b, W, H} = calcLayout();
+    let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
 
     let layout = {
-        width: W,
-        height: H,
+        width: plotWidth,
+        height: plotHeight,
         margin: {l, r, b, t},
     };
     Plotly.relayout(plotId, layout);
@@ -252,7 +265,7 @@ const plot = function () {
     let ncols = dataMatrix[0].length;
     let {renderClass, renderOptions} = getRenderOptions();
 
-    let {l, r, t, b, W, H} = calcLayout();
+    let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
 
     let classNames = Object.keys(class2RowIdx);
     let allX = [];
@@ -304,8 +317,8 @@ const plot = function () {
 
     let layout = {
         hovermode: 'closest',
-        width: W,
-        height: H,
+        width: plotWidth,
+        height: plotHeight,
         margin: {l, r, b, t},
     };
 
@@ -358,6 +371,8 @@ const initCategorySelection = function () {
         setValue($(this).attr('value'));
     });
 
+    minLeftWidth = leftContainer.innerWidth();
+
     let initialLabelType = ce.argDict['label-type'] || 'label';
     setValue(initialLabelType);
 };
@@ -404,7 +419,7 @@ function addSylToHighlight(point, override = false) {
     <img src="/user_data/spect/fft/syllable/${pointId}.png"/>
     <div class="syl-details">
         <svg width="13px" height="13px">${legendSymbol}</svg>
-        <span>${pointText}</span>
+        <span>${pointId}</span>
     </div>
 </div>`);
         highlighted[pointId] = element;

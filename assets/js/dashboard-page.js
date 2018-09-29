@@ -419,3 +419,10 @@ export const postRun = function () {
     initImportZipBtn();
     subscribeFlexibleEvents();
 };
+
+export const viewPortChangeHandler = function () {
+    databaseGrid.mainGrid.resizeCanvas();
+    dbAssignmentGrid.mainGrid.resizeCanvas();
+    versionGrid.mainGrid.resizeCanvas();
+    syllableGrid.mainGrid.resizeCanvas();
+};

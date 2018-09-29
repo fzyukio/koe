@@ -191,11 +191,14 @@ const initSidebar = function() {
             $(this).next('.menu-submenu').slideDown(200);
             $(this).parent().addClass('active');
         }
-
     });
 
     $('.siderbar-toggler').click(function () {
         $('#content-wrapper').toggleClass('toggled').toggleClass('not-toggled');
+        if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
+            setTimeout(page.viewPortChangeHandler, 250);
+        }
+
     });
 
     let currentPage = $('#sidebar-menu').attr('page');
@@ -269,9 +272,6 @@ const appendGetArguments = function () {
 const _postRun = function () {
     const viewPortChangeCallback = function () {
         viewPortChangeHandler().then(function () {
-            if (!isNull(page) && page.grid) {
-                page.grid.mainGrid.resizeCanvas();
-            }
             if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
                 page.viewPortChangeHandler();
             }
@@ -308,6 +308,11 @@ const _postRun = function () {
  * Loading the page by URL's location, e.g localhost:8000/herd-allocation
  */
 $(document).ready(function () {
+    let windowWith = $(window).width();
+    if (windowWith < 576) {
+        $('#content-wrapper').removeClass('toggled').addClass('not-toggled');
+    }
+
     let pageName = location.pathname;
     if (pageName === '/dashboard/') {
         page = require('dashboard-page');
