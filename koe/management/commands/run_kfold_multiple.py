@@ -11,11 +11,11 @@ from progress.bar import Bar
 from scipy.io import loadmat
 from scipy.stats import zscore
 
-from koe.aggregator import aggregators_by_type
+from koe.aggregator import enabled_aggregators
 from koe.features.feature_extract import feature_whereabout
-from koe.management.commands.run_kfold_validation import run_nfolds, classifiers
+from koe.ml_utils import run_nfolds, classifiers
 
-aggregators_names = list(aggregators_by_type.keys())
+aggregators_names = list(enabled_aggregators.keys())
 ftgroup_names = [x.__name__[len('koe.features.'):] for x in feature_whereabout.keys()]
 
 

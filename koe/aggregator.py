@@ -165,12 +165,24 @@ class DivideConquer(Aggregator):
         return False
 
 
-aggregators_by_type = {
+enabled_aggregators = {
     'stats': [
         StatsAggregator(np.mean),
         StatsAggregator(np.median),
         StatsAggregator(np.std),
     ],
+    'divcon-3': [
+        DivideConquer(np.mean, 3)
+    ],
+    'divcon-5': [
+        DivideConquer(np.mean, 5)
+    ],
+    'divcon-7': [
+        DivideConquer(np.mean, 7)
+    ]
+}
+
+_disabled_aggregators = {
     'dtw': [
         ChirpDtw('pipe'),
         ChirpDtw('squeak-up'),
@@ -185,24 +197,22 @@ aggregators_by_type = {
         ChirpXcorr('squeak-convex'),
         ChirpXcorr('squeak-concave'),
     ],
-    'divcon-3': [
-        DivideConquer(np.mean, 3)
-    ],
-    'divcon-5': [
-        DivideConquer(np.mean, 5)
-    ],
-    'divcon-7': [
-        DivideConquer(np.mean, 7)
-    ]
 }
 
 aggregators = []
 aggregator_map = {}
 
-for group in aggregators_by_type.values():
-    for aggregator in group:
-        aggregator_name = aggregator.get_name()
-        aggregation, _ = Aggregation.objects.get_or_create(name=aggregator_name)
 
-        aggregators.append(aggregator)
-        aggregator_map[aggregator_name] = aggregator
+def init():
+    for aggregators_by_type, enabled in [(enabled_aggregators, True), (_disabled_aggregators, False)]:
+        for group in aggregators_by_type.values():
+            for aggregator in group:
+                aggregator_name = aggregator.get_name()
+                aggregation = Aggregation.objects.filter(name=aggregator_name).first()
+                if aggregation is None:
+                    aggregation = Aggregation(name=aggregator_name)
+                aggregation.enabled = enabled
+                aggregation.save()
+
+                aggregators.append(aggregator)
+                aggregator_map[aggregator_name] = aggregator

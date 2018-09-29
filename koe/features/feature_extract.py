@@ -47,12 +47,14 @@ feature_whereabout = {
     ]
 }
 
-for module, feature_names in feature_whereabout.items():
-    for feature_name, is_fixed_length, is_one_dimensional in feature_names:
-        feature = Feature.objects.get_or_create(name=feature_name, is_fixed_length=is_fixed_length,
-                                                is_one_dimensional=is_one_dimensional)[0]
 
-        extractor = getattr(module, feature_name)
-        feature_extractors[feature_name] = extractor
-        features.append(feature)
-        feature_map[feature_name] = feature
+def init():
+    for module, feature_names in feature_whereabout.items():
+        for feature_name, is_fixed_length, is_one_dimensional in feature_names:
+            feature = Feature.objects.get_or_create(name=feature_name, is_fixed_length=is_fixed_length,
+                                                    is_one_dimensional=is_one_dimensional)[0]
+
+            extractor = getattr(module, feature_name)
+            feature_extractors[feature_name] = extractor
+            features.append(feature)
+            feature_map[feature_name] = feature

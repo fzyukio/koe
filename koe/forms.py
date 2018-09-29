@@ -55,7 +55,7 @@ class FeatureExtrationForm(ErrorMixin, forms.Form):
 
     aggregations = forms.ModelMultipleChoiceField(
         to_field_name='id',
-        queryset=Aggregation.objects.all(),
+        queryset=Aggregation.objects.filter(enabled=True),
         widget=forms.CheckboxSelectMultiple(),
         error_messages={
             'required': 'At least one aggregation method must be chosen'

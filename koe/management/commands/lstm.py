@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from pymlfunc import tictoc
 
 from koe import binstorage
-from koe.management.commands.extract_data_for_tensorboard import get_sids_tids, get_binstorage_locations
+from koe.storage_utils import get_sids_tids, get_binstorage_locations
 from koe.model_utils import get_or_error
 from koe.models import Database, Feature
 from koe.rnn_models import DataProvider

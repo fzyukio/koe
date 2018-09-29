@@ -6,7 +6,6 @@ import datetime
 import os
 import pickle
 import re
-import sys
 from logging import warning
 
 import numpy as np
@@ -22,7 +21,7 @@ from scipy import signal
 from koe import wavfile as wf
 from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
+from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, str_to_bytes
 from koe.models import AudioFile, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
 from koe.utils import get_wav_info
 from root.models import User
@@ -47,14 +46,6 @@ interval64 = global_spect_pixel_range / 63
 
 name_regex = re.compile('(\d\d)(\d\d)(\d\d)_(.*) (\d+)(.*)wav')
 note_attr = settings.ATTRS.audio_file.note
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    def str_to_bytes(x):
-        return str.encode(x, encoding='LATIN-1')
-else:
-    def str_to_bytes(x):
-        return x
 
 
 def import_pcm(song, cur, song_name, wav_file_path=None, compressed_url=None):

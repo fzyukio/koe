@@ -17,7 +17,7 @@ from progress.bar import Bar
 from scipy.io import loadmat
 from scipy.stats import zscore
 
-from koe.management.commands.run_kfold_validation import run_nfolds, classifiers
+from koe.ml_utils import classifiers, run_nfolds
 
 
 class Command(BaseCommand):

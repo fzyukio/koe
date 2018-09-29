@@ -14,19 +14,17 @@ python manage.py extract_features --csv=/tmp/bellbirds.csv --h5file=bellbird-lbi
 """
 import os
 import pickle
-import time
 from logging import warning
 
+import csv
 import numpy as np
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import F
 from progress.bar import Bar
-from sklearn.manifold import TSNE
 
-import csv
 from koe import binstorage
-from koe.aggregator import aggregators_by_type
+from koe.aggregator import enabled_aggregators
 from koe.features.feature_extract import feature_extractors
 from koe.features.feature_extract import feature_whereabout as feature_groups
 from koe.features.feature_extract import features as full_features
@@ -216,22 +214,6 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
     bar.finish()
 
 
-def run_clustering(dataset, dim_reduce, n_components, n_dims=3):
-    assert 2 <= n_dims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
-    if dim_reduce:
-        dim_reduce_func = dim_reduce(n_components=n_components)
-        dataset = dim_reduce_func.fit_transform(dataset, y=None)
-        if hasattr(dim_reduce_func, 'explained_variance_ratio_'):
-            print('Cumulative explained variation for {} principal components: {}'
-                  .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
-
-    time_start = time.time()
-    tsne = TSNE(n_components=n_dims, verbose=1, perplexity=10, n_iter=4000)
-    tsne_results = tsne.fit_transform(dataset)
-    print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
-    return tsne_results
-
-
 def get_segment_ids_and_labels(csv_file):
     with open(csv_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f, delimiter='\t')
@@ -312,7 +294,7 @@ class Command(BaseCommand):
 
             if feature not in fa2bs:
                 fa2bs[feature] = {}
-            for aggregators in aggregators_by_type.values():
+            for aggregators in enabled_aggregators.values():
                 for aggregator in aggregators:
                     aggregator_name = aggregator.get_name()
                     folder = os.path.join('binary', 'features', feature_name)
@@ -322,7 +304,7 @@ class Command(BaseCommand):
                     value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
                     fa2bs[feature][aggregator] = (index_filename, value_filename)
 
-        for aggregators_name, aggregators in aggregators_by_type.items():
+        for aggregators_name, aggregators in enabled_aggregators.items():
 
             for ftgroup_module, ftgroup in feature_groups.items():
                 if isinstance(ftgroup_module, str):

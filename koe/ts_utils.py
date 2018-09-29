@@ -10,7 +10,7 @@ import numpy as np
 from django.conf import settings
 from django.urls import reverse
 
-from koe.management.commands.extract_features import run_clustering
+from koe.ml_utils import run_clustering
 from koe.models import Segment, DerivedTensorData
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists

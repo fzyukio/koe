@@ -13,9 +13,9 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import MDS
 from sklearn.manifold import TSNE
 
-from koe.management.commands.extract_data_for_tensorboard import get_sids_tids
 from koe.model_utils import get_or_error
 from koe.models import Feature, Aggregation, Database, FullTensorData
+from koe.storage_utils import get_sids_tids
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary, cherrypick_tensor_data_by_sids
 
 

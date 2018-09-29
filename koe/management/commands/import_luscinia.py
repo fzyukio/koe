@@ -1,30 +1,25 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
-import array
 import datetime
 import os
 import re
-import sys
 from logging import warning
 
 import numpy as np
 import psycopg2
-import pydub
 from PIL import Image
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 from scipy import signal
 
-from koe import wavfile as wf
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono
+from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
 from koe.models import AudioFile, Segment, AudioTrack, Individual, Database, DatabaseAssignment, DatabasePermission
-from koe.utils import get_wav_info
 from root.models import ExtraAttrValue, User
-from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path, audio_path
+from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
@@ -45,57 +40,6 @@ interval64 = global_spect_pixel_range / 63
 
 name_regex = re.compile('(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\.[^ ]*)?\.wav')
 note_attr = settings.ATTRS.audio_file.note
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    def str_to_bytes(x):
-        return str.encode(x, encoding='LATIN-1')
-else:
-    def str_to_bytes(x):
-        return x
-
-
-def import_pcm(song, cur, song_name, wav_file_path=None, compressed_url=None):
-    if wav_file_path is None:
-        wav_file_path = wav_path(song_name)
-    if compressed_url is None:
-        compressed_url = audio_path(song_name, settings.AUDIO_COMPRESSED_FORMAT)
-
-    if not os.path.isfile(wav_file_path):
-        # print('Importing {}'.format(song_name))
-        song_id = song['songid']
-        cur.execute('select wav from wavs where songid={};'.format(song_id))
-
-        data = cur.fetchone()
-        raw_pcm = str_to_bytes(data[0])
-
-        nchannels = song['stereo']
-        bitrate = int(song['ssizeinbits'])
-        fs = int(song['samplerate'])
-
-        byte_per_frame = int(bitrate / 8)
-        nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
-        nframes_per_channel = int(nframes_all_channel / nchannels)
-        length = nframes_per_channel
-        ensure_parent_folder_exists(wav_file_path)
-
-        if bitrate == 24:
-            array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
-            array2 = array1.reshape((nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
-            wf.write_24b(wav_file_path, fs, array2)
-        else:
-            data = array.array('i', raw_pcm)
-            sound = pydub.AudioSegment(data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
-            sound.export(wav_file_path, 'wav')
-    else:
-        fs, length = get_wav_info(wav_file_path)
-
-    if not os.path.isfile(compressed_url):
-        ensure_parent_folder_exists(compressed_url)
-        sound = pydub.AudioSegment.from_wav(wav_file_path)
-        sound.export(compressed_url, format=settings.AUDIO_COMPRESSED_FORMAT)
-
-    return fs, length
 
 
 def import_song_info(conn, user):

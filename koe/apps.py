@@ -60,6 +60,8 @@ class KoeConfig(AppConfig):
             try:
                 from root.models import User
                 from root.views import register_app_modules, init_tables
+                from koe.aggregator import init as init_aggregators
+                from koe.features.feature_extract import init as init_features
 
                 is_database_empty = User.objects.all().count() == 0
 
@@ -74,6 +76,8 @@ class KoeConfig(AppConfig):
 
                     init_tables()
                     get_builtin_attrs()
+                    init_aggregators()
+                    init_features()
 
                 import koe.signals  # noqa: F401  Must include this for the signals to work
             except (ProgrammingError, OperationalError):

@@ -1,21 +1,10 @@
-import sys
-
 import psycopg2
 from django.core.management.base import BaseCommand
 
-from koe.management.commands import utils
-from koe.management.commands.import_luscinia import import_pcm
+from koe.management.commands.utils import import_pcm, get_dbconf
 from koe.models import AudioFile
 from koe.utils import get_wav_info
 from root.utils import wav_path
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    def str_to_bytes(x):
-        return str.encode(x, encoding='LATIN-1')
-else:
-    def str_to_bytes(x):
-        return x
 
 
 class Command(BaseCommand):
@@ -43,7 +32,7 @@ class Command(BaseCommand):
 
         conns = None
         try:
-            conns = utils.get_dbconf(dbs)
+            conns = get_dbconf(dbs)
             for pop in conns:
                 conn = conns[pop]
                 cur = conn.cursor()

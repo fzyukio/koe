@@ -2,7 +2,6 @@
 Run tsne with different numbers of dimensions, svm and export result
 """
 import json
-import os
 import uuid
 
 import numpy as np
@@ -14,10 +13,11 @@ from scipy.stats import zscore
 from koe import binstorage
 from koe.aggregator import aggregator_map
 from koe.model_utils import get_or_error
-from koe.models import Segment, Feature, Aggregation, Database, FullTensorData, DerivedTensorData, AudioFile
+from koe.models import Feature, Aggregation, Database, FullTensorData, DerivedTensorData
+from koe.storage_utils import get_binstorage_locations
+from koe.storage_utils import get_sids_tids
 from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary, reduce_funcs
 from root.models import User
-from root.utils import data_path
 
 
 def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
@@ -48,63 +48,6 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     rawdata = np.concatenate(rawdata, axis=1)
 
     return rawdata, col_inds
-
-
-def get_sids_tids(database, population_name=None):
-    """
-    Get ids and tids from all syllables in this database
-    :param database:
-    :return: sids, tids. sorted by sids
-    """
-    audio_files = AudioFile.objects.filter(database=database)
-    if population_name:
-        audio_files = [x for x in audio_files if x.name.startswith(population_name)]
-    segments = Segment.objects.filter(audio_file__in=audio_files)
-    segments_info = segments.values_list('id', 'tid')
-
-    tids = []
-    sids = []
-    for sid, tid in segments_info:
-        tids.append(tid)
-        sids.append(sid)
-    tids = np.array(tids, dtype=np.int32)
-    sids = np.array(sids, dtype=np.int32)
-    sids_sort_order = np.argsort(sids)
-    sids = sids[sids_sort_order]
-    tids = tids[sids_sort_order]
-
-    return sids, tids
-
-
-def get_binstorage_locations(features, aggregators):
-    """
-    Deduce the locations of feature binary files and feature-aggregator binary files from their names
-    Then return these locations in two dictionaries for lookup convenience
-    :param features:
-    :param aggregators:
-    :return:
-    """
-    # feature to binstorage's files
-    f2bs = {}
-    # feature+aggregation to binstorage's files
-    fa2bs = {}
-
-    for feature in features:
-        feature_name = feature.name
-        index_filename = data_path('binary/features', '{}.idx'.format(feature_name), for_url=False)
-        value_filename = data_path('binary/features', '{}.val'.format(feature_name), for_url=False)
-        f2bs[feature] = (index_filename, value_filename)
-
-        if feature not in fa2bs:
-            fa2bs[feature] = {}
-        for aggregator in aggregators:
-            aggregator_name = aggregator.get_name()
-            folder = os.path.join('binary', 'features', feature_name)
-
-            index_filename = data_path(folder, '{}.idx'.format(aggregator_name), for_url=False)
-            value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
-            fa2bs[feature][aggregator] = (index_filename, value_filename)
-    return f2bs, fa2bs
 
 
 def create_full_tensor(database, recreate):

@@ -10,8 +10,7 @@ from scipy.io import loadmat
 from scipy.io import savemat
 from scipy.stats import zscore
 
-from koe.management.commands.extract_features import run_clustering
-from koe.management.commands.run_kfold_validation import classifiers, run_nfolds
+from koe.ml_utils import run_clustering, classifiers, run_nfolds
 
 from sklearn.decomposition import PCA, FastICA
 
