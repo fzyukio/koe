@@ -209,6 +209,11 @@ const initSidebar = function() {
 
 /**
  * For all selectable options that will change GET arguments and reload the page, e.g. viewas, database, ...
+ * append existing arguments to their bare links.
+ * Accept 'internal' arguments, but exclude 'external' type arguments
+ * Internal arguments are meant for only a specific page. They shouldn't be appended to links to different page
+ * External arguments are meant to trigger some specific functions of a page. They shouldn't be propagated even to
+ * links to the same page.
  */
 const initChangeArgSelections = function() {
     let locationOrigin = window.location.origin;
@@ -216,13 +221,11 @@ const initChangeArgSelections = function() {
 
     $('.change-arg').click(function(e) {
         e.preventDefault();
-        let key = this.getAttribute('key');
-        let value = this.getAttribute('value');
-        argDict[key] = value;
+        argDict[this.getAttribute('key')] = this.getAttribute('value');
 
         let argString = '?';
         $.each(argDict, function(k, v) {
-            if (k !== 'action') {
+            if (!k.startsWith('__')) {
                 argString += `${k}=${v}&`;
             }
         });
@@ -233,6 +236,11 @@ const initChangeArgSelections = function() {
 
 /**
  * Search for all "appendable urls" and append the GET arguments to them.
+ * Except 'internal' and 'external' arguments.
+ * Internal arguments are meant for only a specific page. They shouldn't be appended to links to different page
+ * External arguments are meant to trigger some specific functions of a page. They shouldn't be propagated even to
+ * links to the same page.
+ *
  * E.g. the current url is localhost/blah?x=1&y=3
  * A clickable URL to localhost/foo will be changed to localhost/foo?x=1&y=3
  */
@@ -243,7 +251,7 @@ const appendGetArguments = function () {
 
         let argString = '?';
         $.each(argDict, function(k, v) {
-            if (k !== 'action') {
+            if (!k.startsWith('_')) {
                 argString += `${k}=${v}&`;
             }
         });
@@ -261,9 +269,11 @@ const appendGetArguments = function () {
 const _postRun = function () {
     const viewPortChangeCallback = function () {
         viewPortChangeHandler().then(function () {
-
             if (!isNull(page) && page.grid) {
                 page.grid.mainGrid.resizeCanvas();
+            }
+            if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
+                page.viewPortChangeHandler();
             }
         });
     };

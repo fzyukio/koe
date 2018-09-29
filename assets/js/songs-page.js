@@ -493,7 +493,7 @@ export const run = function (commonElements) {
     grid.initMainGridHeader(gridArgs, extraArgs, function () {
         grid.initMainGridContent(gridArgs, extraArgs, function() {
             focusOnGridOnInit();
-            if (argDict.action === 'upload') {
+            if (argDict.__action === 'upload') {
                 uploadSongsBtn.click();
             }
         });

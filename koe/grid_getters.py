@@ -69,16 +69,28 @@ def bulk_get_segment_info(segs, extras):
     :param extras: Must specify the user to get the correct ExtraAttrValue columns
     :return: [row]
     """
-    _, current_database = get_user_databases(extras.user)
     viewas = extras.viewas
-    similarities, current_similarity = get_current_similarity(extras.user, current_database)
+    holdout = extras.get('_holdout', 'false') == 'true'
+    user = extras.user
 
     rows = []
     ids = []
+    _, current_database = get_user_databases(user)
     if current_database is None:
         return ids, rows
 
-    segs = segs.filter(audio_file__database=current_database.id)
+    _, current_similarity = get_current_similarity(user, current_database)
+
+    if holdout:
+        ids_holder = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.hold_ids_attr, owner_id=user.id,
+                                                   user=user).first()
+
+        if ids_holder is not None and ids_holder.value != '':
+            ids = ids_holder.value.split(',')
+            segs = segs.filter(id__in=ids)
+    else:
+        segs = segs.filter(audio_file__database=current_database.id)
+
     values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
                                    'audio_file__name',
                                    'audio_file__id',

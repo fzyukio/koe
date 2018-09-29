@@ -1,22 +1,83 @@
 {% extends 'base-with-sidebar.html' %}
 {% load staticfiles %}
 {% load widget_tweaks %}
-
+{% load custom_tags %}
 
 {% block title %}Cluster visualisation{% endblock %}
 
 {% block content-center %}
-    <div class="row no-margin">
-        <div class="col-md-4 col-lg-2 no-padding">
-            <div id="syl-spects">
+    <div class="col-md-3 no-padding contain-panel">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div id="menu-opener">
+                            <div class="input-group">
+                                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
+                            </div>
+                        </div>
+
+                        <div class="grid-controller no-status">
+                            <div class="input-group">Highlights</div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding" id="syl-spects">
 
             </div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group dropup" role="group">
+                        <button type="button" class="btn btn-sm btn-black dropdown-toggle enable-on-lasso" data-toggle="dropdown"
+                                aria-haspopup="true" aria-expanded="false" disabled>
+                            Change label
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% get_granularity as levels %}
+                            {% for level in levels %}
+                                <li><a class="change-label enable-on-lasso" disabled label-type="{{ level }}">{{ level }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+
+                    <div class="btn-group" role="group">
+                        <button id="clear-highlighted-btn" type="button" class="btn btn-sm btn-black disable-on-lasso">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button id="show-highlighted-btn" disabled type="button" class="btn btn-sm btn-black enable-on-lasso"
+                                syllables-view-url="{% url 'syllables' %}">
+                            Show details
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-md-8 col-lg-10 no-padding">
-            <div id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
-                 database="{{ tensor.database.name }}"
-                 annotator="{{ tensor.annotator.username }}"></div>
+    </div>
+
+    <div class="col-md-9 no-padding contain-panel">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                T-SNE on {{ tensor.database.name }}, annotated by {{ tensor.annotator.username }},
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+
+            <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}" database="{{ tensor.database.id }}">
+            </div>
         </div>
+
+
     </div>
 {% endblock %}
 

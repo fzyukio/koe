@@ -21,7 +21,7 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import spect_fft_path, spect_mask_path
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
-           'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments']
+           'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids']
 
 
 def import_audio_metadata(request):
@@ -475,9 +475,18 @@ def delete_segments(request):
 
 
 def get_label_options(request):
-    file_id = json.loads(get_or_error(request.POST, 'file-id'))
-    audio_file = get_or_error(AudioFile, dict(id=file_id))
-    database = audio_file.database
+    file_id = request.POST.get('file-id', None)
+    database_id = request.POST.get('database-id', None)
+
+    if file_id is None and database_id is None:
+        raise CustomAssertionError('Need file-id or database-id')
+
+    if file_id:
+        audio_file = get_or_error(AudioFile, dict(id=file_id))
+        database = audio_file.database
+    else:
+        database = get_or_error(Database, dict(id=database_id))
+
     user = request.user
 
     assert_permission(user, database, DatabasePermission.VIEW)
@@ -499,3 +508,21 @@ def get_label_options(request):
     retval = {'label': labels_to_counts, 'label_family': fams_to_counts, 'label_subfamily': subfams_to_counts}
 
     return retval
+
+
+def hold_ids(request):
+    """
+    Save a temporary list of segment IDs for the syllable view to display
+    :param request:
+    :return:
+    """
+    ids = get_or_error(request.POST, 'ids')
+    user = request.user
+    ids_holder = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.hold_ids_attr, owner_id=user.id,
+                                               user=user).first()
+    if ids_holder is None:
+        ids_holder = ExtraAttrValue(attr=settings.ATTRS.user.hold_ids_attr, owner_id=user.id, user=user)
+
+    ids_holder.value = ids
+    ids_holder.save()
+    return True

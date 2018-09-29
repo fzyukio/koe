@@ -65,10 +65,6 @@ const gridStatus = $('#grid-status');
 const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
-const similarityCombo = $('#similarity-sort-combo');
-
-const currentSimilarityAttr = similarityCombo.attr('current-attr');
-const similarityClass = similarityCombo.attr('cls');
 const deleteSegmentsBtn = $('#delete-segments-btn');
 
 let ce;
@@ -428,6 +424,9 @@ let gridArgs = {
 
 export const run = function (commonElements) {
     ce = commonElements;
+    if (ce.argDict._holdout) {
+        extraArgs._holdout = ce.argDict._holdout;
+    }
 
     initAudioContext();
 
@@ -436,36 +435,6 @@ export const run = function (commonElements) {
         grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
         subscribeSlickEvents();
         subscribeFlexibleEvents();
-    });
-
-    $('.select-similarity').on('click', function (e) {
-        e.preventDefault();
-
-        let parent = $(this).parent();
-        if (parent.hasClass('not-active')) {
-
-            let similarityId = this.getAttribute('similarity');
-            let postData = {
-                attr: currentSimilarityAttr,
-                klass: similarityClass,
-                value: similarityId,
-                owner: similarityCombo.attr('owner-id')
-            };
-            let onSuccess = function () {
-                grid.initMainGridContent(extraArgs, focusOnGridOnInit);
-            };
-
-            postRequest({
-                requestSlug: 'change-extra-attr-value',
-                data: postData,
-                onSuccess
-            });
-
-            /* Update the button */
-            similarityCombo.attr('similarity', similarityId);
-            parent.parent().find('li.active').removeClass('active').addClass('not-active');
-            parent.removeClass('not-active').addClass('active');
-        }
     });
 
     contextMenu.click(function (e) {

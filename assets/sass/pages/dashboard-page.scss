@@ -1,25 +1,5 @@
 @import "../variables";
 
-$grid-button-height: 30px;
-
-.contain-grid {
-  .panel {
-    border-radius: 0;
-    border: 1px solid rgba(0, 0, 0, .125);
-    margin-bottom: $panel-margin-bottom;
-
-    .slick-header-columns {
-      border-top: none;
-    }
-  }
-
-  button {
-    border-radius: 0;
-    border-width: 0;
-    height: $grid-button-height;
-  }
-}
-
 // In mobile mode, all four grids are full screen
 #database-grid, #database-assignment-grid, #concise-syllables-grid, #version-grid {
   height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);

@@ -19,6 +19,7 @@ def get_builtin_attrs():
     goc = ExtraAttr.objects.get_or_create
 
     current_database_attr, _ = goc(klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
+    hold_ids_attr, _ = goc(klass=User.__name__, name='hold-ids', type=ValueTypes.SHORT_TEXT)
     current_similarity_attr, _ = goc(klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
 
     song_note_attr, _ = goc(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
@@ -29,7 +30,8 @@ def get_builtin_attrs():
     seg_note_attr, _ = goc(klass=Segment.__name__, name='note', type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
-        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr),
+        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr,
+                    hold_ids_attr=hold_ids_attr),
         audio_file=DotMap(note=song_note_attr, type=type_attr),
         segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr)
     )

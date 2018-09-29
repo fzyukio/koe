@@ -1,11 +1,98 @@
 @import "../variables";
 
 #plotly-plot {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
+  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top - #{$controller-wrapper-height} - #{$panel-border} * 4});
+
+  .svg-container {
+    float: right;
+  }
+
+  .js-plotly-plot .plotly .modebar {
+    float: left;
+    position: relative;
+  }
 }
 
-.main-content {
-  .content-center {
-    overflow-y: auto;
+#syl-spects {
+  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 4);
+  overflow: auto;
+
+  .syl-spect {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    border: black solid 1px;
+    -webkit-box-shadow: 0 10px 6px -6px #777;
+    -moz-box-shadow: 0 10px 6px -6px #777;
+    box-shadow: 0 10px 6px -6px #777;
+    background: #ccc;
+    text-align: left;
+    float: left;
+
+    img {
+      display: block;
+      height: 128px;
+      width: auto;
+    }
+
+    .syl-details {
+      background: white;
+      white-space: nowrap;
+    }
+
+    &.active {
+      -webkit-animation: glowing 1500ms infinite;
+      -moz-animation: glowing 1500ms infinite;
+      -o-animation: glowing 1500ms infinite;
+      animation: glowing 1500ms infinite;
+    }
+  }
+
+}
+
+@-webkit-keyframes glowing {
+  0% {
+    -webkit-box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    -webkit-box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    -webkit-box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@-moz-keyframes glowing {
+  0% {
+    -moz-box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    -moz-box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    -moz-box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@-o-keyframes glowing {
+  0% {
+    box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@keyframes glowing {
+  0% {
+    box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    box-shadow: 0 0 3px #B20000;
   }
 }

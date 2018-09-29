@@ -22,6 +22,14 @@ def populate_context(obj, context, with_similarity=False):
     user = obj.request.user
     gets = obj.request.GET
 
+    for key, value in gets.items():
+        if key.startswith('__'):
+            context['external{}'.format(key)] = value
+        elif key.startswith('_'):
+            context['internal{}'.format(key)] = value
+        else:
+            context[key] = value
+
     databases, current_database = get_user_databases(user)
     db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
 
@@ -47,10 +55,10 @@ def populate_context(obj, context, with_similarity=False):
         .values_list('user__id', flat=True)
     other_users = User.objects.filter(id__in=other_users)
 
-    granularity = gets.get('granularity', 'label')
     context['viewas'] = viewas
     context['other_users'] = other_users
 
+    granularity = gets.get('granularity', 'label')
     context['granularity'] = granularity
     context['page'] = page_name
 
