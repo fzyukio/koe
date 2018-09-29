@@ -12,11 +12,31 @@ const bytesPath = plotDiv.attr('bytes');
 const databaseId = plotDiv.attr('database');
 const body = $('body');
 const sylSpects = $('#syl-spects');
+const labelTyleSelectEl = $('#label-type');
 
 const legendSymbols = {};
 let ce;
 let highlighted = {};
 let inLassoSelectionMode = false;
+const dataMatrix = [];
+const rowsMetadata = [];
+const labelDatum = {};
+
+const saveSvgOption = {
+    name: 'Save SVG',
+    icon: Plotly.Icons.camera,
+    click (gd) {
+        Plotly.downloadImage(gd, {format: 'svg'})
+    }
+};
+
+const savePngOption = {
+    name: 'Save PNG',
+    icon: Plotly.Icons.camera,
+    click (gd) {
+        Plotly.downloadImage(gd, {format: 'png'})
+    }
+};
 
 const plotlyOptions = {
     modeBarButtonsToRemove: [
@@ -26,15 +46,7 @@ const plotlyOptions = {
         'zoomOutGeo', 'resetGeo', 'hoverClosestGeo', 'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover',
         'resetViews', 'toggleSpikelines', 'resetViewMapbox'
     ],
-    modeBarButtonsToAdd: [
-        {
-            name: 'saveSVG',
-            icon: Plotly.Icons.camera,
-            click (gd) {
-                Plotly.downloadImage(gd, {format: 'svg'})
-            }
-        }
-    ]
+    modeBarButtonsToAdd: []
 };
 
 const plotlyMarkerSymbols = ['circle', 'square', 'diamond', 'cross', 'triangle-up', 'star'];
@@ -42,6 +54,35 @@ const plotlyMarkerSymbols = ['circle', 'square', 'diamond', 'cross', 'triangle-u
 const categoricalColourScale = d3.schemeCategory10;
 const interpolativeColourScale = d3.interpolateRainbow;
 const nCategoricalColours = categoricalColourScale.length;
+const renderAsSvg = $('#render-as-svg');
+
+/**
+ * Decide the render class: WebGL/SVG for 2D, Scatter3d for 3D
+ * @returns {*}
+ */
+function getRenderOptions() {
+    let ndims = dataMatrix[0].length;
+    let renderClass;
+    let renderOptions = plotlyOptions;
+
+    if (ndims === 2) {
+        if (renderAsSvg[0].checked) {
+            renderClass = 'scatter';
+            plotlyOptions.modeBarButtonsToAdd = [saveSvgOption];
+        }
+        else {
+            renderClass = 'scattergl';
+            plotlyOptions.modeBarButtonsToAdd = [savePngOption];
+        }
+    }
+    else {
+        renderAsSvg.prop('disabled', true);
+        renderClass = 'scatter3d';
+        plotlyOptions.modeBarButtonsToAdd = [savePngOption];
+    }
+
+    return {renderClass, renderOptions};
+}
 
 /**
  * Toggle lasso selection mode. In lasso mode, mouseover has no effect (no syllable highlight), user can't clear the
@@ -103,6 +144,7 @@ function initClickHandlers() {
             playSyl(sylId);
         }
     });
+    renderAsSvg.click(plot);
 }
 
 /**
@@ -201,15 +243,14 @@ function extractLegends() {
     });
 }
 
-const plot = function (matrix, rowsMetadata, labelDatum, classType) {
+const plot = function () {
+    body.addClass('loading');
+    let classType = labelTyleSelectEl.parent().find('#selected-label-type').html();
     let traces = [];
     let class2RowIdx = labelDatum[classType];
     let nClasses = Object.keys(class2RowIdx).length;
-    let ncols = matrix[0].length;
-    let plotType = 'scatter3d';
-    if (ncols == 2) {
-        plotType = 'scattergl';
-    }
+    let ncols = dataMatrix[0].length;
+    let {renderClass, renderOptions} = getRenderOptions();
 
     let {l, r, t, b, W, H} = calcLayout();
 
@@ -228,7 +269,7 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
         let x, y, z;
         let rowsMetadataStr = [];
         $.each(ids, function (idx, rowIdx) {
-            let row = matrix[rowIdx];
+            let row = dataMatrix[rowIdx];
             let rowMetadata = rowsMetadata[rowIdx];
             rowsMetadataStr.push(rowMetadata.join(', '));
             x = row[0];
@@ -251,7 +292,7 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
             name: className,
             mode: 'markers',
             marker: markers[classNo],
-            type: plotType
+            type: renderClass
         };
 
         if (ncols > 2) {
@@ -268,14 +309,14 @@ const plot = function (matrix, rowsMetadata, labelDatum, classType) {
         margin: {l, r, b, t},
     };
 
-    Plotly.newPlot(plotId, traces, layout, plotlyOptions);
+    Plotly.newPlot(plotId, traces, layout, renderOptions);
     plotDiv.find('.modebar').css('position', 'relative');
     relayout();
     extractLegends();
+    body.removeClass('loading');
 };
 
-const initCategorySelection = function ({dataMatrix, rowsMetadata, labelDatum}) {
-    let labelTyleSelectEl = $('#label-type');
+const initCategorySelection = function () {
     $.each(labelDatum, function (labelType) {
         if (labelType !== 'id') {
             let option = `<li class="not-active"><a href="#" value="${labelType}">${labelType}</a></li>`;
@@ -296,7 +337,7 @@ const initCategorySelection = function ({dataMatrix, rowsMetadata, labelDatum}) 
         labelTyleSelectEl.parent().find('#selected-label-type').html(labelType);
         labelTyleSelectEl.find('li').removeClass('active').addClass('non-active');
         labelTyleSelectEl.find(`a[value="${labelType}"]`).parent().removeClass('non-active').addClass('active');
-        plot(dataMatrix, rowsMetadata, labelDatum, labelType);
+        plot();
         plotDiv[0].
             on('plotly_click', handleClick).
             on('plotly_hover', handleHover).
@@ -413,7 +454,6 @@ function handleSelected(eventData) {
     }
 }
 
-
 export const run = function (commonElements) {
     ce = commonElements;
     initAudioContext();
@@ -429,17 +469,14 @@ const downloadTensorData = function () {
     let downloadBytes = downloadRequest(bytesPath, Float32Array);
 
     return Promise.all([downloadMeta, downloadBytes]).then(function (values) {
-        let dataMatrix = [];
         let meta = values[0];
         let bytes = values[1];
 
         let metaRows = meta.split('\n');
         let csvHeaderRow = metaRows[0];
         let csvBodyRows = metaRows.slice(2);
-        let rowsMetadata = [];
 
         let columnNames = csvHeaderRow.split('\t');
-        let labelDatum = {};
 
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
@@ -472,11 +509,6 @@ const downloadTensorData = function () {
         }
 
         body.removeClass('loading');
-        return {
-            dataMatrix,
-            rowsMetadata,
-            labelDatum
-        }
     });
 };
 
