@@ -1,9 +1,11 @@
 /* global Plotly, d3 */
-import {queryAndPlayAudio, initAudioContext} from './audio-handler';
+import {queryAndPlayAudio, initAudioContext, changePlaybackSpeed} from './audio-handler';
 import {getUrl, getCache, setCache} from './utils';
 import {downloadRequest, postRequest} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
+require('bootstrap-slider/dist/bootstrap-slider.js');
 
+const speedSlider = $('#speed-slider');
 const plotId = 'plotly-plot';
 const plotDiv = $(`#${plotId}`);
 const metaPath = plotDiv.attr('metadata');
@@ -61,6 +63,19 @@ const categoricalColourScale = d3.schemeCategory10;
 const interpolativeColourScale = d3.interpolateRainbow;
 const nCategoricalColours = categoricalColourScale.length;
 const renderAsSvg = $('#render-as-svg');
+
+const initSlider = function () {
+    speedSlider.slider();
+
+    speedSlider.on('slide', function (slideEvt) {
+        changePlaybackSpeed(slideEvt.value);
+    });
+
+    $('.slider').on('click', function () {
+        let newvalue = $('.tooltip-inner').text();
+        changePlaybackSpeed(parseInt(newvalue));
+    });
+};
 
 /**
  * Decide the render class: WebGL/SVG for 2D, Scatter3d for 3D
@@ -472,6 +487,7 @@ function handleSelected(eventData) {
 export const run = function (commonElements) {
     ce = commonElements;
     initAudioContext();
+    initSlider();
     downloadTensorData().then(initCategorySelection);
     initClickHandlers();
 };
