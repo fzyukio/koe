@@ -3,7 +3,9 @@ import io
 import json
 import os
 import re
+import uuid
 from shutil import copyfile
+import numpy as np
 
 import csv
 from django.conf import settings
@@ -15,13 +17,14 @@ from dotmap import DotMap
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
-    DatabasePermission, Individual, Species, AudioTrack, AccessRequest
+    DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
 from root.utils import spect_fft_path, spect_mask_path
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
-           'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids']
+           'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
+            'make_tmpdb', 'change_tmpdb_name']
 
 
 def import_audio_metadata(request):
@@ -525,4 +528,41 @@ def hold_ids(request):
 
     ids_holder.value = ids
     ids_holder.save()
+    return True
+
+
+def make_tmpdb(request):
+    ids = get_or_error(request.POST, 'ids')
+    ids = np.array(list(map(int, ids.split(','))))
+    ids = np.sort(ids)
+
+    chksum = IdOrderedModel.calc_chksum(ids)
+    existing = TemporaryDatabase.objects.filter(chksum=chksum).first()
+    if existing is not None:
+        raise CustomAssertionError(existing.name)
+
+    name = uuid.uuid4().hex
+    tmpdb = TemporaryDatabase(name=name, user=request.user)
+    tmpdb.ids = ids
+    tmpdb.save()
+
+    return name
+
+
+def change_tmpdb_name(request):
+    """
+    Save a temporary list of segment IDs for the syllable view to display
+    :param request:
+    :return:
+    """
+    old_name = get_or_error(request.POST, 'old-name')
+    new_name = get_or_error(request.POST, 'new-name')
+
+    tmpdb = get_or_error(TemporaryDatabase, dict(name=old_name, user=request.user))
+    with transaction.atomic():
+        if TemporaryDatabase.objects.filter(name=new_name, user=request.user).exists():
+            raise CustomAssertionError('Temporary database named {} already exists'.format(new_name))
+        tmpdb.name = new_name
+        tmpdb.save()
+
     return True

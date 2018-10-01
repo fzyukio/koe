@@ -1,5 +1,8 @@
 {% load custom_tags %}
 <div class="sidebar-controllers">
+    {% if not current_database.is_real %}
+            <div>This is a temporary database</div>
+        {% endif %}
     {% include "sidebar/database-picker.html" %}
     {% include "sidebar/viewas-picker.html" %}
     {% include "sidebar/granularity-picker.html" %}

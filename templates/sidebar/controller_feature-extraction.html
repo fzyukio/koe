@@ -1,4 +1,11 @@
+<div class="sidebar-controllers">
+    {% if not current_database.is_real %}
+            <div>This is a temporary database</div>
+        {% endif %}
+    {% include "sidebar/database-picker.html" %}
+</div>
+
 <div class="sidebar-controllers last">
     <button type="button" disabled id="download-btn" class="btn btn-xs btn-default btn-block">Download (csv)</button>
-    <button type="button" disabled id="visualise-btn" class="btn btn-xs btn-default btn-block">Visualise</a>
+    <button type="button" disabled id="visualise-btn" class="btn btn-xs btn-default btn-block">Visualise</button>
 </div>

@@ -33,6 +33,7 @@
                             <span>Manage your database</span>
                         </a>
                     </div>
+                    {% if db_assignment.can_add_files %}
                     <div class="menu-item" page="song-partition">
                         <a class="appendable" href="{% url 'song-partition' %}">
                             <span>Upload & split raw recordings</span>
@@ -43,6 +44,7 @@
                             <span>Upload Songs</span>
                         </a>
                     </div>
+                    {% endif %}
                     <div class="menu-item" page="segmentation">
                         <a href="#" data-toggle="modal" data-target="#go-to-songs-modal">
                             <span>Segment songs into units</span>
@@ -53,6 +55,7 @@
                             <span>Measure units</span>
                         </a>
                     </div>
+
                     <div class="menu-item" page="syllables">
                         <a class="appendable" href="{% url 'syllables' %}">
                             <span>Classify units</span>

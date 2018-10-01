@@ -1,5 +1,16 @@
 {% load custom_tags %}
 
+{% if not current_database.is_real %}
+    <div class="sidebar-controllers">
+    {%  if current_database.user == user %}
+        <div>You are viewing a temporary database of yours. You cannot change song segmentation. If you so wish, please switch to database <strong>{{ database }}</strong></div>
+    {% else %}
+        <div>You are viewing a temporary database created by <strong>{{ current_database.user.username }}</strong>. You cannot make any changes.</div>
+    {% endif %}
+    </div>
+{% endif %}
+
+
 <div class="sidebar-controllers">
     <label>Auto segmentation</label>
     <button type="button" disabled id="apply-auto-segmentation" class="btn btn-xs btn-default btn-block">Apply</button>

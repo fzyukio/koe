@@ -173,6 +173,15 @@ input::-webkit-input-placeholder {
 .form-control, .dropdown-menu {
   font-size: inherit;
   line-height: inherit;
+
+  .section-head {
+    line-height: 1.42857;
+    color: white;
+    white-space: nowrap;
+    padding: 5px 10px;
+    background-color: #444;
+    font-weight: bold;
+  }
 }
 
 .navbar-right-most {

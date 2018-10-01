@@ -181,8 +181,9 @@ def get_grid_column_definition(request):
     user = request.user
     table_name = request.POST['grid-type']
     table = tables[table_name]
+    extras = json.loads(request.POST.get('extras', '{}'))
 
-    viewas = request.POST.get('viewas', user.username)
+    viewas = extras.get('viewas', user.username)
     user_is_editing = viewas == user.username
 
     columns = []

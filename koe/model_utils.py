@@ -7,7 +7,8 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
-from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database, DatabasePermission
+from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database, DatabasePermission,\
+    TemporaryDatabase
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
@@ -190,28 +191,40 @@ def natural_order(tree):
     return branches[-1][0]
 
 
+def get_user_accessible_databases(user):
+    assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id', flat=True)
+    databases = Database.objects.filter(id__in=assigned_databases_ids)
+    return databases
+
+
 def get_user_databases(user):
     """
     Return user's current database and the database's current similarity matrix
     :param user:
     :return:
     """
-    assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id', flat=True)
-    databases = Database.objects.filter(id__in=assigned_databases_ids)
-
     current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database, owner_id=user.id,
                                                            user=user).first()
-
+    db_class = Database
     if current_database_value:
-        current_database_id = current_database_value.value
-        current_database = databases.get(pk=current_database_id)
+        current_database_value = current_database_value.value
+        if '_' in current_database_value:
+            db_class_name, current_database_id = current_database_value.split('_')
+            if db_class_name == TemporaryDatabase.__name__:
+                db_class = TemporaryDatabase
+        else:
+            current_database_id = current_database_value
+
+        current_database = db_class.objects.get(pk=current_database_id)
+
     else:
+        databases = get_user_accessible_databases(user)
         current_database = databases.first()
         if current_database is not None:
             ExtraAttrValue.objects.create(attr=settings.ATTRS.user.current_database, owner_id=user.id, user=user,
-                                          value=current_database.id)
+                                          value='{}_{}'.format(db_class, current_database.id))
 
-    return databases, current_database
+    return current_database
 
 
 def get_current_similarity(user, current_database):
@@ -221,6 +234,8 @@ def get_current_similarity(user, current_database):
     :param user:
     :return:
     """
+    if isinstance(current_database, TemporaryDatabase):
+        return None, None
     similarities = Coordinate.objects.filter(database=current_database)
 
     if not similarities:

@@ -66,6 +66,7 @@ const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const deleteSegmentsBtn = $('#delete-segments-btn');
+const makeTemporaryDatabaseBtn = $('#make-temp-db-btn');
 
 let ce;
 
@@ -165,6 +166,7 @@ const resetStatus = function (e, args) {
 function onRowsAdded(e, args) {
     resetStatus(e, args);
     deleteSegmentsBtn.prop('disabled', false);
+    makeTemporaryDatabaseBtn.prop('disabled', false);
 }
 
 /**
@@ -177,6 +179,7 @@ function onRowsRemoved(e, args) {
     let grid_ = args.grid;
     if (grid_.getSelectedRows().length == 0) {
         deleteSegmentsBtn.prop('disabled', true);
+        makeTemporaryDatabaseBtn.prop('disabled', true);
     }
 }
 
@@ -675,9 +678,95 @@ const initDeleteSegmentsBtn = function () {
 };
 
 
-export const postRun = function () {
+const inputText = $('<input type="text" class="form-control"/>');
 
+const dialogModal = $('#dialog-modal');
+const dialogModalTitle = dialogModal.find('.modal-title');
+const dialogModalBody = dialogModal.find('.modal-body');
+const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
+
+
+const initCreateTemporaryDatabaseBtn = function() {
+    let generatedName;
+
+    /**
+     * Repeat showing the dialog until the database name is valid
+     * param error to be shown in the modal if not undefined
+     */
+    function showDialog(error) {
+        dialogModalTitle.html('Temporary database created successfully...');
+        dialogModalBody.html(`<label>We gave it the temporary name of ${generatedName}. Do you want to give it a different name?</label>`);
+        dialogModalBody.append(inputText);
+
+        if (error) {
+            dialogModalBody.append(`<p>${error.message}</p>`);
+        }
+
+        dialogModal.modal('show');
+
+        dialogModalOkBtn.one('click', function () {
+            dialogModal.modal('hide');
+            let url = getUrl('send-request', 'koe/change-tmpdb-name');
+            let databaseName = inputText.val();
+            inputText.val('');
+            let postData = {
+                'old-name': generatedName,
+                'new-name': databaseName
+            };
+
+            $.post(url, postData).done(function () {
+                dialogModal.modal('hide');
+            }).fail(function (response) {
+                dialogModal.one('hidden.bs.modal', function () {
+                    let errorMessage = JSON.parse(response.responseText);
+                    showDialog(errorMessage);
+                });
+                dialogModal.modal('hide');
+            });
+        });
+    }
+
+    makeTemporaryDatabaseBtn.click(function(e) {
+        e.preventDefault();
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let dataView = grid_.getData();
+        let itemsIds = [];
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            itemsIds.push(item.id);
+        }
+
+        let postData = {
+            ids: itemsIds.join(),
+        };
+
+        postRequest({
+            requestSlug: 'koe/make-tmpdb',
+            data: postData,
+            immediate: true,
+            onSuccess(name) {
+                generatedName = name;
+                showDialog();
+            },
+            onFailure(message) {
+                dialogModalTitle.html('Temporary database with these IDs already exists...');
+                dialogModalBody.html(`<p>You've already created a temporary database with name <strong>${message}</strong>. Please choose a unique name.</p>`);
+
+                dialogModal.modal('show');
+                dialogModalOkBtn.one('click', function () {
+                    dialogModal.modal('hide');
+                });
+            }
+        });
+    });
+};
+
+
+export const postRun = function () {
     initDeleteSegmentsBtn();
+    initCreateTemporaryDatabaseBtn();
 };
 
 export const handleDatabaseChange = function () {

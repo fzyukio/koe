@@ -8,7 +8,7 @@ from django.urls import reverse
 from pycspade import cspade
 
 from koe.model_utils import get_user_databases, get_current_similarity, get_or_error
-from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database
+from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
@@ -75,7 +75,7 @@ def bulk_get_segment_info(segs, extras):
 
     rows = []
     ids = []
-    _, current_database = get_user_databases(user)
+    current_database = get_user_databases(user)
     if current_database is None:
         return ids, rows
 
@@ -88,6 +88,9 @@ def bulk_get_segment_info(segs, extras):
         if ids_holder is not None and ids_holder.value != '':
             ids = ids_holder.value.split(',')
             segs = segs.filter(id__in=ids)
+    elif isinstance(current_database, TemporaryDatabase):
+        ids = current_database.ids
+        segs = segs.filter(id__in=ids)
     else:
         segs = segs.filter(audio_file__database=current_database.id)
 
@@ -188,12 +191,15 @@ def bulk_get_exemplars(objs, extras):
     """
     granularity = extras.granularity
     viewas = extras.viewas
-    _, current_database = get_user_databases(extras.user)
+    current_database = get_user_databases(extras.user)
 
-    if isinstance(objs, QuerySet):
-        ids = objs.filter(audio_file__database=current_database).values_list('id', flat=True)
+    if isinstance(current_database, Database):
+        if isinstance(objs, QuerySet):
+            ids = objs.filter(audio_file__database=current_database).values_list('id', flat=True)
+        else:
+            ids = [x.id for x in objs if x.audio_file.database == current_database]
     else:
-        ids = [x.id for x in objs if x.audio_file.database == current_database]
+        ids = current_database.ids
 
     values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=granularity, owner_id__in=ids,
                                            user__username=viewas) \
@@ -294,18 +300,23 @@ def bulk_get_song_sequences(all_songs, extras):
     :return:
     """
     granularity = extras.granularity
-    _, current_database = get_user_databases(extras.user)
+    current_database = get_user_databases(extras.user)
     viewas = extras.viewas
 
-    if isinstance(all_songs, QuerySet):
-        all_songs = all_songs.filter(database=current_database)
-        song_ids = all_songs.values_list('id', flat=True)
+    if isinstance(current_database, Database):
+        if isinstance(all_songs, QuerySet):
+            all_songs = all_songs.filter(database=current_database)
+            song_ids = all_songs.values_list('id', flat=True)
+        else:
+            all_songs = [x.id for x in all_songs if x.database == current_database]
+            song_ids = all_songs
+        segs = Segment.objects.filter(audio_file__in=all_songs).order_by('audio_file__name', 'start_time_ms')
     else:
-        all_songs = [x.id for x in all_songs if x.database == current_database]
-        song_ids = all_songs
+        seg_ids = current_database.ids
+        segs = Segment.objects.filter(id__in=seg_ids)
+        song_ids = segs.values_list('audio_file').distinct()
+        all_songs = AudioFile.objects.filter(id__in=song_ids)
 
-    segs = Segment.objects.filter(audio_file__in=all_songs) \
-        .order_by('audio_file__name', 'start_time_ms')
     values = segs.values_list('id', 'start_time_ms', 'end_time_ms',
                               'audio_file__name',
                               'audio_file__id',
@@ -502,19 +513,21 @@ def bulk_get_history_entries(hes, extras):
 
 def bulk_get_song_sequence_associations(all_songs, extras):
     granularity = extras.granularity
-    _, current_database = get_user_databases(extras.user)
+    current_database = get_user_databases(extras.user)
     viewas = extras.viewas
+
     use_gap = extras.usegap
     maxgap = extras.maxgap if use_gap else 1
     mingap = extras.mingap if use_gap else -99999
 
-    if isinstance(all_songs, QuerySet):
-        all_songs = all_songs.filter(database=current_database)
+    if isinstance(current_database, Database):
+        if isinstance(all_songs, QuerySet):
+            all_songs = all_songs.filter(database=current_database)
+        else:
+            all_songs = [x.id for x in all_songs if x.database == current_database]
+        segs = Segment.objects.filter(audio_file__in=all_songs).order_by('audio_file__name', 'start_time_ms')
     else:
-        all_songs = [x.id for x in all_songs if x.database == current_database]
-
-    segs = Segment.objects.filter(audio_file__in=all_songs) \
-        .order_by('audio_file__name', 'start_time_ms')
+        segs = Segment.objects.filter(id__in=current_database.ids)
 
     if use_gap:
         values = segs.values_list('id', 'audio_file__id', 'start_time_ms', 'end_time_ms')

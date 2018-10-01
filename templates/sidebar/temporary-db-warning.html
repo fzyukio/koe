@@ -1,0 +1,9 @@
+{% if not current_database.is_real %}
+    <div class="sidebar-controllers">
+    {%  if current_database.user == user %}
+        <div>You are viewing a temporary database of yours. Any changes you make in this table will be reflected in the actual database(s)</div>
+    {% else %}
+        <div>You are viewing a temporary database created by <strong>{{ current_database.user.username }}</strong>. You cannot make any changes.</div>
+    {% endif %}
+    </div>
+{% endif %}

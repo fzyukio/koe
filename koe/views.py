@@ -9,15 +9,15 @@ from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
 from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm
-from koe.model_utils import get_user_databases, get_current_similarity, assert_permission, get_or_error
+from koe.model_utils import get_user_databases, assert_permission, get_or_error, get_user_accessible_databases
 from koe.models import AudioFile, DatabaseAssignment, DatabasePermission, AudioTrack,\
-    DerivedTensorData, FullTensorData, Database
+    DerivedTensorData, FullTensorData, Database, TemporaryDatabase
 from koe.ts_utils import make_subtensor
 from root.models import User, ExtraAttrValue
 from root.utils import SendEmailThread
 
 
-def populate_context(obj, context, with_similarity=False):
+def populate_context(obj, context):
     page_name = obj.__class__.page_name
     user = obj.request.user
     gets = obj.request.GET
@@ -30,45 +30,54 @@ def populate_context(obj, context, with_similarity=False):
         else:
             context[key] = value
 
-    databases, current_database = get_user_databases(user)
-    db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
+    current_database = get_user_databases(user)
 
-    specified_db = gets.get('database', None)
+    specified_db = None
+    db_class = Database if current_database is None else current_database.__class__
+
+    if 'database' in gets:
+        specified_db = gets['database']
+        db_class = Database
+    elif 'tmpdb' in gets:
+        specified_db = gets['tmpdb']
+        db_class = TemporaryDatabase
+
     if specified_db and specified_db != current_database.name:
-        current_database = get_or_error(Database, dict(name=specified_db))
-        db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
+        current_database = get_or_error(db_class, dict(name=specified_db))
 
         current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database,
                                                                owner_id=user.id, user=user).first()
-        current_database_value.value = current_database.id
+        current_database_value.value = '{}_{}'.format(db_class.__name__, current_database.id)
         current_database_value.save()
 
-    context['databases'] = databases
+    if db_class == Database:
+        db_assignment = assert_permission(user, current_database, DatabasePermission.VIEW)
+    else:
+        db_assignment = {'can_view': True}
+
+    context['databases'] = get_user_accessible_databases(user)
     context['current_database'] = current_database
-    context['current_database_owner_class'] = User.__name__
-    context['current_database_owner_id'] = user.id
     context['db_assignment'] = db_assignment
 
-    viewas = gets.get('viewas', user.username)
-    viewas = get_or_error(User, dict(username=viewas))
-    other_users = DatabaseAssignment.objects.filter(database=current_database, permission__gte=DatabasePermission.VIEW)\
-        .values_list('user__id', flat=True)
-    other_users = User.objects.filter(id__in=other_users)
+    context['my_tmpdbs'] = TemporaryDatabase.objects.filter(user=user)
+    context['other_tmpdbs'] = TemporaryDatabase.objects.exclude(user=user)
 
+    if db_class == Database:
+        other_users = DatabaseAssignment.objects\
+            .filter(database=current_database, permission__gte=DatabasePermission.VIEW)\
+            .values_list('user__id', flat=True)
+        other_users = User.objects.filter(id__in=other_users)
+        viewas = gets.get('viewas', user.username)
+        viewas = get_or_error(User, dict(username=viewas))
+    else:
+        other_users = []
+        viewas = current_database.user
     context['viewas'] = viewas
     context['other_users'] = other_users
 
     granularity = gets.get('granularity', 'label')
     context['granularity'] = granularity
     context['page'] = page_name
-
-    if with_similarity:
-        similarities, current_similarity = get_current_similarity(user, current_database)
-        context['similarities'] = similarities
-
-        if current_similarity:
-            context['current_similarity_owner_class'] = User.__name__
-            context['current_similarity'] = current_similarity
 
 
 class SegmentationView(TemplateView):
@@ -77,25 +86,25 @@ class SegmentationView(TemplateView):
     """
 
     template_name = "segmentation.html"
+    page_name = "segmentation"
 
     def get_context_data(self, **kwargs):
         context = super(SegmentationView, self).get_context_data(**kwargs)
+        populate_context(self, context)
         user = self.request.user
 
         file_id = get_or_error(kwargs, 'file_id')
         audio_file = get_or_error(AudioFile, dict(id=file_id))
-        db_assignment = assert_permission(user, audio_file.database, DatabasePermission.VIEW)
         track = audio_file.track
         individual = audio_file.individual
         quality = audio_file.quality
         date = track.date if track else None
         species = individual.species if individual else None
 
-        context['page'] = 'segmentation'
         context['file_id'] = file_id
-        context['db_assignment'] = db_assignment
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
+        context['database'] = audio_file.database.name
 
         context['song_info'] = {
             'Length': '{:5.2f} secs'.format(audio_file.length / audio_file.fs),
@@ -305,8 +314,8 @@ class ContactUsView(FormView):
 
 def get_home_page(request):
     user = request.user
-    databases, current_database = get_user_databases(user)
-    if len(databases) == 0 or current_database is None:
+    current_database = get_user_databases(user)
+    if current_database is None:
         return redirect('dashboard')
     return redirect('songs')
 

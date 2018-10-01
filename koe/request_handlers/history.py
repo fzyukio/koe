@@ -325,7 +325,7 @@ def import_history(request):
     zip_file = request.FILES.get('zipfile', None)
     user = request.user
 
-    _, current_database = get_user_databases(user)
+    current_database = get_user_databases(user)
     if current_database is None:
         raise CustomAssertionError('You don\'t have a current working database')
 

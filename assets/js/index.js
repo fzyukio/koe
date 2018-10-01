@@ -225,6 +225,10 @@ const initChangeArgSelections = function() {
     $('.change-arg').click(function(e) {
         e.preventDefault();
         argDict[this.getAttribute('key')] = this.getAttribute('value');
+        let replace = this.getAttribute('replace');
+        if (!isNull(replace)) {
+            delete argDict[replace];
+        }
 
         let argString = '?';
         $.each(argDict, function(k, v) {

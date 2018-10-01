@@ -18,7 +18,7 @@ from root.utils import history_path, ensure_parent_folder_exists, pickle_path, w
 
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
-    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry'
+    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase'
 ]
 
 
@@ -99,6 +99,9 @@ class Database(SimpleModel):
     """
 
     name = models.CharField(max_length=255, unique=True)
+
+    def is_real(self):
+        return True
 
     def __str__(self):
         return self.name
@@ -399,6 +402,19 @@ class Coordinate(AlgorithmicModelMixin, IdOrderedModel):
     class Meta:
         unique_together = ('chksum', 'algorithm', 'database')
         attrs = ('ids', 'coordinates', 'tree', 'order')
+
+
+class TemporaryDatabase(IdOrderedModel):
+    """
+    To store the upper triangle (triu) of a distance matrix
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('chksum', 'user')
+        attrs = ('ids', )
 
 
 class HistoryEntry(SimpleModel):
