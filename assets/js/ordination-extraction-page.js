@@ -53,10 +53,11 @@ const initMethodNDims = function () {
     const detectOrdination = function() {
         let method_ = methodSectionEl.find('input:checked')[0].value;
         let ndims_ = ndimsSectionEl.val();
+        let dmId_ = dataMatrixSelectizeHandler.getValue();
 
         let ordId_;
-        $.each(ordDetails, function (ordId, {method, ndims}) {
-            if (method_ === method && ndims_ === ndims) {
+        $.each(ordDetails, function (ordId, {dmId, method, ndims}) {
+            if (dmId_ == dmId && method_ === method && ndims_ === ndims) {
                 ordId_ = ordId;
                 return false;
             }
@@ -71,7 +72,7 @@ const initMethodNDims = function () {
             ordinationSelectizeHandler.setValue(null, true);
             scheduleBtn.prop('disabled', false);
         }
-    }
+    };
 
     methodSectionEl.find('input').change(detectOrdination);
     ndimsSectionEl.change(detectOrdination);
