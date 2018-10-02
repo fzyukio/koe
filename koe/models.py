@@ -412,11 +412,21 @@ class TemporaryDatabase(IdOrderedModel):
     """
 
     name = models.CharField(max_length=255, unique=True)
+    _databases = models.CharField(max_length=255, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('chksum', 'user')
         attrs = ('ids',)
+
+    def get_databases(self):
+        if not self._databases:
+            ids = self.ids
+            databases = set(Segment.objects.filter(id__in=ids).values_list('audio_file__database', flat=True))
+            self._databases = ','.join(list(map(str, databases)))
+            self.save()
+
+        return Database.objects.filter(id__in=list(map(int, self._databases.split(','))))
 
 
 class HistoryEntry(SimpleModel):

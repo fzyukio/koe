@@ -65,15 +65,17 @@ def populate_context(obj, context):
     context['other_tmpdbs'] = TemporaryDatabase.objects.exclude(user=user)
 
     if db_class == Database:
-        other_users = DatabaseAssignment.objects\
-            .filter(database=current_database, permission__gte=DatabasePermission.VIEW)\
-            .values_list('user__id', flat=True)
-        other_users = User.objects.filter(id__in=other_users)
-        viewas = gets.get('viewas', user.username)
-        viewas = get_or_error(User, dict(username=viewas))
+        underlying_databases = [current_database]
     else:
-        other_users = []
-        viewas = current_database.user
+        underlying_databases = current_database.get_databases()
+
+    other_users = DatabaseAssignment.objects\
+        .filter(database__in=underlying_databases, permission__gte=DatabasePermission.VIEW)\
+        .values_list('user__id', flat=True)
+    other_users = User.objects.filter(id__in=other_users)
+
+    viewas = gets.get('viewas', user.username)
+    viewas = get_or_error(User, dict(username=viewas))
     context['viewas'] = viewas
     context['other_users'] = other_users
 
