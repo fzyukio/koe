@@ -1,0 +1,44 @@
+<div class="menu-item">
+    {% if internal_holdout == 'true' %}
+        <label>Viewing selected syllables</label>
+    {% else %}
+        <label>Current database</label>
+        <div class="btn-group pull-right">
+            <button type="button" class="btn btn-xs btn-default dropdown-toggle"
+                    data-toggle="dropdown"
+                    data-hover="dropdown"> {{ current_database.name }}
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li class="section-head">Real database</li>
+                {% for database in databases %}
+                    <li class="{% if current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                        <a href="#" class="change-arg" key="database" replace="tmpdb" value="{{ database.name }}">
+                            {{ database.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+                {% if my_tmpdbs %}
+                    <li class="section-head">Your Collections</li>
+                    {% for database in my_tmpdbs %}
+                        <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
+                                {{ database.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                {% endif %}
+                {% if other_tmpdbs %}
+                    <li class="section-head">Other Collections</li>
+                    {% for database in other_tmpdbs %}
+                        <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
+                                {{ database.name }} - by {{ database.user.username }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+</div>

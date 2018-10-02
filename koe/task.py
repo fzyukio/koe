@@ -1,9 +1,33 @@
 from django.utils import timezone
 from progress.bar import Bar
 
-from koe.models import TaskProgressStage
+from koe.models import TaskProgressStage, DataMatrix, Ordination, SimilarityIndex
+from root.utils import SendEmailThread
 
 stage_dict = {x: TaskProgressStage.get_name(x) for x in TaskProgressStage.reverse_items()}
+
+
+def send_email(task, success):
+    if success:
+        subject = '[Koe] Job finished'
+        template = 'job-finished'
+    else:
+        subject = '[Koe] Job failed'
+        template = 'job-failed'
+
+    user = task.user
+    cls, objid = task.target.split(':')
+    objid = int(objid)
+    context = {}
+    if cls == DataMatrix.__name__:
+        context['dm'] = DataMatrix.objects.get(id=objid)
+    elif cls == Ordination.__name__:
+        context['ord'] = Ordination.objects.get(id=objid)
+    else:
+        context['sim'] = SimilarityIndex.objects.get(id=objid)
+
+    send_email_thread = SendEmailThread(subject, template, [user.email], context=context)
+    send_email_thread.start()
 
 
 class TaskRunner:
@@ -35,12 +59,16 @@ class TaskRunner:
         self.task.pc_complete = 100.
         self.task.save()
         self._advance(TaskProgressStage.COMPLETED)
+        if self.task.parent is None:
+            send_email(self.task, True)
 
     def error(self, e):
         from django.conf import settings
         error_tracker = settings.ERROR_TRACKER
         error_tracker.captureException()
         self._advance(TaskProgressStage.ERROR, str(e))
+        if self.task.parent is None:
+            send_email(self.task, False)
 
     def _change_suffix(self):
         stage_name = stage_dict[self.task.stage]

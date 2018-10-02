@@ -1,0 +1,59 @@
+{% load staticfiles %}
+{% load custom_tags %}
+<p>Hi, {{ user }}</p>
+<br/>
+
+Your Koe job has finished. Details follow:
+{% if dm %}
+    <p><strong>Job type: Extract feature measurements (Data matrix).</strong></p>
+    <p><span>Created at: </span><span>{{ dm.task.created }}</span></p>
+    <p><span>Completed at: </span><span>{{ dm.task.completed }}</span></p>
+    {% if dm.database %}
+        <p><span>Database name: </span><span>{{ dm.database.name }}</span></p>
+    {% else %}
+        <p><span>Collection name: </span><span>{{ dm.tmpdb.name }}</span></p>
+    {% endif %}
+    <p><span>Data matrix name: </span><span>{{ dm.name }}</span></p>
+
+    <p>You can use this datamatrix to extract ordination or similarity index</p>
+{% elif ord %}
+    <p><strong>Job type: Construct ordination.</strong></p>
+    <p><span>Created at: </span><span>{{ ord.task.created }}</span></p>
+    <p><span>Completed at: </span><span>{{ ord.task.completed }}</span></p>
+
+    {% if ord.dm.database %}
+        <p><span>Database name: </span><span>{{ ord.dm.database.name }}</span></p>
+    {% else %}
+        <p><span>Collection name: </span><span>{{ ord.dm.tmpdb.name }}</span></p>
+    {% endif %}
+    <p><span>Data matrix name: </span><span>{{ ord.dm.name }}</span></p>
+
+    <p>You can use this ordination to visualise the datapoints on a 2 or 3D plot to see how they cluster</p>
+    <p>A 2D plot also allows you to quickly label the datapoints</p>
+    <p>You can also use this ordination to calculate similarity index.</p>
+{% else %}
+    <p><strong>Job type: Calculate similarity.</strong></p>
+    <p><span>Created at: </span><span>{{ sim.task.created }}</span></p>
+    <p><span>Completed at: </span><span>{{ sim.task.completed }}</span></p>
+
+    {% if sim.dm %}
+        <p><span>Source: Datamatrix</span><span>{{ sim.dm.name }}</span></p>
+        {% if sim.dm.database %}
+            <p><span>Database name: </span><span>{{ sim.dm.database.name }}</span></p>
+        {% else %}
+            <p><span>Collection name: </span><span>{{ sim.dm.tmpdb.name }}</span></p>
+        {% endif %}
+    {% else %}
+        <p><span>Source: Ordination</span><span>{{ sim.ord.dm.name }}</span></p>
+        {% if sim.ord.dm.database %}
+            <p><span>Database name: </span><span>{{ sim.ord.dm.database.name }}</span></p>
+        {% else %}
+            <p><span>Collection name: </span><span>{{ sim.ord.dm.tmpdb.name }}</span></p>
+        {% endif %}
+    {% endif %}
+
+    <p>You can use this to sort units in Unit View. With the appropriate measurements, similar units should be ranked close to each other.</p>
+{% endif %}
+
+<p>Best regards,</p>
+<p>The Koe project</p>

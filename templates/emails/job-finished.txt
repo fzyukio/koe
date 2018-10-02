@@ -1,0 +1,59 @@
+{% load staticfiles %}
+{% load custom_tags %}
+Hi, {{ user }}
+
+
+Your Koe job has finished. Details follow:
+{% if dm %}
+    Job type: Extract feature measurements (Data matrix).
+    Created at: {{ dm.task.created }}
+    Completed at: {{ dm.task.completed }}
+    {% if dm.database %}
+        Database name: {{ dm.database.name }}
+    {% else %}
+        Collection name: {{ dm.tmpdb.name }}
+    {% endif %}
+    Data matrix name: {{ dm.name }}
+
+    You can use this datamatrix to extract ordination or similarity index
+{% elif ord %}
+    Job type: Construct ordination.
+    Created at: {{ ord.task.created }}
+    Completed at: {{ ord.task.completed }}
+
+    {% if ord.dm.database %}
+        Database name: {{ ord.dm.database.name }}
+    {% else %}
+        Collection name: {{ ord.dm.tmpdb.name }}
+    {% endif %}
+    Data matrix name: {{ ord.dm.name }}
+
+    You can use this ordination to visualise the datapoints on a 2 or 3D plot to see how they cluster
+    A 2D plot also allows you to quickly label the datapoints
+    You can also use this ordination to calculate similarity index.
+{% else %}
+    Job type: Calculate similarity.
+    Created at: {{ sim.task.created }}
+    Completed at: {{ sim.task.completed }}
+
+    {% if sim.dm %}
+        Source: Datamatrix {{ sim.dm.name }}
+        {% if sim.dm.database %}
+            Database name: {{ sim.dm.database.name }}
+        {% else %}
+            Collection name: {{ sim.dm.tmpdb.name }}
+        {% endif %}
+    {% else %}
+        Source: Ordination {{ sim.ord.dm.name }}
+        {% if sim.ord.dm.database %}
+            Database name: {{ sim.ord.dm.database.name }}
+        {% else %}
+            Collection name: {{ sim.ord.dm.tmpdb.name }}
+        {% endif %}
+    {% endif %}
+
+    You can use this to sort units in Unit View. With the appropriate measurements, similar units should be ranked close to each other.
+{% endif %}
+
+Best regards,
+The Koe project

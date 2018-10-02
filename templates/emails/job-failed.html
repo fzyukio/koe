@@ -1,0 +1,47 @@
+{% load staticfiles %}
+{% load custom_tags %}
+<p>Hi, {{ user }}</p>
+<br/>
+
+Unbfortunately, your Koe job has failed. Details follow:
+{% if dm %}
+    <p><strong>Job type: Extract feature measurements (Data matrix).</strong></p>
+    <p><span>Created at: </span><span><td>{{ dm.task.created }}</td></span></p>
+    {% if dm.database %}
+        <p><span>Database name: </span><span>{{ dm.database.name }}</span></p>
+    {% else %}
+        <p><span>Collection name: </span><span>{{ dm.tmpdb.name }}</span></p>
+    {% endif %}
+    <p><span>Data matrix name: </span><span>{{ dm.name }}</span></p>
+{% elif ord %}
+    <p><strong>Job type: Construct ordination.</strong></p>
+    <p><span>Created at: </span><span><td>{{ ord.task.created }}</td></span></p>
+    {% if ord.dm.database %}
+        <p><span>Database name: </span><span>{{ ord.dm.database.name }}</span></p>
+    {% else %}
+        <p><span>Collection name: </span><span>{{ ord.dm.tmpdb.name }}</span></p>
+    {% endif %}
+    <p><span>Data matrix name: </span><span>{{ ord.dm.name }}</span></p>
+{% else %}
+    <p><strong>Job type: Calculate similarity.</strong></p>
+    <p><span>Created at: </span><span><td>{{ sim.task.created }}</td></span></p>
+
+    {% if sim.dm %}
+        <p><span>Source: Datamatrix</span><span>{{ sim.dm.name }}</span></p>
+        {% if sim.dm.database %}
+            <p><span>Database name: </span><span>{{ sim.dm.database.name }}</span></p>
+        {% else %}
+            <p><span>Collection name: </span><span>{{ sim.dm.tmpdb.name }}</span></p>
+        {% endif %}
+    {% else %}
+        <p><span>Source: Ordination</span><span>{{ sim.ord.dm.name }}</span></p>
+        {% if sim.ord.dm.database %}
+            <p><span>Database name: </span><span>{{ sim.ord.dm.database.name }}</span></p>
+        {% else %}
+            <p><span>Collection name: </span><span>{{ sim.ord.dm.tmpdb.name }}</span></p>
+        {% endif %}
+    {% endif %}
+{% endif %}
+
+<p>Best regards,</p>
+<p>The Koe project</p>

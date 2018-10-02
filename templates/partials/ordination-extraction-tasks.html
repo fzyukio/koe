@@ -33,7 +33,13 @@
         {% for ord, subtasks in all_incomplete_ords2tasks %}
             <tr>
                 <th scope="row">{{ ord.task.id }}</th>
-                <td>{{ ord.dm.database.name }}</td>
+
+                {% if ord.dm.database %}
+                    <td>{{ ord.dm.database.name }}</td>
+                {% else %}
+                    <td>{{ ord.dm.tmpdb.name }}</td>
+                {% endif %}
+
                 <td>{{ ord.dm.name }}</td>
                 <td>{{ ord.task.created }}</td>
                 <td>

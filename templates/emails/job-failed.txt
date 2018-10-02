@@ -1,0 +1,47 @@
+{% load staticfiles %}
+{% load custom_tags %}
+Hi, {{ user }}
+
+
+Unbfortunately, your Koe job has failed. Details follow:
+{% if dm %}
+    Job type: Extract feature measurements (Data matrix).
+    Created at: {{ dm.task.created }}
+    {% if dm.database %}
+        Database name: {{ dm.database.name }}
+    {% else %}
+        Collection name: {{ dm.tmpdb.name }}
+    {% endif %}
+    Data matrix name: {{ dm.name }}
+{% elif ord %}
+    Job type: Construct ordination.
+    Created at: {{ ord.task.created }}
+    {% if ord.dm.database %}
+        Database name: {{ ord.dm.database.name }}
+    {% else %}
+        Collection name: {{ ord.dm.tmpdb.name }}
+    {% endif %}
+    Data matrix name: {{ ord.dm.name }}
+{% else %}
+    Job type: Calculate similarity.
+    Created at: {{ sim.task.created }}
+
+    {% if sim.dm %}
+        Source: Datamatrix{{ sim.dm.name }}
+        {% if sim.dm.database %}
+            Database name: {{ sim.dm.database.name }}
+        {% else %}
+            Collection name: {{ sim.dm.tmpdb.name }}
+        {% endif %}
+    {% else %}
+        Source: Ordination{{ sim.ord.dm.name }}
+        {% if sim.ord.dm.database %}
+            Database name: {{ sim.ord.dm.database.name }}
+        {% else %}
+            Collection name: {{ sim.ord.dm.tmpdb.name }}
+        {% endif %}
+    {% endif %}
+{% endif %}
+
+Best regards,
+The Koe project

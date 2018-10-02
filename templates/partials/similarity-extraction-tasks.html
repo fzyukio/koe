@@ -34,11 +34,19 @@
             <tr>
                 <th scope="row">{{ sim.task.id }}</th>
                 {% if sim.dm %}
-                    <td>{{ sim.dm.database.name }}</td>
+                    {% if sim.dm.database %}
+                        <td>{{ sim.dm.database.name }}</td>
+                    {% else %}
+                        <td>{{ sim.dm.tmpdb.name }}</td>
+                    {% endif %}
                     <td>DataMatrix</td>
                     <td>{{ sim.dm.name }}</td>
                 {% else %}
-                    <td>{{ sim.ord.database.name }}</td>
+                    {% if sim.ord.dm.database %}
+                        <td>{{ sim.ord.dm.database.name }}</td>
+                    {% else %}
+                        <td>{{ sim.ord.dm.tmpdb.name }}</td>
+                    {% endif %}
                     <td>Ordination</td>
                     <td>{{ sim.ord.name }}</td>
                 {% endif %}
