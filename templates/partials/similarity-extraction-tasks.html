@@ -1,0 +1,58 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+{% if task %}
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+        <strong>Success!</strong>
+        Task #{{ task.id }} has been submitted and scheduled to run. You will get an email notification when it
+        finishes.
+    </div>
+{% endif %}
+
+<div class="panel panel-primary">
+    <div class="panel-heading"><strong>Similarity extraction tasks progress</strong></div>
+    <div class="panel-body">
+        <p>Following are the similarity calculation tasks you have submitted (for all databases, not just the current one) that are still in progress.</p>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Task</th>
+            <th>Database</th>
+            <th>Source type</th>
+            <th>Source name</th>
+            <th>Created</th>
+            <th>Progress</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for sim in all_incomplete_sims %}
+            <tr>
+                <th scope="row">{{ sim.task.id }}</th>
+                {% if sim.dm %}
+                    <td>{{ sim.dm.database.name }}</td>
+                    <td>DataMatrix</td>
+                    <td>{{ sim.dm.name }}</td>
+                {% else %}
+                    <td>{{ sim.ord.database.name }}</td>
+                    <td>Ordination</td>
+                    <td>{{ sim.ord.name }}</td>
+                {% endif %}
+                <td>{{ sim.task.created }}</td>
+                <td>
+                    <div class="progress">
+                        <span class="progress-value">{{ sim.task.pc_complete }}% {{ sim.task.get_stage_display }}</span>
+                        <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                             aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                             style="width: {{ dm.task.pc_complete }}%">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

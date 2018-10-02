@@ -50,10 +50,30 @@
                             <span>Segment songs into units</span>
                         </a>
                     </div>
-                    <div class="menu-item" page="feature-extraction">
-                        <a class="appendable" href="{% url 'feature-extraction' %}">
-                            <span>Measure units</span>
+
+                    <div class="menu-item-expandable">
+                        <a href="#">
+                            <span>Extract features and ordination</span>
                         </a>
+                        <div class="menu-submenu">
+                            <ul>
+                                <li page="feature-extraction">
+                                    <a href="{% url 'feature-extraction' %}">
+                                        <span>Measure units</span>
+                                    </a>
+                                </li>
+                                <li page="ordination-extraction">
+                                    <a href="{% url 'ordination-extraction' %}">
+                                        <span>Construct ordination</span>
+                                    </a>
+                                </li>
+                                <li page="similarity-extraction">
+                                    <a href="{% url 'similarity-extraction' %}">
+                                        <span>Calculate similarity</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="menu-item" page="syllables">

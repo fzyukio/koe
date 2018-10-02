@@ -264,8 +264,9 @@ function relayout() {
  */
 function extractLegends() {
     $('.legend text.legendtext').each(function (idx, textEl) {
-        let layer = $(textEl).parent().find('g.layers').attr('transform', 'translate(-13, 7)');
-        let layerStr = $('<div>').append(layer).clone().html();
+        let layer = $(textEl).parent().find('g.layers').clone();
+        layer = layer.attr('transform', 'translate(-13, 7)');
+        let layerStr = $('<div>').append(layer).html();
         let text = textEl.innerHTML;
         legendSymbols[text] = layerStr;
     });

@@ -13,10 +13,6 @@ $color_celeste_approx: #ccc;
   padding-top: 5px;
 }
 
-.panel-heading {
-  padding: 10px 0;
-}
-
 .input-group-addon {
   background-color: inherit;
   border: none;
@@ -136,5 +132,17 @@ $color_celeste_approx: #ccc;
 .alert-danger {
   a {
     text-decoration: underline;
+  }
+}
+
+.panel table {
+  .progress {
+    position: relative;
+    margin-bottom: 0;
+  }
+  .progress-value {
+    text-align: center;
+    position: absolute;
+    left: 0;
   }
 }

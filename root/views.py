@@ -1,7 +1,6 @@
 import datetime
 import importlib
 import json
-import traceback
 from collections import OrderedDict
 
 from django.conf import settings
@@ -20,16 +19,7 @@ from root.exceptions import CustomAssertionError
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
     ColumnActionValue, get_bulk_id
 
-
-if hasattr(settings, 'RAVEN_CONFIG'):
-    from raven.contrib.django.raven_compat.models import client as error_tracker
-else:
-    class ConsoleErrorTracker():
-        def captureException(self):
-            print(traceback.format_exc())
-            return -1
-
-    error_tracker = ConsoleErrorTracker()
+error_tracker = settings.ERROR_TRACKER
 
 tables = None
 actions = None

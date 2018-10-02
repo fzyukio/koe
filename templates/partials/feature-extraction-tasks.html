@@ -1,0 +1,55 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+{% if task %}
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+        <strong>Success!</strong>
+        Task #{{ task.id }} has been submitted and scheduled to run. You will get an email notification when it
+        finishes.
+    </div>
+{% endif %}
+
+<div class="panel panel-primary">
+    <div class="panel-heading"><strong>Extraction tasks progress</strong></div>
+    <div class="panel-body">
+        <p>Following are the extraction tasks you have submitted (for all databases, not just the current one) and
+            yet completed.</p>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Task</th>
+            <th>Database</th>
+            <th>Name</th>
+            <th>Created</th>
+            <th>Progress</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for dm in all_incomplete_dms %}
+            <tr>
+                <th scope="row">{{ dm.task.id }}</th>
+                {% if dm.database %}
+                    <td>{{ dm.database.name }}</td>
+                {% else %}
+                    <td>{{ dm.tmpdb.name }}</td>
+                {% endif %}
+                <td>{{ dm.name }}</td>
+                <td>{{ dm.task.created }}</td>
+                <td>
+                    <div class="progress">
+                        <span class="progress-value">{{ dm.task.pc_complete }}% {{ dm.task.get_stage_display }}</span>
+                        <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                             aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                             style="width: {{ dm.task.pc_complete }}%">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,30 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+<div class="form-group selectize">
+    <label for="{{ form.data_matrix.id_for_label }}" class="control-label">Existing data matrices</label>
+    <select name="data_matrix" class="form-control {% if form.data_matrix.errors %}has-error{% endif %}"
+            id="id_data_matrix" tabindex="-1">
+        <option value="">---------</option>
+        {% for dm in completed_dms %}
+            <option value="{{ dm.id }}">
+                {{ dm }} | Completed
+            </option>
+        {% endfor %}
+    </select>
+    {{ form.data_matrix.errors }}
+</div>
+
+<div class="form-group selectize">
+    <label for="{{ form.ordination.id_for_label }}" class="control-label">Existing ordinations</label>
+    <select name="ordination" class="form-control {% if form.ordination.errors %}has-error{% endif %}"
+            id="id_ordination" tabindex="-1">
+        <option value="">---------</option>
+        {% for ord in completed_ords %}
+            <option value="{{ ord.id }}">
+                {{ ord }} | Completed
+            </option>
+        {% endfor %}
+    </select>
+    {{ form.ordination.errors }}
+</div>

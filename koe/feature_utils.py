@@ -1,34 +1,19 @@
-r"""
-Run to extract features of given segment ID and export the feature matrix with segment labels to a matlab file
-
-e.g.
-python manage.py extract_features --csv=/tmp/bellbirds.csv --h5file=bellbird-lbi.h5 --matfile=/tmp/mt-lbi.mat \
-                                  --features="frequency_modulation;spectral_continuity;mean_frequency"
-
---> extracts full features (see features/feature_extract.py for the full list)
-            of segments in file /tmp/bellbirds.csv (created by segment_select)
-            stores the features in bellbird-lbi.h5
-            then use three features (frequency_modulation;spectral_continuity;mean_frequency) (aggregated by mean,
-            median, std) to construct a feature matrix (9 dimensions). Store this matrix with the labels (second column
-            in /tmp/bellbirds.csv) to file /tmp/mt-lbi.mat
-"""
-import pickle
+import os
 from logging import warning
 
 import csv
 import numpy as np
-from django.core.management.base import BaseCommand
+from django.conf import settings
 from django.db.models import F
-from progress.bar import Bar
+from pymlfunc import tictoc
 
 from koe import binstorage
-from koe.feature_utils import extract_database_measurements
+from koe.aggregator import aggregator_map
 from koe.features.feature_extract import feature_extractors
-from koe.model_utils import get_or_error
-from koe.models import Feature, Segment, Database, Task, Aggregation
+from koe.models import Segment, Task
+from koe.task import TaskRunner
 from koe.utils import get_wav_info
-from root.models import User
-from root.utils import wav_path, data_path, ensure_parent_folder_exists
+from root.utils import wav_path, data_path, ensure_parent_folder_exists, mkdirp
 
 nfft = 512
 noverlap = nfft * 3 // 4
@@ -88,7 +73,7 @@ def extract_segment_features_for_audio_file(wav_file_path, segs_info, features, 
                 add_feature_value(tid, feature_value)
 
 
-def extract_segment_features_for_segments(sids, features):
+def extract_segment_features_for_segments(task, sids, features):
     segments = Segment.objects.filter(id__in=sids)
 
     vals = segments.order_by('audio_file', 'start_time_ms')\
@@ -101,21 +86,23 @@ def extract_segment_features_for_segments(sids, features):
         af_to_segments[name].append((tid, start, end))
 
     num_audio_files = len(af_to_segments)
-
-    bar = Bar('Extracting...', max=num_audio_files)
+    update_steps = max(1, num_audio_files // 100)
 
     tid2fvals = {}
+    step_idx = 0
+    task.start(max=len(af_to_segments))
     for song_name, segs_info in af_to_segments.items():
         wav_file_path = wav_path(song_name)
         extract_segment_features_for_audio_file(wav_file_path, segs_info, features, tid2fvals)
-        bar.next()
+        step_idx += 1
+        if step_idx % update_steps == 0:
+            task.tick()
 
-    bar.finish()
     return tid2fvals
 
 
 # @profile
-def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregators, aggregators_name):
+def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
     """
     Compress all feature sequences into fixed-length vectors
     :param sid_to_label:
@@ -131,6 +118,7 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
         .annotate(duration=F('end_time_ms') - F('start_time_ms')).order_by('duration')
 
     n_calculations = sum([0 if f.is_fixed_length else len(aggregators) for f in features]) * len(sids)
+    ptask.start(max=n_calculations)
     attrs = segment_info.values_list('tid', 'duration', 'audio_file__fs')
 
     duration2segs = {}
@@ -142,9 +130,6 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
             segs = duration2segs[duration]
         segs[0].append(tid)
         segs[1].append(fs)
-
-    bar = Bar('Extract features type {}, aggrenator type {}'.format(ftgroup_name, aggregators_name),
-              max=n_calculations)
 
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, start=None, end=None, win_length=win_length,
                 center=False)
@@ -191,24 +176,16 @@ def aggregate_feature_values(sids, f2bs, fa2bs, features, ftgroup_name, aggregat
                             aggregated = aggregator.process(value)
 
                         all_aggregated_values_this[aggregator].append(aggregated)
-                        bar.next()
+                        ptask.tick()
 
+    ptask.wrapping_up()
     all_tids = np.array(all_tids, dtype=np.int32)
     for feature in features:
         if feature.is_fixed_length:
             continue
         for aggregator in aggregators:
             fa_idf, fa_vlf = fa2bs[feature][aggregator]
-
-            try:
-                binstorage.store(all_tids, all_aggregated_values[feature][aggregator], fa_idf, fa_vlf)
-            except Exception as e:
-                saved_path_ = '/tmp/agg-{}-{}.f2vals'.format(feature.name, aggregator.get_name())
-                with open(saved_path_, 'wb') as f:
-                    pickle.dump(dict(tids=all_tids, values=all_aggregated_values[feature][aggregator]), f)
-                print('Error occured, saved to {}'.format(saved_path_))
-                raise e
-    bar.finish()
+            binstorage.store(all_tids, all_aggregated_values[feature][aggregator], fa_idf, fa_vlf)
 
 
 def get_segment_ids_and_labels(csv_file):
@@ -244,23 +221,113 @@ def store_feature_values(ids, feature, values_arr):
     binstorage.store(ids, values_arr, index_filename, value_filename)
 
 
-class Command(BaseCommand):
-    def add_arguments(self, parser):
-        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
-                            help='E.g Bellbird, Whale, ..., case insensitive', )
+def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
+    rawdata = []
+    col_inds = {}
+    col_inds_start = 0
 
-    def handle(self, *args, **options):
-        database_name = options['database_name']
-        database = get_or_error(Database, dict(name__iexact=database_name))
+    for feature in features:
+        if feature.is_fixed_length:
+            index_filename, value_filename = f2bs[feature]
+            with tictoc('{}'.format(feature.name)):
+                rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
+                rawdata_stacked = np.stack(rawdata_)
+            rawdata.append(rawdata_stacked)
+            ncols = rawdata_stacked.shape[1]
+            col_inds[feature.name] = (col_inds_start, col_inds_start + ncols)
+            col_inds_start += ncols
+        else:
+            for aggregator in aggregators:
+                index_filename, value_filename = fa2bs[feature][aggregator]
+                with tictoc('{} - {}'.format(feature.name, aggregator.get_name())):
+                    rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
+                rawdata_stacked = np.stack(rawdata_)
+                rawdata.append(rawdata_stacked)
+                ncols = rawdata_stacked.shape[1]
+                col_inds['{}_{}'.format(feature.name, aggregator.name)] = (col_inds_start, col_inds_start + ncols)
+                col_inds_start += ncols
+    rawdata = np.concatenate(rawdata, axis=1)
 
-        segments = Segment.objects.filter(audio_file__database=database)
-        sids = segments.values_list('id', flat=True)
+    return rawdata, col_inds
 
-        user = User.objects.get(username='superuser')
-        task = Task(user=user)
-        task.save()
 
-        features = Feature.objects.all().order_by('id')
-        aggregations = Aggregation.objects.filter(enabled=True).order_by('id')
+def extract_database_measurements(task, sids, features, aggregations):
+    try:
+        aggregators = [aggregator_map[x.name] for x in aggregations]
 
-        extract_database_measurements(task, sids, features, aggregations)
+        runner = TaskRunner(task)
+        runner.preparing()
+
+        tid2fvals = extract_segment_features_for_segments(runner, sids, features)
+        tids, f2vals = extract_tids_fvals(tid2fvals, features)
+
+        runner.wrapping_up()
+        child_task = Task(user=task.user, parent=task)
+        child_task.save()
+        child_runner = TaskRunner(child_task)
+        child_runner.preparing()
+
+        # feature to binstorage's files
+        f2bs = {}
+        # feature+aggregation to binstorage's files
+        fa2bs = {}
+
+        for feature in features:
+            feature_name = feature.name
+            index_filename = data_path('binary/features', '{}.idx'.format(feature_name), for_url=False)
+            value_filename = data_path('binary/features', '{}.val'.format(feature_name), for_url=False)
+            f2bs[feature] = (index_filename, value_filename)
+
+            values_arr = f2vals[feature]
+            ensure_parent_folder_exists(index_filename)
+            binstorage.store(tids, values_arr, index_filename, value_filename)
+
+            if feature not in fa2bs:
+                fa2bs[feature] = {}
+
+            for aggregator in aggregators:
+                aggregator_name = aggregator.get_name()
+                folder = os.path.join('binary', 'features', feature_name)
+                mkdirp(os.path.join(settings.MEDIA_URL, folder)[1:])
+
+                index_filename = data_path(folder, '{}.idx'.format(aggregator_name), for_url=False)
+                value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
+                fa2bs[feature][aggregator] = (index_filename, value_filename)
+
+        aggregate_feature_values(child_runner, sids, f2bs, fa2bs, features, aggregators)
+        child_runner.complete()
+
+        # features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
+        # aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
+        # aggregators = [aggregator_map[x.name] for x in aggregations]
+        #
+        # dm = DataMatrix.objects.filter(database=database, features_hash=features_hash,
+        #                                aggregations_hash=aggregations_hash).first()
+        #
+        # if dm:
+        #     return dm, False
+        #
+        # if dm is None:
+        #     full_tensors_name = name
+        #     dm = DataMatrix(name=full_tensors_name, database=database, features_hash=features_hash,
+        #                     aggregations_hash=aggregations_hash)
+        #
+        # full_sids_path = dm.get_sids_path()
+        # full_bytes_path = dm.get_bytes_path()
+        # full_cols_path = dm.get_cols_path()
+        #
+        # sids, tids = get_sids_tids(database)
+        # f2bs, fa2bs = get_binstorage_locations(features, aggregators)
+        # data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
+        #
+        # ndarray_to_bytes(data, full_bytes_path)
+        # ndarray_to_bytes(sids, full_sids_path)
+        #
+        # with open(full_cols_path, 'w', encoding='utf-8') as f:
+        #     json.dump(col_inds, f)
+
+        # dm.save()
+        runner.complete()
+
+    except Exception as e:
+        runner.error(e)

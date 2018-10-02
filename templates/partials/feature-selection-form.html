@@ -1,24 +1,25 @@
 {% load staticfiles %}
 {% load widget_tweaks %}
 
-{% csrf_token %}
 <div class="form-group selectize">
-    <label for="{{ form.database.id_for_label }}" class="control-label">Database</label>
-    {{ form.database|add_error_class:"has-error"|add_class:"form-control" }}
-    {{ form.database.errors }}
+    <label for="{{ form.data_matrix.id_for_label }}" class="control-label">Existing data matrices</label>
+    <select name="data_matrix" class="form-control {% if form.data_matrix.errors %}has-error{% endif %}"
+            id="id_data_matrix" tabindex="-1">
+        <option value="">---------</option>
+        {% for dm in completed_dms %}
+            <option value="{{ dm.id }}">
+                {{ dm }} | Completed
+            </option>
+        {% endfor %}
+        {% for dm in incomplete_dms %}
+            <option value="{{ dm.id }}">
+                {{ dm }} | Not completed yet
+            </option>
+        {% endfor %}
+    </select>
+    {{ form.data_matrix.errors }}
 </div>
 
-<div class="form-group selectize">
-    <label for="{{ form.preset.id_for_label }}" class="control-label">Preset</label>
-    {{ form.preset|add_error_class:"has-error"|add_class:"form-control" }}
-    {{ form.preset.errors }}
-</div>
-
-<div class="form-group selectize">
-    <label for="{{ form.annotator.id_for_label }}" class="control-label">Annotator</label>
-    {{ form.annotator|add_error_class:"has-error"|add_class:"form-control" }}
-    {{ form.annotator.errors }}
-</div>
 
 <div class="form-group">
     <label for="{{ form.features.id_for_label }}" class="control-label">Features</label>
@@ -45,25 +46,7 @@
 </div>
 
 <div class="form-group">
-    <label for="{{ form.dimreduce.id_for_label }}" class="control-label">Dimensionality reduction
-        method</label>
-    <div class="row no-margin" id="{{ form.dimreduce.id_for_label }}">
-        {% for choice in form.dimreduce %}
-            <div class="form-check form-check-inline col-xs-6 col-sm-4 col-md-3 col-lg-2">
-                <input class="form-check-input" type="radio" name="dimreduce"
-                       {% if choice.data.value == 'tsne2' or choice.data.value == 'tsne3' %}disabled{% endif %}
-                       id="{{ choice.id_for_label }}"
-                       value="{{ choice.data.value }}">
-                <label class="form-check-label" for="inlineRadio1">{{ choice.data.label }}</label>
-            </div>
-
-        {% endfor %}
-    </div>
-    {{ form.dimreduce.errors }}
-</div>
-
-<div class="form-group">
-    <label for="{{ form.ndims.id_for_label }}" class="control-label">Number of dimensions</label>
-    {{ form.ndims|add_error_class:"has-error"|add_class:"form-control" }}
-    {{ form.ndims.errors }}
+    <label for="{{ form.name.id_for_label }}" class="control-label">Name</label>
+    {{ form.name|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.name.errors }}
 </div>

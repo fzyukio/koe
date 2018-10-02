@@ -1,10 +1,5 @@
 @import "../variables";
 
-#selection-form-wrapper {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
-}
-
-.search-options {
-  display: block;
-  overflow: hidden;
+#replaceable-on-success {
+  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }

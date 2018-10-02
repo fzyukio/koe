@@ -1,7 +1,7 @@
 from django import forms
 from django.conf import settings
 
-from koe.models import Database, Feature, Aggregation
+from koe.models import Feature, Aggregation
 from root.forms import ErrorMixin
 
 
@@ -32,17 +32,18 @@ class SongPartitionForm(ErrorMixin, forms.Form):
 
 
 class FeatureExtrationForm(ErrorMixin, forms.Form):
-    database = forms.ModelChoiceField(
-        to_field_name='id',
-        queryset=Database.objects.all(),
-    )
-
     # Must do this instead of an empty Select field - because it enforces value range checking
     # and the range of an empty field is none
-    preset = forms.CharField(widget=forms.Select, required=False)
+    data_matrix = forms.CharField(widget=forms.Select, required=False)
 
-    # Same here
-    annotator = forms.CharField(widget=forms.Select)
+    name = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder': 'Give it a name that is easy to remember'
+            }
+        )
+    )
 
     features = forms.ModelMultipleChoiceField(
         to_field_name='id',
@@ -62,21 +63,35 @@ class FeatureExtrationForm(ErrorMixin, forms.Form):
         }
     )
 
-    dimreduce = forms.ChoiceField(
+
+class OrdinationExtractionForm(ErrorMixin, forms.Form):
+    data_matrix = forms.CharField(widget=forms.Select, required=True)
+
+    ordination = forms.CharField(widget=forms.Select, required=False)
+
+    method = forms.ChoiceField(
+        required=True,
         choices=(
-            ('pca', 'PCA'), ('ica', 'ICA'), ('tsne2', 'TSNE (2D)'), ('tsne3', 'TSNE (3D)'),
-            ('none', 'No reduction')
+            ('pca', 'Principal Component Analysis'),
+            ('ica', 'Independent Component Analysis'),
+            ('tsne', 't-SNE (with PCA preprocessing)'),
+            ('mds', 'Multi-Dimensional Scaling')
         )
     )
 
     ndims = forms.IntegerField(
-        required=False,
-        min_value=3,
-        max_value=50,
+        required=True,
+        min_value=2,
+        max_value=3,
         widget=forms.NumberInput(attrs={
-            'value': 50
+            'value': 2
         })
     )
+
+
+class SimilarityExtractionForm(ErrorMixin, forms.Form):
+    data_matrix = forms.CharField(widget=forms.Select, required=False)
+    ordination = forms.CharField(widget=forms.Select, required=False)
 
 
 class ContactUsForm(ErrorMixin, forms.Form):

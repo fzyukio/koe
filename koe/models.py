@@ -1,15 +1,16 @@
-import re
-
-import django.db.models.options as options
 import hashlib
-import numpy as np
 import os
 import pickle
+import re
+from abc import abstractmethod
+from logging import warning
+
+import django.db.models.options as options
+import numpy as np
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from logging import warning
 
 from koe.utils import base64_to_array, array_to_base64
 from root.exceptions import CustomAssertionError
@@ -18,7 +19,8 @@ from root.utils import history_path, ensure_parent_folder_exists, pickle_path, w
 
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
-    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase'
+    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
+    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex'
 ]
 
 
@@ -414,7 +416,7 @@ class TemporaryDatabase(IdOrderedModel):
 
     class Meta:
         unique_together = ('chksum', 'user')
-        attrs = ('ids', )
+        attrs = ('ids',)
 
 
 class HistoryEntry(SimpleModel):
@@ -490,6 +492,104 @@ class Aggregation(SimpleModel):
         return self.name
 
 
+class TaskProgressStage(MagicChoices):
+    NOT_STARTED = 100
+    PREPARING = 200
+    RUNNING = 300
+    WRAPPING_UP = 400
+    COMPLETED = 500
+    ERROR = 600
+
+
+class Task(SimpleModel):
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    completed = models.DateTimeField(null=True, default=None, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    stage = models.IntegerField(choices=TaskProgressStage.as_choices(), default=TaskProgressStage.NOT_STARTED)
+    pc_complete = models.FloatField(default=0.)
+    message = models.TextField(null=True, default=None, blank=True)
+    target = models.CharField(max_length=255, null=True, default=None, blank=True)
+
+    def __str__(self):
+        if self.parent is None:
+            return 'Task #{} owner: {} Stage: {} - {:3.1f}% completed'.format(
+                self.id, self.user.id, self.get_stage_display(), self.pc_complete * 100
+            )
+        else:
+            return 'Subtask #{} from Task #{} owner: {} Stage: {} - {:3.1f}% completed'.format(
+                self.id, self.parent.id, self.user.id, self.get_stage_display(), self.pc_complete * 100
+            )
+
+
+class BinaryStoredMixin:
+    @abstractmethod
+    def _get_path(self, ext):
+        pass
+
+    def get_sids_path(self):
+        return self._get_path('ids')
+
+    def get_tids_path(self):
+        return self._get_path('tids')
+
+    def get_bytes_path(self):
+        return self._get_path('bytes')
+
+
+class DataMatrix(SimpleModel, BinaryStoredMixin):
+    """
+    Stores extracted feature values of selected IDs
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=True)
+    tmpdb = models.ForeignKey(TemporaryDatabase, on_delete=models.SET_NULL, null=True, blank=True)
+    features_hash = models.CharField(max_length=255)
+    aggregations_hash = models.CharField(max_length=255)
+    ndims = models.IntegerField()
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, **kwargs):
+        if self.database is None and self.tmpdb is None:
+            raise Exception('Either database or tmpdb must be provided')
+        super(DataMatrix, self).save(**kwargs)
+
+    def _get_path(self, ext):
+        return os.path.join(settings.MEDIA_URL, 'measurement', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+
+    def get_cols_path(self):
+        return self._get_path('cols')
+
+    def __str__(self):
+        if self.database:
+            return '{}: {}'.format(self.database.name, self.name)
+        else:
+            return '{}: {}'.format(self.tmpdb.name, self.name)
+
+
+class Ordination(SimpleModel, BinaryStoredMixin):
+    dm = models.ForeignKey(DataMatrix, on_delete=models.CASCADE)
+    method = models.CharField(max_length=255)
+    ndims = models.IntegerField()
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def _get_path(self, ext):
+        return os.path.join(settings.MEDIA_URL, 'ordination', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+
+    def __str__(self):
+        return '{}_{}_{}'.format(self.dm, self.method, self.ndims)
+
+
+class SimilarityIndex(SimpleModel, BinaryStoredMixin):
+    dm = models.ForeignKey(DataMatrix, on_delete=models.CASCADE)
+    ord = models.ForeignKey(Ordination, on_delete=models.CASCADE, null=True, blank=True)
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def _get_path(self, ext):
+        return os.path.join(settings.MEDIA_URL, 'similarity', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+
+
 class TensorData(SimpleModel):
     name = models.CharField(max_length=255, unique=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -501,18 +601,12 @@ class TensorData(SimpleModel):
         abstract = True
 
 
-class FullTensorData(TensorData):
+class FullTensorData(TensorData, BinaryStoredMixin):
+    def _get_path(self, ext):
+        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.{}'.format(self.name, ext))[1:]
+
     def get_cols_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.cols'.format(self.name))[1:]
-
-    def get_sids_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.ids'.format(self.name))[1:]
-
-    def get_tids_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.tids'.format(self.name))[1:]
-
-    def get_bytes_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.bytes'.format(self.name))[1:]
+        return self._get_path('cols')
 
 
 class DerivedTensorData(TensorData):
@@ -527,17 +621,6 @@ class DerivedTensorData(TensorData):
 
     def get_bytes_path(self):
         return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.bytes'.format(self.name))[1:]
-
-
-# class TensorData(SimpleModel):
-#     name = models.CharField(max_length=255, unique=True)
-#     full_tensor = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
-#     annotator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-#     database = models.ForeignKey(Database, on_delete=models.CASCADE)
-#     features_hash = models.CharField(max_length=255)
-#     aggregations_hash = models.CharField(max_length=255)
-#     dimreduce = models.CharField(max_length=255)
-#     ndims = models.IntegerField(null=True, blank=True)
 
 
 @receiver(post_delete, sender=HistoryEntry)

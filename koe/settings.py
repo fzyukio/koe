@@ -1,6 +1,7 @@
 import sys
 import datetime
 import os
+import traceback
 from json import JSONEncoder
 
 import dj_database_url
@@ -199,6 +200,7 @@ CSRF_TRUSTED_ORIGINS = envconf['csrf_trusted_origin']
 DATE_INPUT_FORMAT = '%Y-%m-%d'
 TIME_INPUT_FORMAT = '%Y-%m-%d %H:%M:%S %z%Z'
 
+
 # Test runner with no database creation
 TEST_RUNNER = 'tests.test_nodb.NoDbTestRunner'
 
@@ -210,6 +212,8 @@ NOTEBOOK_ARGUMENTS = [
     '--config', './jupyter_notebook_config.py',
     '--notebook-dir', 'notebooks'
 ]
+
+ERROR_TRACKER = None
 
 # For local run:
 if DEBUG:
@@ -259,7 +263,13 @@ if DEBUG:
     except AttributeError:
         builtins.profile = lambda x: x
 
-        # For production run:
+    class ConsoleErrorTracker():
+        def captureException(self):
+            print(traceback.format_exc())
+            return -1
+
+    ERROR_TRACKER = ConsoleErrorTracker()
+
 else:
     INSTALLED_APPS += ['corsheaders']
     MIDDLEWARE += ['corsheaders.middleware.CorsMiddleware', 'django.middleware.common.CommonMiddleware']
@@ -302,6 +312,9 @@ else:
     RAVEN_CONFIG = {
         'dsn': 'https://657ede38a2d94950bf0bf1d7c6907945:3be22b1ebaa84bc0bf761b752ed452d7@sentry.io/1212536',
     }
+
+    from raven.contrib.django.raven_compat.models import client
+    ERROR_TRACKER = client
 
     LOGGING = {
         'version': 1,

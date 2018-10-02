@@ -1,0 +1,36 @@
+{% extends 'base-with-sidebar-and-grid.html' %}
+
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+
+{% block title %}Ordination Extraction{% endblock %}
+
+
+{% block content-center %}
+    <div id="replaceable-on-success">
+        {% include 'partials/similarity-extraction-tasks.html' %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>Calculate new similarity</strong></div>
+            <div class="panel-body">
+                <form role="form" method="post" id="similarity-extraction-form" url="{% url 'similarity-extraction' %}"
+                      {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}">
+                    {% csrf_token %}
+                    <div id="replaceable-on-failure">
+                        {% include 'partials/similarity-selection-form.html' %}
+                    </div>
+                </form>
+            </div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button type="submit" disabled id="schedule-btn" class="btn btn-primary btn-block">
+                            Submit job
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

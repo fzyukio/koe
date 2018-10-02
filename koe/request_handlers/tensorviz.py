@@ -5,12 +5,12 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from koe.model_utils import get_or_error
-from koe.models import DatabaseAssignment, Segment, Database, DerivedTensorData
+from koe.models import DatabaseAssignment, Segment, Database, DerivedTensorData, DataMatrix
 from koe.ts_utils import extract_tensor_metadata, write_metadata,\
     bytes_to_ndarray
 from root.models import ExtraAttrValue, ExtraAttr
 
-__all__ = ['get_annotators_and_presets', 'get_preset_config', 'get_tensor_data_file_paths']
+__all__ = ['get_annotators_and_presets', 'get_data_matrix_config', 'get_tensor_data_file_paths']
 
 
 def _get_annotation_info(database, annotators):
@@ -58,16 +58,14 @@ def get_annotators_and_presets(request):
     return dict(annotation=annotation_rendered, preset=preset_rendered, ntensors=len(tensors))
 
 
-def get_preset_config(request):
-    tensor_id = get_or_error(request.POST, 'preset-id')
-    tensor = get_or_error(DerivedTensorData, dict(id=tensor_id))
+def get_data_matrix_config(request):
+    dm_id = get_or_error(request.POST, 'data-matrix-id')
+    dm = get_or_error(DataMatrix, dict(id=dm_id))
 
     selections = dict(
-        annotator=tensor.annotator.id,
-        features=list(map(int, tensor.features_hash.split('-'))),
-        aggregations=list(map(int, tensor.aggregations_hash.split('-'))),
-        dimreduce=tensor.dimreduce,
-        ndims=tensor.ndims,
+        features=list(map(int, dm.features_hash.split('-'))),
+        aggregations=list(map(int, dm.aggregations_hash.split('-'))),
+        ndims=dm.ndims,
     )
 
     return selections

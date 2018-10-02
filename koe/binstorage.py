@@ -1,6 +1,4 @@
-"""
-Provides an inteface to store and retrieve numpy arrays in binary file
-"""
+"""Provides an inteface to store and retrieve numpy arrays in binary file"""
 import datetime
 import os
 
@@ -125,9 +123,12 @@ def update_by_modification(new_ids, new_arrs, index_filename, value_filename):
     new_start = len(value_bin)
 
     for new_id, new_arr in zip(new_ids, new_arrs):
-        new_arr = new_arr.astype(np.float32)
-        new_len = np.size(new_arr)
         new_dim0, new_dim1 = get_dim(new_arr)
+        if isinstance(new_arr, np.ndarray):
+            new_arr = new_arr.astype(np.float32)
+        else:
+            new_arr = np.array(new_arr, dtype=np.float32)
+        new_len = np.size(new_arr)
 
         if new_id in id2info:
             start, end, dim0, dim1 = id2info[new_id]

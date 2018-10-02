@@ -207,6 +207,13 @@ const initSidebar = function() {
             $(menuItemEL).addClass('active');
         }
     });
+
+    $('.menu-submenu li').each(function(idx, menuItemEL) {
+        if (menuItemEL.getAttribute('page') === currentPage) {
+            $(menuItemEL).addClass('active');
+            $(menuItemEL).parents('.menu-item-expandable').children('a').click();
+        }
+    });
 };
 
 
@@ -342,8 +349,14 @@ $(document).ready(function () {
     else if (pageName.startsWith('/sequence-mining/')) {
         page = require('sequence-mining-page')
     }
-    else if (pageName.startsWith('/feature-extraction/')) {
+    else if (pageName.startsWith('/extraction/feature/')) {
         page = require('feature-extraction-page')
+    }
+    else if (pageName.startsWith('/extraction/ordination/')) {
+        page = require('ordination-extraction-page')
+    }
+    else if (pageName.startsWith('/extraction/similarity/')) {
+        page = require('similarity-extraction-page')
     }
     else if (pageName.startsWith('/tsne/plotly/')) {
         page = require('tsne-plotly-page')

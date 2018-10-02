@@ -2,17 +2,19 @@ import json
 import os
 
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
-from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm
+from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm, OrdinationExtractionForm,\
+    SimilarityExtractionForm
 from koe.model_utils import get_user_databases, assert_permission, get_or_error, get_user_accessible_databases
 from koe.models import AudioFile, DatabaseAssignment, DatabasePermission, AudioTrack,\
-    DerivedTensorData, FullTensorData, Database, TemporaryDatabase
-from koe.ts_utils import make_subtensor
+    DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination,\
+    SimilarityIndex
 from root.models import User, ExtraAttrValue
 from root.utils import SendEmailThread
 
@@ -242,43 +244,244 @@ class FeatureExtrationView(FormView):
     def get_context_data(self, **kwargs):
         context = super(FeatureExtrationView, self).get_context_data(**kwargs)
         populate_context(self, context)
+        database = context['current_database']
+        user = self.request.user
+
+        if isinstance(database, TemporaryDatabase):
+            data_matrices = DataMatrix.objects.filter(tmpdb=database)
+        else:
+            data_matrices = DataMatrix.objects.filter(database=database)
+
+        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+        incomplete_dms = data_matrices.filter(task__stage__lt=TaskProgressStage.COMPLETED)
+
+        all_incomplete_dms = DataMatrix.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
+
+        context['completed_dms'] = completed_dms
+        context['incomplete_dms'] = incomplete_dms
+        context['all_incomplete_dms'] = all_incomplete_dms
+
         return context
 
     def form_invalid(self, form):
         context = self.get_context_data()
         rendered = render_to_string('partials/feature-selection-form.html', context=context)
 
-        return HttpResponse(json.dumps(dict(message=dict(html=rendered))))
+        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
 
     def form_valid(self, form):
+        post_data = self.request.POST
+        user = self.request.user
         form_data = form.cleaned_data
+        name = form_data.get('name', None)
+        data_matrix = form_data.get('data_matrix', None)
 
-        tensor_id = form_data.get('preset', None)
-        tensor = None
-        if tensor_id:
-            tensor = get_or_error(DerivedTensorData, dict(id=int(tensor_id)))
+        has_error = False
 
-        if tensor is None:
-            features = form_data['features'].order_by('id')
-            aggregations = form_data['aggregations'].order_by('id')
+        if data_matrix:
+            form.add_error('data_matrix', 'Already extracted')
+            has_error = True
 
-            database = form_data['database']
-            full_tensor = get_or_error(FullTensorData, dict(database=database))
+        if DataMatrix.objects.filter(name=name).exists():
+            form.add_error('name', 'This name is already taken')
+            has_error = True
 
-            annotator_id = form_data['annotator']
-            dimreduce = form_data['dimreduce']
-            ndims = form_data.get('ndims', None)
+        if has_error:
+            context = self.get_context_data()
+            context['form'] = form
+            rendered = render_to_string('partials/feature-selection-form.html', context=context)
+            return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
 
-            annotator = get_or_error(User, dict(id=annotator_id))
-
-            tensor = make_subtensor(self.request.user, full_tensor, annotator, features, aggregations, dimreduce, ndims)
-
-        if tensor.dimreduce.startswith('tsne'):
-            vizurl = reverse('tsne-plotly', kwargs={'tensor_name': tensor.name})
+        if 'database' in post_data:
+            database_id = int(post_data['database'])
+            db_class = Database
+            database = get_or_error(db_class, dict(id=int(database_id)))
+            dm = DataMatrix(database=database)
         else:
-            vizurl = reverse('tsne', kwargs={'tensor_name': tensor.name})
+            database_id = get_or_error(post_data, 'tmpdb')
+            db_class = TemporaryDatabase
+            database = get_or_error(db_class, dict(id=int(database_id)))
+            dm = DataMatrix(tmpdb=database)
 
-        return HttpResponse(json.dumps(dict(message=vizurl)))
+        features = form_data['features'].order_by('id')
+        aggregations = form_data['aggregations'].order_by('id')
+
+        dm.name = name
+        dm.ndims = 0
+        dm.features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
+        dm.aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
+        dm.save()
+
+        task = Task(user=user, target='{}:{}'.format(DataMatrix.__class__.__name__, dm.id))
+        task.save()
+        dm.task = task
+        dm.save()
+
+        context = self.get_context_data()
+        context['task'] = task
+        rendered = render_to_string('partials/feature-extraction-tasks.html', context=context)
+        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+
+
+class OrdinationExtrationView(FormView):
+    form_class = OrdinationExtractionForm
+    page_name = 'ordination-extraction'
+    template_name = 'ordination-extraction.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(OrdinationExtrationView, self).get_context_data(**kwargs)
+        populate_context(self, context)
+        database = context['current_database']
+        user = self.request.user
+
+        if isinstance(database, TemporaryDatabase):
+            data_matrices = DataMatrix.objects.filter(tmpdb=database)
+        else:
+            data_matrices = DataMatrix.objects.filter(database=database)
+
+        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+        all_ords = Ordination.objects.filter(dm__in=completed_dms)
+
+        completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+        incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
+        all_incomplete_ords = Ordination.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
+
+        context['completed_dms'] = completed_dms
+        context['completed_ords'] = completed_ords
+        context['incomplete_ords'] = incomplete_ords
+        context['all_incomplete_ords'] = all_incomplete_ords
+
+        return context
+
+    def form_invalid(self, form):
+        context = self.get_context_data()
+        rendered = render_to_string('partials/ordination-selection-form.html', context=context)
+
+        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+
+    def form_valid(self, form):
+        user = self.request.user
+        form_data = form.cleaned_data
+        ord_id = form_data.get('ordination', None)
+
+        has_error = False
+
+        if ord_id:
+            form.add_error('ordination', 'Already extracted')
+            has_error = True
+
+        dm_id = form_data['data_matrix']
+        method = form_data['method']
+        ndims = form_data['ndims']
+
+        dm = get_or_error(DataMatrix, dict(id=dm_id))
+        if Ordination.objects.filter(dm=dm, method=method, ndims=ndims).exists():
+            form.add_error('ordination', 'Already extracted')
+            has_error = True
+
+        if has_error:
+            context = self.get_context_data()
+            context['form'] = form
+            rendered = render_to_string('partials/ordination-selection-form.html', context=context)
+            return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+
+        ord = Ordination(dm=dm, method=method, ndims=ndims)
+        ord.save()
+
+        task = Task(user=user, target='{}:{}'.format(Ordination.__class__.__name__, ord.id))
+        task.save()
+        ord.task = task
+        ord.save()
+
+        context = self.get_context_data()
+        context['task'] = task
+        rendered = render_to_string('partials/ordination-extraction-tasks.html', context=context)
+        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+
+
+class SimilarityExtrationView(FormView):
+    form_class = SimilarityExtractionForm
+    page_name = 'similarity-extraction'
+    template_name = 'similarity-extraction.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(SimilarityExtrationView, self).get_context_data(**kwargs)
+        populate_context(self, context)
+        database = context['current_database']
+        user = self.request.user
+
+        if isinstance(database, TemporaryDatabase):
+            data_matrices = DataMatrix.objects.filter(tmpdb=database)
+        else:
+            data_matrices = DataMatrix.objects.filter(database=database)
+
+        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+        all_ords = Ordination.objects.filter(dm__in=completed_dms)
+
+        completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+
+        all_incomplete_sims = SimilarityIndex.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED,
+                                                             task__user=user)
+
+        context['completed_dms'] = completed_dms
+        context['completed_ords'] = completed_ords
+        context['all_incomplete_sims'] = all_incomplete_sims
+
+        return context
+
+    def form_invalid(self, form):
+        context = self.get_context_data()
+        rendered = render_to_string('partials/similarity-selection-form.html', context=context)
+
+        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+
+    def form_valid(self, form):
+        user = self.request.user
+        form_data = form.cleaned_data
+        ord_id = form_data.get('ordination', None)
+        dm_id = form_data.get('data_matrix', None)
+
+        has_error = False
+
+        if (not ord_id and not dm_id) or (ord_id and dm_id):
+            form.add_error('ordination', 'Either ordination or data matrix must be chosen, but not both')
+            form.add_error('data_matrix', 'Either ordination or data matrix must be chosen, but not both')
+            has_error = True
+
+        if dm_id:
+            dm = get_or_error(DataMatrix, dict(id=dm_id))
+            si = SimilarityIndex.objects.filter(dm=dm).first()
+            if si is not None:
+                form.add_error('data_matrix', 'Already extracted')
+                has_error = True
+            else:
+                si = SimilarityIndex(dm=dm)
+        else:
+            ord = get_or_error(Ordination, dict(id=ord_id))
+            si = SimilarityIndex.objects.filter(ord=ord).first()
+            if si is not None:
+                form.add_error('ordination', 'Already extracted')
+                has_error = True
+            else:
+                si = SimilarityIndex(ord=ord)
+
+        if has_error:
+            context = self.get_context_data()
+            context['form'] = form
+            rendered = render_to_string('partials/similarity-selection-form.html', context=context)
+            return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+
+        si.save()
+
+        task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__class__.__name__, si.id))
+        task.save()
+        si.task = task
+        si.save()
+
+        context = self.get_context_data()
+        context['task'] = task
+        rendered = render_to_string('partials/similarity-extraction-tasks.html', context=context)
+        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
 
 
 class ContactUsView(FormView):

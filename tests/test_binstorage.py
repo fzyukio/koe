@@ -8,7 +8,7 @@ from pymlfunc import tictoc
 
 import koe.binstorage as bs
 
-NUM_POINTS = 10000
+NUM_POINTS = 100
 
 
 def one_randint(max=100, min=1):

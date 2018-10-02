@@ -1,0 +1,56 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+<div class="form-group selectize">
+    <label for="{{ form.data_matrix.id_for_label }}" class="control-label">Existing data matrices</label>
+    <select name="data_matrix" class="form-control {% if form.data_matrix.errors %}has-error{% endif %}"
+            id="id_data_matrix" tabindex="-1">
+        <option value="">---------</option>
+        {% for dm in completed_dms %}
+            <option value="{{ dm.id }}">
+                {{ dm }} | Completed
+            </option>
+        {% endfor %}
+    </select>
+    {{ form.data_matrix.errors }}
+</div>
+
+<div class="form-group selectize">
+    <label for="{{ form.ordination.id_for_label }}" class="control-label">Existing ordinations</label>
+    <select name="ordination" class="form-control {% if form.ordination.errors %}has-error{% endif %}"
+            id="id_ordination" tabindex="-1">
+        <option value="">---------</option>
+        {% for ord in completed_ords %}
+            <option value="{{ ord.id }}">
+                {{ ord }} | Completed
+            </option>
+        {% endfor %}
+        {% for ord in incomplete_ords %}
+            <option value="{{ ord.id }}">
+                {{ ord }} | Not completed yet
+            </option>
+        {% endfor %}
+    </select>
+    {{ form.ordination.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.method.id_for_label }}" class="control-label">Ordination method</label>
+    <div class="row no-margin" id="{{ form.method.id_for_label }}">
+        {% for choice in form.method %}
+            <div class="form-check form-check-inline col-xs-6 col-sm-4 col-md-3 col-lg-2">
+                <input class="form-check-input" type="radio" name="method"
+                       id="{{ choice.id_for_label }}"
+                       value="{{ choice.data.value }}">
+                <label class="form-check-label" for="inlineRadio1">{{ choice.data.label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+    {{ form.method.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.ndims.id_for_label }}" class="control-label">Number of dimensions</label>
+    {{ form.ndims|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.ndims.errors }}
+</div>

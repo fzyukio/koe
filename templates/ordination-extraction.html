@@ -1,0 +1,46 @@
+{% extends 'base-with-sidebar-and-grid.html' %}
+
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+
+{% block title %}Ordination Extraction{% endblock %}
+
+
+{% block content-center %}
+    <div id="hidden-data" style="display: none;">
+        <div name="ords">
+            {% for ord in completed_ords %}
+                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" completed="true"></div>
+            {% endfor %}
+            {% for ord in incomplete_ords %}
+                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" completed="false"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="replaceable-on-success">
+        {% include 'partials/ordination-extraction-tasks.html' %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>Construct new ordination</strong></div>
+            <div class="panel-body">
+                <form role="form" method="post" id="ordination-extraction-form" url="{% url 'ordination-extraction' %}">
+                    {% csrf_token %}
+                    <div id="replaceable-on-failure">
+                        {% include 'partials/ordination-selection-form.html' %}
+                    </div>
+                </form>
+            </div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button type="submit" id="schedule-btn" class="btn btn-primary btn-block">
+                            Submit extraction job
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

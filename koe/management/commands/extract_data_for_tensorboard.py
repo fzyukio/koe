@@ -7,47 +7,16 @@ import uuid
 import numpy as np
 from django.core.management.base import BaseCommand
 from django.urls import reverse
-from pymlfunc import tictoc
 from scipy.stats import zscore
 
-from koe import binstorage
 from koe.aggregator import aggregator_map
+from koe.feature_utils import extract_rawdata
 from koe.model_utils import get_or_error
 from koe.models import Feature, Aggregation, Database, FullTensorData, DerivedTensorData
 from koe.storage_utils import get_binstorage_locations
 from koe.storage_utils import get_sids_tids
 from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary, reduce_funcs
 from root.models import User
-
-
-def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
-    rawdata = []
-    col_inds = {}
-    col_inds_start = 0
-
-    for feature in features:
-        if feature.is_fixed_length:
-            index_filename, value_filename = f2bs[feature]
-            with tictoc('{}'.format(feature.name)):
-                rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
-                rawdata_stacked = np.stack(rawdata_)
-            rawdata.append(rawdata_stacked)
-            ncols = rawdata_stacked.shape[1]
-            col_inds[feature.name] = (col_inds_start, col_inds_start + ncols)
-            col_inds_start += ncols
-        else:
-            for aggregator in aggregators:
-                index_filename, value_filename = fa2bs[feature][aggregator]
-                with tictoc('{} - {}'.format(feature.name, aggregator.get_name())):
-                    rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
-                rawdata_stacked = np.stack(rawdata_)
-                rawdata.append(rawdata_stacked)
-                ncols = rawdata_stacked.shape[1]
-                col_inds['{}_{}'.format(feature.name, aggregator.name)] = (col_inds_start, col_inds_start + ncols)
-                col_inds_start += ncols
-    rawdata = np.concatenate(rawdata, axis=1)
-
-    return rawdata, col_inds
 
 
 def create_full_tensor(database, recreate):

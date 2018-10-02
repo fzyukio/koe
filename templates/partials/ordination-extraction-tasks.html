@@ -1,0 +1,51 @@
+{% load staticfiles %}
+{% load widget_tweaks %}
+
+{% if task %}
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+        <strong>Success!</strong>
+        Task #{{ task.id }} has been submitted and scheduled to run. You will get an email notification when it
+        finishes.
+    </div>
+{% endif %}
+
+<div class="panel panel-primary">
+    <div class="panel-heading"><strong>Ordination extraction tasks progress</strong></div>
+    <div class="panel-body">
+        <p>Following are the ordination extraction tasks you have submitted (for all databases, not just the current one) and
+            yet completed.</p>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Task</th>
+            <th>Database</th>
+            <th>Data Matrix</th>
+            <th>Created</th>
+            <th>Progress</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ord in all_incomplete_ords %}
+            <tr>
+                <th scope="row">{{ ord.task.id }}</th>
+                <td>{{ ord.dm.database.name }}</td>
+                <td>{{ ord.dm.name }}</td>
+                <td>{{ ord.task.created }}</td>
+                <td>
+                    <div class="progress">
+                        <span class="progress-value">{{ ord.task.pc_complete }}% {{ ord.task.get_stage_display }}</span>
+                        <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                             aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                             style="width: {{ dm.task.pc_complete }}%">
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
