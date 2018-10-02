@@ -66,14 +66,15 @@
                     <div class="controller-wrapper">
                         <div class="grid-controller no-status">
                             <div class="input-group">
-                                T-SNE on {{ tensor.database.name }}, annotated by {{ tensor.annotator.username }},
+                                Ordination of {{ db_type }} using {{ current_ordination.method }} annotated by {{ viewas.username }},
                             </div>
                         </div>
                     </div>
                 </h3>
             </div>
 
-            <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}" database="{{ tensor.database.id }}">
+            <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
+                 {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}">
             </div>
         </div>
 

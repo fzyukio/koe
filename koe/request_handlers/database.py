@@ -480,26 +480,32 @@ def delete_segments(request):
 def get_label_options(request):
     file_id = request.POST.get('file-id', None)
     database_id = request.POST.get('database-id', None)
+    tmpdb_id = request.POST.get('tmpdb-id', None)
 
-    if file_id is None and database_id is None:
-        raise CustomAssertionError('Need file-id or database-id')
+    if file_id is None and database_id is None and tmpdb_id is None:
+        raise CustomAssertionError('Need file-id or database-id or tmpdb-id')
 
     if file_id:
         audio_file = get_or_error(AudioFile, dict(id=file_id))
         database = audio_file.database
-    else:
+    elif database_id:
         database = get_or_error(Database, dict(id=database_id))
+    else:
+        database = get_or_error(TemporaryDatabase, dict(id=tmpdb_id))
 
     user = request.user
 
-    assert_permission(user, database, DatabasePermission.VIEW)
-    all_segment_ids = list(Segment.objects.filter(audio_file__database=database).values_list('id', flat=True))
+    if isinstance(database, Database):
+        assert_permission(user, database, DatabasePermission.VIEW)
+        sids = list(Segment.objects.filter(audio_file__database=database).values_list('id', flat=True))
+    else:
+        sids = database.ids
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label')
     family_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_family')
     subfamily_attr = ExtraAttr.objects.get(klass=Segment.__name__, name='label_subfamily')
 
-    extra_attr_values = ExtraAttrValue.objects.filter(user=user, owner_id__in=all_segment_ids)
+    extra_attr_values = ExtraAttrValue.objects.filter(user=user, owner_id__in=sids)
     labels_and_counts = extra_attr_values.filter(attr=label_attr).values_list('value').annotate(c=Count('value'))
     families_and_counts = extra_attr_values.filter(attr=family_attr).values_list('value').annotate(c=Count('value'))
     subfams_and_counts = extra_attr_values.filter(attr=subfamily_attr).values_list('value').annotate(c=Count('value'))

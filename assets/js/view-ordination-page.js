@@ -11,6 +11,7 @@ const plotDiv = $(`#${plotId}`);
 const metaPath = plotDiv.attr('metadata');
 const bytesPath = plotDiv.attr('bytes');
 const databaseId = plotDiv.attr('database');
+const tmpDbId = plotDiv.attr('tmpdb');
 const body = $('body');
 const sylSpects = $('#syl-spects');
 const labelTyleSelectEl = $('#label-type');
@@ -558,7 +559,7 @@ export const postRun = function () {
      */
     postRequest({
         requestSlug: 'koe/get-label-options',
-        data: {'database-id': databaseId},
+        data: {'database-id': databaseId, 'tmpdb-id': tmpDbId},
         onSuccess(selectableOptions) {
             setCache('selectableOptions', undefined, selectableOptions)
         }

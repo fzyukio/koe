@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseServerError
 from django.shortcuts import render
+from django.urls import path
 
 from koe import views
 from koe.request_handlers import tensorviz
@@ -36,10 +37,14 @@ urlpatterns += \
             name='ordination-extraction'),
         url(r'^extraction/similarity/$', login_required(views.SimilarityExtrationView.as_view()),
             name='similarity-extraction'),
-        url(r'^tsne/plotly/(?P<tensor_name>[0-9a-z]{32})/$', login_required(views.TsnePlotlyView.as_view()),
-            name='tsne-plotly'),
+
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
+
+        url(r'^ordination/$', login_required(views.OrdinationView.as_view()), name='view-ordination'),
+        path('ordination/meta/<int:ord_id>/<str:viewas>/', login_required(tensorviz.get_ordination_metadata),
+             name='ordination-meta'),
+
         url(r'^dashboard/$', login_required(views.get_view('dashboard')), name='dashboard'),
         url(r'^help/$', login_required(views.get_view('help')), name='help'),
         url(r'^contact-us/$', login_required(views.ContactUsView.as_view()), name='contact-us'),

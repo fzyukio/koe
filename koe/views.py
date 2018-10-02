@@ -1,5 +1,4 @@
 import json
-import os
 
 from django.conf import settings
 from django.db.models import Q
@@ -217,24 +216,33 @@ class TensorvizView(TemplateView):
         return context
 
 
-class TsnePlotlyView(TemplateView):
-    template_name = 'tsne-plotly.html'
+class OrdinationView(TemplateView):
+    template_name = 'view-ordination.html'
+    page_name = 'view-ordination'
 
     def get_context_data(self, **kwargs):
-        context = super(TsnePlotlyView, self).get_context_data(**kwargs)
-        tensor_name = get_or_error(kwargs, 'tensor_name')
-        tensor = get_or_error(DerivedTensorData, dict(name=tensor_name))
+        context = super(OrdinationView, self).get_context_data(**kwargs)
+        populate_context(self, context)
+        database = context['current_database']
+        viewas = context['viewas']
 
-        bytes_path = tensor.get_bytes_path()
-        metadata_path = reverse('tsne-meta', kwargs={'tensor_name': tensor.name})
+        if isinstance(database, Database):
+            q = Q(dm__database=database)
+            context['db_type'] = 'Database'
+        else:
+            q = Q(dm__tmpdb=database)
+            context['db_type'] = 'Collection'
 
-        if not os.path.isfile(bytes_path):
-            bytes_path = tensor.full_tensor.get_bytes_path()
+        ordinations = Ordination.objects.filter(q & (Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED)))
+        current_ordination = self.request.GET.get('internal_ordination', ordinations.first())
+        context['current_ordination'] = current_ordination
+        context['ordinations'] = ordinations
+
+        bytes_path = current_ordination.get_bytes_path()
+        metadata_path = reverse('ordination-meta', kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
 
         context['metadata_path'] = metadata_path
         context['bytes_path'] = '/' + bytes_path
-        context['tensor'] = tensor
-        context['page'] = 'tsne-plotly'
         return context
 
 

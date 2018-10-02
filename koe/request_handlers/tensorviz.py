@@ -5,10 +5,10 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from koe.model_utils import get_or_error
-from koe.models import DatabaseAssignment, Segment, Database, DerivedTensorData, DataMatrix
+from koe.models import DatabaseAssignment, Segment, Database, DerivedTensorData, DataMatrix, Ordination
 from koe.ts_utils import extract_tensor_metadata, write_metadata,\
     bytes_to_ndarray
-from root.models import ExtraAttrValue, ExtraAttr
+from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['get_annotators_and_presets', 'get_data_matrix_config', 'get_tensor_data_file_paths']
 
@@ -79,6 +79,24 @@ def get_metadata(request, tensor_name):
     sids = bytes_to_ndarray(full_sids_path, np.int32)
 
     metadata, headers = extract_tensor_metadata(sids, tensor.annotator)
+    content = write_metadata(metadata, sids, headers)
+
+    response = HttpResponse()
+    response.write(content)
+    response['Content-Type'] = 'text/tsv'
+    response['Content-Length'] = len(content)
+    return response
+
+
+def get_ordination_metadata(request, ord_id, viewas):
+    ord = get_or_error(Ordination, dict(id=ord_id))
+
+    sids_path = ord.get_sids_path()
+    sids = bytes_to_ndarray(sids_path, np.int32)
+
+    viewas = get_or_error(User, dict(username=viewas))
+
+    metadata, headers = extract_tensor_metadata(sids, viewas)
     content = write_metadata(metadata, sids, headers)
 
     response = HttpResponse()

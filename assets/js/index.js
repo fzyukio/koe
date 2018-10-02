@@ -358,8 +358,8 @@ $(document).ready(function () {
     else if (pageName.startsWith('/extraction/similarity/')) {
         page = require('similarity-extraction-page')
     }
-    else if (pageName.startsWith('/tsne/plotly/')) {
-        page = require('tsne-plotly-page')
+    else if (pageName.startsWith('/ordination/')) {
+        page = require('view-ordination-page')
     }
     else if (pageName === '/contact-us/') {
         page = require('contact-us-page');

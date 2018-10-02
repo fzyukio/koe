@@ -593,6 +593,9 @@ class Ordination(SimpleModel, BinaryStoredMixin):
     def __str__(self):
         return '{}_{}_{}'.format(self.dm, self.method, self.ndims)
 
+    def get_name(self):
+        return self.__str__()
+
 
 class SimilarityIndex(SimpleModel, BinaryStoredMixin):
     dm = models.ForeignKey(DataMatrix, on_delete=models.CASCADE)
