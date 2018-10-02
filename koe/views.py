@@ -246,8 +246,8 @@ class OrdinationView(TemplateView):
         return context
 
 
-def get_incomplete_tasks(target_class, user):
-    all_incomplete_dms = target_class.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
+def get_incomplete_tasks(target_class):
+    all_incomplete_dms = target_class.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED)
     subtasks = Task.objects.filter(parent__in=all_incomplete_dms.values_list('task', flat=True),
                                    stage__lt=TaskProgressStage.COMPLETED)
     task2subs = {}
@@ -283,7 +283,7 @@ class FeatureExtrationView(FormView):
 
         context['completed_dms'] = completed_dms
         context['incomplete_dms'] = incomplete_dms
-        context['all_incomplete_dms2tasks'] = get_incomplete_tasks(DataMatrix, user)
+        context['all_incomplete_dms2tasks'] = get_incomplete_tasks(DataMatrix)
 
         return context
 
@@ -372,7 +372,7 @@ class OrdinationExtrationView(FormView):
         context['completed_dms'] = completed_dms
         context['completed_ords'] = completed_ords
         context['incomplete_ords'] = incomplete_ords
-        context['all_incomplete_ords2tasks'] = get_incomplete_tasks(Ordination, user)
+        context['all_incomplete_ords2tasks'] = get_incomplete_tasks(Ordination)
 
         return context
 
@@ -447,7 +447,7 @@ class SimilarityExtrationView(FormView):
 
         context['completed_dms'] = completed_dms
         context['completed_ords'] = completed_ords
-        context['all_incomplete_sims2tasks'] = get_incomplete_tasks(SimilarityIndex, user)
+        context['all_incomplete_sims2tasks'] = get_incomplete_tasks(SimilarityIndex)
 
         return context
 

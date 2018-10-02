@@ -12,17 +12,17 @@
 {% endif %}
 
 <div class="panel panel-primary">
-    <div class="panel-heading"><strong>Ordination extraction tasks progress</strong></div>
+    <div class="panel-heading"><strong>Ordination construction queue</strong></div>
     <div class="panel-body">
-        <p>Following are the ordination extraction tasks you have submitted (for all databases, not just the current
-            one) and
-            yet completed.</p>
+        <p>Following are the ordination construction tasks that are queueing (for all databases, not just the current
+            one) that are still in progress.</p>
     </div>
 
     <table class="table table-striped">
         <thead>
         <tr>
             <th>Task</th>
+            <th>User</th>
             <th>Database</th>
             <th>Data Matrix</th>
             <th>Created</th>
@@ -33,7 +33,7 @@
         {% for ord, subtasks in all_incomplete_ords2tasks %}
             <tr>
                 <th scope="row">{{ ord.task.id }}</th>
-
+                <td>{{ ord.task.user.username }}</td>
                 {% if ord.dm.database %}
                     <td>{{ ord.dm.database.name }}</td>
                 {% else %}

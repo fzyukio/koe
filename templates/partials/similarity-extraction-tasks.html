@@ -12,9 +12,9 @@
 {% endif %}
 
 <div class="panel panel-primary">
-    <div class="panel-heading"><strong>Similarity extraction tasks progress</strong></div>
+    <div class="panel-heading"><strong>Similarity extraction queue</strong></div>
     <div class="panel-body">
-        <p>Following are the similarity calculation tasks you have submitted (for all databases, not just the current
+        <p>Following are the similarity calculation tasks that are queueing (for all databases, not just the current
             one) that are still in progress.</p>
     </div>
 
@@ -22,6 +22,7 @@
         <thead>
         <tr>
             <th>Task</th>
+            <th>Username</th>
             <th>Database</th>
             <th>Source type</th>
             <th>Source name</th>
@@ -33,6 +34,7 @@
         {% for sim, subtasks in all_incomplete_sims2tasks %}
             <tr>
                 <th scope="row">{{ sim.task.id }}</th>
+                <td>{{ sim.task.user.username }}</td>
                 {% if sim.dm %}
                     {% if sim.dm.database %}
                         <td>{{ sim.dm.database.name }}</td>
