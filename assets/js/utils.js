@@ -1520,6 +1520,16 @@ export const isNull = function (val) {
 
 
 /**
+ * A more consistent way to check for a string being empty
+ * @param str
+ * @returns {boolean} true if is either undefined or null or empty string
+ */
+export const isEmpty = function (str) {
+    return str === undefined || str === null || str === '';
+};
+
+
+/**
  * Convert grid data to a CSV string
  * @param grid a SlickGrid
  * @param downloadType if `all` will download everything,

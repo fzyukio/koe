@@ -49,7 +49,7 @@ class Command(BaseCommand):
         dm.save()
 
         user = User.objects.get(username='superuser')
-        task = Task(user=user, target='{}:{}'.format(DataMatrix.__class__.__name__, dm.id))
+        task = Task(user=user, target='{}:{}'.format(DataMatrix.__name__, dm.id))
 
         task.save()
 

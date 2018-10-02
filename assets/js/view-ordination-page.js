@@ -1,6 +1,6 @@
 /* global Plotly, d3 */
 import {queryAndPlayAudio, initAudioContext, changePlaybackSpeed} from './audio-handler';
-import {getUrl, getCache, setCache} from './utils';
+import {getUrl, getCache, setCache, isEmpty} from './utils';
 import {downloadRequest, postRequest} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -496,12 +496,33 @@ function handleSelected(eventData) {
     }
 }
 
+
+const showNonDataReason = function () {
+    ce.dialogModalTitle.html('This database has no ordination');
+
+    ce.dialogModalBody.children().remove();
+    ce.dialogModalBody.append('<div>You need to extract an ordination first</div>');
+    ce.dialogModal.modal('show');
+
+    ce.dialogModalOkBtn.off('click').one('click', function () {
+        ce.dialogModal.modal('hide');
+    });
+};
+
+
 export const run = function (commonElements) {
     ce = commonElements;
     initAudioContext();
     initSlider();
-    downloadTensorData().then(initCategorySelection);
-    initClickHandlers();
+
+    if (isEmpty(metaPath) || isEmpty(bytesPath)) {
+        showNonDataReason();
+    }
+    else {
+        downloadTensorData().then(initCategorySelection);
+        initClickHandlers();
+    }
+
 };
 
 

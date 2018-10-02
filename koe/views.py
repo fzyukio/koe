@@ -242,11 +242,13 @@ class OrdinationView(TemplateView):
         context['current_ordination'] = current_ordination
         context['ordinations'] = ordinations
 
-        bytes_path = current_ordination.get_bytes_path()
-        metadata_path = reverse('ordination-meta', kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
+        if current_ordination:
+            bytes_path = current_ordination.get_bytes_path()
+            metadata_path = reverse('ordination-meta',
+                                    kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
 
-        context['metadata_path'] = metadata_path
-        context['bytes_path'] = '/' + bytes_path
+            context['metadata_path'] = metadata_path
+            context['bytes_path'] = '/' + bytes_path
         return context
 
 
@@ -275,7 +277,6 @@ class FeatureExtrationView(FormView):
         context = super(FeatureExtrationView, self).get_context_data(**kwargs)
         populate_context(self, context)
         database = context['current_database']
-        user = self.request.user
 
         if isinstance(database, TemporaryDatabase):
             data_matrices = DataMatrix.objects.filter(tmpdb=database)
@@ -360,7 +361,6 @@ class OrdinationExtrationView(FormView):
         context = super(OrdinationExtrationView, self).get_context_data(**kwargs)
         populate_context(self, context)
         database = context['current_database']
-        user = self.request.user
 
         if isinstance(database, TemporaryDatabase):
             data_matrices = DataMatrix.objects.filter(tmpdb=database)
@@ -437,7 +437,6 @@ class SimilarityExtrationView(FormView):
         context = super(SimilarityExtrationView, self).get_context_data(**kwargs)
         populate_context(self, context)
         database = context['current_database']
-        user = self.request.user
 
         if isinstance(database, TemporaryDatabase):
             data_matrices = DataMatrix.objects.filter(tmpdb=database)
