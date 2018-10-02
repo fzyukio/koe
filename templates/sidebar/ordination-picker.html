@@ -9,7 +9,7 @@
         <ul class="dropdown-menu">
             {% for ordination in ordinations %}
                 <li class="{% if current_ordination.id == ordination.id %}active{% else %}not-active{% endif %}">
-                    <a href="#" class="change-arg" key="_ordination" replace="tmpdb" value="{{ ordination.id }}">
+                    <a href="#" class="change-arg" key="ordination" replace="tmpdb" value="{{ ordination.id }}">
                         {{ ordination.get_name }}
                     </a>
                 </li>

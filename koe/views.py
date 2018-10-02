@@ -234,7 +234,11 @@ class OrdinationView(TemplateView):
             context['db_type'] = 'Collection'
 
         ordinations = Ordination.objects.filter(q & (Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED)))
-        current_ordination = self.request.GET.get('internal_ordination', ordinations.first())
+        ord_id = self.request.GET.get('ordination', None)
+        if ord_id is None:
+            current_ordination = ordinations.first()
+        else:
+            current_ordination = get_or_error(Ordination, dict(id=ord_id))
         context['current_ordination'] = current_ordination
         context['ordinations'] = ordinations
 

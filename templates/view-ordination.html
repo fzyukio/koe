@@ -66,7 +66,15 @@
                     <div class="controller-wrapper">
                         <div class="grid-controller no-status">
                             <div class="input-group">
-                                Ordination of {{ db_type }} using {{ current_ordination.method }} annotated by {{ viewas.username }},
+                                Ordination of {{ db_type }}
+
+                                {% if current_ordination.dm.database %}
+                                    {{ current_ordination.dm.database.name }}
+                                {% else %}
+                                    {{ current_ordination.dm.tmpdb.name }}
+                                {% endif %}
+
+                                using {{ current_ordination.method }} annotated by {{ viewas.username }},
                             </div>
                         </div>
                     </div>

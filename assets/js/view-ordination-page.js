@@ -361,7 +361,17 @@ const initCategorySelection = function () {
     function setValue(labelType) {
         let locationOrigin = window.location.origin;
         let localtionPath = window.location.pathname;
-        let newUrl = `${locationOrigin}${localtionPath}?label-type=${labelType}`;
+        let currentSearch = window.location.search.substr(1);
+        let labelTypeStart = currentSearch.indexOf('label-type');
+        if (labelTypeStart > -1) {
+            let labelTypeEnd = currentSearch.substr(labelTypeStart).indexOf('&');
+            if (labelTypeEnd == -1) {
+                labelTypeEnd = currentSearch.substr(labelTypeStart).length - 1;
+            }
+            labelTypeEnd += labelTypeStart + 1;
+            currentSearch = currentSearch.substr(0, labelTypeStart) + currentSearch.substr(labelTypeEnd);
+        }
+        let newUrl = `${locationOrigin}${localtionPath}?label-type=${labelType}&${currentSearch}`;
         window.history.pushState('', '', newUrl);
 
         labelTyleSelectEl.parent().find('#selected-label-type').html(labelType);
