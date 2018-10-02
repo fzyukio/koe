@@ -694,7 +694,7 @@ const initCreateTemporaryDatabaseBtn = function() {
      * param error to be shown in the modal if not undefined
      */
     function showDialog(error) {
-        dialogModalTitle.html('Temporary database created successfully...');
+        dialogModalTitle.html('Collection created successfully...');
         dialogModalBody.html(`<label>We gave it the temporary name of ${generatedName}. Do you want to give it a different name?</label>`);
         dialogModalBody.append(inputText);
 
@@ -751,8 +751,8 @@ const initCreateTemporaryDatabaseBtn = function() {
                 showDialog();
             },
             onFailure(message) {
-                dialogModalTitle.html('Temporary database with these IDs already exists...');
-                dialogModalBody.html(`<p>You've already created a temporary database with name <strong>${message}</strong>. Please choose a unique name.</p>`);
+                dialogModalTitle.html('Collection with these IDs already exists...');
+                dialogModalBody.html(`<p>You've already created a Collection with name <strong>${message}</strong>. Please choose a unique name.</p>`);
 
                 dialogModal.modal('show');
                 dialogModalOkBtn.one('click', function () {

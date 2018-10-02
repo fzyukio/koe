@@ -19,7 +19,7 @@
                     </li>
                 {% endfor %}
                 {% if my_tmpdbs %}
-                    <li class="section-head">Your temporary database</li>
+                    <li class="section-head">Your Collections</li>
                     {% for database in my_tmpdbs %}
                         <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
                             <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
@@ -29,7 +29,7 @@
                     {% endfor %}
                 {% endif %}
                 {% if other_tmpdbs %}
-                    <li class="section-head">Other temporary database</li>
+                    <li class="section-head">Other Collections</li>
                     {% for database in other_tmpdbs %}
                         <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
                             <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
