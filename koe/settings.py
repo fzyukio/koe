@@ -145,6 +145,17 @@ if _cache_config:
         }
     }
 
+
+# CELERY STUFF
+_broker_config = envconf['broker']
+CELERY_BROKER_URL = _broker_config['location']
+CELERY_RESULT_BACKEND = _broker_config['location']
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = envconf['timezone']
+
+
 LOGIN_URL = '/login'
 
 # site configuration

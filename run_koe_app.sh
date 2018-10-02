@@ -29,5 +29,6 @@ if [ "$IS_TENSORFLOW" = "tensorflow" ]; then
   python manage.py shell_plus --notebook &
   uwsgi --ini uwsgi.ini:tensorflow
 else
+  celery -A koe worker -l info -c 1 &
   uwsgi --ini uwsgi.ini:prod
 fi

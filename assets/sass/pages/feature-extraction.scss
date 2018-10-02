@@ -3,3 +3,10 @@
 #replaceable-on-success {
   height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
 }
+
+tr.subtask {
+  background-color: lightyellow;
+  td[colspan] {
+    text-align: right;
+  }
+}

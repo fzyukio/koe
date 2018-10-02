@@ -1,19 +1,35 @@
+import json
 import os
+from time import sleep
 from logging import warning
 
 import csv
 import numpy as np
 from django.conf import settings
 from django.db.models import F
-from pymlfunc import tictoc
+from scipy.cluster.hierarchy import linkage
+from scipy.spatial.distance import squareform, pdist
+from scipy.stats import zscore
+from sklearn.decomposition import FastICA
+from sklearn.decomposition import PCA
+from sklearn.manifold import MDS
+from sklearn.manifold import TSNE
 
 from koe import binstorage
 from koe.aggregator import aggregator_map
+from koe.celery import app
 from koe.features.feature_extract import feature_extractors
-from koe.models import Segment, Task
+from koe.model_utils import natural_order
+from koe.models import Feature, Aggregation, SimilarityIndex
+from koe.models import Segment
+from koe.models import Task, DataMatrix, Ordination
 from koe.task import TaskRunner
+from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
+from koe.ts_utils import ndarray_to_bytes
 from koe.utils import get_wav_info
-from root.utils import wav_path, data_path, ensure_parent_folder_exists, mkdirp
+from root.exceptions import CustomAssertionError
+from root.utils import ensure_parent_folder_exists
+from root.utils import wav_path, data_path, mkdirp
 
 nfft = 512
 noverlap = nfft * 3 // 4
@@ -229,9 +245,8 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     for feature in features:
         if feature.is_fixed_length:
             index_filename, value_filename = f2bs[feature]
-            with tictoc('{}'.format(feature.name)):
-                rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
-                rawdata_stacked = np.stack(rawdata_)
+            rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
+            rawdata_stacked = np.stack(rawdata_)
             rawdata.append(rawdata_stacked)
             ncols = rawdata_stacked.shape[1]
             col_inds[feature.name] = (col_inds_start, col_inds_start + ncols)
@@ -239,8 +254,7 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
         else:
             for aggregator in aggregators:
                 index_filename, value_filename = fa2bs[feature][aggregator]
-                with tictoc('{} - {}'.format(feature.name, aggregator.get_name())):
-                    rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
+                rawdata_ = binstorage.retrieve(ids, index_filename, value_filename, flat=True)
                 rawdata_stacked = np.stack(rawdata_)
                 rawdata.append(rawdata_stacked)
                 ncols = rawdata_stacked.shape[1]
@@ -251,12 +265,42 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     return rawdata, col_inds
 
 
-def extract_database_measurements(task, sids, features, aggregations):
-    try:
-        aggregators = [aggregator_map[x.name] for x in aggregations]
+def get_or_wait(task_id):
+    task = Task.objects.filter(id=task_id).first()
+    sleeps = 0
+    max_sleeps = 10
+    while task is None and sleeps < max_sleeps:
+        sleep(0.5)
+        sleeps += 1
+        task = Task.objects.filter(id=task_id).first()
 
-        runner = TaskRunner(task)
+    if task is None:
+        raise CustomAssertionError('Unable to get task #{} from database'.format(task_id))
+
+    return task
+
+
+@app.task(bind=False)
+def extract_database_measurements(task_id):
+    task = get_or_wait(task_id)
+    runner = TaskRunner(task)
+    try:
         runner.preparing()
+
+        cls, dm_id = task.target.split(':')
+        dm_id = int(dm_id)
+        assert cls == DataMatrix.__name__
+        dm = DataMatrix.objects.get(id=dm_id)
+
+        if dm.database:
+            segments = Segment.objects.filter(audio_file__database=dm.database)
+            sids = segments.values_list('id', flat=True)
+        else:
+            sids = dm.tmpdb.ids
+
+        features = Feature.objects.filter(id__in=dm.features_hash.split('-'))
+        aggregations = Aggregation.objects.filter(id__in=dm.aggregations_hash.split('-'))
+        aggregators = [aggregator_map[x.name] for x in aggregations]
 
         tid2fvals = extract_segment_features_for_segments(runner, sids, features)
         tids, f2vals = extract_tids_fvals(tid2fvals, features)
@@ -297,37 +341,149 @@ def extract_database_measurements(task, sids, features, aggregations):
         aggregate_feature_values(child_runner, sids, f2bs, fa2bs, features, aggregators)
         child_runner.complete()
 
-        # features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
-        # aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
-        # aggregators = [aggregator_map[x.name] for x in aggregations]
-        #
-        # dm = DataMatrix.objects.filter(database=database, features_hash=features_hash,
-        #                                aggregations_hash=aggregations_hash).first()
-        #
-        # if dm:
-        #     return dm, False
-        #
-        # if dm is None:
-        #     full_tensors_name = name
-        #     dm = DataMatrix(name=full_tensors_name, database=database, features_hash=features_hash,
-        #                     aggregations_hash=aggregations_hash)
-        #
-        # full_sids_path = dm.get_sids_path()
-        # full_bytes_path = dm.get_bytes_path()
-        # full_cols_path = dm.get_cols_path()
-        #
-        # sids, tids = get_sids_tids(database)
-        # f2bs, fa2bs = get_binstorage_locations(features, aggregators)
-        # data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
-        #
-        # ndarray_to_bytes(data, full_bytes_path)
-        # ndarray_to_bytes(sids, full_sids_path)
-        #
-        # with open(full_cols_path, 'w', encoding='utf-8') as f:
-        #     json.dump(col_inds, f)
+        full_sids_path = dm.get_sids_path()
+        full_bytes_path = dm.get_bytes_path()
+        full_cols_path = dm.get_cols_path()
 
-        # dm.save()
+        data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
+
+        ndarray_to_bytes(data, full_bytes_path)
+        ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
+
+        with open(full_cols_path, 'w', encoding='utf-8') as f:
+            json.dump(col_inds, f)
+
+        dm.ndims = data.shape[1]
+        dm.save()
         runner.complete()
 
+    except Exception as e:
+        runner.error(e)
+
+
+def pca(data, ndims):
+    dim_reduce_func = PCA(n_components=ndims)
+    return dim_reduce_func.fit_transform(data)
+
+
+def ica(data, ndims):
+    dim_reduce_func = FastICA(n_components=ndims)
+    return dim_reduce_func.fit_transform(data)
+
+
+def tsne(data, ndims):
+    assert 2 <= ndims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
+    pca_dims = max(50, data.shape[1])
+    data = pca(data, pca_dims)
+
+    tsne = TSNE(n_components=ndims, verbose=1, perplexity=10, n_iter=4000)
+    tsne_results = tsne.fit_transform(data)
+
+    return tsne_results
+
+
+def mds(data, ndims):
+    pca_dims = max(50, data.shape[1])
+    data = pca(data, pca_dims)
+
+    similarities = squareform(pdist(data, 'euclidean'))
+    model = MDS(n_components=ndims, dissimilarity='precomputed', random_state=7, verbose=1, max_iter=1000)
+    coordinate = model.fit_transform(similarities)
+    return coordinate
+
+
+methods = {'pca': pca, 'ica': pca, 'tsne': tsne, 'mds': mds}
+
+
+@app.task(bind=False)
+def construct_ordination(task_id):
+    task = get_or_wait(task_id)
+    runner = TaskRunner(task)
+    try:
+        runner.preparing()
+
+        cls, ord_id = task.target.split(':')
+        ord_id = int(ord_id)
+        assert cls == Ordination.__name__
+        ord = Ordination.objects.get(id=ord_id)
+
+        dm = ord.dm
+        method_name = ord.method
+        ndims = ord.ndims
+
+        assert dm.task.is_completed()
+        assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
+        assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
+
+        runner.start()
+        dm_sids_path = dm.get_sids_path()
+        dm_bytes_path = dm.get_bytes_path()
+
+        sids = bytes_to_ndarray(dm_sids_path, np.int32)
+        dm_data = get_rawdata_from_binary(dm_bytes_path, len(sids))
+
+        data = zscore(dm_data)
+        data[np.where(np.isnan(data))] = 0
+        data[np.where(np.isinf(data))] = 0
+
+        method = methods[method_name]
+        result = method(data, ndims)
+
+        runner.wrapping_up()
+
+        ord_sids_path = ord.get_sids_path()
+        ord_bytes_path = ord.get_bytes_path()
+
+        ndarray_to_bytes(result, ord_bytes_path)
+        ndarray_to_bytes(sids, ord_sids_path)
+
+        runner.complete()
+    except Exception as e:
+        runner.error(e)
+
+
+@app.task(bind=False)
+def calculate_similarity(task_id):
+    task = get_or_wait(task_id)
+    runner = TaskRunner(task)
+    try:
+        runner.preparing()
+
+        cls, sim_id = task.target.split(':')
+        sim_id = int(sim_id)
+        assert cls == SimilarityIndex.__name__
+        sim = SimilarityIndex.objects.get(id=sim_id)
+
+        dm = sim.dm
+        ord = sim.ord
+
+        assert dm.task.is_completed()
+        assert ord is None or ord.task.is_completed()
+
+        if ord:
+            sids_path = ord.get_sids_path()
+            source_bytes_path = ord.get_bytes_path()
+        else:
+            sids_path = dm.get_sids_path()
+            source_bytes_path = dm.get_bytes_path()
+
+        runner.start()
+
+        sids = bytes_to_ndarray(sids_path, np.int32)
+        coordinates = get_rawdata_from_binary(source_bytes_path, len(sids))
+
+        tree = linkage(coordinates, method='average')
+        order = natural_order(tree)
+        sorted_order = np.argsort(order)
+
+        runner.wrapping_up()
+
+        sim_sids_path = sim.get_sids_path()
+        sim_bytes_path = sim.get_bytes_path()
+
+        ndarray_to_bytes(sorted_order, sim_bytes_path)
+        ndarray_to_bytes(sids, sim_sids_path)
+
+        runner.complete()
     except Exception as e:
         runner.error(e)

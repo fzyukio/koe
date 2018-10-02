@@ -32,6 +32,8 @@ class TaskRunner:
         self._advance(TaskProgressStage.WRAPPING_UP)
 
     def complete(self):
+        self.task.pc_complete = 100.
+        self.task.save()
         self._advance(TaskProgressStage.COMPLETED)
 
     def error(self, e):
@@ -48,13 +50,16 @@ class TaskRunner:
             self.bar.suffix = stage_name
 
     def tick(self):
-        pc_complete = (self.bar.index + 1) / self.bar.max
+        pc_complete = (self.bar.index + 1) * 100 / self.bar.max
         self.task.pc_complete = pc_complete
         self.task.save()
         self.bar.next()
 
     def _advance(self, next_stage, message=None):
         if self.task.stage >= TaskProgressStage.COMPLETED:
+            self.task.stage = TaskProgressStage.NOT_STARTED
+
+        if self.task.stage == TaskProgressStage.COMPLETED:
             raise Exception('Task has already finished')
 
         if next_stage <= self.task.stage:

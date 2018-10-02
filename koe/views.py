@@ -13,10 +13,10 @@ from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm, Or
     SimilarityExtractionForm
 from koe.model_utils import get_user_databases, assert_permission, get_or_error, get_user_accessible_databases
 from koe.models import AudioFile, DatabaseAssignment, DatabasePermission, AudioTrack,\
-    DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination,\
-    SimilarityIndex
+    DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination, SimilarityIndex
 from root.models import User, ExtraAttrValue
 from root.utils import SendEmailThread
+from koe.feature_utils import extract_database_measurements, construct_ordination, calculate_similarity
 
 
 def populate_context(obj, context):
@@ -236,6 +236,22 @@ class TsnePlotlyView(TemplateView):
         return context
 
 
+def get_incomplete_tasks(target_class, user):
+    all_incomplete_dms = target_class.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
+    subtasks = Task.objects.filter(parent__in=all_incomplete_dms.values_list('task', flat=True),
+                                   stage__lt=TaskProgressStage.COMPLETED)
+    task2subs = {}
+    for sub in subtasks:
+        task_id = sub.parent.id
+        if task_id in task2subs:
+            task2subs[task_id].append(sub)
+        else:
+            task2subs[task_id] = [sub]
+
+    dms2tasks = [(dm, task2subs.get(dm.task.id, [])) for dm in all_incomplete_dms]
+    return dms2tasks
+
+
 class FeatureExtrationView(FormView):
     form_class = FeatureExtrationForm
     page_name = 'feature-extraction'
@@ -255,11 +271,9 @@ class FeatureExtrationView(FormView):
         completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
         incomplete_dms = data_matrices.filter(task__stage__lt=TaskProgressStage.COMPLETED)
 
-        all_incomplete_dms = DataMatrix.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
-
         context['completed_dms'] = completed_dms
         context['incomplete_dms'] = incomplete_dms
-        context['all_incomplete_dms'] = all_incomplete_dms
+        context['all_incomplete_dms2tasks'] = get_incomplete_tasks(DataMatrix, user)
 
         return context
 
@@ -294,13 +308,11 @@ class FeatureExtrationView(FormView):
 
         if 'database' in post_data:
             database_id = int(post_data['database'])
-            db_class = Database
-            database = get_or_error(db_class, dict(id=int(database_id)))
+            database = get_or_error(Database, dict(id=int(database_id)))
             dm = DataMatrix(database=database)
         else:
             database_id = get_or_error(post_data, 'tmpdb')
-            db_class = TemporaryDatabase
-            database = get_or_error(db_class, dict(id=int(database_id)))
+            database = get_or_error(TemporaryDatabase, dict(id=int(database_id)))
             dm = DataMatrix(tmpdb=database)
 
         features = form_data['features'].order_by('id')
@@ -312,10 +324,12 @@ class FeatureExtrationView(FormView):
         dm.aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
         dm.save()
 
-        task = Task(user=user, target='{}:{}'.format(DataMatrix.__class__.__name__, dm.id))
+        task = Task(user=user, target='{}:{}'.format(DataMatrix.__name__, dm.id))
         task.save()
         dm.task = task
         dm.save()
+
+        extract_database_measurements.delay(task.id)
 
         context = self.get_context_data()
         context['task'] = task
@@ -344,12 +358,11 @@ class OrdinationExtrationView(FormView):
 
         completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
         incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
-        all_incomplete_ords = Ordination.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED, task__user=user)
 
         context['completed_dms'] = completed_dms
         context['completed_ords'] = completed_ords
         context['incomplete_ords'] = incomplete_ords
-        context['all_incomplete_ords'] = all_incomplete_ords
+        context['all_incomplete_ords2tasks'] = get_incomplete_tasks(Ordination, user)
 
         return context
 
@@ -388,10 +401,12 @@ class OrdinationExtrationView(FormView):
         ord = Ordination(dm=dm, method=method, ndims=ndims)
         ord.save()
 
-        task = Task(user=user, target='{}:{}'.format(Ordination.__class__.__name__, ord.id))
+        task = Task(user=user, target='{}:{}'.format(Ordination.__name__, ord.id))
         task.save()
         ord.task = task
         ord.save()
+
+        construct_ordination.delay(task.id)
 
         context = self.get_context_data()
         context['task'] = task
@@ -420,12 +435,9 @@ class SimilarityExtrationView(FormView):
 
         completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
 
-        all_incomplete_sims = SimilarityIndex.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED,
-                                                             task__user=user)
-
         context['completed_dms'] = completed_dms
         context['completed_ords'] = completed_ords
-        context['all_incomplete_sims'] = all_incomplete_sims
+        context['all_incomplete_sims2tasks'] = get_incomplete_tasks(SimilarityIndex, user)
 
         return context
 
@@ -463,7 +475,7 @@ class SimilarityExtrationView(FormView):
                 form.add_error('ordination', 'Already extracted')
                 has_error = True
             else:
-                si = SimilarityIndex(ord=ord)
+                si = SimilarityIndex(ord=ord, dm=ord.dm)
 
         if has_error:
             context = self.get_context_data()
@@ -473,10 +485,12 @@ class SimilarityExtrationView(FormView):
 
         si.save()
 
-        task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__class__.__name__, si.id))
+        task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__name__, si.id))
         task.save()
         si.task = task
         si.save()
+
+        calculate_similarity.delay(task.id)
 
         context = self.get_context_data()
         context['task'] = task
