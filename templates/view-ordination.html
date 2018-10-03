@@ -28,6 +28,7 @@
             </div>
             <div class="panel-footer no-padding">
                 <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    {% if viewas.username == user.username %}
                     <div class="btn-group dropup" role="group">
                         <button type="button" class="btn btn-sm btn-primary dropdown-toggle enable-on-lasso" data-toggle="dropdown"
                                 aria-haspopup="true" aria-expanded="false" disabled>
@@ -41,6 +42,7 @@
                             {% endfor %}
                         </ul>
                     </div>
+                    {% endif %}
 
 
                     <div class="btn-group" role="group">

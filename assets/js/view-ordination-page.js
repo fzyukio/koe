@@ -26,10 +26,12 @@ let minLeftWidth;
 const legendSymbols = {};
 let ce;
 let highlighted = {};
+let highlightedInfo = {};
 let inLassoSelectionMode = false;
 const dataMatrix = [];
 const rowsMetadata = [];
 const labelDatum = {};
+let plotObj;
 
 const saveSvgOption = {
     name: 'Save SVG',
@@ -125,6 +127,7 @@ function clearHighlighted() {
         el.remove();
     });
     highlighted = {};
+    highlightedInfo = {};
 }
 
 /**
@@ -332,19 +335,44 @@ const plot = function () {
         traces.push(trace);
     });
 
-    let layout = {
-        hovermode: 'closest',
-        width: plotWidth,
-        height: plotHeight,
-        margin: {l, r, b, t},
-    };
+    let layout;
+    if (plotObj === undefined) {
+        layout = {
+            hovermode: 'closest',
+            width: plotWidth,
+            height: plotHeight,
+            margin: {l, r, b, t},
+        };
+    }
+    else {
+        layout = plotObj._result.layout;
+    }
 
-    Plotly.newPlot(plotId, traces, layout, renderOptions);
+    plotObj = Plotly.newPlot(plotId, traces, layout, renderOptions);
     plotDiv.find('.modebar').css('position', 'relative');
     relayout();
     extractLegends();
     body.removeClass('loading');
 };
+
+
+/**
+ * Listen to some events on the plotly chart
+ */
+function registerPlotlyEvents() {
+    plotDiv[0].on('plotly_click', handleClick).on('plotly_hover', handleHover).on('plotly_selected', handleSelected);
+
+    plotDiv.find('.modebar-btn[data-title="Lasso Select"]').click(function () {
+        setLassoSelectionMode(true);
+    });
+
+    plotDiv.find('.modebar-btn[data-title="Zoom"]').click(function () {
+        setLassoSelectionMode(false);
+    });
+
+    plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0].click();
+}
+
 
 const initCategorySelection = function () {
     $.each(labelDatum, function (labelType) {
@@ -378,20 +406,7 @@ const initCategorySelection = function () {
         labelTyleSelectEl.find('li').removeClass('active').addClass('non-active');
         labelTyleSelectEl.find(`a[value="${labelType}"]`).parent().removeClass('non-active').addClass('active');
         plot();
-        plotDiv[0].
-            on('plotly_click', handleClick).
-            on('plotly_hover', handleHover).
-            on('plotly_selected', handleSelected);
-
-        plotDiv.find('.modebar-btn[data-title="Lasso Select"]').click(function () {
-            setLassoSelectionMode(true);
-        });
-
-        plotDiv.find('.modebar-btn[data-title="Zoom"]').click(function () {
-            setLassoSelectionMode(false);
-        });
-
-        plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0].click();
+        registerPlotlyEvents();
     }
 
     labelTyleSelectEl.find('li a').click(function () {
@@ -435,7 +450,8 @@ const handleClick = function ({points}) {
  */
 function addSylToHighlight(point, override = false) {
     let pointText = point.text;
-    let pointId = pointText.substr(0, pointText.indexOf(','));
+    let textParts = pointText.split(', ');
+    let pointId = textParts[0];
     let element = highlighted[pointId];
     let allow = override || !inLassoSelectionMode;
     if (element === undefined && allow) {
@@ -450,6 +466,7 @@ function addSylToHighlight(point, override = false) {
     </div>
 </div>`);
         highlighted[pointId] = element;
+        highlightedInfo[pointId] = textParts;
         sylSpects.prepend(element);
     }
     return element;
@@ -526,6 +543,10 @@ export const run = function (commonElements) {
 };
 
 
+const columnsMap = {};
+const id2idx = {};
+
+
 const downloadTensorData = function () {
     body.addClass('loading');
 
@@ -545,11 +566,13 @@ const downloadTensorData = function () {
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
             labelDatum[columnName] = {};
+            columnsMap[columnName] = i;
         }
 
         for (let rowIdx = 0; rowIdx < csvBodyRows.length; rowIdx++) {
             let rowMetadata = csvBodyRows[rowIdx].split('\t');
             rowsMetadata.push(rowMetadata);
+            id2idx[rowMetadata[0]] = rowIdx;
             for (let colIdx = 1; colIdx < rowMetadata.length; colIdx++) {
                 let columnType = columnNames[colIdx];
                 let labelData = labelDatum[columnType];
@@ -648,7 +671,34 @@ const setLabel = function (field) {
             ce.dialogModal.modal('hide');
             postRequest({
                 requestSlug: 'set-property-bulk',
-                data: postData
+                data: postData,
+                onSuccess() {
+                    let labelData = labelDatum[field];
+                    let colIdx = columnsMap[field];
+                    if (labelData[value] === undefined) {
+                        labelData[value] = [];
+                    }
+                    let category = labelData[value];
+                    $.each(highlightedInfo, function (id, textParts) {
+                        let oldLabel = textParts[colIdx];
+                        let oldCategory = labelData[oldLabel];
+                        let rowIdx = id2idx[id];
+                        let pos = oldCategory.indexOf(rowIdx);
+                        if (pos > -1) {
+                            oldCategory.splice(pos, 1);
+                            category.push(rowIdx);
+                        }
+                        rowsMetadata[rowIdx][colIdx] = value;
+                    });
+
+                    plot();
+                    registerPlotlyEvents();
+                    // console.log(selectedSyls);
+                    // console.log(field);
+                    // console.log(value);
+                    // console.log(rowsMetadata);
+                    // console.log(labelDatum);
+                }
             });
         })
     }
