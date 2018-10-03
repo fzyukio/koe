@@ -244,6 +244,18 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
     os.remove(bak_value_file)
 
 
+def retrieve_ids(index_filename):
+    if not os.path.exists(index_filename):
+        return np.array([], dtype=np.int32)
+    with open(index_filename, 'rb') as f:
+        index_arr = np.fromfile(f, dtype=np.int32)
+
+    nids = len(index_arr) // INDEX_FILE_NCOLS
+    index_arr = index_arr.reshape((nids, INDEX_FILE_NCOLS))
+    ids_cols = index_arr[:, 0]
+    return ids_cols
+
+
 def retrieve(lookup_ids, index_filename, value_filename, flat=False):
     with open(index_filename, 'rb') as f:
         index_arr = np.fromfile(f, dtype=np.int32)

@@ -21,6 +21,7 @@ def _cached_get_window(name, nfft):
             return tapers[:, 1]
 
 
+# @profile
 def stft_from_sig(sig, nfft, noverlap, win_length, window_name, center):
     window = _cached_get_window(window_name, nfft)
     hopsize = win_length - noverlap
@@ -30,6 +31,7 @@ def stft_from_sig(sig, nfft, noverlap, win_length, window_name, center):
                 dtype=np.complex128)
 
 
+# @profile
 def get_psd(args):
     wav_file_path, fs, start, end, nfft, noverlap, win_length, center = \
         unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length', 'center'])
@@ -42,6 +44,7 @@ def get_psd(args):
     return psd
 
 
+# @profile
 def get_sig(args):
     wav_file_path, fs, start, end = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end'])
     if wav_file_path:
@@ -51,6 +54,7 @@ def get_sig(args):
     return sig
 
 
+# @profile
 def maybe_cached_stft(args, window_name):
     wav_file_path, fs, start, end, nfft, noverlap, win_length, center = \
         unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'nfft', 'noverlap', 'win_length', 'center'])
@@ -63,23 +67,27 @@ def maybe_cached_stft(args, window_name):
     return tapered
 
 
+# @profile
 def get_psddb(args):
     spect = get_psd(args)
     return np.log10(spect) * 10.0
 
 
-@memoize(timeout=60)
+# @memoize(timeout=60)
+# @profile
 def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name, center):
     fs, chunk, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
     return stft_from_sig(chunk, nfft, noverlap, win_length, window_name, center)
 
 
+# @profile
 def get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, win_length, center):
     spect__ = cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, 'hann', center)
 
     return np.abs(spect__)
 
 
+# @profile
 def unroll_args(args, requires):
     retval = []
     for require in requires:
@@ -88,6 +96,7 @@ def unroll_args(args, requires):
     return tuple(retval)
 
 
+# @profile
 def my_stft(sig, fs, window, noverlap, nfft):
     siglen = len(sig)
     freq_range = nfft // 2 + 1

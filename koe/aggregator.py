@@ -10,15 +10,14 @@ from pymlfunc import normxcorr2
 
 from koe.models import Aggregation
 from koe.utils import divide_conquer
-from memoize import memoize
 
 
-@memoize(timeout=300)
+# @memoize(timeout=300)
 def _cached_get_chirp(chirp_type, nsamples):
     return generate_chirp(chirp_type, 'constant', nsamples)
 
 
-@memoize(timeout=300)
+# @memoize(timeout=300)
 def _cached_get_chirp_feature(feature_name, args):
     args = copy.deepcopy(args)
     nsamples = args['nsamples']

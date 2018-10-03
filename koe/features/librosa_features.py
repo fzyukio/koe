@@ -1,12 +1,11 @@
 import numpy as np
 from librosa import feature as rosaft, power_to_db
 from librosa import filters
-from memoize import memoize
 
 from koe.features.utils import unroll_args, get_psd, get_sig
 
 
-@memoize(timeout=60 * 60 * 24)
+# @memoize(timeout=60 * 60 * 24)
 def _cached_get_mel_filter(sr, n_fft, n_mels):
     return filters.mel(sr=sr, n_fft=n_fft, n_mels=n_mels)
 

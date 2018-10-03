@@ -4,7 +4,6 @@ from skimage.measure import label
 from skimage.measure import regionprops
 
 from koe.features.utils import unroll_args, maybe_cached_stft
-from memoize import memoize
 
 
 def find_zc(arr):
@@ -12,7 +11,7 @@ def find_zc(arr):
     return np.where((v_ < 0) & (arr < 0))
 
 
-@memoize(timeout=60)
+# @memoize(timeout=60)
 def cached_tf_derivatives(args):
     tapered1 = maybe_cached_stft(args, 'dpss1')
     tapered2 = maybe_cached_stft(args, 'dpss2')
@@ -28,21 +27,25 @@ def cached_tf_derivatives(args):
     return time_deriv, freq_deriv
 
 
+# @profile
 def time_derivative(args):
     time_deriv, _ = cached_tf_derivatives(args)
     return time_deriv
 
 
+# @profile
 def freq_derivative(args):
     _, freq_deriv = cached_tf_derivatives(args)
     return freq_deriv
 
 
+# @profile
 def frequency_modulation(args):
     time_deriv, freq_deriv = cached_tf_derivatives(args)
     return np.arctan(np.max(time_deriv, axis=0) / (np.max(freq_deriv, axis=0) + 0.1))
 
 
+# @profile
 def amplitude_modulation(args):
     time_deriv, _ = cached_tf_derivatives(args)
     return np.sum(time_deriv, axis=0)
@@ -62,6 +65,7 @@ def goodness_of_pitch(args):
     return np.max(tmp, axis=0)
 
 
+# @profile
 def mtspect(args):
     tapered1 = maybe_cached_stft(args, 'dpss1')
     tapered2 = maybe_cached_stft(args, 'dpss2')

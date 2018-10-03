@@ -8,6 +8,9 @@ stage_dict = {x: TaskProgressStage.get_name(x) for x in TaskProgressStage.revers
 
 
 def send_email(task, success):
+    if task.parent is not None or task.target is None:
+        return
+
     if success:
         subject = '[Koe] Job finished'
         template = 'job-finished'
@@ -36,8 +39,10 @@ class TaskRunner:
         if task.parent is None:
             prefix = 'Task #{} owner: {}'.format(task.id, task.user.username)
         else:
-            prefix = '--Subtask #{} from Task #{} owner: {}'.format(task.parent.id, task.id, task.user.username)
-
+            prefix = '--Subtask #{} from Task #{} owner: {}'.format(task.id, task.parent.id, task.user.username)
+        self.tick_interval = 1
+        self.tick_count = 0
+        self.next_count = 0
         self.bar = Bar(prefix, max=1)
         self.bar.index = -1
         self.bar.next()
@@ -46,8 +51,9 @@ class TaskRunner:
     def preparing(self):
         self._advance(TaskProgressStage.PREPARING)
 
-    def start(self, max=100):
-        self.bar.max = max
+    def start(self, limit=100):
+        self.tick_interval = max(1, limit / 100)
+        self.bar.max = limit
         self.bar.index = -1
         self._advance(TaskProgressStage.RUNNING)
 
@@ -59,16 +65,14 @@ class TaskRunner:
         self.task.pc_complete = 100.
         self.task.save()
         self._advance(TaskProgressStage.COMPLETED)
-        if self.task.parent is None:
-            send_email(self.task, True)
+        send_email(self.task, True)
 
     def error(self, e):
         from django.conf import settings
         error_tracker = settings.ERROR_TRACKER
         error_tracker.captureException()
         self._advance(TaskProgressStage.ERROR, str(e))
-        if self.task.parent is None:
-            send_email(self.task, False)
+        send_email(self.task, False)
 
     def _change_suffix(self):
         stage_name = stage_dict[self.task.stage]
@@ -78,20 +82,27 @@ class TaskRunner:
             self.bar.suffix = stage_name
 
     def tick(self):
-        pc_complete = (self.bar.index + 1) * 100 / self.bar.max
-        self.task.pc_complete = pc_complete
-        self.task.save()
-        self.bar.next()
+        self.next_count += 1
+
+        if self.next_count >= self.bar.max or \
+           self.next_count / self.tick_interval - self.tick_count > 1:
+            increment = int(self.next_count - (self.tick_interval * self.tick_count))
+
+            self.bar.next(increment)
+            pc_complete = self.bar.index * 100 / self.bar.max
+            self.task.pc_complete = pc_complete
+            self.task.save()
+            self.tick_count += 1
 
     def _advance(self, next_stage, message=None):
-        if self.task.stage >= TaskProgressStage.COMPLETED:
-            self.task.stage = TaskProgressStage.NOT_STARTED
-
-        if self.task.stage == TaskProgressStage.COMPLETED:
-            raise Exception('Task has already finished')
-
-        if next_stage <= self.task.stage:
-            raise Exception('Already at or passed that stage')
+        # if self.task.stage >= TaskProgressStage.COMPLETED:
+        #     self.task.stage = TaskProgressStage.NOT_STARTED
+        #
+        # if self.task.stage == TaskProgressStage.COMPLETED:
+        #     raise Exception('Task has already finished')
+        #
+        # if next_stage <= self.task.stage:
+        #     raise Exception('Already at or passed that stage')
 
         if next_stage >= TaskProgressStage.COMPLETED:
             self.task.completed = timezone.now()

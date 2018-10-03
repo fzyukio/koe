@@ -38,83 +38,97 @@ stepsize = nfft - noverlap
 
 
 # @profile
-def extract_segment_features_for_audio_file(wav_file_path, segs_info, features, tid2fvals):
+def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature):
     fs, length = get_wav_info(wav_file_path)
 
     duration_ms = length * 1000 / fs
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
                 win_length=win_length, center=False)
 
-    def add_feature_value(tid, val):
-        if tid not in tid2fvals:
-            fvals = []
-            tid2fvals[tid] = fvals
+    extractor = feature_extractors[feature.name]
+    tids = []
+    fvals = []
+
+    if feature.is_fixed_length:
+        for tid, beg, end in segs_info:
+            args['start'] = beg
+            args['end'] = end
+            feature_value = extractor(args)
+            tids.append(tid)
+            fvals.append(feature_value)
+    else:
+        args['start'] = 0
+        args['end'] = None
+        audio_file_feature_value = extractor(args)
+
+        if feature.is_one_dimensional:
+            feature_length = max(audio_file_feature_value.shape)
+            audio_file_feature_value = audio_file_feature_value.reshape((1, feature_length))
         else:
-            fvals = tid2fvals[tid]
+            feature_length = audio_file_feature_value.shape[1]
 
-        fvals.append(val)
+        for tid, beg, end in segs_info:
+            beg_idx = max(0, int(np.floor(beg * feature_length / duration_ms)))
+            end_idx = min(feature_length, int(np.ceil(end * feature_length / duration_ms)))
+            if end_idx == beg_idx:
+                warning('Segment is too short - result might be not meaningful')
+                end_idx = beg_idx + 1
 
-    for fidx, feature in enumerate(features):
-        extractor = feature_extractors[feature.name]
-
-        if feature.is_fixed_length:
-            for tid, beg, end in segs_info:
-                args['start'] = beg
-                args['end'] = end
-                feature_value = extractor(args)
-                add_feature_value(tid, feature_value)
-        else:
-            args['start'] = 0
-            args['end'] = None
-            audio_file_feature_value = extractor(args)
-
-            if feature.is_one_dimensional:
-                feature_length = max(audio_file_feature_value.shape)
-                audio_file_feature_value = audio_file_feature_value.reshape((1, feature_length))
+            if audio_file_feature_value.ndim == 2:
+                feature_value = audio_file_feature_value[:, beg_idx:end_idx]
             else:
-                feature_length = audio_file_feature_value.shape[1]
+                feature_value = audio_file_feature_value[beg_idx:end_idx]
 
-            for tid, beg, end in segs_info:
-                beg_idx = max(0, int(np.floor(beg * feature_length / duration_ms)))
-                end_idx = min(feature_length, int(np.ceil(end * feature_length / duration_ms)))
-                if end_idx == beg_idx:
-                    warning('Segment is too short - result might be not meaningful')
-                    end_idx = beg_idx + 1
+            tids.append(tid)
+            fvals.append(feature_value)
 
-                if audio_file_feature_value.ndim == 2:
-                    feature_value = audio_file_feature_value[:, beg_idx:end_idx]
-                else:
-                    feature_value = audio_file_feature_value[beg_idx:end_idx]
-
-                add_feature_value(tid, feature_value)
+    return tids, fvals
 
 
-def extract_segment_features_for_segments(task, sids, features):
+# # @profile
+def extract_segment_features_for_segments(task, sids, features, f2bs):
     segments = Segment.objects.filter(id__in=sids)
+    tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
+    vals = list(segments.order_by('audio_file', 'start_time_ms')
+                .values_list('audio_file__name', 'tid', 'start_time_ms', 'end_time_ms'))
 
-    vals = segments.order_by('audio_file', 'start_time_ms')\
-        .values_list('audio_file__name', 'tid', 'start_time_ms', 'end_time_ms')
-    af_to_segments = {}
+    f2tid2fvals = {}
+    f2af2segments = {}
+    n_calculations = 0
 
-    for name, tid, start, end in vals:
-        if name not in af_to_segments:
-            af_to_segments[name] = []
-        af_to_segments[name].append((tid, start, end))
+    for feature in features:
+        index_filename, value_filename = f2bs[feature]
+        existing_tids = binstorage.retrieve_ids(index_filename)
+        sorted_ids, sort_order = np.unique(existing_tids, return_index=True)
 
-    num_audio_files = len(af_to_segments)
-    update_steps = max(1, num_audio_files // 100)
+        non_existing_idx = np.where(np.logical_not(np.isin(tids, sorted_ids)))
+        missing_tids = tids[non_existing_idx]
 
-    tid2fvals = {}
-    step_idx = 0
-    task.start(max=len(af_to_segments))
-    for song_name, segs_info in af_to_segments.items():
-        wav_file_path = wav_path(song_name)
-        extract_segment_features_for_audio_file(wav_file_path, segs_info, features, tid2fvals)
-        step_idx += 1
-        if step_idx % update_steps == 0:
-            task.tick()
+        af_to_segments = {}
 
-    return tid2fvals
+        for name, tid, start, end in vals:
+            if tid in missing_tids:
+                if name not in af_to_segments:
+                    af_to_segments[name] = []
+                af_to_segments[name].append((tid, start, end))
+
+        f2af2segments[feature] = af_to_segments
+        n_calculations += len(af_to_segments)
+
+    if n_calculations:
+        task.start(limit=n_calculations)
+        for feature, af_to_segments in f2af2segments.items():
+            _tids = []
+            _fvals = []
+            for song_name, segs_info in af_to_segments.items():
+                wav_file_path = wav_path(song_name)
+                __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
+                _tids += __tids
+                _fvals += __fvals
+                task.tick()
+            f2tid2fvals[feature] = (_tids, _fvals)
+
+    return tids, f2tid2fvals
 
 
 # @profile
@@ -133,8 +147,6 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
         .filter(id__in=sids)\
         .annotate(duration=F('end_time_ms') - F('start_time_ms')).order_by('duration')
 
-    n_calculations = sum([0 if f.is_fixed_length else len(aggregators) for f in features]) * len(sids)
-    ptask.start(max=n_calculations)
     attrs = segment_info.values_list('tid', 'duration', 'audio_file__fs')
 
     duration2segs = {}
@@ -150,28 +162,52 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=None, start=None, end=None, win_length=win_length,
                 center=False)
 
-    all_tids = []
-    all_aggregated_values = {}
+    n_calculations = 0
 
+    jobs = {}
     for duration, (tids, fss) in duration2segs.items():
-        all_tids += tids
-
         tids = np.array(tids, dtype=np.int32)
+        fss = np.array(fss, dtype=np.int32)
+
+        jobs[duration] = {}
 
         for feature in features:
-            if feature not in all_aggregated_values:
-                all_aggregated_values_this = {}
-                all_aggregated_values[feature] = all_aggregated_values_this
-            else:
-                all_aggregated_values_this = all_aggregated_values[feature]
-
             f_idf, f_vlf = f2bs[feature]
-            values = binstorage.retrieve(tids, f_idf, f_vlf)
 
-            # aggregated_values = {}
+            for aggregator in aggregators:
+                fa_idf, fa_vlf = fa2bs[feature][aggregator]
 
-            for tid, fs, value in zip(tids, fss, values):
+                existing_tids = binstorage.retrieve_ids(fa_idf)
+                sorted_ids, sort_order = np.unique(existing_tids, return_index=True)
+
+                non_existing_idx = np.where(np.logical_not(np.isin(tids, sorted_ids)))
+                _tids = tids[non_existing_idx]
+                _fss = fss[non_existing_idx]
+
+                n_calculations += len(_tids)
+
+                jobs[duration][feature] = (_tids, _fss, f_idf, f_vlf)
+
+    if not n_calculations:
+        ptask.wrapping_up()
+        return
+
+    ptask.start(limit=n_calculations)
+    result_by_ft = {}
+    for duration, ftjobs in jobs.items():
+        for feature, (_tids, _fss, f_idf, f_vlf) in ftjobs.items():
+            if feature not in result_by_ft:
+                result_by_tid = {}
+                result_by_ft[feature] = result_by_tid
+            else:
+                result_by_tid = result_by_ft[feature]
+
+            values = binstorage.retrieve(_tids, f_idf, f_vlf)
+
+            for tid, fs, value in zip(_tids, _fss, values):
                 args['fs'] = fs
+                result_by_agg = {}
+                result_by_tid[tid] = result_by_agg
 
                 if not feature.is_fixed_length:
                     if value.ndim == 2:
@@ -183,25 +219,30 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
                     args['nsamples'] = min_nsamples
 
                     for aggregator in aggregators:
-                        if aggregator not in all_aggregated_values_this:
-                            all_aggregated_values_this[aggregator] = []
-
                         if aggregator.is_chirpy():
                             aggregated = aggregator.process(value, args=args, feature=feature)
                         else:
                             aggregated = aggregator.process(value)
 
-                        all_aggregated_values_this[aggregator].append(aggregated)
+                        result_by_agg[aggregator] = aggregated
                         ptask.tick()
 
     ptask.wrapping_up()
-    all_tids = np.array(all_tids, dtype=np.int32)
     for feature in features:
         if feature.is_fixed_length:
             continue
-        for aggregator in aggregators:
+        result_by_tid = result_by_ft[feature]
+        agg2tids = {aggregator: ([], []) for aggregator in aggregators}
+
+        for tid, result_by_agg in result_by_tid.items():
+            for aggregator, val in result_by_agg.items():
+                agg2tids[aggregator][0].append(tid)
+                agg2tids[aggregator][1].append(val)
+
+        for aggregator, (tids, vals) in agg2tids.items():
+            tids = np.array(tids)
             fa_idf, fa_vlf = fa2bs[feature][aggregator]
-            binstorage.store(all_tids, all_aggregated_values[feature][aggregator], fa_idf, fa_vlf)
+            binstorage.store(tids, vals, fa_idf, fa_vlf)
 
 
 def get_segment_ids_and_labels(csv_file):
@@ -281,6 +322,7 @@ def get_or_wait(task_id):
 
 
 @app.task(bind=False)
+# @profile
 def extract_database_measurements(task_id):
     task = get_or_wait(task_id)
     runner = TaskRunner(task)
@@ -302,15 +344,6 @@ def extract_database_measurements(task_id):
         aggregations = Aggregation.objects.filter(id__in=dm.aggregations_hash.split('-'))
         aggregators = [aggregator_map[x.name] for x in aggregations]
 
-        tid2fvals = extract_segment_features_for_segments(runner, sids, features)
-        tids, f2vals = extract_tids_fvals(tid2fvals, features)
-
-        runner.wrapping_up()
-        child_task = Task(user=task.user, parent=task)
-        child_task.save()
-        child_runner = TaskRunner(child_task)
-        child_runner.preparing()
-
         # feature to binstorage's files
         f2bs = {}
         # feature+aggregation to binstorage's files
@@ -321,10 +354,6 @@ def extract_database_measurements(task_id):
             index_filename = data_path('binary/features', '{}.idx'.format(feature_name), for_url=False)
             value_filename = data_path('binary/features', '{}.val'.format(feature_name), for_url=False)
             f2bs[feature] = (index_filename, value_filename)
-
-            values_arr = f2vals[feature]
-            ensure_parent_folder_exists(index_filename)
-            binstorage.store(tids, values_arr, index_filename, value_filename)
 
             if feature not in fa2bs:
                 fa2bs[feature] = {}
@@ -337,6 +366,21 @@ def extract_database_measurements(task_id):
                 index_filename = data_path(folder, '{}.idx'.format(aggregator_name), for_url=False)
                 value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
                 fa2bs[feature][aggregator] = (index_filename, value_filename)
+
+        tids, f2tid2fvals = extract_segment_features_for_segments(runner, sids, features, f2bs)
+
+        for feature, (index_filename, value_filename) in f2bs.items():
+            _tids, _fvals = f2tid2fvals.get(feature, (None, None))
+            if _tids:
+                _tids = np.array(_tids, dtype=np.int32)
+                ensure_parent_folder_exists(index_filename)
+                binstorage.store(_tids, _fvals, index_filename, value_filename)
+
+        runner.wrapping_up()
+        child_task = Task(user=task.user, parent=task)
+        child_task.save()
+        child_runner = TaskRunner(child_task)
+        child_runner.preparing()
 
         aggregate_feature_values(child_runner, sids, f2bs, fa2bs, features, aggregators)
         child_runner.complete()
