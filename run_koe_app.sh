@@ -25,10 +25,13 @@ fi
 # Always clear the cache
 python manage.py cache --action=clear --pattern='template.cache.*'
 
+celery -A koe worker -l info -c 1 &
+sleep 1
+python manage.py resume_unfinished_task
+
 if [ "$IS_TENSORFLOW" = "tensorflow" ]; then
   python manage.py shell_plus --notebook &
   uwsgi --ini uwsgi.ini:tensorflow
 else
-  celery -A koe worker -l info -c 1 &
   uwsgi --ini uwsgi.ini:prod
 fi
