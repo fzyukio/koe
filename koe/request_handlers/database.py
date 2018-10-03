@@ -539,6 +539,7 @@ def hold_ids(request):
 
 def make_tmpdb(request):
     ids = get_or_error(request.POST, 'ids')
+    database = get_or_error(request.POST, 'database')
     ids = np.array(list(map(int, ids.split(','))))
     ids = np.sort(ids)
 
@@ -548,7 +549,7 @@ def make_tmpdb(request):
         raise CustomAssertionError(existing.name)
 
     name = uuid.uuid4().hex
-    tmpdb = TemporaryDatabase(name=name, user=request.user)
+    tmpdb = TemporaryDatabase(name=name, user=request.user, _databases=database)
     tmpdb.ids = ids
     tmpdb.save()
 

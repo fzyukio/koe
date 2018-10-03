@@ -275,24 +275,26 @@ class FeatureExtrationView(FormView):
             form.add_error('data_matrix', 'Already extracted')
             has_error = True
 
-        if DataMatrix.objects.filter(name=name).exists():
-            form.add_error('name', 'This name is already taken')
-            has_error = True
+        if 'database' in post_data:
+            database_id = int(post_data['database'])
+            database = get_or_error(Database, dict(id=int(database_id)))
+            if DataMatrix.objects.filter(database=database, name=name).exists():
+                form.add_error('name', 'This name is already taken')
+                has_error = True
+            dm = DataMatrix(database=database)
+        else:
+            database_id = get_or_error(post_data, 'tmpdb')
+            database = get_or_error(TemporaryDatabase, dict(id=int(database_id)))
+            if DataMatrix.objects.filter(tmpdb=database, name=name).exists():
+                form.add_error('name', 'This name is already taken')
+                has_error = True
+            dm = DataMatrix(tmpdb=database)
 
         if has_error:
             context = self.get_context_data()
             context['form'] = form
             rendered = render_to_string('partials/feature-selection-form.html', context=context)
             return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
-
-        if 'database' in post_data:
-            database_id = int(post_data['database'])
-            database = get_or_error(Database, dict(id=int(database_id)))
-            dm = DataMatrix(database=database)
-        else:
-            database_id = get_or_error(post_data, 'tmpdb')
-            database = get_or_error(TemporaryDatabase, dict(id=int(database_id)))
-            dm = DataMatrix(tmpdb=database)
 
         features = form_data['features'].order_by('id')
         aggregations = form_data['aggregations'].order_by('id')

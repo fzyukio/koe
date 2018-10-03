@@ -27,6 +27,7 @@
             <th>Source type</th>
             <th>Source name</th>
             <th>Created</th>
+            <th>Started</th>
             <th>Progress</th>
         </tr>
         </thead>
@@ -53,6 +54,7 @@
                     <td>{{ sim.ord.name }}</td>
                 {% endif %}
                 <td>{{ sim.task.created }}</td>
+                <td>{{ sim.task.started }}</td>
                 <td>
                     <div class="progress">
                         <span class="progress-value">{{ sim.task.pc_complete | floatformat }}% {{ sim.task.get_stage_display }}</span>
@@ -65,8 +67,9 @@
             </tr>
             {% for subtask in subtasks %}
                 <tr class="subtask">
-                    <td colspan="4">Subtask #{{ subtask.id }}</td>
+                    <td colspan="5">Subtask #{{ subtask.id }}</td>
                     <td>{{ subtask.created }}</td>
+                    <td>{{ subtask.started }}</td>
                     <td>
                         <div class="progress">
                             <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>

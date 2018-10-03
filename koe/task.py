@@ -96,6 +96,9 @@ class TaskRunner:
         if next_stage >= TaskProgressStage.COMPLETED:
             self.task.completed = timezone.now()
 
+        if next_stage == TaskProgressStage.RUNNING:
+            self.task.started = timezone.now()
+
         self.task.stage = next_stage
         self.task.message = message
         self.task.save()

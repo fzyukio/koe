@@ -54,6 +54,7 @@ export const grid = new SegmentGrid();
 const $segmentGrid = $('#segment-info');
 const viewas = $segmentGrid.attr('viewas');
 const database = $segmentGrid.attr('database');
+const tmpdb = $segmentGrid.attr('tmpdb');
 const similarity = $segmentGrid.attr('similarity');
 const contextMenu = $('#context-menu');
 const filterLiA = contextMenu.find('a[action=filter]');
@@ -422,6 +423,7 @@ const focusOnGridOnInit = function () {
 let extraArgs = {
     viewas,
     database,
+    tmpdb,
     similarity,
 };
 
@@ -745,6 +747,7 @@ const initCreateTemporaryDatabaseBtn = function() {
 
         let postData = {
             ids: itemsIds.join(),
+            database,
         };
 
         postRequest({

@@ -25,7 +25,8 @@
         </div>
     </div>
 
-    <div class="has-grid" id="segment-info" viewas="{{ viewas.username }}" database="{{ current_database.id }}"
+    <div class="has-grid" id="segment-info" viewas="{{ viewas.username }}"
+         {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
          {% if current_similarity %}similarity="{{ current_similarity.id }}"{% endif %}>
 
     </div>

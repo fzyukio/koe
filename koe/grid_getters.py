@@ -75,8 +75,13 @@ def bulk_get_segment_info(segs, extras):
     holdout = extras.get('_holdout', 'false') == 'true'
     user = extras.user
 
-    database_id = extras.database
-    current_database = get_or_error(Database, dict(id=database_id))
+    if 'database' in extras:
+        database_id = extras.database
+        current_database = get_or_error(Database, dict(id=database_id))
+    else:
+        database_id = extras.tmpdb
+        current_database = get_or_error(TemporaryDatabase, dict(id=database_id))
+
     similarity_id = extras.similarity
     current_similarity = None
     if similarity_id:

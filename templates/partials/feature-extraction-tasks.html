@@ -26,6 +26,7 @@
             <th>Database</th>
             <th>Name</th>
             <th>Created</th>
+            <th>Started</th>
             <th>Progress</th>
         </tr>
         </thead>
@@ -41,6 +42,7 @@
                 {% endif %}
                 <td>{{ dm.name }}</td>
                 <td>{{ dm.task.created }}</td>
+                <td>{{ dm.task.started }}</td>
                 <td>
                     <div class="progress">
                         <span class="progress-value">{{ dm.task.pc_complete | floatformat }}% {{ dm.task.get_stage_display }}</span>
@@ -53,8 +55,9 @@
             </tr>
             {% for subtask in subtasks %}
                 <tr class="subtask">
-                    <td colspan="3">Subtask #{{ subtask.id }}</td>
+                    <td colspan="4">Subtask #{{ subtask.id }}</td>
                     <td>{{ subtask.created }}</td>
+                    <td>{{ subtask.started }}</td>
                     <td>
                         <div class="progress">
                             <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>

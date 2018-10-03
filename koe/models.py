@@ -514,6 +514,7 @@ class TaskProgressStage(MagicChoices):
 class Task(SimpleModel):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
+    started = models.DateTimeField(null=True, default=None, blank=True)
     completed = models.DateTimeField(null=True, default=None, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     stage = models.IntegerField(choices=TaskProgressStage.as_choices(), default=TaskProgressStage.NOT_STARTED)
@@ -555,7 +556,7 @@ class DataMatrix(SimpleModel, BinaryStoredMixin):
     Stores extracted feature values of selected IDs
     """
 
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=True)
     tmpdb = models.ForeignKey(TemporaryDatabase, on_delete=models.SET_NULL, null=True, blank=True)
     features_hash = models.CharField(max_length=255)
