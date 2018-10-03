@@ -411,7 +411,7 @@ def construct_ordination(task_id):
         method_name = ord.method
         ndims = ord.ndims
 
-        assert dm.task.is_completed()
+        assert dm.task is None or dm.task.is_completed()
         assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
         assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
 
@@ -457,8 +457,8 @@ def calculate_similarity(task_id):
         dm = sim.dm
         ord = sim.ord
 
-        assert dm.task.is_completed()
-        assert ord is None or ord.task.is_completed()
+        assert dm.task is None or dm.task.is_completed()
+        assert ord is None or ord.task is None or ord.task.is_completed()
 
         if ord:
             sids_path = ord.get_sids_path()
