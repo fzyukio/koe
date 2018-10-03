@@ -236,7 +236,7 @@ def extract_tensor_metadata(sids, annotator):
 
     sid_to_gender =\
         {
-            x: y.lower() for x, y in Segment.objects.filter(id__in=sids).order_by('id')
+            x: y.lower() if y else 'unknown' for x, y in Segment.objects.filter(id__in=sids).order_by('id')
             .values_list('id', 'audio_file__individual__gender')
         }
 
