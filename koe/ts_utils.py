@@ -127,8 +127,8 @@ def get_sids_from_metadata(filename):
     return sids
 
 
-def get_rawdata_from_binary(filename, nrows):
-    arr = bytes_to_ndarray(filename)
+def get_rawdata_from_binary(filename, nrows, dtype=np.float32):
+    arr = bytes_to_ndarray(filename, dtype)
     size = np.size(arr)
     return arr.reshape((nrows, size // nrows))
 

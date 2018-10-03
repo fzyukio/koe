@@ -7,8 +7,10 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 from pycspade import cspade
 
-from koe.model_utils import get_user_databases, get_current_similarity, get_or_error
-from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase
+from koe.model_utils import get_user_databases, get_or_error
+from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase,\
+    SimilarityIndex
+from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import spect_mask_path, spect_fft_path, history_path
 
@@ -73,13 +75,17 @@ def bulk_get_segment_info(segs, extras):
     holdout = extras.get('_holdout', 'false') == 'true'
     user = extras.user
 
+    database_id = extras.database
+    current_database = get_or_error(Database, dict(id=database_id))
+    similarity_id = extras.similarity
+    current_similarity = None
+    if similarity_id:
+        current_similarity = get_or_error(SimilarityIndex, dict(id=similarity_id))
+
     rows = []
     ids = []
-    current_database = get_user_databases(user)
     if current_database is None:
         return ids, rows
-
-    _, current_similarity = get_current_similarity(user, current_database)
 
     if holdout:
         ids_holder = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.hold_ids_attr, owner_id=user.id,
@@ -131,21 +137,19 @@ def bulk_get_segment_info(segs, extras):
         extra_attr_dict = song_extra_attr_values_lookup[id]
         extra_attr_dict[attr] = value
 
-    ids = [x[0] for x in values]
+    ids = np.array([x[0] for x in values], dtype=np.int32)
 
     nrows = len(values)
     if current_similarity is None:
         indices = [0] * nrows
     else:
-        sorted_ids = current_similarity.ids
-        try:
-            sorted_order = current_similarity.order
-            indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
-        except IndexError as e:
-            # This happens when the referenced IDs no longer exist - most likely because the
-            # segmentation changed
+        sim_sids_path = current_similarity.get_sids_path()
+        sim_bytes_path = current_similarity.get_bytes_path()
 
-            indices = [0] * nrows
+        sorted_ids = bytes_to_ndarray(sim_sids_path, np.int32)
+        sorted_order = get_rawdata_from_binary(sim_bytes_path, len(sorted_ids), np.int32)
+        sorted_order = np.squeeze(sorted_order)
+        indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
 
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \

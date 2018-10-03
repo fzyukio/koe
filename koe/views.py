@@ -516,17 +516,36 @@ def get_home_page(request):
 
 def extra_syllables_context(request, context):
     database = context['current_database']
+    user = request.user
     if isinstance(database, Database):
         similarities = SimilarityIndex.objects.filter(Q(dm__database=database) | Q(ord__dm__database=database))
+        cur_sim_val = ExtraAttrValue.objects\
+            .filter(attr=settings.ATTRS.user.database_sim_attr, user=user, owner_id=database.id).first()
     else:
         similarities = SimilarityIndex.objects.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
+        cur_sim_val = ExtraAttrValue.objects\
+            .filter(attr=settings.ATTRS.user.tmpdb_sim_attr, user=user, owner_id=database.id).first()
+
     context['similarities'] = similarities
+
+    cur_sim_id = None
+    if cur_sim_val:
+        cur_sim_id = int(cur_sim_val.value)
 
     sim_id = request.GET.get('similarity', None)
     if sim_id is None:
+        if cur_sim_id is not None:
+            sim_id = cur_sim_id
+    else:
+        sim_id = int(sim_id)
+        if cur_sim_id is not None and cur_sim_id != sim_id:
+            cur_sim_val.value = str(sim_id)
+            cur_sim_val.save()
+
+    if sim_id is None:
         current_similarity = similarities.first()
     else:
-        current_similarity = get_or_error(SimilarityIndex, dict(id=sim_id))
+        current_similarity = SimilarityIndex.objects.filter(id=sim_id).first()
     context['current_similarity'] = current_similarity
     return context
 

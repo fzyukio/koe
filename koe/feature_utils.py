@@ -474,7 +474,7 @@ def calculate_similarity(task_id):
 
         tree = linkage(coordinates, method='average')
         order = natural_order(tree)
-        sorted_order = np.argsort(order)
+        sorted_order = np.argsort(order).astype(np.int32)
 
         runner.wrapping_up()
 

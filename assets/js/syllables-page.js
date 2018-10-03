@@ -51,7 +51,10 @@ class SegmentGrid extends FlexibleGrid {
 }
 
 export const grid = new SegmentGrid();
-let viewas = $('#segment-info').attr('viewas');
+const $segmentGrid = $('#segment-info');
+const viewas = $segmentGrid.attr('viewas');
+const database = $segmentGrid.attr('database');
+const similarity = $segmentGrid.attr('similarity');
 const contextMenu = $('#context-menu');
 const filterLiA = contextMenu.find('a[action=filter]');
 const filterLi = filterLiA.parent();
@@ -248,7 +251,7 @@ const showBigSpectrogram = function (e, args) {
 
         originalImage.addClass('highlight');
 
-        const panelHeight = $('#segment-info').height();
+        const panelHeight = $segmentGrid.height();
         const imgWidth = tooltipImg.width();
         const imgHeight = tooltipImg.height();
 
@@ -418,6 +421,8 @@ const focusOnGridOnInit = function () {
 
 let extraArgs = {
     viewas,
+    database,
+    similarity,
 };
 
 let gridArgs = {

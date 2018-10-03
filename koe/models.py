@@ -605,6 +605,11 @@ class SimilarityIndex(SimpleModel, BinaryStoredMixin):
     def _get_path(self, ext):
         return os.path.join(settings.MEDIA_URL, 'similarity', str(self.id), '{}.{}'.format(self.id, ext))[1:]
 
+    def __str__(self):
+        if self.ord:
+            return self.ord.get_name()
+        return self.dm.name
+
 
 class TensorData(SimpleModel):
     name = models.CharField(max_length=255, unique=True)

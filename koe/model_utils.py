@@ -7,8 +7,7 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
-from koe.models import DistanceMatrix, Segment, Coordinate, DatabaseAssignment, Database, DatabasePermission,\
-    TemporaryDatabase
+from koe.models import DistanceMatrix, Segment, DatabaseAssignment, Database, DatabasePermission, TemporaryDatabase
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
@@ -225,32 +224,6 @@ def get_user_databases(user):
                                           value='{}_{}'.format(db_class, current_database.id))
 
     return current_database
-
-
-def get_current_similarity(user, current_database):
-    """
-    Return user's current database and the database's current similarity matrix
-    :param current_database:
-    :param user:
-    :return:
-    """
-    if isinstance(current_database, TemporaryDatabase):
-        return None, None
-    similarities = Coordinate.objects.filter(database=current_database)
-
-    if not similarities:
-        return None, None
-
-    current_similarity_value = ExtraAttrValue.objects \
-        .filter(attr=settings.ATTRS.user.current_similarity, user=user, owner_id=current_database.id).first()
-
-    if current_similarity_value:
-        current_similarity_id = current_similarity_value.value
-        current_similarity = Coordinate.objects.get(pk=current_similarity_id)
-    else:
-        current_similarity = similarities.first()
-
-    return similarities, current_similarity
 
 
 def extract_spectrogram(audio_file):

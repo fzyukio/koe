@@ -20,7 +20,8 @@ def get_builtin_attrs():
 
     current_database_attr, _ = goc(klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
     hold_ids_attr, _ = goc(klass=User.__name__, name='hold-ids', type=ValueTypes.SHORT_TEXT)
-    current_similarity_attr, _ = goc(klass=User.__name__, name='current-similarity', type=ValueTypes.SHORT_TEXT)
+    database_sim_attr, _ = goc(klass=User.__name__, name='database-similarity', type=ValueTypes.SHORT_TEXT)
+    tmpdb_sim_attr, _ = goc(klass=User.__name__, name='tmpdb-similarity', type=ValueTypes.SHORT_TEXT)
 
     song_note_attr, _ = goc(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
     type_attr, _ = goc(klass=AudioFile.__name__, name='type', type=ValueTypes.SHORT_TEXT)
@@ -30,8 +31,8 @@ def get_builtin_attrs():
     seg_note_attr, _ = goc(klass=Segment.__name__, name='note', type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
-        user=DotMap(current_database=current_database_attr, current_similarity=current_similarity_attr,
-                    hold_ids_attr=hold_ids_attr),
+        user=DotMap(current_database=current_database_attr, database_sim_attr=database_sim_attr,
+                    tmpdb_sim_attr=tmpdb_sim_attr, hold_ids_attr=hold_ids_attr),
         audio_file=DotMap(note=song_note_attr, type=type_attr),
         segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr)
     )
