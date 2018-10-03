@@ -358,7 +358,7 @@ $(document).ready(function () {
     else if (pageName.startsWith('/extraction/similarity/')) {
         page = require('similarity-extraction-page')
     }
-    else if (pageName.startsWith('/ordination/')) {
+    else if (pageName.startsWith('/view-ordination/')) {
         page = require('view-ordination-page')
     }
     else if (pageName === '/contact-us/') {

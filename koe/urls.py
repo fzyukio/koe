@@ -22,32 +22,28 @@ def handler500(request):
     return HttpResponseServerError(render(request, '500.html'))
 
 
+page_names = ['syllables', 'songs', 'sequence-mining', 'exemplars', 'view-ordination', 'dashboard', 'help']
+
+for page_name in page_names:
+    urlpatterns.append(
+        path('{}/'.format(page_name), login_required(views.get_view(page_name)), name=page_name),
+    )
+
 urlpatterns += \
     [
         url(r'^admin/', admin.site.urls),
-        url(r'^syllables/$', login_required(views.get_view('syllables')), name='syllables'),
-        url(r'^songs/$', login_required(views.get_view('songs')), name='songs'),
-        url(r'^sequence-mining/$', login_required(views.get_view('sequence-mining')), name='sequence-mining'),
         url(r'^segmentation/(?P<file_id>[0-9]+)/$', login_required(views.SegmentationView.as_view()),
             name='segmentation'),
-        url(r'^exemplars/$', login_required(views.get_view('exemplars')), name='exemplars'),
         url(r'^song-partition/$', login_required(views.SongPartitionView.as_view()), name='song-partition'),
         url(r'^extraction/feature/$', login_required(views.FeatureExtrationView.as_view()), name='feature-extraction'),
         url(r'^extraction/ordination/$', login_required(views.OrdinationExtrationView.as_view()),
             name='ordination-extraction'),
         url(r'^extraction/similarity/$', login_required(views.SimilarityExtrationView.as_view()),
             name='similarity-extraction'),
-
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/$', views.TensorvizView.as_view(), name='tsne'),
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
-
-        url(r'^ordination/$', login_required(views.OrdinationView.as_view()), name='view-ordination'),
         path('ordination/meta/<int:ord_id>/<str:viewas>/', login_required(tensorviz.get_ordination_metadata),
              name='ordination-meta'),
-
-        url(r'^dashboard/$', login_required(views.get_view('dashboard')), name='dashboard'),
-        url(r'^help/$', login_required(views.get_view('help')), name='help'),
         url(r'^contact-us/$', login_required(views.ContactUsView.as_view()), name='contact-us'),
         url(r'^$', login_required(views.get_home_page), name='home_page')
-
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

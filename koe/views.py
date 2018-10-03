@@ -216,42 +216,6 @@ class TensorvizView(TemplateView):
         return context
 
 
-class OrdinationView(TemplateView):
-    template_name = 'view-ordination.html'
-    page_name = 'view-ordination'
-
-    def get_context_data(self, **kwargs):
-        context = super(OrdinationView, self).get_context_data(**kwargs)
-        populate_context(self, context)
-        database = context['current_database']
-        viewas = context['viewas']
-
-        if isinstance(database, Database):
-            q = Q(dm__database=database)
-            context['db_type'] = 'Database'
-        else:
-            q = Q(dm__tmpdb=database)
-            context['db_type'] = 'Collection'
-
-        ordinations = Ordination.objects.filter(q & (Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED)))
-        ord_id = self.request.GET.get('ordination', None)
-        if ord_id is None:
-            current_ordination = ordinations.first()
-        else:
-            current_ordination = get_or_error(Ordination, dict(id=ord_id))
-        context['current_ordination'] = current_ordination
-        context['ordinations'] = ordinations
-
-        if current_ordination:
-            bytes_path = current_ordination.get_bytes_path()
-            metadata_path = reverse('ordination-meta',
-                                    kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
-
-            context['metadata_path'] = metadata_path
-            context['bytes_path'] = '/' + bytes_path
-        return context
-
-
 def get_incomplete_tasks(target_class):
     all_incomplete_dms = target_class.objects.filter(task__stage__lt=TaskProgressStage.COMPLETED)
     subtasks = Task.objects.filter(parent__in=all_incomplete_dms.values_list('task', flat=True),
@@ -550,6 +514,59 @@ def get_home_page(request):
     return redirect('songs')
 
 
+def extra_syllables_context(request, context):
+    database = context['current_database']
+    if isinstance(database, Database):
+        similarities = SimilarityIndex.objects.filter(Q(dm__database=database) | Q(ord__dm__database=database))
+    else:
+        similarities = SimilarityIndex.objects.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
+    context['similarities'] = similarities
+
+    sim_id = request.GET.get('similarity', None)
+    if sim_id is None:
+        current_similarity = similarities.first()
+    else:
+        current_similarity = get_or_error(SimilarityIndex, dict(id=sim_id))
+    context['current_similarity'] = current_similarity
+    return context
+
+
+def extra_view_ordination_context(request, context):
+    database = context['current_database']
+    viewas = context['viewas']
+
+    if isinstance(database, Database):
+        q = Q(dm__database=database)
+        context['db_type'] = 'Database'
+    else:
+        q = Q(dm__tmpdb=database)
+        context['db_type'] = 'Collection'
+
+    ordinations = Ordination.objects.filter(q & (Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED)))
+    ord_id = request.GET.get('ordination', None)
+    if ord_id is None:
+        current_ordination = ordinations.first()
+    else:
+        current_ordination = get_or_error(Ordination, dict(id=ord_id))
+    context['current_ordination'] = current_ordination
+    context['ordinations'] = ordinations
+
+    if current_ordination:
+        bytes_path = current_ordination.get_bytes_path()
+        metadata_path = reverse('ordination-meta',
+                                kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
+
+        context['metadata_path'] = metadata_path
+        context['bytes_path'] = '/' + bytes_path
+    return context
+
+
+extra_context = {
+    'syllables': extra_syllables_context,
+    'view-ordination': extra_view_ordination_context
+}
+
+
 def get_view(name):
     """
     Get a generic TemplateBased view that uses only common context
@@ -563,6 +580,11 @@ def get_view(name):
         def get_context_data(self, **kwargs):
             context = super(View, self).get_context_data(**kwargs)
             populate_context(self, context)
+
+            extra_context_func = extra_context.get(self.__class__.page_name, None)
+            if extra_context_func:
+                extra_context_func(self.request, context)
+
             return context
 
     return View.as_view()
