@@ -1,3 +1,7 @@
+{% if viewas.username != user.username %}
+    You're viewing (read-only) data from {{ viewas.username }}.
+{% endif %}
+
 <div class="menu-item">
     <label>View as</label>
     <div class="btn-group pull-right">
