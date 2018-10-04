@@ -6,7 +6,6 @@ import {debug, deepCopy, getUrl} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
-
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 30;
 

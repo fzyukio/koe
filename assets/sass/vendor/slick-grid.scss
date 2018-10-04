@@ -156,7 +156,12 @@ classes should alter those!
   &.has-sequence {
     padding-top: 0;
     padding-bottom: 0;
-    overflow-x: auto;
+    overflow-x: hidden;
+
+    &:hover {
+      overflow-x:auto;
+    }
+
     .btn {
       line-height: 1;
     }
