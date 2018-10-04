@@ -153,8 +153,7 @@ def bulk_get_segment_info(segs, extras):
 
         sorted_ids = bytes_to_ndarray(sim_sids_path, np.int32)
         sorted_order = get_rawdata_from_binary(sim_bytes_path, len(sorted_ids), np.int32)
-        sorted_order = np.squeeze(sorted_order)
-        indices = sorted_order[np.searchsorted(sorted_ids, ids)].tolist()
+        indices = np.squeeze(sorted_order).tolist()
 
     for i in range(nrows):
         id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
