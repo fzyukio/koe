@@ -118,7 +118,7 @@ yarn start # This command will run the server at port specified by $WEBPACK_SERV
 ## Build for production
 ```bash
 yarn build-prod # Compile Javascript and SCSS
-python manage.py collectstatic --noinput # Collect static files to /static/
+DEBUG=false python manage.py collectstatic --noinput # Collect static files to /static/
 ```
 
 ## Quick way to deploy on server:

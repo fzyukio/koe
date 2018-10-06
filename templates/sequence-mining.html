@@ -1,4 +1,6 @@
 {% extends 'base-with-sidebar-and-grid.html' %}
+{% load staticfiles %}
+{% load custom_tags %}
 
 {% block title %}Sequence mining{% endblock %}
 
@@ -41,5 +43,10 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="//d3js.org/d3.v5.min.js"></script>
+    {% debug_mode as is_in_debug_mode %}
+    {% if is_in_debug_mode %}
+        <script src="{% static "d3.js" %}"></script>
+    {% else %}
+        <script src="//d3js.org/d3.v5.min.js"></script>
+    {% endif %}
 {% endblock %}

@@ -16,7 +16,11 @@ SITE_ID = 1
 
 SECRET_KEY = envconf['secret_key']
 
-DEBUG = envconf['debug']
+DEBUG = os.environ.get('DEBUG', None)
+if DEBUG:
+    DEBUG = DEBUG == 'true'
+else:
+    DEBUG = envconf['debug']
 
 ALLOWED_HOSTS = envconf['allowed_hosts']
 
@@ -34,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
-    'django_countries',
     'django_js_reverse',
     'webpack_loader',
     'widget_tweaks',
@@ -107,10 +110,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
-STATICFILES_DIRS = (
-    base_dir_join('assets'),
-)
 
 # Webpack
 WEBPACK_LOADER = {
@@ -233,6 +232,16 @@ if DEBUG:
 
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+    STATICFILES_DIRS = (
+        base_dir_join('assets'),
+        base_dir_join('node_modules/d3/dist'),
+        base_dir_join('node_modules/keyboardjs/dist'),
+        base_dir_join('node_modules/plotly.js/dist'),
+        base_dir_join('node_modules/bluebird/js/browser'),
+        base_dir_join('node_modules/raven-js/dist'),
+        base_dir_join('node_modules/dropzone/dist')
+    )
+
     AUTH_PASSWORD_VALIDATORS = []  # allow easy passwords only on local
 
     # Logging
@@ -307,7 +316,11 @@ else:
 
     # Whitenoise
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    MIDDLEWARE.insert(  # insert WhiteNoiseMiddleware right after SecurityMiddleware
+    STATICFILES_DIRS = (
+        base_dir_join('assets'),
+    )
+
+    MIDDLEWARE.insert(
         MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
         'whitenoise.middleware.WhiteNoiseMiddleware')
 

@@ -1,6 +1,6 @@
 {% extends 'base-with-sidebar.html' %}
-{% load staticfiles %}
 {% load widget_tweaks %}
+{% load staticfiles %}
 {% load custom_tags %}
 
 {% block title %}Cluster visualisation{% endblock %}
@@ -93,6 +93,12 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="//d3js.org/d3.v5.min.js"></script>
+    {% debug_mode as is_in_debug_mode %}
+    {% if is_in_debug_mode %}
+        <script src="{% static "d3.js" %}"></script>
+        <script src="{% static "plotly.js" %}"></script>
+    {% else %}
+        <script src="//d3js.org/d3.v5.min.js"></script>
+        <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    {% endif %}
 {% endblock %}

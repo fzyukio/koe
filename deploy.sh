@@ -49,9 +49,9 @@ echo -e "${Yellow}${On_Purple}build-prod will compile javascript, sass and give 
 echo -e "${Yellow}${On_Purple} so the files can be served as static${Color_Off}"
 echo -e "${Green}${On_Black}yarn build-prod${Color_Off}"
 yarn build-prod
-echo -e "${Green}${On_Black}python manage.py collectstatic --noinput${Color_Off}"
+echo -e "${Green}${On_Black}DEBUG=false python manage.py collectstatic --noinput${Color_Off}"
 
-python manage.py collectstatic --noinput
+DEBUG=false python manage.py collectstatic --noinput
 
 RESULT=$?
 if [ $RESULT -eq 0 ]; then

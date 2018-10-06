@@ -1,5 +1,5 @@
 {% load render_bundle from webpack_loader %}
-{% load static %}
+{% load staticfiles %}
 {% load custom_tags %}
 {% load tz_detect %}
 
@@ -90,8 +90,14 @@
 {% endif %}
 {# django-js-reverse #}
 <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
-<script src="//cdn.ravenjs.com/3.15.0/raven.min.js" crossorigin="anonymous"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.2/bluebird.min.js"></script>
+
+{% if is_in_debug_mode %}
+    <script src="{% static "raven.js" %}"></script>
+    <script src="{% static "bluebird.js" %}"></script>
+{% else %}
+    <script src="//cdn.ravenjs.com/3.15.0/raven.min.js" crossorigin="anonymous"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.2/bluebird.min.js"></script>
+{% endif %}
 
 {# Webpack rendered Javascript #}
 {% render_bundle 'main' 'js' %}

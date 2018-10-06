@@ -1,4 +1,6 @@
 {% extends 'base-with-sidebar-and-grid.html' %}
+{% load staticfiles %}
+{% load custom_tags %}
 
 {% block title %}View exemplars{% endblock %}
 
@@ -39,5 +41,10 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="//cdnjs.cloudflare.com/ajax/libs/keyboardjs/2.4.1/keyboard.min.js"></script>
+    {% debug_mode as is_in_debug_mode %}
+    {% if is_in_debug_mode %}
+        <script src="{% static "keyboard.js" %}"></script>
+    {% else %}
+        <script src="//cdnjs.cloudflare.com/ajax/libs/keyboardjs/2.4.1/keyboard.min.js"></script>
+    {% endif %}
 {% endblock %}
