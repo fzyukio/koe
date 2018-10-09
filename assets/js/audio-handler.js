@@ -1,5 +1,5 @@
 const bufferToWav = require('audiobuffer-to-wav');
-import {isNull, noop} from './utils';
+import {isNull, noop, getUrl} from './utils';
 import {handleResponse, postRequest} from './ajax-handler';
 
 /**
@@ -318,5 +318,29 @@ export const loadLocalAudioFile = function ({
         reader.onloadstart = onLoadStart;
 
         reader.readAsArrayBuffer(file);
+    });
+};
+
+
+/**
+ * Load an existing song into view by ID & pretend it is a raw audio
+ * @param songId
+ * @returns {Promise}
+ */
+export const loadSongById = function(songId) {
+    let data = {'file-id': songId};
+    let args = {
+        url: getUrl('send-request', 'koe/get-file-audio-data'),
+        postData: data,
+        cacheKey: songId,
+    };
+
+    return new Promise(function (resolve) {
+        queryAndHandleAudio(
+            args,
+            function (sig_, fs_) {
+                resolve({sig_, fs_});
+            }
+        );
     });
 };

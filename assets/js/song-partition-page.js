@@ -1,14 +1,10 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {
-    changePlaybackSpeed,
-    createAudioFromDataArray,
-    initAudioContext,
-    loadLocalAudioFile, queryAndHandleAudio
+    changePlaybackSpeed, createAudioFromDataArray, initAudioContext, loadLocalAudioFile, loadSongById
 } from './audio-handler';
-import {deepCopy, setCache, getCache, getUrl} from './utils';
+import {deepCopy, setCache, getCache} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
-// import {Visualise} from './visualise-raw';
 import {Visualiser} from './audio-visualisation'
 
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -361,75 +357,6 @@ const initUploadSongsBtn = function () {
         audioUploadInput.click();
     });
 
-    audioUploadInput.change(function (e) {
-        e.preventDefault();
-        let file = e.target.files[0];
-
-        let onProgress = function (evt) {
-            if (evt.lengthComputable) {
-                let percentLoaded = Math.round((evt.loaded / evt.total) * 100);
-                if (percentLoaded < 100) {
-                    uploadProgressBar.css('width', `${percentLoaded}%`);
-                    uploadProgressBar.attr('aria-valuenow', percentLoaded);
-                    uploadProgressBar.html(`${percentLoaded}%`);
-                }
-            }
-        };
-
-        let onLoadStart = function () {
-            uploadProgressWrapper.show();
-            cancelDownloadBtn.attr('disabled', false);
-            uploadSongsBtn.attr('disabled', true);
-        };
-
-        let onError = function (evt) {
-            switch (evt.target.error.code) {
-            case evt.target.error.NOT_FOUND_ERR:
-                uploadProgressBar.html('File Not Found!');
-                break;
-            case evt.target.error.NOT_READABLE_ERR:
-                uploadProgressBar.html('File is not readable');
-                break;
-            case evt.target.error.ABORT_ERR:
-                break;
-            default:
-                uploadProgressBar.html('An error occurred reading this file.');
-            }
-        };
-
-        let onLoad = function () {
-            uploadProgressBar.css('width', '100%');
-            uploadProgressBar.attr('aria-valuenow', '100');
-            uploadProgressBar.html('File uploads successfully. Processing...');
-        };
-
-        let onAbort = function () {
-            uploadProgressBar.css('width', '100%');
-            uploadProgressBar.attr('aria-valuenow', 100);
-            uploadProgressBar.html('Aborted. You can upload a new file.');
-        };
-
-        loadLocalAudioFile({
-            file,
-            reader,
-            onProgress,
-            onError,
-            onLoad,
-            onAbort,
-            onLoadStart}).
-            then(function ({sig, fs}) {
-                audioData.sig = sig;
-                audioData.fs = fs;
-                audioData.length = sig.length;
-                audioData.durationMs = audioData.length * 1000 / fs;
-
-                uploadModal.modal('hide');
-                spectViz.initCanvas(audioData);
-                spectViz.visualiseSpectrogram();
-                spectViz.drawBrush();
-            });
-    });
-
     cancelDownloadBtn.click(function () {
         cancelDownloadBtn.attr('disabled', true);
         uploadSongsBtn.attr('disabled', false);
@@ -437,6 +364,71 @@ const initUploadSongsBtn = function () {
     });
 
     uploadModal.modal('show');
+
+    return new Promise(function(resolve) {
+        audioUploadInput.change(function (e) {
+            e.preventDefault();
+            let file = e.target.files[0];
+
+            let onProgress = function (evt) {
+                if (evt.lengthComputable) {
+                    let percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+                    if (percentLoaded < 100) {
+                        uploadProgressBar.css('width', `${percentLoaded}%`);
+                        uploadProgressBar.attr('aria-valuenow', percentLoaded);
+                        uploadProgressBar.html(`${percentLoaded}%`);
+                    }
+                }
+            };
+
+            let onLoadStart = function () {
+                uploadProgressWrapper.show();
+                cancelDownloadBtn.attr('disabled', false);
+                uploadSongsBtn.attr('disabled', true);
+            };
+
+            let onError = function (evt) {
+                switch (evt.target.error.code) {
+                case evt.target.error.NOT_FOUND_ERR:
+                    uploadProgressBar.html('File Not Found!');
+                    break;
+                case evt.target.error.NOT_READABLE_ERR:
+                    uploadProgressBar.html('File is not readable');
+                    break;
+                case evt.target.error.ABORT_ERR:
+                    break;
+                default:
+                    uploadProgressBar.html('An error occurred reading this file.');
+                }
+            };
+
+            let onLoad = function () {
+                uploadProgressBar.css('width', '100%');
+                uploadProgressBar.attr('aria-valuenow', '100');
+                uploadProgressBar.html('File uploads successfully. Processing...');
+            };
+
+            let onAbort = function () {
+                uploadProgressBar.css('width', '100%');
+                uploadProgressBar.attr('aria-valuenow', 100);
+                uploadProgressBar.html('Aborted. You can upload a new file.');
+            };
+
+            loadLocalAudioFile({
+                file,
+                reader,
+                onProgress,
+                onError,
+                onLoad,
+                onAbort,
+                onLoadStart
+            }).
+                then(function ({sig, fs}) {
+                    uploadModal.modal('hide');
+                    resolve({sig_: sig, fs_: fs});
+                });
+        });
+    });
 };
 
 
@@ -471,44 +463,28 @@ const initSaveTrackInfoBtn = function () {
 };
 
 
-/**
- * Mostly used in debug, but could potentially be given to user in the future.
- * Load an existing song into view by ID & pretend it is a raw audio
- * @param songId
- */
-function loadSongById(songId) {
-    let data = {'file-id': songId};
-    let args = {
-        url: getUrl('send-request', 'koe/get-file-audio-data'),
-        postData: data,
-        cacheKey: songId,
-    };
-    queryAndHandleAudio(
-        args,
-        function (sig_, fs_) {
-            audioData.sig = sig_;
-            audioData.fs = fs_;
-            audioData.length = sig_.length;
-            audioData.durationMs = audioData.length * 1000 / fs_;
-
-            spectViz.setData(audioData);
-            spectViz.initCanvas();
-            spectViz.visualiseSpectrogram();
-            spectViz.drawBrush();
-        }
-    );
-}
-
-
 export const run = function (ce) {
     let predefinedSongId = ce.argDict._song;
+    let loadSongPromise;
 
     if (predefinedSongId) {
-        loadSongById(predefinedSongId);
+        loadSongPromise = loadSongById(predefinedSongId);
     }
     else {
-        initUploadSongsBtn();
+        loadSongPromise = initUploadSongsBtn();
     }
+
+    loadSongPromise.then(function ({sig_, fs_}) {
+        audioData.sig = sig_;
+        audioData.fs = fs_;
+        audioData.length = sig_.length;
+        audioData.durationMs = audioData.length * 1000 / fs_;
+
+        spectViz.setData(audioData);
+        spectViz.initCanvas();
+        spectViz.visualiseSpectrogram();
+        spectViz.drawBrush();
+    });
 
     initAudioContext();
     initSaveTrackInfoBtn();

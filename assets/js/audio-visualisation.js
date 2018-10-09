@@ -283,7 +283,7 @@ export class Visualiser {
                 });
             }
             else {
-                self.visualisationPromiseChainHead = self.displayAsPromises;
+                self.visualisationPromiseChainHead = self.displayAsPromises();
             }
         }
     }
@@ -493,8 +493,13 @@ export class Visualiser {
 
         playAudioArgs.onEndedCallback = function () {
             self.stopPlaybackIndicator();
+            playSongBtn.show();
+            pauseSongBtn.hide();
+            resumeSongBtn.attr('start-point', 0);
+            playSongBtn.attr('start-point', 0);
             if (scroll) {
                 self.stopScrolling();
+                self.visualisationEl.scrollLeft = 0;
             }
         };
 
@@ -665,23 +670,25 @@ export class Visualiser {
 
     startScrolling(startX, endX, duration) {
         let self = this;
-        // self.visualisationEl.scrollLeft = 0;
-        let visualisationWidth = self.$vizContainer.width();
-        let distance = endX - startX - visualisationWidth;
         let speed = duration / (endX - startX);
-        let delayStart = visualisationWidth / 2;
+
+        let visualisationWidth = self.$vizContainer.width();
+        let delayStart = visualisationWidth / 2 - (startX - self.visualisationEl.scrollLeft);
         let prematureEnd = visualisationWidth / 2;
+        let distance = endX - startX - prematureEnd;
 
-        let startScrolling = Math.max(0, startX - delayStart);
-        self.visualisationEl.scrollLeft = startScrolling;
+        let scrollDuration = distance * speed;
 
-        let delayStartDuration = (delayStart - (startX - startScrolling)) * speed;
-        let prematureEndDuration = prematureEnd * speed;
-        let remainDuration = duration - delayStartDuration - prematureEndDuration;
+        if (delayStart < 0) {
+            self.visualisationEl.scrollLeft += Math.abs(delayStart);
+            delayStart = 0;
+        }
 
+        let delayStartDuration = delayStart * speed;
+        let scrolltarget = self.visualisationEl.scrollLeft + distance;
 
         self.scrollingTimer = setTimeout(function () {
-            self.scrollingPromise = smoothScrollTo(self.visualisationEl, self.visualisationEl.scrollLeft + distance, remainDuration);
+            self.scrollingPromise = smoothScrollTo(self.visualisationEl, scrolltarget, scrollDuration);
         }, delayStartDuration)
 
     }
@@ -775,6 +782,7 @@ export class Visualiser {
             self.stopPlaybackIndicator();
             stopAudio();
             self.stopScrolling();
+            self.visualisationEl.scrollLeft = 0;
             resumeSongBtn.attr('start-point', 0);
             playSongBtn.attr('start-point', 0);
         });

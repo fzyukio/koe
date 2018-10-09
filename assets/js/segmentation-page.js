@@ -1,17 +1,26 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, initAudioContext, queryAndHandleAudio} from './audio-handler';
-import {deepCopy, getUrl, setCache, getCache, smoothScrollTo, isNumber} from './utils';
+import {changePlaybackSpeed, initAudioContext, loadSongById} from './audio-handler';
+import {deepCopy, setCache, getCache, isNumber} from './utils';
 import {postRequest} from './ajax-handler';
-import {visualiseSpectrogram, Visualise} from './visualise-d3';
+import {Visualiser} from './audio-visualisation';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
 
 let ce;
-let contrast;
-let scrollingPromise;
+const vizContainerId = '#visualisation';
+const gridEl = $('#segments-grid');
+const fileId = gridEl.attr('file-id');
+const fileLength = gridEl.attr('length');
+const fileFs = gridEl.attr('fs');
+const speedSlider = $('#speed-slider');
+let spectViz;
+const saveSegmentationBtn = $('#save-segmentations-btn');
+const deleteSegmentsBtn = $('#delete-segments-btn');
+const audioData = {};
+
 
 class Grid extends FlexibleGrid {
     init() {
@@ -50,7 +59,7 @@ class Grid extends FlexibleGrid {
      */
     segmentMouseEventHandler(e, args) {
         let resizing = getCache('resizeable-syl-id');
-        if (resizing && viz.editMode) {
+        if (resizing && spectViz.editMode) {
             // Currently editing another segment, ignore.
             return;
         }
@@ -61,7 +70,6 @@ class Grid extends FlexibleGrid {
         let dataView = self.mainGrid.getData();
         let sylId = target.getAttribute('syl-id');
         let sylIdx = dataView.getIdxById(sylId);
-        let item = dataView.getItemById(sylId);
 
         /*
          * Scroll the table to this position, this is necessary because if the cell is currently overflow, getCellNode()
@@ -80,17 +88,6 @@ class Grid extends FlexibleGrid {
                 rowElement.removeClass('highlight');
             }
         }
-
-        let args_ = {
-            url: getUrl('send-request', 'koe/get-file-audio-data'),
-            postData: {'file-id': fileId},
-            cacheKey: fileId
-        };
-        queryAndHandleAudio(args_, function (sig) {
-            viz.zoomInSyllable(item, sig, contrast);
-        });
-
-
     }
 
     /**
@@ -125,94 +122,19 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-const gridEl = $('#segments-grid');
-const fileId = gridEl.attr('file-id');
-const fileLength = gridEl.attr('length');
-const fileFs = gridEl.attr('fs');
-const speedSlider = $('#speed-slider');
-const contrastSlider = $('#contrast-slider');
-const visualisationContainer = $('#visualisation');
-const spectrogramId = '#spectrogram';
-const oscillogramId = '#oscillogram';
-const viz = new Visualise();
-const saveSegmentationBtn = $('#save-segmentations-btn');
-const deleteSegmentsBtn = $('#delete-segments-btn');
 
-export const visualiseSong = function (callback) {
-
-    /*
-     * Clear all temporary variables
-     */
-    setCache('resizeable-syl-id', undefined, undefined);
-    setCache('syllables', undefined, {});
-
-    let data = {'file-id': fileId};
-    let args = {
-        url: getUrl('send-request', 'koe/get-file-audio-data'),
-        postData: data,
-        cacheKey: fileId,
-        startSecond: null,
-        endSecond: null
-    };
-    queryAndHandleAudio(args, function (sig) {
-        viz.visualise(sig);
-        callback();
-    });
-};
 
 export const highlightSegments = function (e, args) {
     let eventType = e.type;
-    let songId = args.songId;
     let segmentsGridRowElement = args.rowElement;
-
-    let spectrogramSegment = $(`${spectrogramId} rect.syllable[syl-id="${songId}"]`);
 
     if (eventType === 'mouseenter') {
         segmentsGridRowElement.addClass('highlight');
-        spectrogramSegment.addClass('highlight');
     }
     else {
         segmentsGridRowElement.removeClass('highlight');
-        spectrogramSegment.removeClass('highlight');
     }
-};
-
-
-const redrawSpectrogram = function () {
-    let args = {
-        url: getUrl('send-request', 'koe/get-file-audio-data'),
-        postData: {'file-id': fileId},
-        cacheKey: fileId
-    };
-    queryAndHandleAudio(args, function (sig) {
-        visualiseSpectrogram(viz.spectrogramSpects, viz.spectHeight, viz.spectWidth, viz.imgHeight, viz.imgWidth, sig, contrast);
-    });
-};
-
-
-const startScrolling = function (startX, endX, duration) {
-    let visualisationEl = visualisationContainer[0];
-    visualisationEl.scrollLeft = 0;
-    let visualisationWidth = visualisationContainer.width();
-    let distance = endX - startX - visualisationWidth;
-    let speed = duration / (endX - startX);
-    let delayStart = visualisationWidth / 2;
-    let prematureEnd = visualisationWidth / 2;
-
-    let delayStartDuration = delayStart * speed;
-    let prematureEndDuration = prematureEnd * speed;
-    let remainDuration = duration - delayStartDuration - prematureEndDuration;
-
-
-    setTimeout(function () {
-        scrollingPromise = smoothScrollTo(visualisationEl, visualisationEl.scrollLeft + distance, remainDuration);
-    }, delayStartDuration)
-
-};
-
-
-const stopScrolling = function () {
-    scrollingPromise.cancel();
+    spectViz.highlightSegments(e, args)
 };
 
 
@@ -226,28 +148,6 @@ const initController = function () {
     speedSlider.find('.slider').on('click', function () {
         let newValue = speedSlider.find('.tooltip-inner').text();
         changePlaybackSpeed(parseInt(newValue));
-    });
-
-    contrastSlider.slider();
-
-    contrastSlider.on('slideStop', function (slideEvt) {
-        contrast = slideEvt.value;
-        redrawSpectrogram();
-    });
-
-    contrastSlider.find('.slider').on('click', function () {
-        let newValue = speedSlider.find('.tooltip-inner').text();
-        contrast = parseInt(newValue);
-        redrawSpectrogram();
-    });
-
-    $('#play-song').click(function () {
-        viz.playAudio(0, 'end', startScrolling, stopScrolling);
-    });
-
-    $('#stop-song').click(function () {
-        viz.stopAudio();
-        stopScrolling();
     });
 
     saveSegmentationBtn.click(function () {
@@ -266,7 +166,7 @@ const initController = function () {
                 syllables[item.id] = item;
             }
             setCache('syllables', undefined, syllables);
-            viz.displaySegs(rows);
+            spectViz.displaySegs(rows);
             saveSegmentationBtn.prop('disabled', true);
         };
         ce.dialogModal.modal('hide');
@@ -307,7 +207,7 @@ const initDeleteSegmentsBtn = function () {
         }
 
         saveSegmentationBtn.prop('disabled', false);
-        viz.displaySegs(syllables);
+        spectViz.displaySegs(syllables);
     });
 };
 
@@ -342,11 +242,11 @@ const subscribeFlexibleEvents = function () {
     grid.on('row-removed', disableDeleteSegmentsBtn);
     grid.on('rows-removed', disableDeleteSegmentsBtn);
 
-    viz.eventNotifier.on('segment-mouse', function (e, args) {
+    spectViz.eventNotifier.on('segment-mouse', function (e, args) {
         grid.segmentMouseEventHandler(e, args);
     });
 
-    viz.eventNotifier.on('segment-changed', function (e, args) {
+    spectViz.eventNotifier.on('segment-changed', function (e, args) {
         grid.segmentChangeEventHandler(e, args);
     });
 };
@@ -360,12 +260,12 @@ const initKeyboardHooks = function () {
 
             /* Edit mode on and highlighted. Show brush */
             if (highlighted) {
-                viz.showBrush(highlighted);
+                spectViz.showBrush(highlighted);
             }
-            viz.editMode = true;
+            spectViz.editMode = true;
         }, function () {
-            viz.clearBrush();
-            viz.editMode = false;
+            spectViz.clearBrush();
+            spectViz.editMode = false;
         }
     );
 };
@@ -380,29 +280,36 @@ let gridArgs = {
     doCacheSelectableOptions: false
 };
 
-
 export const run = function (commonElements) {
     ce = commonElements;
 
+    /*
+     * Clear all temporary variables
+     */
+    setCache('resizeable-syl-id', undefined, undefined);
+    setCache('syllables', undefined, {});
     setCache('file-id', undefined, fileId);
     setCache('file-length', undefined, fileLength);
     setCache('file-fs', undefined, fileFs);
 
     initAudioContext();
     grid.init(fileId);
-    viz.init(oscillogramId, spectrogramId);
+    spectViz = new Visualiser(vizContainerId);
+    spectViz.initScroll();
+    spectViz.initController();
+    spectViz.resetArgs({nfft: 256, contrast: 0, noverlap: 0});
 
-    let onSuccess = function (selectableOptions) {
-        setCache('selectableOptions', undefined, selectableOptions)
-    };
+    loadSongById(fileId).then(function({sig_, fs_}) {
+        audioData.sig = sig_;
+        audioData.fs = fs_;
+        audioData.length = sig_.length;
+        audioData.durationMs = audioData.length * 1000 / fs_;
 
-    postRequest({
-        requestSlug: 'koe/get-label-options',
-        data: {'file-id': fileId},
-        onSuccess
-    });
+        spectViz.setData(audioData);
+        spectViz.initCanvas();
+        spectViz.visualiseSpectrogram();
+        spectViz.drawBrush();
 
-    visualiseSong(function () {
         grid.initMainGridHeader(gridArgs, extraArgs, function () {
             grid.initMainGridContent(gridArgs, extraArgs, function () {
                 let items = grid.mainGrid.getData().getItems();
@@ -412,10 +319,19 @@ export const run = function (commonElements) {
                     syllables[item.id] = item;
                 }
                 setCache('syllables', undefined, syllables);
-                viz.displaySegs(items);
+                spectViz.displaySegs(items);
             });
         });
     });
+
+    postRequest({
+        requestSlug: 'koe/get-label-options',
+        data: {'file-id': fileId},
+        onSuccess(selectableOptions) {
+            setCache('selectableOptions', undefined, selectableOptions)
+        }
+    });
+
     initController();
     initKeyboardHooks();
     initDeleteSegmentsBtn();
