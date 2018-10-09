@@ -4,24 +4,34 @@ import {
     changePlaybackSpeed,
     createAudioFromDataArray,
     initAudioContext,
-    loadLocalAudioFile
+    loadLocalAudioFile, queryAndHandleAudio
 } from './audio-handler';
-import {deepCopy, setCache, getCache, smotthScrollTo} from './utils';
+import {deepCopy, setCache, getCache, getUrl} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
-import {Visualise} from './visualise-raw';
+// import {Visualise} from './visualise-raw';
+import {Visualiser} from './audio-visualisation'
 
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 
-let scrollingPromise;
 const uploadSongsBtn = $('#upload-raw-recording-btn');
 const audioUploadForm = $('#file-upload-form');
 const audioUploadInput = audioUploadForm.find('input[type=file]');
 
 const audioData = {};
-let sig;
-let fs;
+const vizContainerId = '#track-visualisation';
+let spectViz;
+
+const gridEl = $('#song-partition-grid');
+const databaseId = gridEl.attr('database-id');
+const speedSlider = $('#speed-slider');
+
+const saveSongsBtn = $('#save-songs-btn');
+const deleteSongsBtn = $('#delete-songs-btn');
+const trackInfoForm = $('#track-info');
+const saveTrackInfoBtn = trackInfoForm.find('#save-track-info');
+
 
 class Grid extends FlexibleGrid {
     init() {
@@ -60,7 +70,7 @@ class Grid extends FlexibleGrid {
      */
     segmentMouseEventHandler(e, args) {
         let resizing = getCache('resizeable-syl-id');
-        if (resizing && viz.editMode) {
+        if (resizing && spectViz.editMode) {
             // Currently editing another segment, ignore.
             return;
         }
@@ -125,67 +135,19 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-const gridEl = $('#song-partition-grid');
-const databaseId = gridEl.attr('database-id');
-const speedSlider = $('#speed-slider');
-const contrastSlider = $('#contrast-slider');
-const visualisationContainer = $('#track-visualisation');
-const spectrogramId = '#spectrogram';
-const oscillogramId = '#oscillogram';
-const viz = new Visualise();
-const saveSongsBtn = $('#save-songs-btn');
-const deleteSongsBtn = $('#delete-songs-btn');
-const trackInfoForm = $('#track-info');
-const saveTrackInfoBtn = trackInfoForm.find('#save-track-info');
 
 export const highlightSegments = function (e, args) {
     let eventType = e.type;
-    let songId = args.songId;
     let segmentsGridRowElement = args.rowElement;
-
-    let spectrogramSegment = $(`${spectrogramId} rect.syllable[syl-id="${songId}"]`);
 
     if (eventType === 'mouseenter') {
         segmentsGridRowElement.addClass('highlight');
-        spectrogramSegment.addClass('highlight');
     }
     else {
         segmentsGridRowElement.removeClass('highlight');
-        spectrogramSegment.removeClass('highlight');
     }
-};
 
-
-const redrawSpectrogram = function () {
-    viz.visualiseSpectrogram(sig);
-};
-
-
-const startScrolling = function (startX, endX, duration) {
-    let visualisationEl = visualisationContainer[0];
-    visualisationEl.scrollLeft = 0;
-    let visualisationWidth = visualisationContainer.width();
-    let distance = endX - startX - visualisationWidth;
-    let speed = duration / (endX - startX);
-    let delayStart = visualisationWidth / 2;
-    let prematureEnd = visualisationWidth / 2;
-
-    let delayStartDuration = delayStart * speed;
-    let prematureEndDuration = prematureEnd * speed;
-    let remainDuration = duration - delayStartDuration - prematureEndDuration;
-
-
-    setTimeout(function () {
-        scrollingPromise = smotthScrollTo(visualisationEl, visualisationEl.scrollLeft + distance, remainDuration);
-    }, delayStartDuration)
-
-};
-
-
-const stopScrolling = function () {
-    if (scrollingPromise) {
-        scrollingPromise.cancel();
-    }
+    spectViz.highlightSegments(e, args)
 };
 
 
@@ -201,28 +163,6 @@ const initController = function () {
         changePlaybackSpeed(parseInt(newValue));
     });
 
-    contrastSlider.slider();
-
-    contrastSlider.on('slideStop', function (slideEvt) {
-        viz.contrast = slideEvt.value;
-        redrawSpectrogram();
-    });
-
-    contrastSlider.find('.slider').on('click', function () {
-        let newValue = speedSlider.find('.tooltip-inner').text();
-        viz.contrast = parseInt(newValue);
-        redrawSpectrogram();
-    });
-
-    $('#play-song').click(function () {
-        viz.playAudio(0, 'end', startScrolling, stopScrolling);
-    });
-
-    $('#stop-song').click(function () {
-        viz.stopAudio();
-        stopScrolling();
-    });
-
     saveSongsBtn.click(function () {
         let items = grid.mainGrid.getData().getItems();
         let syllables = getCache('syllables');
@@ -234,6 +174,47 @@ const initController = function () {
             }
         }
 
+        /**
+         * After upload songs, update their actual IDs and names. At the last songs, refresh the grid.
+         * @param i
+         * @param item
+         * @param newId
+         * @param newName
+         */
+        function onSuccess(i, item, newId, newName) {
+            let oldId = item.id;
+
+            grid.mainGrid.invalidateRows(oldId);
+            item.progress = 'Uploaded';
+            item.id = newId;
+            item.name = newName;
+            grid.mainGrid.render();
+
+            if (oldId !== newId) {
+                syllables[newId] = syllables[oldId];
+                delete syllables[oldId];
+            }
+            if (i === itemsToUpdate.length - 1) {
+                grid.deleteAllRows();
+                grid.appendRows(items);
+                saveSongsBtn.attr('disabled', true);
+                setCache('resizeable-syl-id', null, undefined);
+                spectViz.displaySegs(items);
+            }
+        }
+
+        /**
+         * Update complete percentage as the files are being rendered
+         * @param item
+         * @param percentComplete
+         */
+        function onProgress(item, percentComplete) {
+            let oldId = item.id;
+            item.progress = `${percentComplete} %`;
+            grid.mainGrid.invalidateRows(oldId);
+            grid.mainGrid.render();
+        }
+
         for (let i = 0; i < itemsToUpdate.length; i++) {
             let item = itemsToUpdate[i];
             let startMs = item.start;
@@ -243,8 +224,8 @@ const initController = function () {
             let startSample = Math.floor(startMs * nSamples / durationMs);
             let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
 
-            let subSig = sig.slice(startSample, endSample);
-            let blob = createAudioFromDataArray(subSig, fs);
+            let subSig = audioData.sig.slice(startSample, endSample);
+            let blob = createAudioFromDataArray(subSig, audioData.fs);
 
             let formData = new FormData();
             formData.append('file', blob, item.name);
@@ -252,46 +233,20 @@ const initController = function () {
             formData.append('database-id', databaseId);
             formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
 
-
-            let onSuccess = function ({id, name}) {
-                let oldId = item.id;
-
-                grid.mainGrid.invalidateRows(oldId);
-                item.progress = 'Uploaded';
-                item.id = id;
-                item.name = name;
-                grid.mainGrid.render();
-
-                if (oldId !== id) {
-                    syllables[id] = syllables[oldId];
-                    delete syllables[oldId];
-                }
-                if (i === itemsToUpdate.length - 1) {
-                    grid.deleteAllRows();
-                    grid.appendRows(items);
-                    saveSongsBtn.attr('disabled', true);
-                    setCache('resizeable-syl-id', null, undefined);
-                    viz.displaySegs(items);
-                }
-            };
-
-            let onProgress = function (e) {
-                if (e.loaded === e.total) {
-                    // Do nothing to not be in conflict with onSuccess
-                    return;
-                }
-                let percentComplete = Math.round(e.loaded * 100 / e.total);
-                let oldId = item.id;
-                item.progress = `${percentComplete} %`;
-                grid.mainGrid.invalidateRows(oldId);
-                grid.mainGrid.render();
-            };
-
             uploadRequest({
                 requestSlug: 'koe/import-audio-file',
                 data: formData,
-                onSuccess,
-                onProgress
+                onSuccess({id, name}) {
+                    onSuccess(i, item, id, name);
+                },
+                onProgress(e) {
+                    if (e.loaded === e.total) {
+                        // Do nothing to not be in conflict with onSuccess
+                        return;
+                    }
+                    let percentComplete = Math.round(e.loaded * 100 / e.total);
+                    onProgress(item, percentComplete);
+                }
             });
         }
     })
@@ -319,7 +274,7 @@ const initDeleteSegmentsBtn = function () {
             dataView.deleteItem(itemId);
             delete syllables[itemId];
         }
-        viz.displaySegs(syllables);
+        spectViz.displaySegs(syllables);
     });
 };
 
@@ -354,11 +309,11 @@ const subscribeFlexibleEvents = function () {
     grid.on('row-removed', disableDeleteSegmentsBtn);
     grid.on('rows-removed', disableDeleteSegmentsBtn);
 
-    viz.eventNotifier.on('segment-mouse', function (e, args) {
+    spectViz.eventNotifier.on('segment-mouse', function (e, args) {
         grid.segmentMouseEventHandler(e, args);
     });
 
-    viz.eventNotifier.on('segment-changed', function (e, args) {
+    spectViz.eventNotifier.on('segment-changed', function (e, args) {
         grid.segmentChangeEventHandler(e, args);
     });
 };
@@ -372,12 +327,12 @@ const initKeyboardHooks = function () {
 
             /* Edit mode on and highlighted. Show brush */
             if (highlighted) {
-                viz.showBrush(highlighted);
+                spectViz.showBrush(highlighted);
             }
-            viz.editMode = true;
+            spectViz.editMode = true;
         }, function () {
-            viz.clearBrush();
-            viz.editMode = false;
+            spectViz.clearBrush();
+            spectViz.editMode = false;
         }
     );
 };
@@ -454,23 +409,25 @@ const initUploadSongsBtn = function () {
             uploadProgressBar.html('Aborted. You can upload a new file.');
         };
 
-        loadLocalAudioFile({file,
+        loadLocalAudioFile({
+            file,
             reader,
             onProgress,
             onError,
             onLoad,
             onAbort,
-            onLoadStart}).then(function (args) {
-            sig = args.sig;
-            fs = args.fs;
-            audioData.sig = sig;
-            audioData.fs = fs;
-            audioData.length = sig.length;
-            audioData.durationMs = audioData.length * 1000 / fs;
+            onLoadStart}).
+            then(function ({sig, fs}) {
+                audioData.sig = sig;
+                audioData.fs = fs;
+                audioData.length = sig.length;
+                audioData.durationMs = audioData.length * 1000 / fs;
 
-            uploadModal.modal('hide');
-            viz.visualise(sig, fs);
-        });
+                uploadModal.modal('hide');
+                spectViz.initCanvas(audioData);
+                spectViz.visualiseSpectrogram();
+                spectViz.drawBrush();
+            });
     });
 
     cancelDownloadBtn.click(function () {
@@ -514,32 +471,53 @@ const initSaveTrackInfoBtn = function () {
 };
 
 
-export const run = function () {
-    initUploadSongsBtn();
+/**
+ * Mostly used in debug, but could potentially be given to user in the future.
+ * Load an existing song into view by ID & pretend it is a raw audio
+ * @param songId
+ */
+function loadSongById(songId) {
+    let data = {'file-id': songId};
+    let args = {
+        url: getUrl('send-request', 'koe/get-file-audio-data'),
+        postData: data,
+        cacheKey: songId,
+    };
+    queryAndHandleAudio(
+        args,
+        function (sig_, fs_) {
+            audioData.sig = sig_;
+            audioData.fs = fs_;
+            audioData.length = sig_.length;
+            audioData.durationMs = audioData.length * 1000 / fs_;
+
+            spectViz.setData(audioData);
+            spectViz.initCanvas();
+            spectViz.visualiseSpectrogram();
+            spectViz.drawBrush();
+        }
+    );
+}
+
+
+export const run = function (ce) {
+    let predefinedSongId = ce.argDict._song;
+
+    if (predefinedSongId) {
+        loadSongById(predefinedSongId);
+    }
+    else {
+        initUploadSongsBtn();
+    }
+
     initAudioContext();
     initSaveTrackInfoBtn();
-
-    // let data = {'file-id': '571283'};
-    // let args = {
-    //     url: getUrl('send-request', 'koe/get-file-audio-data'),
-    //     postData: data,
-    //     cacheKey: '571283',
-    // };
-    // queryAndHandleAudio(args,
-    //     function (sig_, fs_) {
-    //         sig = sig_;
-    //         fs = fs_;
-    //         audioData.sig = sig;
-    //         audioData.fs = fs;
-    //         audioData.length = sig.length;
-    //         audioData.durationMs = audioData.length * 1000 / fs;
-    //
-    //         viz.visualise(sig, fs);
-    //     }
-    // );
+    spectViz = new Visualiser(vizContainerId);
+    spectViz.initScroll();
+    spectViz.initController();
+    spectViz.resetArgs({nfft: 256, contrast: 0, noverlap: 0});
 
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));
-    viz.init(oscillogramId, spectrogramId);
 
     grid.initMainGridHeader(gridArgs, extraArgs, function () {
         grid.initMainGridContent(gridArgs, extraArgs, function () {
@@ -550,7 +528,7 @@ export const run = function () {
                 syllables[item.id] = item;
             }
             setCache('syllables', undefined, syllables);
-            viz.displaySegs(items);
+            spectViz.displaySegs(items);
         });
     });
 

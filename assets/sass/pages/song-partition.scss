@@ -6,7 +6,6 @@ $gap-between-svgs: 8px;
 $visualisation-control-height: 32px;
 
 #track-visualisation {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
   overflow-y: hidden;
   overflow-x: visible;
 

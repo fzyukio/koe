@@ -1719,7 +1719,7 @@ export const noop = function () {
  Returns a promise that's fulfilled when done, or rejected if
  interrupted
  */
-export const smotthScrollTo = function (element, target, duration) {
+export const smoothScrollTo = function (element, target, duration) {
     target = Math.round(target);
     duration = Math.round(duration);
     if (duration < 0) {

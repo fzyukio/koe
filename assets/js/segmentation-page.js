@@ -1,7 +1,7 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, initAudioContext, queryAndHandleAudio} from './audio-handler';
-import {deepCopy, getUrl, setCache, getCache, smotthScrollTo, isNumber} from './utils';
+import {deepCopy, getUrl, setCache, getCache, smoothScrollTo, isNumber} from './utils';
 import {postRequest} from './ajax-handler';
 import {visualiseSpectrogram, Visualise} from './visualise-d3';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -205,7 +205,7 @@ const startScrolling = function (startX, endX, duration) {
 
 
     setTimeout(function () {
-        scrollingPromise = smotthScrollTo(visualisationEl, visualisationEl.scrollLeft + distance, remainDuration);
+        scrollingPromise = smoothScrollTo(visualisationEl, visualisationEl.scrollLeft + distance, remainDuration);
     }, delayStartDuration)
 
 };
