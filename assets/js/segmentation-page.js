@@ -166,7 +166,8 @@ const initController = function () {
                 syllables[item.id] = item;
             }
             setCache('syllables', undefined, syllables);
-            spectViz.displaySegs(rows);
+            spectViz.setSyllables(rows);
+            spectViz.displaySegs();
             saveSegmentationBtn.prop('disabled', true);
         };
         ce.dialogModal.modal('hide');
@@ -207,7 +208,8 @@ const initDeleteSegmentsBtn = function () {
         }
 
         saveSegmentationBtn.prop('disabled', false);
-        spectViz.displaySegs(syllables);
+        spectViz.setSyllables(syllables);
+        spectViz.displaySegs();
     });
 };
 
@@ -282,6 +284,7 @@ let gridArgs = {
 
 export const run = function (commonElements) {
     ce = commonElements;
+    let zoom = ce.argDict._zoom || 100;
 
     /*
      * Clear all temporary variables
@@ -297,7 +300,7 @@ export const run = function (commonElements) {
     spectViz = new Visualiser(vizContainerId);
     spectViz.initScroll();
     spectViz.initController();
-    spectViz.resetArgs({nfft: 256, contrast: 0, noverlap: 0});
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0});
 
     loadSongById(fileId).then(function({sig_, fs_}) {
         audioData.sig = sig_;
@@ -319,7 +322,8 @@ export const run = function (commonElements) {
                     syllables[item.id] = item;
                 }
                 setCache('syllables', undefined, syllables);
-                spectViz.displaySegs(items);
+                spectViz.setSyllables(items);
+                spectViz.displaySegs();
             });
         });
     });

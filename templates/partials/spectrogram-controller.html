@@ -3,14 +3,19 @@
         <div class="btn-group control-item" role="group" aria-label="...">
             <button type="button" class="btn btn-xs btn-primary dropdown-toggle" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
-                Zoom: 100% <span class="caret"></span>
+                Zoom: <span id="zoom-btn-text">{% if internal_zoom %}{{ internal_zoom }}{% else %}100{% endif %}% </span> <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">
-                <li><a class="select-zoom" href="#" frame-size=2048>400%</a></li>
-                <li><a class="select-zoom" href="#" frame-size=1024>200%</a></li>
-                <li><a class="select-zoom" href="#" frame-size=512>100%</a></li>
-                <li><a class="select-zoom" href="#" frame-size=256>50%</a></li>
-                <li><a class="select-zoom" href="#" frame-size=128>25%</a></li>
+                <li {% if internal_zoom == '25'%}class="active"{% endif %}>
+                    <a class="select-zoom change-arg quiet" href="#" key="_zoom" value=25>25%</a></li>
+                <li {% if internal_zoom == '50'%}class="active"{% endif %}>
+                    <a class="select-zoom change-arg quiet" href="#" key="_zoom" value=50>50%</a></li>
+                <li  {% if not internal_zoom or internal_zoom == '100'%}class="active"{% endif %}>
+                    <a class="select-zoom change-arg quiet" href="#" key="_zoom" value=100>100%</a></li>
+                <li {% if internal_zoom == '200'%}class="active"{% endif %}>
+                    <a class="select-zoom change-arg quiet" href="#" key="_zoom" value=200>200%</a></li>
+                <li {% if internal_zoom == '400'%}class="active"{% endif %}>
+                    <a class="select-zoom change-arg quiet" href="#" key="_zoom" value=400>400%</a></li>
             </ul>
         </div>
 

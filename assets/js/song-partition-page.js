@@ -195,7 +195,8 @@ const initController = function () {
                 grid.appendRows(items);
                 saveSongsBtn.attr('disabled', true);
                 setCache('resizeable-syl-id', null, undefined);
-                spectViz.displaySegs(items);
+                spectViz.setSyllables(items);
+                spectViz.displaySegs();
             }
         }
 
@@ -270,7 +271,8 @@ const initDeleteSegmentsBtn = function () {
             dataView.deleteItem(itemId);
             delete syllables[itemId];
         }
-        spectViz.displaySegs(syllables);
+        spectViz.setSyllables(syllables);
+        spectViz.displaySegs();
     });
 };
 
@@ -474,6 +476,12 @@ export const run = function (ce) {
         loadSongPromise = initUploadSongsBtn();
     }
 
+    let zoom = ce.argDict._zoom || 100;
+    spectViz = new Visualiser(vizContainerId);
+    spectViz.initScroll();
+    spectViz.initController();
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0});
+
     loadSongPromise.then(function ({sig_, fs_}) {
         audioData.sig = sig_;
         audioData.fs = fs_;
@@ -488,10 +496,6 @@ export const run = function (ce) {
 
     initAudioContext();
     initSaveTrackInfoBtn();
-    spectViz = new Visualiser(vizContainerId);
-    spectViz.initScroll();
-    spectViz.initController();
-    spectViz.resetArgs({nfft: 256, contrast: 0, noverlap: 0});
 
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));
 
@@ -504,7 +508,8 @@ export const run = function (ce) {
                 syllables[item.id] = item;
             }
             setCache('syllables', undefined, syllables);
-            spectViz.displaySegs(items);
+            spectViz.setSyllables(items);
+            spectViz.displaySegs();
         });
     });
 

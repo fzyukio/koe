@@ -13,11 +13,15 @@ const stateCalculated = 3;
 const stateBeforeDisplaying = 4;
 const stateDisplayed = 5;
 
+const defaultNfft = 256;
+
 const contrastSlider = $('#contrast-slider');
 const playSongBtn = $('#play-song');
 const pauseSongBtn = $('#pause-song');
 const stopSongBtn = $('#stop-song');
 const resumeSongBtn = $('#resume-song');
+const zoomOptions = $('.select-zoom');
+const zoomBtnText = $('#zoom-btn-text');
 
 let startPlaybackAt;
 let playbackSpeed;
@@ -98,19 +102,18 @@ export class Visualiser {
         this.eventNotifier = $(document.createElement('div'));
     }
 
-    resetArgs({nfft = 256, contrast = 0, noverlap = 0}) {
+    resetArgs({zoom = 100, contrast = 0, noverlap = 0}) {
         let self = this;
-        if (nfft != self.nfft) {
-            self.nfft = nfft;
-            self.fft = new FFT(nfft);
+        if (zoom != self.zoom) {
+            self.zoom = zoom;
+            self.nfft = defaultNfft * zoom / 100;
+            self.fft = new FFT(self.nfft);
             // (Minimum 400ms per tick if nfft is 256. The actual tick interval will depend on the length of the audio)
-            self.tickInterval = Math.floor(nfft / 100) * 200;
+            self.tickInterval = Math.floor(self.nfft / 100) * 200;
         }
 
         self.noverlap = noverlap;
-        self.nfft = nfft;
         self.contrast = contrast;
-        self.fft = new FFT(nfft);
     }
 
     displayAsPromises() {
@@ -330,7 +333,11 @@ export class Visualiser {
 
                 debug('start= ' + start + ' end=' + end);
 
-                let syllables = getCache('syllables') || {};
+                if (self.syllables === undefined) {
+                    self.syllables = {};
+                }
+
+                let syllables = self.syllables;
                 let sylIdx = getCache('resizeable-syl-id');
 
                 if (sylIdx === undefined) {
@@ -349,8 +356,6 @@ export class Visualiser {
                         target: newSyllable
                     });
 
-                    setCache('syllables', undefined, syllables);
-
                     // Clear the brush right away
                     self.clearBrush();
                 }
@@ -366,7 +371,7 @@ export class Visualiser {
                     });
                 }
 
-                self.displaySegs(syllables);
+                self.displaySegs(self.syllables);
             }
         });
 
@@ -383,15 +388,6 @@ export class Visualiser {
         self.durationMs = durationMs;
         self.length = length;
 
-        /*
-         * The file can be long so we must generate the spectrogram in chunks.
-         * First we need to know how many frame will be generated as the final product.
-         * Then create a canvas that can accommodate the entire image.
-         * And then incrementally add frames to it
-         */
-        self.imgWidth = Math.floor(self.length / self.nfft);
-        self.imgHeight = self.nfft / 2;
-
         let minY = 99999;
         let maxY = -99999;
         let y;
@@ -407,11 +403,23 @@ export class Visualiser {
 
     initCanvas() {
         const self = this;
+
+        /*
+         * The file can be long so we must generate the spectrogram in chunks.
+         * First we need to know how many frame will be generated as the final product.
+         * Then create a canvas that can accommodate the entire image.
+         * And then incrementally add frames to it
+         */
+        self.imgWidth = Math.floor(self.length / self.nfft);
+        self.imgHeight = self.nfft / 2;
+
         self.spectrogramSvg = d3.select(self.spectrogramId);
+        self.spectrogramSvg.selectAll('*').remove();
         self.spectrogramSvg.attr('height', self.spectHeight + self.margin.top + self.margin.bottom);
         self.spectrogramSvg.attr('width', self.imgWidth + self.margin.left + self.margin.right);
 
         self.oscillogramSvg = d3.select(self.oscillogramId);
+        self.oscillogramSvg.selectAll('*').remove();
         self.oscillogramSvg.attr('width', self.imgWidth);
         self.oscillogramSvg.attr('height', self.oscilloHeight);
 
@@ -598,12 +606,17 @@ export class Visualiser {
         });
     }
 
+    setSyllables(syllables) {
+        this.syllables = syllables;
+    }
+
     /**
      *
      * @param syllables an array of dict having these keys: {start, end, id}
      */
-    displaySegs(syllables) {
+    displaySegs() {
         let self = this;
+        let syllables = self.syllables;
         self.clearAllSegments();
 
         for (let sylIdx in syllables) {
@@ -726,14 +739,14 @@ export class Visualiser {
 
         contrastSlider.on('slideStop', function (slideEvt) {
             let contrast = slideEvt.value;
-            self.resetArgs({nfft: 256, contrast});
+            self.resetArgs({contrast});
             self.visualiseSpectrogram();
         });
 
         contrastSlider.find('.slider').on('click', function () {
             let newValue = contrastSlider.find('.tooltip-inner').text();
             let contrast = parseInt(newValue);
-            self.resetArgs({nfft: 256, contrast});
+            self.resetArgs({contrast});
             self.visualiseSpectrogram();
         });
 
@@ -785,6 +798,24 @@ export class Visualiser {
             self.visualisationEl.scrollLeft = 0;
             resumeSongBtn.attr('start-point', 0);
             playSongBtn.attr('start-point', 0);
+        });
+
+        zoomOptions.click(function () {
+            let $this = $(this);
+            let zoom = parseInt($this.attr('value'));
+            zoomOptions.parent().removeClass('active');
+            $this.parent().addClass('active');
+
+            zoomBtnText.html($this.html());
+
+            self.resetArgs({zoom});
+            self.initCanvas();
+            self.visualisationPromiseChainHead.cancel();
+            self.visualisationPromiseChainHead = undefined;
+            self.imagesAreInitialised = false;
+            self.visualiseSpectrogram();
+            self.drawBrush();
+            self.displaySegs();
         });
     }
 }

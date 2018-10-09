@@ -243,7 +243,14 @@ const initChangeArgSelections = function() {
                 argString += `${k}=${v}&`;
             }
         });
-        window.location.href = `${locationOrigin}${localtionPath}${argString}`;
+        let newUrl = `${locationOrigin}${localtionPath}${argString}`;
+        let quiet = $(this).hasClass('quiet');
+        if (quiet) {
+            window.history.pushState('', '', newUrl);
+        }
+        else {
+            window.location.href = newUrl;
+        }
     });
 };
 
