@@ -27,7 +27,7 @@
         <div id="sidebar-menu" page="{{ page }}">
             <ul>
                 <li class="menu-section">
-                    <span>Views</span>
+                    <span>Workflow</span>
                     <div class="menu-item" page="dashboard">
                         <a href="{% url 'dashboard' %}">
                             <span>Manage your database</span>
@@ -41,7 +41,7 @@
                     </div>
                     <div class="menu-item" page="">
                         <a href="{% url 'songs' %}?__action=upload">
-                            <span>Upload Songs</span>
+                            <span>Upload songs</span>
                         </a>
                     </div>
                     {% endif %}
@@ -53,13 +53,13 @@
 
                     <div class="menu-item-expandable">
                         <a href="#">
-                            <span>Extract features and ordination</span>
+                            <span>Extract features and compare</span>
                         </a>
                         <div class="menu-submenu">
                             <ul>
                                 <li page="feature-extraction">
                                     <a href="{% url 'feature-extraction' %}">
-                                        <span>Measure units</span>
+                                        <span>Extract unit features</span>
                                     </a>
                                 </li>
                                 <li page="ordination-extraction">
@@ -76,56 +76,46 @@
                         </div>
                     </div>
 
-                    <div class="menu-item" page="syllables">
-                        <a class="appendable" href="{% url 'syllables' %}">
-                            <span>Classify units</span>
+                    <div class="menu-item-expandable">
+                        <a href="#">
+                            <span>Classify & manage units</span>
                         </a>
+                        <div class="menu-submenu">
+                            <ul>
+                                <li page="view-ordination">
+                                    <a class="appendable" href="{% url 'view-ordination' %}">
+                                        <span>Ordination</span>
+                                    </a>
+                                </li>
+
+                                <li page="syllables">
+                                    <a class="appendable" href="{% url 'syllables' %}">
+                                        <span>Unit table</span>
+                                    </a>
+                                </li>
+
+                                <li page="exemplars">
+                                    <a class="appendable" href="{% url 'exemplars' %}">
+                                        <span>Exemplars</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div class="menu-item" page="exemplars">
-                        <a class="appendable" href="{% url 'exemplars' %}">
-                            <span>View exemplars</span>
-                        </a>
-                    </div>
+
                     <div class="menu-item" page="songs">
                         <a class="appendable" href="{% url 'songs' %}">
                             <span>View all songs</span>
                         </a>
                     </div>
 
-
-                    {#                        <div class="menu-item-expandable">#}
-                    {#                            <a href="#">#}
-                    {#                                <span>Songs</span>#}
-                    {#                            </a>#}
-                    {#                            <div class="menu-submenu">#}
-                    {#                                <ul>#}
-                    {#                                    <li>#}
-                    {#                                        <a href="#">View</a>#}
-                    {#                                    </li>#}
-                    {#                                    <li>#}
-                    {#                                        <a href="#">Split from raw</a>#}
-                    {#                                    </li>#}
-                    {#                                    <li>#}
-                    {#                                        <a href="#">Upload</a>#}
-                    {#                                    </li>#}
-                    {#                                </ul>#}
-                    {#                            </div>#}
-                    {#                        </div>#}
-                </li>
-
-                <li class="menu-section">
-                    <span>Analysis</span>
                     <div class="menu-item" page="sequence-mining">
                         <a class="appendable" href="{% url 'sequence-mining' %}">
-                            <span>Mine sequences</span>
-                        </a>
-                    </div>
-                    <div class="menu-item" page="view-ordination">
-                        <a class="appendable" href="{% url 'view-ordination' %}">
-                            <span>View ordination</span>
+                            <span>Mine sequence structure</span>
                         </a>
                     </div>
                 </li>
+
                 <li class="menu-section">
                     <span>Extra</span>
                     <div class="menu-item" page="help">
