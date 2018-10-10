@@ -262,8 +262,10 @@ export class Visualiser {
                     renderStatus.state = stateBeforeDisplaying;
                     $.each(spect, function (_i, row) {
                         $.each(row, function (_j, px) {
-                            self.minSpect = Math.min(self.minSpect, px);
-                            self.maxSpect = Math.max(self.maxSpect, px);
+                            if (isFinite(px)) {
+                                self.minSpect = Math.min(self.minSpect, px);
+                                self.maxSpect = Math.max(self.maxSpect, px);
+                            }
                         });
                     });
                     return spectToUri(spect, self.imgHeight, subSegs.length, self.contrast, self.colourMap, self.minSpect, self.maxSpect);
