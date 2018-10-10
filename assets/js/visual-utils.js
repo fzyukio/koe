@@ -1,8 +1,7 @@
-import {defaultCm} from './colour-map';
+import {colourMaps} from './colour-map';
 
-const {rPixelValues, gPixelValues, bPixelValues} = defaultCm;
-const globalMinSpectPixel = -139;
-const globalMaxSpectPixel = 43;
+export const globalMinSpectPixel = -139;
+export const globalMaxSpectPixel = 43;
 
 /**
  * Convert a given a spectrogram (power spectral density 2D array), put it on the canvas
@@ -11,8 +10,10 @@ const globalMaxSpectPixel = 43;
  * @param dspMin
  * @param dspMax
  * @param contrast
+ * @param colourMap
  */
-const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
+const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0, colourMap = 'Green') {
+    const {rPixelValues, gPixelValues, bPixelValues} = colourMaps[colourMap];
 
     /*
      * Some checking: spect and canvas must have the same size
@@ -63,8 +64,11 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0) {
  * @param imgHeight
  * @param subImgWidth
  * @param contrast
+ * @param colourMap
+ * @param dspMin
+ * @param dspMax
  */
-export const spectToUri = function(spect, imgHeight, subImgWidth, contrast) {
+export const spectToUri = function(spect, imgHeight, subImgWidth, contrast, colourMap, dspMin, dspMax) {
     return new Promise(function (resolve) {
         let img = new Image();
         img.onload = function () {
@@ -75,7 +79,7 @@ export const spectToUri = function(spect, imgHeight, subImgWidth, contrast) {
             canvas.height = imgHeight;
             canvas.width = subImgWidth;
 
-            spectToCanvas(spect, imgData, globalMinSpectPixel, globalMaxSpectPixel, contrast);
+            spectToCanvas(spect, imgData, dspMin, dspMax, contrast, colourMap);
             context.putImageData(imgData, 0, 0);
             resolve(canvas.toDataURL('image/webp', 1));
         };

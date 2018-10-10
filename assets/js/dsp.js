@@ -2,6 +2,7 @@
  * Calculate spectrogram from raw data
  * @param sig
  * @param segs
+ * @param fft
  */
 export const calcSpect = function (sig, segs, fft) {
     const nfft = segs[0][1] - segs[0][0];

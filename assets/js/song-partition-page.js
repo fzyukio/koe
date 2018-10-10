@@ -477,10 +477,12 @@ export const run = function (ce) {
     }
 
     let zoom = ce.argDict._zoom || 100;
+    let colourMap = ce.argDict._cm || 'Green';
+
     spectViz = new Visualiser(vizContainerId);
     spectViz.initScroll();
     spectViz.initController();
-    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0});
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
     loadSongPromise.then(function ({sig_, fs_}) {
         audioData.sig = sig_;

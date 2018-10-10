@@ -1,7 +1,7 @@
 /* global d3*/
 /* eslint no-console: off */
 const FFT = require('fft.js');
-import {spectToUri} from './visual-utils';
+import {spectToUri, globalMinSpectPixel, globalMaxSpectPixel} from './visual-utils';
 import {stopAudio, playAudioDataArray} from './audio-handler';
 import {getCache, calcSegments, setCache, uuid4, debug, smoothScrollTo} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
@@ -22,6 +22,8 @@ const stopSongBtn = $('#stop-song');
 const resumeSongBtn = $('#resume-song');
 const zoomOptions = $('.select-zoom');
 const zoomBtnText = $('#zoom-btn-text');
+const cmOptions = $('.select-cm');
+const cmBtnText = $('#cm-btn-text');
 
 let startPlaybackAt;
 let playbackSpeed;
@@ -41,7 +43,23 @@ function resizePath(args, spectHeight) {
 }
 
 
+// const defaultArgs = {
+//         noverlap: 0,
+//         contrast: 0,
+//         colourMap: "Green",
+//         zoom: 100
+//     };
+
 export class Visualiser {
+    static get defaultArgs() {
+        return {
+            noverlap: 0,
+            contrast: 0,
+            colourMap: 'Green',
+            zoom: 100
+        }
+    }
+
     constructor(vizContainerId) {
         this.spectrogramSvg = null;
         this.spectWidth = null;
@@ -72,7 +90,10 @@ export class Visualiser {
         this.sig = null;
         this.fs = null;
 
-        self.scrollingTimer = null;
+        this.minSpect = globalMinSpectPixel;
+        this.maxSpect = globalMaxSpectPixel;
+
+        this.scrollingTimer = null;
 
         // Grab the head of the promise chain for cancellation purpose
         this.visualisationPromiseChainHead = null;
@@ -102,18 +123,34 @@ export class Visualiser {
         this.eventNotifier = $(document.createElement('div'));
     }
 
-    resetArgs({zoom = 100, contrast = 0, noverlap = 0}) {
+    /**
+     * {zoom = this.zoom, contrast = this.contrast, noverlap = this.noverlap, colourMap = this.colourMap}
+     */
+    resetArgs(args) {
         let self = this;
-        if (zoom != self.zoom) {
-            self.zoom = zoom;
-            self.nfft = defaultNfft * zoom / 100;
+        let changed = {};
+
+        $.each(Visualiser.defaultArgs, function (arg, defVal) {
+            let curVal = self[arg];
+            let newVal = args[arg];
+
+            if (newVal === undefined) {
+                if (curVal === undefined) {
+                    self[arg] = defVal;
+                    changed.push(arg);
+                }
+            }
+            else if (newVal !== curVal) {
+                self[arg] = newVal;
+                changed[arg] = true;
+            }
+        });
+        if (changed.zoom) {
+            self.nfft = defaultNfft * self.zoom / 100;
             self.fft = new FFT(self.nfft);
-            // (Minimum 400ms per tick if nfft is 256. The actual tick interval will depend on the length of the audio)
             self.tickInterval = Math.floor(self.nfft / 100) * 200;
         }
-
-        self.noverlap = noverlap;
-        self.contrast = contrast;
+        console.log(self);
     }
 
     displayAsPromises() {
@@ -223,7 +260,13 @@ export class Visualiser {
             }).then(function (spect) {
                 if (spect) {
                     renderStatus.state = stateBeforeDisplaying;
-                    return spectToUri(spect, self.imgHeight, subSegs.length, self.contrast);
+                    $.each(spect, function (_i, row) {
+                        $.each(row, function (_j, px) {
+                            self.minSpect = Math.min(self.minSpect, px);
+                            self.maxSpect = Math.max(self.maxSpect, px);
+                        });
+                    });
+                    return spectToUri(spect, self.imgHeight, subSegs.length, self.contrast, self.colourMap, self.minSpect, self.maxSpect);
                 }
                 return undefined;
             }).then(function (dataURI) {
@@ -809,6 +852,24 @@ export class Visualiser {
             zoomBtnText.html($this.html());
 
             self.resetArgs({zoom});
+            self.initCanvas();
+            self.visualisationPromiseChainHead.cancel();
+            self.visualisationPromiseChainHead = undefined;
+            self.imagesAreInitialised = false;
+            self.visualiseSpectrogram();
+            self.drawBrush();
+            self.displaySegs();
+        });
+
+        cmOptions.click(function () {
+            let $this = $(this);
+            let colourMap = $this.attr('value');
+            cmOptions.parent().removeClass('active');
+            $this.parent().addClass('active');
+
+            cmBtnText.html($this.html());
+
+            self.resetArgs({colourMap});
             self.initCanvas();
             self.visualisationPromiseChainHead.cancel();
             self.visualisationPromiseChainHead = undefined;

@@ -285,6 +285,7 @@ let gridArgs = {
 export const run = function (commonElements) {
     ce = commonElements;
     let zoom = ce.argDict._zoom || 100;
+    let colourMap = ce.argDict._cm || 'Green';
 
     /*
      * Clear all temporary variables
@@ -300,7 +301,7 @@ export const run = function (commonElements) {
     spectViz = new Visualiser(vizContainerId);
     spectViz.initScroll();
     spectViz.initController();
-    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0});
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
     loadSongById(fileId).then(function({sig_, fs_}) {
         audioData.sig = sig_;
