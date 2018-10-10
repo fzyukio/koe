@@ -47,12 +47,6 @@ tables =\
                     "type": "SHORT_TEXT"
                 },
                 {
-                    "name": "Signal mask",
-                    "slug": "signal_mask",
-                    "type": "IMAGE",
-                    "css_class": "has-image"
-                },
-                {
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
@@ -572,20 +566,11 @@ tables =\
 num_exemplars = 10
 exemplars_grid_columns = tables['exemplars-grid']['columns']
 
-for i in range(1, num_exemplars + 1):
-    exemplars_grid_columns.append(
-        {
-            "name": "Exemplar {} Mask".format(i),
-            "slug": "exemplar{}_mask".format(i),
-            "type": "IMAGE",
-            "css_class": "has-image"
-        }
-    )
 
 for i in range(1, num_exemplars + 1):
     exemplars_grid_columns.append(
         {
-            "name": "Exemplar {} Spectrogram".format(i),
+            "name": "Exemplar {}".format(i),
             "slug": "exemplar{}_spect".format(i),
             "type": "IMAGE",
             "css_class": "has-image"

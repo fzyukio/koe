@@ -12,7 +12,7 @@ from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermissio
     SimilarityIndex
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_mask_path, spect_fft_path, history_path
+from root.utils import spect_fft_path, history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
@@ -160,17 +160,13 @@ def bulk_get_segment_info(segs, extras):
             species = values[i]
 
         index = indices[i]
-        mask_img = spect_mask_path(id, for_url=True)
-
-        if not os.path.isfile(mask_img[1:]):
-            mask_img = ''
 
         spect_img = spect_fft_path(id, 'syllable', for_url=True)
         duration = end - start
         species_str = '{} {}'.format(genus, species)
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, song_name)
-        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url, signal_mask=mask_img,
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url,
                    dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
                    song_quality=quality, song_date=date, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
                    spectrogram=spect_img, species=species_str)
@@ -246,16 +242,10 @@ def bulk_get_exemplars(objs, extras):
             row = dict(id=cls, cls=cls, count=count)
             for i in range(num_exemplars):
                 if i < len(exemplars):
-                    mask_img = spect_mask_path(exemplars[i], for_url=True)
                     spect_img = spect_fft_path(exemplars[i], 'syllable', for_url=True)
                 else:
-                    mask_img = ''
                     spect_img = ''
 
-                if not os.path.isfile(mask_img[1:]):
-                    mask_img = ''
-
-                row['exemplar{}_mask'.format(i + 1)] = mask_img
                 row['exemplar{}_spect'.format(i + 1)] = spect_img
 
             rows.append(row)
@@ -386,14 +376,13 @@ def bulk_get_song_sequences(all_songs, extras):
         sequence_labels = []
         sequence_starts = []
         sequence_ends = []
-        sequence_masks = []
+        sequence_ids = []
 
         for seg_id, label, start, end in segs_info:
             sequence_labels.append(label)
             sequence_starts.append(start)
             sequence_ends.append(end)
-            mask_img = spect_mask_path(seg_id, for_url=True)
-            sequence_masks.append(mask_img)
+            sequence_ids.append(seg_id)
 
         sequence_str = '-'.join('\"{}\"'.format(x) for x in sequence_labels)
 
@@ -403,7 +392,7 @@ def bulk_get_song_sequences(all_songs, extras):
         row['sequence-labels'] = sequence_labels
         row['sequence-starts'] = sequence_starts
         row['sequence-ends'] = sequence_ends
-        row['sequence-imgs'] = sequence_masks
+        row['sequence-ids'] = sequence_ids
 
         extra_attr_dict = extra_attr_values_lookup.get(song_id, {})
         for attr in extra_attr_dict:

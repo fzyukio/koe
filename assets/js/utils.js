@@ -406,7 +406,7 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
     let segLabels = song['sequence-labels'];
     let segStarts = song['sequence-starts'];
     let segEnds = song['sequence-ends'];
-    let imgSrcs = song['sequence-imgs'];
+    let sids = song['sequence-ids'];
 
     let retval = `<div class="syllable start full-audio" start=0 end=${duration}>
                   <i class="fa fa-play" aria-hidden="true"></i>
@@ -417,8 +417,8 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
         let start = segStarts[i];
         let end = segEnds[i];
         let segLabel = segLabels[i];
-        let imgSrc = imgSrcs[i];
-        retval += `<div class="syllable" start=${start} end=${end} imgsrc="${imgSrc}">${segLabel}</div>`;
+        let sid = sids[i];
+        retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/fft/syllable/${sid}.png">${segLabel}</div>`;
     }
 
     retval += '<div class="syllable end"><i class="fa fa-stop"></i></div>';
