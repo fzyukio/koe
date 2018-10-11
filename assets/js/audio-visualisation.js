@@ -42,14 +42,6 @@ function resizePath(args, spectHeight) {
     return `M${0.5 * x},${y}A6,6 0 0 ${e} ${6.5 * x},${y + 6}V${2 * y - 6}A6,6 0 0 ${e} ${0.5 * x},${2 * y}ZM${2.5 * x},${y + 8}V${2 * y - 8}M${4.5 * x},${y + 8}V${2 * y - 8}`;
 }
 
-
-// const defaultArgs = {
-//         noverlap: 0,
-//         contrast: 0,
-//         colourMap: "Green",
-//         zoom: 100
-//     };
-
 export class Visualiser {
     static get defaultArgs() {
         return {
@@ -146,11 +138,21 @@ export class Visualiser {
             }
         });
         if (changed.zoom) {
-            self.nfft = defaultNfft * self.zoom / 100;
-            self.fft = new FFT(self.nfft);
-            self.tickInterval = Math.floor(self.nfft / 100) * 200;
+            if (self.zoom <= 100) {
+                self.nfft = defaultNfft / (self.zoom / 100);
+                self.frameSize = self.nfft;
+                self.fft = new FFT(self.nfft);
+            }
+            else {
+                if (self.nfft !== defaultNfft) {
+                    self.nfft = defaultNfft;
+                    self.fft = new FFT(self.nfft);
+                }
+                self.frameSize = Math.floor(defaultNfft / (self.zoom / 100));
+            }
+            self.noverlap = self.nfft - self.frameSize;
+            self.tickInterval = Math.floor(self.frameSize / 10) * 20;
         }
-        console.log(self);
     }
 
     displayAsPromises() {
@@ -455,7 +457,7 @@ export class Visualiser {
          * Then create a canvas that can accommodate the entire image.
          * And then incrementally add frames to it
          */
-        self.imgWidth = Math.floor(self.length / self.nfft);
+        self.imgWidth = Math.floor((self.length - self.nfft) / self.frameSize) + 1;
         self.imgHeight = self.nfft / 2;
 
         self.spectrogramSvg = d3.select(self.spectrogramId);
