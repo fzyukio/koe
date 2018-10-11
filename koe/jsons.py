@@ -1,4 +1,4 @@
-__all__ = ['tables', 'actions', 'num_exemplars']
+__all__ = ['tables', 'actions']
 
 tables =\
     {
@@ -199,6 +199,13 @@ tables =\
                     "name": "Exemplar count",
                     "slug": "count",
                     "type": "INTEGER"
+                },
+                {
+                    "name": "Spectrograms",
+                    "slug": "spectrograms",
+                    "type": "IMAGE",
+                    "formatter": "Spects",
+                    "css_class": "has-images"
                 }
             ]
         },
@@ -562,20 +569,6 @@ tables =\
             ]
         }
     }
-
-num_exemplars = 10
-exemplars_grid_columns = tables['exemplars-grid']['columns']
-
-
-for i in range(1, num_exemplars + 1):
-    exemplars_grid_columns.append(
-        {
-            "name": "Exemplar {}".format(i),
-            "slug": "exemplar{}_spect".format(i),
-            "type": "IMAGE",
-            "css_class": "has-image"
-        }
-    )
 
 actions =\
     {

@@ -215,8 +215,6 @@ def bulk_get_exemplars(objs, extras):
     current_exemplars_count = 0
     total_exemplars_count = 0
 
-    from koe.jsons import num_exemplars
-
     for cls, owner_id in values:
         if cls:
             cls = cls.strip()
@@ -227,7 +225,7 @@ def bulk_get_exemplars(objs, extras):
                     current_class = cls
                     total_exemplars_count = 0
                     current_exemplars_list = [owner_id]
-                elif current_exemplars_count < num_exemplars:
+                else:
                     current_exemplars_list.append(owner_id)
                     current_exemplars_count += 1
 
@@ -239,15 +237,7 @@ def bulk_get_exemplars(objs, extras):
     ids = []
     for cls, count, exemplars in class_to_exemplars:
         if cls:
-            row = dict(id=cls, cls=cls, count=count)
-            for i in range(num_exemplars):
-                if i < len(exemplars):
-                    spect_img = spect_fft_path(exemplars[i], 'syllable', for_url=True)
-                else:
-                    spect_img = ''
-
-                row['exemplar{}_spect'.format(i + 1)] = spect_img
-
+            row = dict(id=cls, cls=cls, count=count, spectrograms=exemplars)
             rows.append(row)
             ids.append(cls)
 

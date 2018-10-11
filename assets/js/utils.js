@@ -320,17 +320,33 @@ const CheckmarkFormatter = function (row, cell, value, columnDef, dataContext) {
 /**
  * @return {string}
  */
-// eslint-disable-next-line no-unused-vars
-const ImageFormatter = function (row, cell, imgUrl, columnDef, item) {
+const ImageFormatter = function (row, cell, imgUrl) {
     return `<img src="${imgUrl}" height="100%"/>`;
+};
+
+
+/**
+ * Render one or many images given the id or array of ids of the spectrograms
+ * spetrogram images are located at /user_data/spect/fft/syllable/<ID>.png
+ * @returns {string}
+ * @constructor
+ */
+const SpectsFormatter = function (row, cell, value) {
+    if (Array.isArray(value)) {
+        let retval = '';
+        $.each(value, function (idx, sid) {
+            retval += `<img src="/user_data/spect/fft/syllable/${sid}.png" height="100%"/>`;
+        });
+        return retval;
+    }
+    return `<img src="/user_data/spect/fft/syllable/${value}.png" height="100%"/>`;
 };
 
 
 /**
  * @return {string}
  */
-// eslint-disable-next-line no-unused-vars
-const RowMoveableFormatter = function (row, cell, imgUrl, columnDef, item) {
+const RowMoveableFormatter = function () {
     return '<i class="fa fa-bars" aria-hidden="true"></i>';
 };
 
@@ -441,6 +457,7 @@ SlickFormatters.DecimalPoint = DecimalPointFormatter.bind({numDecimal: 2});
 SlickFormatters.Select = SelectionFormatter;
 SlickFormatters.Checkmark = CheckmarkFormatter;
 SlickFormatters.Image = ImageFormatter;
+SlickFormatters.Spects = SpectsFormatter;
 SlickFormatters.Url = UrlFormatter;
 SlickFormatters.Sequence = SequenceFormatter;
 
@@ -1864,4 +1881,15 @@ export const showAlert = function (alertEl, message, delay = 5000, errorId = und
     alertEl.fadeIn();
 
     return promise
+};
+
+
+/**
+ * Create a range array and then shuffle it randomly.
+ * @returns {[*]}
+ */
+export const randomRange = function (limit) {
+    let array = [...Array(limit).keys()];
+    shuffle(array);
+    return array
 };

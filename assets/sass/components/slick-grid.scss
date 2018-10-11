@@ -19,7 +19,7 @@
   }
 }
 
-.slick-cell.overflow.active{
+.slick-cell.overflow.active {
   overflow: visible !important;
   z-index: 999;
 }
@@ -45,6 +45,24 @@
 
   .highlight {
     border: 1px solid red;
+  }
+}
+
+.slick-cell.has-images {
+  img {
+    margin-right: 10px;
+    &.highlight {
+      border: 1px solid red;
+    }
+  }
+  img:last-child {
+    margin-right: 0;
+  }
+
+  overflow-x: hidden;
+
+  &:hover {
+    overflow-x: overlay;
   }
 }
 
