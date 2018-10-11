@@ -443,7 +443,7 @@ function setupSongsUpload() {
         parallelUploads: 8,
         maxFiles,
         method: 'post',
-        dictDefaultMessage: `Drag and drop, or click to upload songs (WAV only). You can upload up to ${maxFiles} songs.`,
+        dictDefaultMessage: `Drag & drop or click to upload songs (WAV only, up to ${maxFiles} at once)`,
         dictResponseError: 'Error uploading file!',
         createImageThumbnails: false,
         previewTemplate,
