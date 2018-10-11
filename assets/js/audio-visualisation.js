@@ -386,13 +386,13 @@ export class Visualiser {
                 let sylIdx = getCache('resizeable-syl-id');
 
                 if (sylIdx === undefined) {
-                    let newId = `new:${uuid4()}`;
+                    let uuid = uuid4();
+                    let newId = `new:${uuid}`;
                     let newSyllable = {
                         id: newId,
                         start,
                         end,
                         duration: end - start,
-                        name: uuid4()
                     };
                     syllables[newId] = newSyllable;
 

@@ -1838,3 +1838,30 @@ export const getGetParams = function() {
 
     return argDict;
 };
+
+export const showAlert = function (alertEl, message, delay = 5000, errorId = undefined) {
+    alertEl.find('.message').html(message);
+    if (errorId) {
+        alertEl.find('.link').attr('error-id', errorId);
+        alertEl.find('.report').show();
+    }
+    else {
+        alertEl.find('.report').hide();
+    }
+
+    let timerId = alertEl.attr('timer-id');
+    if (timerId) {
+        clearTimeout(timerId);
+    }
+
+    let promise = new Promise(function (resolve) {
+        timerId = setTimeout(function () {
+            alertEl.fadeOut(500, resolve);
+        }, delay);
+    });
+
+    alertEl.attr('timer-id', timerId);
+    alertEl.fadeIn();
+
+    return promise
+};

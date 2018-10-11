@@ -2,7 +2,7 @@ import {getCache} from './utils';
 require('selectize/dist/js/selectize.js');
 
 
-export const initSelectizeSimple = function ($select, options) {
+export const initSelectizeSimple = function ($select, options, extraArgs = {}) {
     let args = {
         sortField: 'text',
         valueField: 'value',
@@ -15,6 +15,9 @@ export const initSelectizeSimple = function ($select, options) {
     if (options) {
         args.options = options;
     }
+    $.each(extraArgs, function(key, val) {
+        args[key] = val;
+    });
     $select.selectize(args);
 
     return $select[0].selectize;

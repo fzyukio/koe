@@ -1,5 +1,4 @@
 {% load widget_tweaks %}
-{% csrf_token %}
 
 <input type="hidden" name="track_id" {% if track_id %} value="{{ track_id }}" {% endif %} id="id_track_id"
        valid="{% if valid %}true{% else %}false{% endif %}">

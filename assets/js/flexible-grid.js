@@ -217,12 +217,24 @@ export class FlexibleGrid {
             'property': JSON.stringify(itemSimplified)
         };
 
-        postRequest({
-            requestSlug: 'change-properties',
-            data: postData,
-            onSuccess,
-            onFailure,
-            immediate: true
+        return new Promise(function (resolve, reject) {
+            postRequest({
+                requestSlug: 'change-properties',
+                data: postData,
+                onSuccess(...args_) {
+                    if (onSuccess) {
+                        onSuccess(...args_);
+                    }
+                    return resolve({args: args_});
+                },
+                onFailure(...args_) {
+                    if (onFailure) {
+                        onFailure(...args_);
+                    }
+                    return reject(new Error(args_));
+                },
+                immediate: true
+            });
         });
     }
 

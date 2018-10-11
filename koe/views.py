@@ -3,7 +3,7 @@ import json
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
@@ -159,7 +159,8 @@ class SongPartitionView(FormView):
         context = self.get_context_data()
         context['form'] = form
         context['valid'] = False
-        return render(self.request, 'partials/track-info-form.html', context=context)
+        rendered = render_to_string('partials/track-info-form.html', context=context)
+        return HttpResponse(json.dumps(dict(message=rendered)))
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -200,8 +201,8 @@ class SongPartitionView(FormView):
 
         context['form'] = form
 
-        rendered = render(self.request, 'partials/track-info-form.html', context=context)
-        return HttpResponse(json.dumps(dict(message=rendered.content.decode('utf-8'))))
+        rendered = render_to_string('partials/track-info-form.html', context=context)
+        return HttpResponse(json.dumps(dict(message=rendered)))
 
 
 class TensorvizView(TemplateView):

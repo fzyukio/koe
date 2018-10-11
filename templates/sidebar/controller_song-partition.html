@@ -3,11 +3,12 @@
 <div class="sidebar-controllers">
     <label>Track info</label>
     <form id="track-info" method="post" url="{% url 'song-partition' %}">
+        {% csrf_token %}
         <div class="replaceable">
             {% include 'partials/track-info-form.html' %}
         </div>
 
-        <button type="button" disabled id="save-track-info" class="btn btn-xs btn-default btn-block">Submit</button>
+        <button type="button" id="save-track-info" class="btn btn-xs btn-default btn-block">Submit</button>
     </form>
 </div>
 

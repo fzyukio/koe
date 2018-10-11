@@ -3,9 +3,10 @@ import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {
     changePlaybackSpeed, createAudioFromDataArray, initAudioContext, loadLocalAudioFile, loadSongById
 } from './audio-handler';
-import {deepCopy, setCache, getCache} from './utils';
+import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation'
+import {initSelectizeSimple} from './selectize-formatter';
 
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -18,6 +19,7 @@ const audioUploadInput = audioUploadForm.find('input[type=file]');
 const audioData = {};
 const vizContainerId = '#track-visualisation';
 let spectViz;
+let ce;
 
 const gridEl = $('#song-partition-grid');
 const databaseId = gridEl.attr('database-id');
@@ -27,7 +29,115 @@ const saveSongsBtn = $('#save-songs-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 const trackInfoForm = $('#track-info');
 const saveTrackInfoBtn = trackInfoForm.find('#save-track-info');
+const $songNamePattern = $('#song-name-pattern');
+const $songNamePatternInput = $songNamePattern.find('input');
 
+const renameAllBtn = $('#rename-all-btn');
+
+let namePatternInput;
+const defaultOptions = [
+    {
+        value: '$order',
+        text: 'Order',
+        explain: 'The order in which the song appears, e.g. 1, 2, 3',
+        isVar: true
+    }
+];
+
+const defaultSelectizeArgs = {
+    render: {
+        option (item) {
+            let label = item.text;
+            if (item.isVar) {
+                label = `${item.text}: ${item.explain}`;
+            }
+            return `<div class="item" data-value="${item.value}">${label}</div>`;
+        },
+        item (item) {
+            let isVar = '';
+            if (item.isVar) {
+                isVar = 'is-var'
+            }
+            return `<div class="item ${isVar}" data-value="${item.value}">${item.text}</div>`;
+        }
+    }
+};
+
+const patternValues = {};
+
+/**
+ * Generate and store name for an item based on the selected pattern.
+ * @param item
+ * @param force if true, change name even if the corresponding song has already been saved to database
+ * @returns {boolean} true if the item's name has been changed
+ */
+function populateName(item, force = false) {
+    let items = grid.mainGrid.getData().getItems();
+    let needChange = false;
+    if (force || (!isNumber(item.id) && item.id.startsWith('new:'))) {
+        needChange = true;
+    }
+    if (needChange) {
+        let patterns = namePatternInput.items;
+        let newName;
+
+        if (patterns.length === 0) {
+            if (item.id.startsWith('new:')) {
+                newName = item.id.substr(4);
+            }
+            else {
+                newName = item.name || uuid4();
+            }
+        }
+        else {
+            newName = '';
+            $.each(patterns, function (idx, pattern) {
+                let patternValue;
+                if (pattern == '$order') {
+                    let i = 0;
+                    for (; i < items.length; i++) {
+                        if (items[i].id === item.id) {
+                            break;
+                        }
+                    }
+                    patternValue = i + 1;
+                }
+                else {
+                    patternValue = patternValues[pattern];
+                }
+                newName += patternValue;
+            });
+        }
+        let oldName = item.name;
+        item.name = newName;
+        if (oldName && oldName !== newName) {
+
+            // eslint-disable-next-line camelcase
+            item._old_name = oldName;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Call populateName on all items of the grid. Collect the ones that have been updated
+ * @param force see populateName
+ * @returns {Array} array of updated itemns
+ */
+function populateNameAll(force = false) {
+    let items = grid.mainGrid.getData().getItems();
+    let updated = [];
+    $.each(items, function (idx, item) {
+        let changed = populateName(item, force);
+        if (changed) {
+            updated.push(item)
+        }
+    });
+    grid.mainGrid.invalidate();
+    grid.mainGrid.render();
+    return updated;
+}
 
 class Grid extends FlexibleGrid {
     init() {
@@ -113,6 +223,7 @@ class Grid extends FlexibleGrid {
         }
 
         if (eventType === 'segment-created') {
+            populateName(target);
             dataView.addItem(target);
         }
         else if (eventType === 'segment-adjusted') {
@@ -122,11 +233,11 @@ class Grid extends FlexibleGrid {
 
     rowChangeHandler(e, args, onSuccess, onFailure) {
         let item = args.item;
-
         // Only change properties of files that already exist on the server
         if (item.progress === 'Uploaded') {
-            super.rowChangeHandler(e, args, onSuccess, onFailure);
+            return super.rowChangeHandler(e, args, onSuccess, onFailure);
         }
+        return Promise.resolve();
     }
 }
 
@@ -147,6 +258,95 @@ export const highlightSegments = function (e, args) {
 };
 
 
+const saveSongsToDb = function () {
+    let items = grid.mainGrid.getData().getItems();
+    let syllables = getCache('syllables');
+    let itemsToUpdate = [];
+    for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        if (item.progress !== 'Uploaded') {
+            itemsToUpdate.push(item);
+        }
+    }
+
+    /**
+     * After upload songs, update their actual IDs and names. At the last songs, refresh the grid.
+     * @param i
+     * @param item
+     * @param newId
+     * @param newName
+     */
+    function onSuccess(i, item, newId, newName) {
+        let oldId = item.id;
+
+        grid.mainGrid.invalidateRows(oldId);
+        item.progress = 'Uploaded';
+        item.id = newId;
+        item.name = newName;
+        grid.mainGrid.render();
+
+        if (oldId !== newId) {
+            syllables[newId] = syllables[oldId];
+            delete syllables[oldId];
+        }
+        if (i === itemsToUpdate.length - 1) {
+            grid.deleteAllRows();
+            grid.appendRows(items);
+            saveSongsBtn.attr('disabled', true);
+            setCache('resizeable-syl-id', null, undefined);
+            spectViz.setSyllables(items);
+            spectViz.displaySegs();
+        }
+    }
+
+    /**
+     * Update complete percentage as the files are being rendered
+     * @param item
+     * @param percentComplete
+     */
+    function onProgress(item, percentComplete) {
+        let oldId = item.id;
+        item.progress = `${percentComplete} %`;
+        grid.mainGrid.invalidateRows(oldId);
+        grid.mainGrid.render();
+    }
+
+    for (let i = 0; i < itemsToUpdate.length; i++) {
+        let item = itemsToUpdate[i];
+        let startMs = item.start;
+        let endMs = item.end;
+        let durationMs = audioData.durationMs;
+        let nSamples = audioData.length;
+        let startSample = Math.floor(startMs * nSamples / durationMs);
+        let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
+
+        let subSig = audioData.sig.slice(startSample, endSample);
+        let blob = createAudioFromDataArray(subSig, audioData.fs);
+
+        let formData = new FormData();
+        formData.append('file', blob, item.name);
+        formData.append('item', JSON.stringify(item));
+        formData.append('database-id', databaseId);
+        formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
+
+        uploadRequest({
+            requestSlug: 'koe/import-audio-file',
+            data: formData,
+            onSuccess({id, name}) {
+                onSuccess(i, item, id, name);
+            },
+            onProgress(e) {
+                if (e.loaded === e.total) {
+                    // Do nothing to not be in conflict with onSuccess
+                    return;
+                }
+                let percentComplete = Math.round(e.loaded * 100 / e.total);
+                onProgress(item, percentComplete);
+            }
+        });
+    }
+};
+
 const initController = function () {
     speedSlider.slider();
 
@@ -160,92 +360,7 @@ const initController = function () {
     });
 
     saveSongsBtn.click(function () {
-        let items = grid.mainGrid.getData().getItems();
-        let syllables = getCache('syllables');
-        let itemsToUpdate = [];
-        for (let i = 0; i < items.length; i++) {
-            let item = items[i];
-            if (item.progress !== 'Uploaded') {
-                itemsToUpdate.push(item);
-            }
-        }
-
-        /**
-         * After upload songs, update their actual IDs and names. At the last songs, refresh the grid.
-         * @param i
-         * @param item
-         * @param newId
-         * @param newName
-         */
-        function onSuccess(i, item, newId, newName) {
-            let oldId = item.id;
-
-            grid.mainGrid.invalidateRows(oldId);
-            item.progress = 'Uploaded';
-            item.id = newId;
-            item.name = newName;
-            grid.mainGrid.render();
-
-            if (oldId !== newId) {
-                syllables[newId] = syllables[oldId];
-                delete syllables[oldId];
-            }
-            if (i === itemsToUpdate.length - 1) {
-                grid.deleteAllRows();
-                grid.appendRows(items);
-                saveSongsBtn.attr('disabled', true);
-                setCache('resizeable-syl-id', null, undefined);
-                spectViz.setSyllables(items);
-                spectViz.displaySegs();
-            }
-        }
-
-        /**
-         * Update complete percentage as the files are being rendered
-         * @param item
-         * @param percentComplete
-         */
-        function onProgress(item, percentComplete) {
-            let oldId = item.id;
-            item.progress = `${percentComplete} %`;
-            grid.mainGrid.invalidateRows(oldId);
-            grid.mainGrid.render();
-        }
-
-        for (let i = 0; i < itemsToUpdate.length; i++) {
-            let item = itemsToUpdate[i];
-            let startMs = item.start;
-            let endMs = item.end;
-            let durationMs = audioData.durationMs;
-            let nSamples = audioData.length;
-            let startSample = Math.floor(startMs * nSamples / durationMs);
-            let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
-
-            let subSig = audioData.sig.slice(startSample, endSample);
-            let blob = createAudioFromDataArray(subSig, audioData.fs);
-
-            let formData = new FormData();
-            formData.append('file', blob, item.name);
-            formData.append('item', JSON.stringify(item));
-            formData.append('database-id', databaseId);
-            formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
-
-            uploadRequest({
-                requestSlug: 'koe/import-audio-file',
-                data: formData,
-                onSuccess({id, name}) {
-                    onSuccess(i, item, id, name);
-                },
-                onProgress(e) {
-                    if (e.loaded === e.total) {
-                        // Do nothing to not be in conflict with onSuccess
-                        return;
-                    }
-                    let percentComplete = Math.round(e.loaded * 100 / e.total);
-                    onProgress(item, percentComplete);
-                }
-            });
-        }
+        saveSongsToDb();
     })
 };
 
@@ -367,7 +482,7 @@ const initUploadSongsBtn = function () {
 
     uploadModal.modal('show');
 
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
         audioUploadInput.change(function (e) {
             e.preventDefault();
             let file = e.target.files[0];
@@ -391,16 +506,16 @@ const initUploadSongsBtn = function () {
 
             let onError = function (evt) {
                 switch (evt.target.error.code) {
-                case evt.target.error.NOT_FOUND_ERR:
-                    uploadProgressBar.html('File Not Found!');
-                    break;
-                case evt.target.error.NOT_READABLE_ERR:
-                    uploadProgressBar.html('File is not readable');
-                    break;
-                case evt.target.error.ABORT_ERR:
-                    break;
-                default:
-                    uploadProgressBar.html('An error occurred reading this file.');
+                    case evt.target.error.NOT_FOUND_ERR:
+                        uploadProgressBar.html('File Not Found!');
+                        break;
+                    case evt.target.error.NOT_READABLE_ERR:
+                        uploadProgressBar.html('File is not readable');
+                        break;
+                    case evt.target.error.ABORT_ERR:
+                        break;
+                    default:
+                        uploadProgressBar.html('An error occurred reading this file.');
                 }
             };
 
@@ -424,11 +539,10 @@ const initUploadSongsBtn = function () {
                 onLoad,
                 onAbort,
                 onLoadStart
-            }).
-                then(function ({sig, fs}) {
-                    uploadModal.modal('hide');
-                    resolve({sig_: sig, fs_: fs});
-                });
+            }).then(function ({sig, fs}) {
+                uploadModal.modal('hide');
+                resolve({sig_: sig, fs_: fs});
+            });
         });
     });
 };
@@ -450,6 +564,52 @@ const initSaveTrackInfoBtn = function () {
             onSuccess (res) {
                 trackInfoForm.find('.replaceable').html(res);
                 if (trackInfoForm.find('#id_track_id').attr('valid') === 'true') {
+                    let trackNameInput = trackInfoForm.find('#id_name');
+                    let trackDateInput = trackInfoForm.find('#id_date');
+
+                    let name = trackNameInput.val();
+                    let options = deepCopy(defaultOptions);
+
+                    options.push({
+                        value: '$track-name', text: 'Track name',
+                        explain: `Name of the track, in this case it's "${name}"`, isVar: true
+                    });
+                    patternValues['$track-name'] = name;
+
+                    let date = trackDateInput.val();
+                    if (date) {
+                        date = new Date(date);
+                        let day = date.getDate();
+                        let month = date.getMonth() + 1;
+                        let year = date.getFullYear();
+
+                        options.push({
+                            value: '$track-date',
+                            text: 'Date',
+                            explain: `Date when this is recorded, in this case it is "${day}"`,
+                            isVar: true
+                        });
+                        options.push({
+                            value: '$track-month',
+                            text: 'Month',
+                            explain: `Month when this is recorded, in this case it is "${month}"`,
+                            isVar: true
+                        });
+                        options.push({
+                            value: '$track-year',
+                            text: 'Year',
+                            explain: `Year when this is recorded, in this case it is "${year}"`,
+                            isVar: true
+                        });
+
+                        patternValues['$track-date'] = day;
+                        patternValues['$track-month'] = month;
+                        patternValues['$track-year'] = year;
+                    }
+                    namePatternInput.refreshOptions();
+
+                    initSelectize(options);
+
                     let numItems = grid.mainGrid.getData().getItems().length;
                     if (numItems > 0) {
                         saveSongsBtn.prop('disabled', false);
@@ -464,8 +624,79 @@ const initSaveTrackInfoBtn = function () {
     });
 };
 
+/**
+ * When user adds a new option to selectize, we want to A)sanitise it to remove all special characters and B)Suffix it
+ * in order to have duplicate items. Selectize doesn't allow two items with the same value, e.g. if '-' has been added
+ * to the list, user cannot add another '-'. We want this to be possible such that a pattern 'foo'-'bar'-'blar' is
+ * possible. To get around this problem, after '-' is added to the list of option, we remove it immediately and create
+ * a suffixed one, '-$0' and store this one instead. Next time '-' is stored, it will be replaced by '-$1', and so on
+ * @param value the original, insanitised value
+ * @param data the option item
+ */
+function handleInputAdded(value, data) {
 
-export const run = function (ce) {
+    // We must do this to avoid infinite callback because later we call addOption which trigger another 'option_add'
+    if (value in patternValues) {
+        return;
+    }
+    let sanitised = value.replace(/[^a-zA-Z0-9-_]/g, '').trim();
+    let existingsOptions = namePatternInput.options;
+
+    if (sanitised !== value) {
+        let message = 'Your pattern contains special characters which I just removed. Only numbers, alphabets, underscores and dashes are allowed.';
+        showAlert(ce.alertFailure, message);
+    }
+
+    if (sanitised) {
+        let suffix = 0;
+        let offseted = `${sanitised}$${suffix}`;
+        while (offseted in existingsOptions) {
+            suffix++;
+            offseted = `${sanitised}$${suffix}`;
+        }
+
+        data.value = offseted;
+        data.text = sanitised;
+
+        patternValues[offseted] = sanitised;
+
+        namePatternInput.removeOption(value);
+        namePatternInput.addOption(data);
+        namePatternInput.addItem(offseted);
+    }
+    else {
+        namePatternInput.removeOption(value);
+    }
+    populateNameAll();
+}
+
+
+/**
+ * Initialise a selectize attached to #song-name-pattern input with some default options
+ * @param options
+ */
+function initSelectize(options) {
+    if (namePatternInput) {
+        namePatternInput.destroy();
+    }
+    namePatternInput = initSelectizeSimple($songNamePatternInput, options, defaultSelectizeArgs);
+    namePatternInput.on('option_add', handleInputAdded);
+
+    namePatternInput.on('item_remove', function (value) {
+        if (value in patternValues) {
+            namePatternInput.removeOption(value);
+        }
+        populateNameAll();
+    });
+
+    namePatternInput.on('item_add', function () {
+        populateNameAll();
+    });
+}
+
+
+export const run = function (commonElements) {
+    ce = commonElements;
     let predefinedSongId = ce.argDict._song;
     let loadSongPromise;
 
@@ -518,6 +749,12 @@ export const run = function (ce) {
     initController();
     initKeyboardHooks();
     initDeleteSegmentsBtn();
+    initSelectize(defaultOptions);
+
+    renameAllBtn.click(function () {
+        let updated = populateNameAll(true);
+        saveSongMetadata(updated);
+    });
 };
 
 
@@ -527,4 +764,17 @@ export const postRun = function () {
 
 export const viewPortChangeHandler = function () {
     grid.mainGrid.resizeCanvas();
+};
+
+
+const saveSongMetadata = function (items) {
+    let commitPromise = items.reduce(function (promiseChain, item) {
+        return promiseChain.then(function () {
+            return grid.rowChangeHandler(null, {item});
+        });
+    }, Promise.resolve());
+
+    commitPromise.then(function () {
+        showAlert(ce.alertSuccess, 'Success', 500);
+    });
 };

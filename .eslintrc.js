@@ -90,7 +90,10 @@ module.exports = {
         ],
         "indent": [
             "error",
-            4
+            4,
+            {
+                "SwitchCase": 1
+            }
         ],
         "init-declarations": "off",
         "jsx-quotes": "error",
