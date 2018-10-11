@@ -330,6 +330,7 @@ export class FlexibleGrid {
     initMainGridHeader(defaultArgs, extraArgs, callback) {
         let self = this;
         defaultArgs['grid-type'] = self.gridType;
+        self.defaultArgs = defaultArgs;
 
         let onSuccess = function (columns) {
             self.columns = columns;
@@ -471,27 +472,43 @@ export class FlexibleGrid {
         let grid = self.mainGrid;
         let filterInput = self.filterSelector;
         let $filterInput = $(filterInput);
+        let hasItems = false;
+        if (self.defaultArgs.multiSelect) {
+            hasItems = true;
+        }
+
         if ($filterInput.length) {
+            hasItems = true;
+        }
+
+        if (hasItems) {
             let columns = grid.getColumns();
             for (let i = 0; i < columns.length; i++) {
-                columns[i].header = {
-                    menu: {
-                        items: [
-                            {
-                                title: 'Filter',
-                                command: 'filter',
-                                disabled: !columns[i].filter,
-                                tooltip: 'Click to add this column to the filter'
-                            },
-                            {
-                                title: 'Bulk set value',
-                                command: 'set-value',
-                                disabled: !columns[i].editable,
-                                tooltip: 'Click to bulk set value for selected rows'
-                            }
-                        ]
-                    }
-                };
+                let column = columns[i];
+                let menuItems = [];
+                if (self.defaultArgs.multiSelect && column.editable) {
+                    menuItems.push({
+                        title: 'Bulk set value',
+                        command: 'set-value',
+                        tooltip: 'Click to bulk set value for selected rows'
+                    });
+                }
+
+                if ($filterInput.length && column.filter) {
+                    menuItems.push({
+                        title: 'Filter',
+                        command: 'filter',
+                        tooltip: 'Click to add this column to the filter'
+                    });
+                }
+
+                if (menuItems.length > 0) {
+                    column.header = {
+                        menu: {
+                            items: menuItems
+                        }
+                    };
+                }
             }
             let headerMenuPlugin = new Slick.Plugins.HeaderMenu({autoAlign: true});
             headerMenuPlugin.onCommand.subscribe(function (e, args) {
