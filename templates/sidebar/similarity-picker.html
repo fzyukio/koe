@@ -7,7 +7,7 @@
             <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
-            {% for similarity in similaritys %}
+            {% for similarity in similarities %}
                 <li class="{% if current_similarity.id == similarity.id %}active{% else %}not-active{% endif %}">
                     <a href="#" class="change-arg" key="similarity" replace="tmpdb" value="{{ similarity.id }}">
                         {{ similarity }}
