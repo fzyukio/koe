@@ -172,6 +172,16 @@
     &.last {
       padding-bottom: 20px;
     }
+
+    .input-group-addon {
+      padding-top: 5px;
+      padding-bottom: 5px;
+      color: #bdbdbd;
+    }
+
+    input[type=checkbox] {
+      margin-top: 6px;
+    }
   }
   #sidebar-menu {
     padding-bottom: 10px;

@@ -11,6 +11,28 @@ gridOptions.rowHeight = 25;
 const pseudoStartName = '__PSEUDO_START__';
 const pseudoEndName = '__PSEUDO_END__';
 
+let svg = d3.select('#graph svg');
+let graph;
+let margin = 20;
+let circleRadius = 10;
+let xRotation = 45;
+let theta = 90 - (180 - Math.abs(xRotation)) / 2;
+let sinTheta = Math.abs(Math.sin(theta));
+let offset = sinTheta * (circleRadius);
+
+let simulation;
+
+const settings = {
+    // If false the pseudo nodes don't have any real effect on the nodes as normal
+    // otherwise they will exert a force and gravity pull on the other node
+    reactivePseudoStart: false,
+    reactivePseudoEnd: false,
+    showLabels: true,
+    charge: 10,
+    distanceRangePercent: 100,
+    centering: true
+};
+
 class Grid extends FlexibleGrid {
     init(granularity) {
 
@@ -127,13 +149,42 @@ const separateRows = function(rows) {
     };
 };
 
+let resetOnGapSlider = function(val, name) {
+    extraArgs[name] = val;
+    loadGrid();
+};
+
+let restartSimulationOnChargeChanges = function(val) {
+    settings.charge = val;
+    let forceCharge = constructForceCharge();
+    applyForces({forceCharge});
+    simulation.alpha(1).restart();
+};
+
+let restartSimulationOnDistanceChanges = function(val) {
+    settings.distanceRangePercent = val;
+    let {thickness, distance} = extractRanges();
+    let forceLink = constructForceLink(thickness, distance);
+    applyForces({forceLink});
+    simulation.alpha(1).restart();
+};
+
 /**
  * Reload the grid if the slider configurations change
  */
 const initSlider = function () {
-    let names = ['mingap', 'maxgap'];
+    let gapSliderNames = ['mingap', 'maxgap'];
+    let sliderNames = ['mingap', 'maxgap', 'charge', 'distance'];
     let sliders = {};
-    names.forEach(function (name) {
+
+    let handlers = {
+        'mingap': resetOnGapSlider,
+        'maxgap': resetOnGapSlider,
+        'charge': restartSimulationOnChargeChanges,
+        'distance': restartSimulationOnDistanceChanges,
+    };
+
+    sliderNames.forEach(function (name) {
         let slider = $(`#${name}-slider`);
         slider.slider({
             scale: 'logarithmic',
@@ -144,29 +195,28 @@ const initSlider = function () {
 
         slider.on('slideStop', function (slideEvt) {
             document.getElementById(`${name}-slider-value`).textContent = slideEvt.value;
-            extraArgs[name] = slideEvt.value;
-            loadGrid();
+            let callback = handlers[name];
+            callback(slideEvt.value, name);
         });
+
         sliders[name] = slider;
     });
 
     $('#slider-enabled').click(function () {
-
-        for (let name in sliders) {
-            if (Object.prototype.hasOwnProperty.call(sliders, name)) {
-                let slider = sliders[name];
-                if (this.checked) {
-                    slider.slider('enable');
-                    extraArgs.usegap = true;
-                    extraArgs[name] = parseInt(slider.val());
-                }
-                else {
-                    slider.slider('disable');
-                    extraArgs.usegap = false;
-                    extraArgs[name] = undefined;
-                }
+        let self = this;
+        gapSliderNames.forEach(function (name) {
+            let slider = sliders[name];
+            if (self.checked) {
+                slider.slider('enable');
+                extraArgs.usegap = true;
+                extraArgs[name] = parseInt(slider.val());
             }
-        }
+            else {
+                slider.slider('disable');
+                extraArgs.usegap = false;
+                extraArgs[name] = undefined;
+            }
+        });
         loadGrid();
     });
 };
@@ -220,12 +270,12 @@ const subscribeSlickEvents = function () {
                 rows.push(dataView.getItem(i));
             }
             fillInNodesInfo(grid.nodesDict, rows);
-            let graph = constructRealGraphContent({
+            graph = constructRealGraphContent({
                 nodesDict: grid.nodesDict,
                 withCentres: true,
                 removeOrphans: true
             });
-            displayGraph(graph);
+            constructGraph();
         }
     });
 };
@@ -264,7 +314,59 @@ export const run = function () {
     });
 
     initSlider();
+    initOptions();
 };
+
+/**
+ * Bind event handlers to the buttons/checkboxes/sliders in the control panel
+ */
+function initOptions() {
+    let $graph = $('#graph');
+
+    $('#toggle-pseudo-nodes').click(function() {
+        let pseudoThings = $graph.find('.pseudo');
+        let enabled = this.checked;
+        if (enabled) {
+            pseudoThings.removeClass('hide');
+        }
+        else {
+            pseudoThings.addClass('hide');
+        }
+    });
+
+    $('#toggle-labels').click(function() {
+        let texts = $graph.find('.node text');
+        settings.showLabels = this.checked;
+        if (settings.showLabels) {
+            texts.removeClass('hide');
+        }
+        else {
+            texts.addClass('hide');
+        }
+    });
+
+    $('#toggle-centering').click(function () {
+        settings.centering = this.checked;
+        simulation.alpha(1).restart();
+        applyForces({});
+    });
+
+    let toggleBtnAndSettings = {
+        '#toggle-pseudo-end-reactive': 'reactivePseudoEnd',
+        '#toggle-pseudo-start-reactive': 'reactivePseudoStart',
+    };
+
+    $.each(toggleBtnAndSettings, function(btn, key) {
+        $(btn).click(function() {
+            settings[key] = this.checked;
+
+            let {thickness, distance} = extractRanges();
+            let forceLink = constructForceLink(thickness, distance);
+            applyForces({forceLink});
+            simulation.alpha(1).restart();
+        });
+    });
+}
 
 const constructNodeDictionary = function(singletRows) {
     let nodesDict = {};
@@ -450,34 +552,36 @@ const constructRealGraphContent = function({nodesDict, removeOrphans = false, wi
     };
 };
 
-export const handleDatabaseChange = function () {
-    location.reload();
-};
+const extractRanges = function() {
+    let width = $(svg._groups[0][0]).width();
+    let height = $(svg._groups[0][0]).height();
+    let wiggleRoom = Math.min(width, height) - margin * 2;
 
-const extractRanges = function({nodes, links}, wiggleRoom) {
+    let nodes = graph.nodes;
+    // let links = graph.links;
     let maxLift = 0;
     let minLift = 999999;
-    let maxRadius = 40;
-    let minRadius = 20;
-    let maxLinkThickness = 5;
-    let minLinkThickness = 1;
+    // let maxRadius = 40;
+    // let minRadius = 20;
+    let thicknessRangeUpper = 5;
+    let thicknessRangeLower = 1;
     let maxInLinkCount = 0;
     let maxOutLinkCount = 0;
     let maxTotalLinkCount = 0;
     let maxOccurs = 0;
     let minOccurs = 999999;
-    let maxTransCount = 0;
-    let minTransCount = 9999999;
+    // let maxTransCount = 0;
+    // let minTransCount = 9999999;
 
-    let minCharge = -10;
-    let maxCharge = -50;
-    let minStrength = -0.001;
-    let maxStrength = 1;
+    // let minCharge = -10;
+    // let maxCharge = -50;
+    // let minStrength = -0.001;
+    // let maxStrength = 1;
 
     let nNodes = nodes.length;
     let averageDistance = wiggleRoom / Math.sqrt(nNodes);
-    let distanceMinLift = Math.min(averageDistance, 250);
-    let distanceMaxLift = distanceMinLift / 5;
+    let distanceRangeUpper = settings.distanceRangePercent * Math.min(averageDistance, 250) / 100;
+    let distanceRangeLower = distanceRangeUpper / 5;
 
     $.each(nodes, function(idx, node) {
         maxInLinkCount = Math.max(maxInLinkCount, node.inLinkCount);
@@ -493,89 +597,141 @@ const extractRanges = function({nodes, links}, wiggleRoom) {
         });
     });
 
-    $.each(links, function (idx, link) {
-        maxTransCount = Math.max(maxTransCount, link.transcount);
-        minTransCount = Math.min(minTransCount, link.transcount);
-    });
+    // $.each(links, function (idx, link) {
+    //     maxTransCount = Math.max(maxTransCount, link.transcount);
+    //     minTransCount = Math.min(minTransCount, link.transcount);
+    // });
 
-    let thickness = d3.scaleLinear().domain([minLift, maxLift]).range([minLinkThickness, maxLinkThickness]);
-    let distance = d3.scaleLinear().domain([maxLift, minLift]).range([distanceMaxLift, distanceMinLift]);
-    let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
-    let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
-    // let colourIntensity = d3.scaleLinear().domain([0, maxTotalLinkCount]).range([0, 1]);
+    let thickness = d3.scaleLinear().domain([minLift, maxLift]).range([thicknessRangeLower, thicknessRangeUpper]);
+    let distance = d3.scaleLinear().domain([maxLift, minLift]).range([distanceRangeLower, distanceRangeUpper]);
+    // let charge = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minCharge, maxCharge]);
+    // let radius = d3.scaleLinear().domain([minOccurs, maxOccurs]).range([minRadius, maxRadius]);
     let nodeColour = d3.scaleSequential(d3.interpolateYlOrRd).domain([minOccurs, maxOccurs]);
     let linkColour = d3.scaleSequential(d3.interpolateGreys).domain([-maxLift, maxLift]);
-    let linkStrength = d3.scaleLinear().domain([minTransCount, maxTransCount]).range([minStrength, maxStrength]);
+    // let linkStrength = d3.scaleLinear().domain([minTransCount, maxTransCount]).range([minStrength, maxStrength]);
 
     return {thickness,
         distance,
-        charge,
-        radius,
+        // radius,
         nodeColour,
         linkColour,
-        linkStrength
+        // linkStrength
     }
 };
 
-const displayGraph = function (graph) {
-    let svg = d3.select('#graph svg');
-    svg.selectAll('*').remove();
-    let width = $(svg._groups[0][0]).width();
-    let height = $(svg._groups[0][0]).height();
-    let margin = 20;
-    let circleRadius = 10;
-
-    let wiggleRoom = Math.min(width, height) - margin * 2;
-
-    let {thickness, distance, nodeColour, linkColour} = extractRanges(graph, wiggleRoom);
-
-    $.each(graph.nodes, function(idx, node) {
-        if (node.isPseudoStart) {
-            node.fy = margin;
-            node.fx = margin;
-        }
-        else if (node.isPseudoEnd) {
-            node.fy = height - margin;
-            node.fx = width - margin;
-        }
-    });
-
+const constructForceLink = function(thickness, distance) {
     let forceLink = d3.forceLink();
     let defaultLinkStrength = forceLink.strength();
     forceLink.id(function (node) {
         return node.id;
     });
     forceLink.strength(function (link) {
+        if (settings.reactivePseudoStart && link.source.isPseudoStart) {
+            return defaultLinkStrength(link);
+        }
+
+        if (settings.reactivePseudoEnd && link.target.isPseudoEnd) {
+            return defaultLinkStrength(link);
+        }
+
         if (link.source.isPseudoStart || link.target.isPseudoEnd) {
-            // We don't want the pseudo start & end to have any real effect on the nodes
             return null;
         }
+
         return defaultLinkStrength(link);
     });
+
     forceLink.distance(function (link) {
+        if (settings.reactivePseudoStart && link.source.isPseudoStart) {
+            return distance(link.lift);
+        }
+
+        if (settings.reactivePseudoEnd && link.target.isPseudoEnd) {
+            return distance(link.lift);
+        }
+
         if (link.source.isPseudoStart || link.target.isPseudoEnd) {
-            // Same reason
             return null;
         }
+
         return distance(link.lift);
     });
+    forceLink.links(graph.links);
+    return forceLink;
+};
 
-    let simulation = d3.forceSimulation();
-    simulation.velocityDecay(0.1);
-    simulation.nodes(graph.nodes);
-    simulation.force('charge', d3.forceManyBody().strength(function (node) {
-        if (node.isPseudoStart || node.isPseudoEnd) {
-            return 0;
-        }
-        return -10
-    }));
-    simulation.force('link', forceLink);
-    simulation.force('collide', d3.forceCollide(circleRadius * 1.5));
-    simulation.force('center', d3.forceCenter(width / 2, height / 2));
+const applyForces = function({forceCharge, forceLink, forceColide, tickAction}) {
+    if (forceCharge) {
+        simulation.force('charge', forceCharge);
+    }
+    if (forceLink) {
+        simulation.force('link', forceLink);
+    }
+    if (forceColide) {
+        simulation.force('collide', forceColide);
+    }
 
-    simulation.on('tick', tickAction);
+    let forceCenter = null;
+    if (settings.centering) {
+        let width = $(svg._groups[0][0]).width();
+        let height = $(svg._groups[0][0]).height();
+        forceCenter = d3.forceCenter((width - margin) / 2, (height - margin) / 2);
+    }
+    simulation.force('center', forceCenter);
 
-    simulation.force('link').links(graph.links);
+    if (tickAction) {
+        simulation.on('tick', tickAction);
+    }
+};
+
+
+/**
+ * This function is called every tick event to redraw the arrow lines for a given link
+ * @param link
+ * @returns {string}
+ */
+function connect(link) {
+    let x1 = Math.round(link.source.x);
+    let y1 = Math.round(link.source.y);
+    let startX = Math.round(x1 - offset);
+    let startY = Math.round(y1 - offset);
+
+    if (link.selfLink) {
+
+
+        let sweep = 1;
+
+        // Needs to be 1.
+        let largeArc = 1;
+
+        // Change sweep to change orientation of loop.
+        // sweep = 0;
+
+        // Make drx and dry different to get an ellipse
+        // instead of a circle.
+        let drx = 15;
+        let dry = 10;
+
+        // For whatever reason the arc collapses to a point if the beginning
+        // and ending points of the arc are the same, so kludge it.
+        // return 'M' + x1 + ',' + y1 + 'A' + drx + ',' + dry + ' ' + xRotation + ',' + largeArc + ',' + sweep + ' ' + x2 + ',' + y2;
+        return `M${startX},${startY}A${drx},${dry} ${xRotation},${largeArc},${sweep} ${startX + 1},${startY - 1}`
+    }
+    else {
+        let x2 = Math.round(link.target.x);
+        let y2 = Math.round(link.target.y);
+        return `M${x1},${y1}L${x2},${y2}`
+    }
+}
+
+
+/**
+ * This is called once to create the path elements for all the links, including the arrow head style
+ * The actual arrow bodies are drawn using connect()
+ * @param thickness
+ * @param linkColour
+ */
+function drawLinks(thickness, linkColour) {
     svg.append('svg:defs').selectAll('.x').data(graph.links).enter().
         append('svg:marker').
         attr('id', function (link) {
@@ -596,7 +752,12 @@ const displayGraph = function (graph) {
         style('opacity', 1);
 
     let links = svg.selectAll('.link').data(graph.links).enter().append('path').
-        attr('class', 'link').
+        attr('class', function(link) {
+            if (link.source.isPseudoStart || link.target.isPseudoEnd) {
+                return 'link pseudo';
+            }
+            return 'link'
+        }).
         attr('marker-end', function (link) {
             if (!link.selfLink && !link.source.isPseudoStart && !link.target.isPseudoEnd) {
                 return `url(#marker-${link.source.id}-${link.target.id})`;
@@ -608,95 +769,143 @@ const displayGraph = function (graph) {
         }).
         attr('stroke', function (link) {
             if (link.source.isPseudoStart || link.target.isPseudoEnd) {
-                return '#eee';
+                return undefined;
             }
             return linkColour(link.lift);
         });
+    return links;
+}
 
-    let enterSelection = svg.append('g').
+/**
+ * Draw nodes, both normal and pseudo
+ * @param nodeColour
+ * @returns {{normalNodes, pseudoNodes}}
+ */
+function drawNodes(nodeColour) {
+    let circles = svg.append('g').
         attr('class', 'nodes').
         selectAll('circle').
-        data(graph.nodes).enter().filter(function(node) {
+        data(graph.nodes).enter();
+
+    let normalNodes = circles.
+        filter(function(node) {
             return !node.isPseudoStart && !node.isPseudoEnd;
         }).
-        append('g');
+        append('g').attr('class', 'node');
 
-    enterSelection.append('circle').
+    let pseudoNodes = circles.
+        filter(function(node) {
+            return node.isPseudoStart || node.isPseudoEnd;
+        }).
+        append('g').attr('class', 'node');
+
+    normalNodes.append('circle').
         attr('r', circleRadius).
         attr('fill', function (node) {
             return nodeColour(node.nOccurs);
         }).
         attr('border', 'black');
 
-    enterSelection.
+    normalNodes.
         append('text').
         text(function(node) {
             return node.name;
         }).
         style('font-size', '12px').attr('dy', '.35em').attr('dx', '1em');
 
-    let xRotation = 45;
-    let theta = 90 - (180 - Math.abs(xRotation)) / 2;
-    let sinTheta = Math.abs(Math.sin(theta));
-    let offset = sinTheta * (circleRadius);
+    pseudoNodes.append('circle').attr('r', 0);
+
+    pseudoNodes.
+        append('text').attr('class', 'pseudo').
+        text(function(node) {
+            if (node.isPseudoStart) {
+                return 'START';
+            }
+            return 'END';
+        });
+    return {normalNodes, pseudoNodes};
+}
+
+/**
+ * Create a force field. The pseudo nodes have no force
+ */
+function constructForceCharge() {
+    return d3.forceManyBody().strength(function (node) {
+        if (node.isPseudoStart || node.isPseudoEnd) {
+            return null;
+        }
+        return -settings.charge;
+    });
+}
+
+const constructGraph = function () {
+    svg.selectAll('*').remove();
+    let width = $(svg._groups[0][0]).width();
+    let height = $(svg._groups[0][0]).height();
+
+    $.each(graph.nodes, function(idx, node) {
+        if (node.isPseudoStart) {
+            node.fy = margin;
+            node.fx = margin;
+        }
+        else if (node.isPseudoEnd) {
+            node.fy = height - margin;
+            node.fx = width - margin;
+        }
+    });
+
+    let {thickness, distance, nodeColour, linkColour} = extractRanges();
+    let forceLink = constructForceLink(thickness, distance);
+    let forceColide = d3.forceCollide(circleRadius);
+    let forceCharge = constructForceCharge();
+
+    simulation = d3.forceSimulation();
+    simulation.velocityDecay(0.1);
+    simulation.nodes(graph.nodes);
+
+    applyForces({forceCharge, forceLink, forceColide, tickAction});
+    let links = drawLinks(thickness, linkColour);
+    let {normalNodes, pseudoNodes} = drawNodes(nodeColour);
 
     /**
      * This function is invoked for each node and link
      * This is where we draw the arc arrow
      */
     function tickAction() {
+        links.attr('d', connect);
 
-        links.attr('d', function(link) {
-            let x1 = Math.round(link.source.x);
-            let y1 = Math.round(link.source.y);
-            let startX = Math.round(x1 - offset);
-            let startY = Math.round(y1 - offset);
-
-            if (link.selfLink) {
-
-
-                let sweep = 1;
-
-                // Needs to be 1.
-                let largeArc = 1;
-
-                // Change sweep to change orientation of loop.
-                // sweep = 0;
-
-                // Make drx and dry different to get an ellipse
-                // instead of a circle.
-                let drx = 15;
-                let dry = 10;
-
-                // For whatever reason the arc collapses to a point if the beginning
-                // and ending points of the arc are the same, so kludge it.
-                // return 'M' + x1 + ',' + y1 + 'A' + drx + ',' + dry + ' ' + xRotation + ',' + largeArc + ',' + sweep + ' ' + x2 + ',' + y2;
-                return `M${startX},${startY}A${drx},${dry} ${xRotation},${largeArc},${sweep} ${startX + 1},${startY - 1}`
-            }
-            else {
-                let x2 = Math.round(link.target.x);
-                let y2 = Math.round(link.target.y);
-                return `M${x1},${y1}L${x2},${y2}`
-            }
-        });
-
-        enterSelection.
-            filter(function (node) {
-                return !node.isPseudoStart && !node.isPseudoEnd;
-            }).
+        normalNodes.
             attr('transform', function(node) {
                 let x = Math.max(circleRadius + margin, Math.min(width - circleRadius - margin, node.x));
                 let y = Math.max(circleRadius + margin, Math.min(height - circleRadius - margin, node.y));
                 node.x = x;
                 node.y = y;
 
-                if (isNaN(x) || isNaN(y)) {
-                    throw Error('Here');
-                }
-
                 return 'translate(' + x + ',' + y + ')';
             }).
             call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
+
+        normalNodes.
+            on('mouseover', function() {
+                if (!settings.showLabels) {
+                    $(this).find('text').removeClass('hide');
+                }
+            }).
+            on('mouseleave', function() {
+                if (!settings.showLabels) {
+                    $(this).find('text').addClass('hide');
+                }
+            });
+
+        pseudoNodes.attr('transform', function(node) {
+            let offsetRight = 0;
+            if (node.isPseudoEnd) {
+                offsetRight = 50;
+            }
+            let x = Math.max(0, Math.min(width - offsetRight, node.x));
+            let y = Math.max(0, Math.min(height, node.y));
+            return 'translate(' + x + ',' + y + ')';
+        });
     }
 
     /**
@@ -730,6 +939,7 @@ const displayGraph = function (graph) {
         node.fx = null;
         node.fy = null;
     }
+
 };
 
 export const viewPortChangeHandler = function () {

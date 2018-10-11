@@ -80,13 +80,20 @@
   }
 
   .link {
-    //stroke: black;
+    &.pseudo {
+      stroke: #eee;
+    }
+    &.hide {
+      stroke: none;
+    }
     stroke-opacity: 1;
     fill: none;
   }
 
+  text.hide {
+    display: none;
+  }
   .nodes circle {
     stroke: black;
-    //stroke-width: 1.5px;
   }
 }
