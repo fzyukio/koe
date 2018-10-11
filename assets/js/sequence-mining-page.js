@@ -1,7 +1,8 @@
 /* global d3*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {initAudioContext} from './audio-handler';
-import {debug, deepCopy, updateSlickGridData, argmax} from './utils';
+import {debug, deepCopy, argmax} from './utils';
+import {updateSlickGridData} from './grid-utils'
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 

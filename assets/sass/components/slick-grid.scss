@@ -88,3 +88,38 @@
 .popover {
   width: 150px;
 }
+
+.slick-header-menu {
+  z-index: 1000;
+  padding: 5px 0;
+  font-size: 13px;
+  background-color: #fff;
+  border-radius: 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+  -moz-box-shadow: 2px 2px 2px silver;
+  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+  background-clip: padding-box;
+}
+
+.slick-header-menuitem {
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 0;
+
+  &:hover {
+    color: #fff;
+    background-color: #D9230F;
+  }
+}
+
+
+.slick-header-menuitem-disabled {
+  border-color: transparent !important;
+  background: inherit !important;
+
+  &:hover {
+    color: silver;
+    background-color: white;
+  }
+}

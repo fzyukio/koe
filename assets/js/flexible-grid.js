@@ -1,11 +1,18 @@
 /* global Slick */
-import {postRequest} from './ajax-handler';
-import {
-    editabilityAwareFormatter, isNull, getCache, setCache, deepCopy, appendSlickGridData, replaceSlickGridData,
-    renderSlickGrid, initFilter, updateSlickGridData
-} from './utils';
-
 require('slickgrid/plugins/slick.autotooltips');
+require('slickgrid/plugins/slick.headermenu');
+
+import {postRequest} from './ajax-handler';
+import {isNull, getCache, setCache, deepCopy} from './utils';
+import {
+    appendSlickGridData,
+    replaceSlickGridData,
+    renderSlickGrid,
+    initFilter,
+    updateSlickGridData
+} from './grid-utils';
+import {editabilityAwareFormatter} from './slick-grid-addons';
+import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
 
 /**
@@ -24,6 +31,15 @@ export const defaultGridOptions = {
     rowHeight: 25,
     defaultFormatter: editabilityAwareFormatter,
 };
+
+
+const inputText = $('<input type="text" class="form-control"/>');
+const inputSelect = $('<select class="selectize" ></select>');
+
+const dialogModal = $('#dialog-modal');
+const dialogModalTitle = dialogModal.find('.modal-title');
+const dialogModalBody = dialogModal.find('.modal-body');
+const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 
 
 export class FlexibleGrid {
@@ -288,7 +304,7 @@ export class FlexibleGrid {
         let self = this;
 
         self.mainGrid.onCellChange.subscribe(function (e, args) {
-            self.rowChangeHandler(e, args, undefined, function() {
+            self.rowChangeHandler(e, args, undefined, function () {
                 let column = args.grid.getColumns()[args.cell];
                 let field = column.field;
                 let oldValue = args.item[`_old_${field}`];
@@ -318,10 +334,12 @@ export class FlexibleGrid {
         let onSuccess = function (columns) {
             self.columns = columns;
 
-            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), defaultArgs);
+            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], self.columns, defaultArgs);
 
             self.postMainGridHeader();
-            initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
+            self.addHeaderMenu();
+
+            initFilter(self.filterSelector, self.mainGrid, self.defaultFilterField);
 
             if (typeof callback == 'function') {
                 callback();
@@ -338,22 +356,159 @@ export class FlexibleGrid {
         });
     }
 
-    redrawMainGrid(args, callback) {
-        let self = this;
+    static insertFilterHandler(field, $filterInput) {
+        let currentFilterValue = $filterInput.val();
+        currentFilterValue = currentFilterValue.trim();
+        $filterInput.val(currentFilterValue);
 
-        self.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
-        self.mainGrid.registerPlugin(new Slick.AutoTooltips());
-
-        renderSlickGrid(self.mainGridSelector, self.mainGrid, [], deepCopy(self.columns), args);
-        self.postMainGridHeader();
-        initFilter(self.filterSelector, self.mainGrid, self.columns, self.defaultFilterField);
-
-        if (typeof callback == 'function') {
-            callback();
+        if (currentFilterValue.length > 0) {
+            currentFilterValue += '; ';
         }
 
-        updateSlickGridData(self.mainGrid, self.rows);
+        field += ':';
+        let fieldValueIndex = currentFilterValue.indexOf(field);
+        let fieldArgIndexBeg, fieldArgIndexEnd;
+
+        if (fieldValueIndex == -1) {
+            currentFilterValue += field;
+            fieldValueIndex = currentFilterValue.indexOf(field);
+            $filterInput.val(currentFilterValue);
+            fieldArgIndexBeg = fieldValueIndex + field.length;
+            fieldArgIndexEnd = fieldArgIndexBeg;
+        }
+        else {
+            let fieldArgValueEnd = currentFilterValue.substr(fieldValueIndex).indexOf(';');
+            if (fieldArgValueEnd == -1) {
+                fieldArgValueEnd = currentFilterValue.substr(fieldValueIndex).length;
+            }
+            fieldArgIndexEnd = fieldArgValueEnd + fieldValueIndex;
+            fieldArgIndexBeg = fieldValueIndex + field.length;
+        }
+        $filterInput[0].setSelectionRange(fieldArgIndexBeg, fieldArgIndexEnd);
+        $filterInput[0].focus();
     }
+
+
+    bulkSetValue(field) {
+        let self = this;
+        let grid = self.mainGrid;
+        let selectedRows = grid.getSelectedRows();
+        let numRows = selectedRows.length;
+        if (numRows > 0) {
+            dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
+
+            let ids = [];
+            let selectedItems = [];
+            let dataView = grid.getData();
+            for (let i = 0; i < numRows; i++) {
+                let item = dataView.getItem(selectedRows[i]);
+                ids.push(item.id);
+                selectedItems.push(item);
+            }
+
+            let selectableColumns = getCache('selectableOptions');
+            let selectableOptions = selectableColumns[field];
+
+            const isSelectize = Boolean(selectableOptions);
+            let inputEl = isSelectize ? inputSelect : inputText;
+            dialogModalBody.children().remove();
+            dialogModalBody.append(inputEl);
+            let defaultValue = inputEl.val();
+
+            if (isSelectize) {
+                let control = inputEl[0].selectize;
+                if (control) control.destroy();
+
+                let selectizeOptions = constructSelectizeOptionsForLabellings(field, defaultValue);
+                initSelectize(inputEl, selectizeOptions);
+
+                dialogModal.on('shown.bs.modal', function () {
+                    inputEl[0].selectize.focus();
+                });
+            }
+            else {
+                dialogModal.on('shown.bs.modal', function () {
+                    inputEl.focus();
+                });
+            }
+
+            dialogModal.modal('show');
+
+            dialogModalOkBtn.off('click').one('click', function () {
+                let value = inputEl.val();
+                if (selectableOptions) {
+                    selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
+                }
+
+                let postData = {
+                    ids: JSON.stringify(ids),
+                    field,
+                    value,
+                    'grid-type': self.gridType
+                };
+
+                let onSuccess = function () {
+                    for (let i = 0; i < numRows; i++) {
+                        let row = selectedRows[i];
+                        let item = selectedItems[i];
+                        item[field] = value;
+                        grid.invalidateRow(row);
+                    }
+                    grid.render();
+                };
+                dialogModal.modal('hide');
+                postRequest({
+                    requestSlug: 'set-property-bulk',
+                    data: postData,
+                    onSuccess
+                });
+            })
+        }
+    }
+
+    addHeaderMenu() {
+        let self = this;
+        let grid = self.mainGrid;
+        let filterInput = self.filterSelector;
+        let $filterInput = $(filterInput);
+        if ($filterInput.length) {
+            let columns = grid.getColumns();
+            for (let i = 0; i < columns.length; i++) {
+                columns[i].header = {
+                    menu: {
+                        items: [
+                            {
+                                title: 'Filter',
+                                command: 'filter',
+                                disabled: !columns[i].filter,
+                                tooltip: 'Click to add this column to the filter'
+                            },
+                            {
+                                title: 'Bulk set value',
+                                command: 'set-value',
+                                disabled: !columns[i].editable,
+                                tooltip: 'Click to bulk set value for selected rows'
+                            }
+                        ]
+                    }
+                };
+            }
+            let headerMenuPlugin = new Slick.Plugins.HeaderMenu({autoAlign: true});
+            headerMenuPlugin.onCommand.subscribe(function (e, args) {
+                let command = args.command;
+                let field = args.column.field;
+
+                if (command === 'filter') {
+                    FlexibleGrid.insertFilterHandler(field, $filterInput);
+                }
+                else if (command == 'set-value') {
+                    self.bulkSetValue(field);
+                }
+            });
+            grid.registerPlugin(headerMenuPlugin);
+        }
+    }
+
 
     cacheSelectableOptions() {
         let self = this;

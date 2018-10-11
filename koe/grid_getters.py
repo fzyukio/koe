@@ -144,22 +144,20 @@ def bulk_get_segment_info(segs, extras):
 
     ids = np.array([x[0] for x in values], dtype=np.int32)
 
-    nrows = len(values)
     if current_similarity is None:
-        indices = [0] * nrows
+        id2order = {}
     else:
         sim_sids_path = current_similarity.get_sids_path()
         sim_bytes_path = current_similarity.get_bytes_path()
 
-        sorted_ids = bytes_to_ndarray(sim_sids_path, np.int32)
-        sorted_order = get_rawdata_from_binary(sim_bytes_path, len(sorted_ids), np.int32)
-        indices = np.squeeze(sorted_order).tolist()
+        sim_sids = bytes_to_ndarray(sim_sids_path, np.int32).tolist()
+        sim_order = np.squeeze(get_rawdata_from_binary(sim_bytes_path, len(sim_sids), np.int32)).tolist()
+        id2order = dict(zip(sim_sids, sim_order))
 
-    for i in range(nrows):
-        id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
-            species = values[i]
+    for id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
+            species in values:
 
-        index = indices[i]
+        index = id2order.get(id, None)
 
         spect_img = spect_fft_path(id, 'syllable', for_url=True)
         duration = end - start

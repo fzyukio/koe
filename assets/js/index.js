@@ -16,8 +16,7 @@ Promise.config({
  */
 window.Promise = Promise;
 
-import {isNull, SlickEditors, createCsv, downloadBlob, getUrl, getGetParams} from './utils';
-import {SelectizeEditor} from './selectize-formatter';
+import {isNull, createCsv, downloadBlob, getUrl, getGetParams} from './utils';
 require('no-going-back');
 
 let page;
@@ -84,8 +83,6 @@ function viewPortChangeHandler() {
  * @private
  */
 const _preRun = function () {
-
-    SlickEditors.Select = SelectizeEditor;
 
     restoreModalAfterClosing();
 

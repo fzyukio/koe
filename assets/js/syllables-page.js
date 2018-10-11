@@ -1,6 +1,5 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {initSelectize, constructSelectizeOptionsForLabellings} from './selectize-formatter';
 import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
@@ -56,11 +55,6 @@ const viewas = $segmentGrid.attr('viewas');
 const database = $segmentGrid.attr('database');
 const tmpdb = $segmentGrid.attr('tmpdb');
 const similarity = $segmentGrid.attr('similarity');
-const contextMenu = $('#context-menu');
-const filterLiA = contextMenu.find('a[action=filter]');
-const filterLi = filterLiA.parent();
-const setLabelLiA = contextMenu.find('a[action=set-label]');
-const setLabelLi = setLabelLiA.parent();
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
@@ -216,21 +210,6 @@ const subscribeFlexibleEvents = function () {
  */
 const subscribeSlickEvents = function () {
     debug('subscribeSlickEvents called');
-    grid.subscribe('onContextMenu', function (e, args) {
-        e.preventDefault();
-        let grid_ = args.grid;
-        let cell = grid_.getCellFromEvent(e);
-        let colDef = grid_.getColumns()[cell.cell];
-        let field = colDef.field;
-
-        contextHandlerDecorator(colDef);
-
-        contextMenu.data('field', field).css('top', e.pageY).css('left', e.pageX).show();
-        $('body').one('click', function () {
-            contextMenu.hide();
-        });
-    });
-
     grid.subscribeDv('onRowCountChanged', function (e, args) {
         let currentRowCount = args.current;
         gridStatusNTotal.html(currentRowCount);
@@ -447,27 +426,14 @@ export const run = function (commonElements) {
         subscribeFlexibleEvents();
     });
 
-    contextMenu.click(function (e) {
-        if (!$(e.target).is('a')) {
-            return;
-        }
-        if (!grid.mainGrid.getEditorLock().commitCurrentEdit()) {
-            return;
-        }
-        let action = e.target.getAttribute('action');
-        let field = $(this).data('field');
-        let actionHandler = actionHandlers[action];
-        actionHandler(field);
-    });
-
     keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function () {
-        setLabel('label');
+        grid.bulkSetValue('label');
     });
     keyboardJS.bind(['mod+shift+f', 'ctrl+shift+f'], function () {
-        setLabel('label_family');
+        grid.bulkSetValue('label_family');
     });
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
-        setLabel('label_subfamily');
+        grid.bulkSetValue('label_subfamily');
     });
     keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
     keyboardJS.bind(['space'], playAudioOnKey);
@@ -480,104 +446,6 @@ export const run = function (commonElements) {
     });
 
     initSlider();
-};
-
-const addFilter = function (field) {
-    field = ' ' + field + ':';
-    let filterInput = $(grid.filterSelector);
-    let currentFilterValue = filterInput.val();
-    let fieldValueIndex = currentFilterValue.indexOf(field);
-    let fieldArgIndexBeg, fieldArgIndexEnd;
-
-    if (fieldValueIndex == -1) {
-        currentFilterValue += field + '()';
-        fieldValueIndex = currentFilterValue.indexOf(field);
-        filterInput.val(currentFilterValue);
-        fieldArgIndexBeg = fieldValueIndex + field.length + 1;
-        fieldArgIndexEnd = fieldArgIndexBeg;
-    }
-    else {
-        fieldArgIndexEnd = currentFilterValue.substr(fieldValueIndex).indexOf(')') + fieldValueIndex;
-        fieldArgIndexBeg = fieldValueIndex + field.length + 1;
-    }
-    filterInput[0].setSelectionRange(fieldArgIndexBeg, fieldArgIndexEnd);
-    filterInput[0].focus();
-};
-
-const setLabel = function (field) {
-    let grid_ = grid.mainGrid;
-    let selectedRows = grid_.getSelectedRows();
-    let numRows = selectedRows.length;
-    if (numRows > 0) {
-        ce.dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
-
-        let ids = [];
-        let selectedItems = [];
-        let dataView = grid_.getData();
-        for (let i = 0; i < numRows; i++) {
-            let item = dataView.getItem(selectedRows[i]);
-            ids.push(item.id);
-            selectedItems.push(item);
-        }
-
-        let selectableColumns = getCache('selectableOptions');
-        let selectableOptions = selectableColumns[field];
-
-        const isSelectize = Boolean(selectableOptions);
-        let inputEl = isSelectize ? ce.inputSelect : ce.inputText;
-        ce.dialogModalBody.children().remove();
-        ce.dialogModalBody.append(inputEl);
-        let defaultValue = inputEl.val();
-
-        if (isSelectize) {
-            let control = inputEl[0].selectize;
-            if (control) control.destroy();
-
-            let selectizeOptions = constructSelectizeOptionsForLabellings(field, defaultValue);
-            initSelectize(inputEl, selectizeOptions);
-
-            ce.dialogModal.on('shown.bs.modal', function () {
-                inputEl[0].selectize.focus();
-            });
-        }
-        else {
-            ce.dialogModal.on('shown.bs.modal', function () {
-                inputEl.focus();
-            });
-        }
-
-        ce.dialogModal.modal('show');
-
-        ce.dialogModalOkBtn.off('click').one('click', function () {
-            let value = inputEl.val();
-            if (selectableOptions) {
-                selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
-            }
-
-            let postData = {
-                ids: JSON.stringify(ids),
-                field,
-                value,
-                'grid-type': grid.gridType
-            };
-
-            let onSuccess = function () {
-                for (let i = 0; i < numRows; i++) {
-                    let row = selectedRows[i];
-                    let item = selectedItems[i];
-                    item[field] = value;
-                    grid_.invalidateRow(row);
-                }
-                grid_.render();
-            };
-            ce.dialogModal.modal('hide');
-            postRequest({
-                requestSlug: 'set-property-bulk',
-                data: postData,
-                onSuccess
-            });
-        })
-    }
 };
 
 
@@ -598,36 +466,6 @@ const toggleSelectHighlightedRow = function () {
         selectedRow.splice(index, 1);
     }
     grid.mainGrid.setSelectedRows(selectedRow);
-};
-
-const actionHandlers = {
-    filter: addFilter,
-    'set-label': setLabel
-};
-
-const contextHandlerDecorator = function (colDef) {
-    // if the column is not sortable, disable filter
-    filterLi.removeClass('disabled');
-    filterLiA.html(`Filter ${colDef.field}.`);
-    if (!colDef.filter) {
-        filterLi.addClass('disabled');
-        filterLiA.html('No filter applicable to this column.')
-    }
-
-    // If the column is not editable, disable set-label
-    let numRows = grid.mainGrid.getSelectedRows().length;
-
-    setLabelLi.removeClass('disabled');
-    setLabelLiA.html(`Bulk set ${colDef.name}.`);
-
-    if (!colDef.editable) {
-        setLabelLi.addClass('disabled');
-        setLabelLiA.html('Bulk set: This column is not editable.')
-    }
-    if (numRows == 0) {
-        setLabelLi.addClass('disabled');
-        setLabelLiA.html('Bulk set: you need to select some rows first.')
-    }
 };
 
 /**
