@@ -155,7 +155,7 @@ def import_audio_file(request):
 
     audio_file = None
     need_unique_name = True
-    if not song_id.startswith('new:'):
+    if not isinstance(song_id, str) or not song_id.startswith('new:'):
         audio_file = AudioFile.objects.filter(id=song_id).first()
         if audio_file and audio_file.name == name:
             need_unique_name = False

@@ -3,7 +3,7 @@ import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {
     changePlaybackSpeed, createAudioFromDataArray, initAudioContext, loadLocalAudioFile, loadSongById
 } from './audio-handler';
-import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert} from './utils';
+import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation'
 import {initSelectizeSimple} from './selectize-formatter';
@@ -217,6 +217,7 @@ class Grid extends FlexibleGrid {
         let eventType = args.type;
         let target = args.target;
         let dataView = self.mainGrid.getData();
+        let syllableDict = getCache('syllableDict');
 
         if (trackInfoForm.find('#id_track_id').attr('valid') === 'true') {
             saveSongsBtn.prop('disabled', false);
@@ -224,10 +225,16 @@ class Grid extends FlexibleGrid {
 
         if (eventType === 'segment-created') {
             populateName(target);
+            // This will add the item to syllableArray too
             dataView.addItem(target);
+
+            syllableDict[target.id] = target
         }
         else if (eventType === 'segment-adjusted') {
+            // This will change the item in syllableArray too
             dataView.updateItem(target.id, target);
+
+            syllableDict[target.id] = target
         }
     }
 
@@ -259,43 +266,13 @@ export const highlightSegments = function (e, args) {
 
 
 const saveSongsToDb = function () {
-    let items = grid.mainGrid.getData().getItems();
-    let syllables = getCache('syllables');
+    let syllableArray = grid.mainGrid.getData().getItems();
+    let syllableDict = getCache('syllableDict');
     let itemsToUpdate = [];
-    for (let i = 0; i < items.length; i++) {
-        let item = items[i];
+    for (let i = 0; i < syllableArray.length; i++) {
+        let item = syllableArray[i];
         if (item.progress !== 'Uploaded') {
             itemsToUpdate.push(item);
-        }
-    }
-
-    /**
-     * After upload songs, update their actual IDs and names. At the last songs, refresh the grid.
-     * @param i
-     * @param item
-     * @param newId
-     * @param newName
-     */
-    function onSuccess(i, item, newId, newName) {
-        let oldId = item.id;
-
-        grid.mainGrid.invalidateRows(oldId);
-        item.progress = 'Uploaded';
-        item.id = newId;
-        item.name = newName;
-        grid.mainGrid.render();
-
-        if (oldId !== newId) {
-            syllables[newId] = syllables[oldId];
-            delete syllables[oldId];
-        }
-        if (i === itemsToUpdate.length - 1) {
-            grid.deleteAllRows();
-            grid.appendRows(items);
-            saveSongsBtn.attr('disabled', true);
-            setCache('resizeable-syl-id', null, undefined);
-            spectViz.setSyllables(items);
-            spectViz.displaySegs();
         }
     }
 
@@ -311,8 +288,8 @@ const saveSongsToDb = function () {
         grid.mainGrid.render();
     }
 
-    for (let i = 0; i < itemsToUpdate.length; i++) {
-        let item = itemsToUpdate[i];
+    // We need to use promise chain to ensure the sequential of the songs and of the callbacks
+    let uploadPromise = itemsToUpdate.reduce(function (promiseChain, item, i) {
         let startMs = item.start;
         let endMs = item.end;
         let durationMs = audioData.durationMs;
@@ -329,22 +306,59 @@ const saveSongsToDb = function () {
         formData.append('database-id', databaseId);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
 
-        uploadRequest({
-            requestSlug: 'koe/import-audio-file',
-            data: formData,
-            onSuccess({id, name}) {
-                onSuccess(i, item, id, name);
-            },
-            onProgress(e) {
-                if (e.loaded === e.total) {
-                    // Do nothing to not be in conflict with onSuccess
-                    return;
-                }
-                let percentComplete = Math.round(e.loaded * 100 / e.total);
-                onProgress(item, percentComplete);
+        return promiseChain.then(function () {
+            debug(`Sending audio data  #${i}`);
+
+            // Send data to server
+            return new Promise(function (resolve) {
+                uploadRequest({
+                    requestSlug: 'koe/import-audio-file',
+                    data: formData,
+                    onSuccess: resolve,
+                    onProgress(e) {
+                        if (e.loaded === e.total) {
+                            // Do nothing to not be in conflict with onSuccess
+                            return;
+                        }
+                        let percentComplete = Math.round(e.loaded * 100 / e.total);
+                        onProgress(item, percentComplete);
+                    }
+                });
+            });
+        }).then(function ({id, name}) {
+            debug(`Update song #${i}`);
+
+            // Update item ID and refresh the grid for each row
+            let oldId = item.id;
+
+            grid.mainGrid.invalidateRows(oldId);
+            item.progress = 'Uploaded';
+            item.id = id;
+            item.name = name;
+            grid.mainGrid.render();
+
+            if (oldId !== id) {
+                syllableDict[id] = syllableDict[oldId];
+                delete syllableDict[oldId];
             }
-        });
-    }
+        })
+    }, Promise.resolve());
+
+    // After all songs sent and updated, throw away the old data items and append the new one.
+    // They are exactly the same object, however without calling appendItem() the index list will not be updated
+    // Ideally this can be avoided if DataView's updateIdxById() is public.
+    uploadPromise.then(function () {
+        grid.deleteAllRows();
+        grid.appendRows(syllableArray);
+
+        saveSongsBtn.attr('disabled', true);
+        setCache('resizeable-syl-id', null, undefined);
+
+        // The syllableArray reference is now detached from grid's data items, so we need to get it back
+        syllableArray = grid.mainGrid.getData().getItems();
+        setCache('syllableArray', undefined, syllableArray);
+        spectViz.displaySegs();
+    });
 };
 
 const initController = function () {
@@ -374,7 +388,7 @@ const initDeleteSegmentsBtn = function () {
         let selectedRows = grid_.getSelectedRows();
         let numRows = selectedRows.length;
         let dataView = grid_.getData();
-        let syllables = getCache('syllables');
+        let syllableDict = getCache('syllableDict');
         let itemsIds = [];
         for (let i = 0; i < numRows; i++) {
             let item = dataView.getItem(selectedRows[i]);
@@ -384,9 +398,8 @@ const initDeleteSegmentsBtn = function () {
         for (let i = 0; i < numRows; i++) {
             let itemId = itemsIds[i];
             dataView.deleteItem(itemId);
-            delete syllables[itemId];
+            delete syllableDict[itemId];
         }
-        spectViz.setSyllables(syllables);
         spectViz.displaySegs();
     });
 };
@@ -734,15 +747,16 @@ export const run = function (commonElements) {
 
     grid.initMainGridHeader(gridArgs, extraArgs, function () {
         grid.initMainGridContent(gridArgs, extraArgs, function () {
-            let items = grid.mainGrid.getData().getItems();
-            let syllables = {};
-            for (let i = 0; i < items.length; i++) {
-                let item = items[i];
-                syllables[item.id] = item;
+            let syllableArray = grid.mainGrid.getData().getItems();
+            let syllableDict = {};
+            for (let i = 0; i < syllableArray.length; i++) {
+                let item = syllableArray[i];
+                syllableDict[item.id] = item;
             }
-            setCache('syllables', undefined, syllables);
-            spectViz.setSyllables(items);
+            setCache('syllableArray', undefined, syllableArray);
+            setCache('syllableDict', undefined, syllableDict);
             spectViz.displaySegs();
+
         });
     });
 

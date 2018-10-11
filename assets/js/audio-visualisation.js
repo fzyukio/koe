@@ -3,7 +3,7 @@
 const FFT = require('fft.js');
 import {spectToUri, globalMinSpectPixel, globalMaxSpectPixel} from './visual-utils';
 import {stopAudio, playAudioDataArray} from './audio-handler';
-import {getCache, calcSegments, setCache, uuid4, debug, smoothScrollTo} from './utils';
+import {getCache, calcSegments, setCache, uuid4, debug, smoothScrollTo, deepCopy} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
 
 const stateEmpty = 0;
@@ -32,13 +32,12 @@ let playedDuration;
 /**
  * Style the brush resize handles (copied-pasted code. Don't ask what the variables mean).
  * @param args
- * @param spectHeight
  * @returns {string}
  */
-function resizePath(args, spectHeight) {
+function resizePath(args) {
     let e = Number(args.type === 'e'),
         x = e ? 1 : -1,
-        y = spectHeight / 3;
+        y = args.spectHeight / 3;
     return `M${0.5 * x},${y}A6,6 0 0 ${e} ${6.5 * x},${y + 6}V${2 * y - 6}A6,6 0 0 ${e} ${0.5 * x},${2 * y}ZM${2.5 * x},${y + 8}V${2 * y - 8}M${4.5 * x},${y + 8}V${2 * y - 8}`;
 }
 
@@ -380,11 +379,6 @@ export class Visualiser {
 
                 debug('start= ' + start + ' end=' + end);
 
-                if (self.syllables === undefined) {
-                    self.syllables = {};
-                }
-
-                let syllables = self.syllables;
                 let sylIdx = getCache('resizeable-syl-id');
 
                 if (sylIdx === undefined) {
@@ -396,8 +390,6 @@ export class Visualiser {
                         end,
                         duration: end - start,
                     };
-                    syllables[newId] = newSyllable;
-
                     self.eventNotifier.trigger('segment-changed', {
                         type: 'segment-created',
                         target: newSyllable
@@ -407,25 +399,38 @@ export class Visualiser {
                     self.clearBrush();
                 }
                 else {
-                    syllables[sylIdx].start = start;
-                    syllables[sylIdx].end = end;
-                    syllables[sylIdx].duration = end - start;
-                    syllables[sylIdx].progress = 'Changed';
+
+                    // We don't have to make a deep copy - just change the syllable and both syllableDict and
+                    // syllableArray will get changed immediately - but to make it clear what's going on, I decided to
+                    // make a hard copy and persist it in the array as a new syllable.
+                    let updatedSyllable = deepCopy(getCache('syllableDict', sylIdx));
+
+                    updatedSyllable.start = start;
+                    updatedSyllable.end = end;
+                    updatedSyllable.duration = end - start;
+                    updatedSyllable.progress = 'Changed';
 
                     self.eventNotifier.trigger('segment-changed', {
                         type: 'segment-adjusted',
-                        target: syllables[sylIdx]
+                        target: updatedSyllable
                     });
                 }
 
-                self.displaySegs(self.syllables);
+                self.displaySegs();
             }
         });
 
         this.spectBrushEl = this.spectrogramSvg.append('g').attr('class', 'spect-brush');
         this.spectBrushEl.call(this.spectBrush);
 
-        self.spectHandle = this.spectBrushEl.selectAll('.brush-handle').data([{type: 'w'}, {type: 'e'}]).enter().append('path').attr('class', 'brush-handle').attr('d', resizePath).attr('cursor', 'ew-resize').attr('cursor', 'ew-resize').attr('display', 'none');
+        self.spectHandle = this.spectBrushEl.selectAll('.brush-handle').
+            data([{type: 'w', spectHeight: self.spectHeight}, {type: 'e', spectHeight: self.spectHeight}]).enter().
+            append('path').
+            attr('class', 'brush-handle').
+            attr('d', resizePath).
+            attr('cursor', 'ew-resize').
+            attr('cursor', 'ew-resize').
+            attr('display', 'none');
     }
 
     setData({sig, fs, length, durationMs}) {
@@ -592,7 +597,11 @@ export class Visualiser {
             return;
         }
 
+        let syl = getCache('syllableDict', sylIdx);
         setCache('resizeable-syl-id', undefined, sylIdx);
+
+        // define our brush extent to be begin and end of the syllable
+        self.spectBrush.move(self.spectrogramSvg.select('.spect-brush'), [syl.start, syl.end].map(self.spectXScale));
     }
 
     /**
@@ -653,38 +662,31 @@ export class Visualiser {
         });
     }
 
-    setSyllables(syllables) {
-        this.syllables = syllables;
-    }
-
     /**
      *
      * @param syllables an array of dict having these keys: {start, end, id}
      */
     displaySegs() {
         let self = this;
-        let syllables = self.syllables;
+        let syllableArray = getCache('syllableArray');
         self.clearAllSegments();
 
-        for (let sylIdx in syllables) {
-            if (Object.prototype.hasOwnProperty.call(syllables, sylIdx)) {
-                let syl = syllables[sylIdx];
-                let beginMs = syl.start;
-                let endMs = syl.end;
+        $.each(syllableArray, function (sylIdx, syl) {
+            let beginMs = syl.start;
+            let endMs = syl.end;
 
-                let x = self.spectXScale(beginMs);
-                let width = self.spectXScale(endMs - beginMs);
+            let x = self.spectXScale(beginMs);
+            let width = self.spectXScale(endMs - beginMs);
 
-                let rect = self.spectrogramSvg.append('rect');
-                rect.attr('class', 'syllable');
-                rect.attr('syl-id', syl.id);
-                rect.attr('begin', beginMs);
-                rect.attr('end', endMs);
-                rect.attr('x', x).attr('y', 0);
-                rect.attr('height', self.spectHeight);
-                rect.attr('width', width);
-            }
-        }
+            let rect = self.spectrogramSvg.append('rect');
+            rect.attr('class', 'syllable');
+            rect.attr('syl-id', syl.id);
+            rect.attr('begin', beginMs);
+            rect.attr('end', endMs);
+            rect.attr('x', x).attr('y', 0);
+            rect.attr('height', self.spectHeight);
+            rect.attr('width', width);
+        });
 
         /*
          * Attach (once) the following behaviours to each syllables:

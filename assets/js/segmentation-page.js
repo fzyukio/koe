@@ -100,14 +100,21 @@ class Grid extends FlexibleGrid {
         let eventType = args.type;
         let target = args.target;
         let dataView = self.mainGrid.getData();
+        let syllableDict = getCache('syllableDict');
 
         saveSegmentationBtn.prop('disabled', false);
 
         if (eventType === 'segment-created') {
+            // This will add the item to syllableArray too
             dataView.addItem(target);
+
+            syllableDict[target.id] = target
         }
         else if (eventType === 'segment-adjusted') {
+            // This will change the item in syllableArray too
             dataView.updateItem(target.id, target);
+
+            syllableDict[target.id] = target
         }
     }
 
@@ -156,17 +163,18 @@ const initController = function () {
             items: JSON.stringify(items),
             'file-id': fileId
         };
-        let onSuccess = function (rows) {
+        let onSuccess = function (syllableArray) {
             grid.deleteAllRows();
-            grid.appendRows(rows);
+            grid.appendRows(syllableArray);
 
-            let syllables = {};
-            for (let i = 0; i < rows.length; i++) {
-                let item = rows[i];
-                syllables[item.id] = item;
+            let syllableDict = {};
+            for (let i = 0; i < syllableArray.length; i++) {
+                let item = syllableArray[i];
+                syllableDict[item.id] = item;
             }
-            setCache('syllables', undefined, syllables);
-            spectViz.setSyllables(rows);
+            setCache('syllableArray', undefined, syllableArray);
+            setCache('syllableDict', undefined, syllableDict);
+
             spectViz.displaySegs();
             saveSegmentationBtn.prop('disabled', true);
         };
@@ -194,7 +202,8 @@ const initDeleteSegmentsBtn = function () {
         let selectedRows = grid_.getSelectedRows();
         let numRows = selectedRows.length;
         let dataView = grid_.getData();
-        let syllables = getCache('syllables');
+        let syllableDict = getCache('syllableDict');
+
         let itemsIds = [];
         for (let i = 0; i < numRows; i++) {
             let item = dataView.getItem(selectedRows[i]);
@@ -204,11 +213,12 @@ const initDeleteSegmentsBtn = function () {
         for (let i = 0; i < numRows; i++) {
             let itemId = itemsIds[i];
             dataView.deleteItem(itemId);
-            delete syllables[itemId];
+            delete syllableDict[itemId];
         }
+        let syllableArray = grid.mainGrid.getData().getItems();
+        setCache('syllableArray', undefined, syllableArray);
 
         saveSegmentationBtn.prop('disabled', false);
-        spectViz.setSyllables(syllables);
         spectViz.displaySegs();
     });
 };
@@ -291,7 +301,6 @@ export const run = function (commonElements) {
      * Clear all temporary variables
      */
     setCache('resizeable-syl-id', undefined, undefined);
-    setCache('syllables', undefined, {});
     setCache('file-id', undefined, fileId);
     setCache('file-length', undefined, fileLength);
     setCache('file-fs', undefined, fileFs);
@@ -316,14 +325,14 @@ export const run = function (commonElements) {
 
         grid.initMainGridHeader(gridArgs, extraArgs, function () {
             grid.initMainGridContent(gridArgs, extraArgs, function () {
-                let items = grid.mainGrid.getData().getItems();
-                let syllables = {};
-                for (let i = 0; i < items.length; i++) {
-                    let item = items[i];
-                    syllables[item.id] = item;
+                let syllableArray = grid.mainGrid.getData().getItems();
+                let syllableDict = {};
+                for (let i = 0; i < syllableArray.length; i++) {
+                    let item = syllableArray[i];
+                    syllableDict[item.id] = item;
                 }
-                setCache('syllables', undefined, syllables);
-                spectViz.setSyllables(items);
+                setCache('syllableArray', undefined, syllableArray);
+                setCache('syllableDict', undefined, syllableDict);
                 spectViz.displaySegs();
             });
         });
