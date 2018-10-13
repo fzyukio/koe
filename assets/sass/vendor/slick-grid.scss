@@ -130,7 +130,8 @@ classes should alter those!
 
 .slick-row:not(.non-editable),
 .slick-row.edited {
-  .slick-inner-cell.editable {
+  .slick-cell > .slick-inner-cell.editable {
+
     z-index: 2;
     overflow: visible;
 
@@ -142,6 +143,7 @@ classes should alter those!
     }
   }
 }
+
 
 .slick-cell.dnd {
   justify-content: center;

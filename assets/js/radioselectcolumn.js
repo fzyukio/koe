@@ -1,4 +1,5 @@
 /* global Slick */
+import {getCache, setCache} from './utils';
 /* eslint require-jsdoc: off */
 (function ($) {
     // register namespace
@@ -11,6 +12,7 @@
 
     function RadioSelectColumn(options) {
         let _grid;
+        let _idPrefix;
         let _handler = new Slick.EventHandler();
         let _selectedRowsLookup = {};
         let _defaults = {
@@ -22,7 +24,16 @@
 
         let _options = $.extend(true, {}, _defaults, options);
 
+        function generatePrefix() {
+            if (_idPrefix === undefined) {
+                let colNo = (getCache('RadioSelectColumn-#') || 0) + 1;
+                setCache('RadioSelectColumn-#', undefined, colNo);
+                _idPrefix = `radio-${colNo}`;
+            }
+        }
+
         function init(grid) {
+            generatePrefix();
             _grid = grid;
             _handler.subscribe(_grid.onSelectedRowsChanged, handleSelectedRowsChanged).subscribe(_grid.onClick, handleClick).
                 subscribe(_grid.onKeyDown, handleKeyDown);
@@ -109,9 +120,9 @@
 
         function checkboxSelectionFormatter(row, cell, value, columnDef, dataContext) {
             if (dataContext) {
-                return _selectedRowsLookup[row] ?
-                    '<input type=\'radio\' name=\'row-select\' checked=\'checked\'>' :
-                    '<input type=\'radio\' name=\'row-select\'>';
+                let radioId = `${_idPrefix}:${row}`;
+                let checked = _selectedRowsLookup[row] ? 'checked=\'checked\'' : '';
+                return `<input id='${radioId}' name='${_idPrefix}' type='radio' ${checked}/><label for='${radioId}'></label>`;
             }
             return null;
         }

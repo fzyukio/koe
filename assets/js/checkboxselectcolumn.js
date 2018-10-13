@@ -1,4 +1,5 @@
 /* global Slick*/
+import {getCache, setCache} from './utils';
 /* eslint require-jsdoc: off */
 (function ($) {
     // register namespace
@@ -11,18 +12,28 @@
 
     function CheckboxSelectColumn(options) {
         let _grid;
+        let _idPrefix;
         let _handler = new Slick.EventHandler();
         let _selectedRowsLookup = {};
         let _defaults = {
             columnId: '_sel',
             cssClass: null,
             toolTip: 'Select/Deselect All',
-            width: 22,
+            width: 35,
         };
 
         let _options = $.extend(true, {}, _defaults, options);
 
+        function generatePrefix() {
+            if (_idPrefix === undefined) {
+                let colNo = (getCache('CheckboxSelectColumn-#') || 0) + 1;
+                setCache('CheckboxSelectColumn-#', undefined, colNo);
+                _idPrefix = `box-${colNo}`;
+            }
+        }
+
         function init(grid) {
+            generatePrefix();
             _grid = grid;
             _handler.subscribe(_grid.onSelectedRowsChanged, handleSelectedRowsChanged).subscribe(_grid.onClick, handleClick).subscribe(_grid.onHeaderClick, handleHeaderClick).subscribe(_grid.onKeyDown, handleKeyDown);
         }
@@ -68,12 +79,12 @@
             _selectedRowsLookup = lookup;
             _grid.render();
 
-            if (selectedRows.length && selectedRows.length == _grid.getDataLength()) {
-                _grid.updateColumnHeader(_options.columnId, '<input type=\'checkbox\' checked=\'checked\'/>', _options.toolTip);
-            }
-            else {
-                _grid.updateColumnHeader(_options.columnId, '<input type=\'checkbox\'/>', _options.toolTip);
-            }
+            let boxId = `${_idPrefix}:header`;
+            let allRowChecked = selectedRows.length && selectedRows.length == _grid.getDataLength();
+            let checked = allRowChecked ? 'checked=\'checked\'' : '';
+            let header = `<input id='${boxId}' type='checkbox' ${checked}/><label for='${boxId}'></label>`;
+
+            _grid.updateColumnHeader(_options.columnId, header, _options.toolTip);
         }
 
         function handleKeyDown(e, args) {
@@ -141,9 +152,11 @@
         }
 
         function getColumnDefinition() {
+            generatePrefix();
+            let boxId = `${_idPrefix}:header`;
             return {
                 id: _options.columnId,
-                name: '<input type=\'checkbox\'/>',
+                name: `<input type='checkbox' id='${boxId}'><label for='${boxId}'></label>`,
                 toolTip: _options.toolTip,
                 field: '_sel',
                 width: _options.width,
@@ -159,9 +172,10 @@
                 if (dataContext._isLoading) {
                     return '<div class="loader"></div>'
                 }
-                return _selectedRowsLookup[row] ?
-                    '<input type=\'checkbox\' checked=\'checked\'/>' :
-                    '<input type=\'checkbox\'/>';
+
+                let boxId = `${_idPrefix}:${row}`;
+                let checked = _selectedRowsLookup[row] ? 'checked=\'checked\'' : '';
+                return `<input id='${boxId}' type='checkbox' ${checked}/><label for='${boxId}'></label>`;
             }
             return null;
         }
@@ -169,7 +183,6 @@
         $.extend(this, {
             init,
             destroy,
-
             getColumnDefinition
         });
     }
