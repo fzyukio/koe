@@ -10,7 +10,7 @@ require('checkboxselectcolumn');
 require('radioselectcolumn');
 require('rowselectionmodel');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
-import {getCache, isNumber, setCache, isNull} from './utils';
+import {getCache, isNumber, setCache, isNull, deepCopy} from './utils';
 import {SlickFormatters, SLickValidator, SlickEditors, RowMoveableFormatter} from './slick-grid-addons';
 
 /**
@@ -296,19 +296,53 @@ const gridFilter = function (item, filters) {
 };
 
 /**
- * Simply update the grid data
+ * Update the grid data - the current row arrangement is kept.
  * @param grid
  * @param rows
  */
 export const updateSlickGridData = function (grid, rows) {
     if (rows) {
         let dataView = grid.getData();
+
+        // Generate IDs for the rows if necessary
         if (rows.length > 0 && !rows[0].id) {
             for (let i = 0; i < rows.length; i++) {
                 rows[i].id = i;
             }
+            dataView.setItems(rows);
         }
-        dataView.setItems(rows);
+        else {
+            let toAdd = [];
+            let items = dataView.getItems();
+            let toDelete = deepCopy(items);
+            dataView.beginUpdate();
+            $.each(rows, function (i, row) {
+                let id = row.id;
+                let idx = dataView.getIdxById(id);
+                if (isNull(idx)) {
+                    toAdd.push(row);
+                }
+                else {
+                    dataView.updateItem(id, row);
+                    toDelete[idx] = null;
+                    grid.invalidateRow(idx);
+                }
+            });
+
+            // Anything that is not null in toDelete (meaning they exist in previous item list
+            // but not in the updated rows) needs to be removed
+            $.each(toDelete, function (i, row) {
+                if (row) {
+                    dataView.deleteItem(row.id);
+                }
+            });
+
+            $.each(toAdd, function (i, row) {
+                dataView.addItem(row)
+            });
+            dataView.endUpdate();
+            grid.render();
+        }
     }
 };
 
@@ -320,12 +354,14 @@ export const updateSlickGridData = function (grid, rows) {
 export const appendSlickGridData = function (grid, rows) {
     let dataView = grid.getData();
     let i, row;
+    dataView.beginUpdate();
     for (i = 0; i < rows.length; i++) {
         row = rows[i];
         if (row) {
             dataView.addItem(rows[i]);
         }
     }
+    dataView.endUpdate();
 };
 
 /**
@@ -338,21 +374,9 @@ export const replaceSlickGridData = function (grid, rows) {
     dataView.setItems(rows);
 };
 
-/**
- *
- * @param grid
- * @param sylsToDelete
- */
-export const deleteSyllableGridData = function (grid, sylsToDelete) {
-    let dataView = grid.getData();
-    for (let i = 0; i < sylsToDelete.length; i++) {
-        dataView.deleteItem(sylsToDelete[i]);
-    }
-    // dataView.endUpdate();
-};
 
 /**
- * Attach any class designated by 'rowClass1 property to the row
+ * Attach any class designated by rowClass property to the row
  * @param oldMetadata
  * @returns {Function}
  */

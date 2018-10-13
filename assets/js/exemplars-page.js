@@ -125,7 +125,8 @@ class ExemplarsGrid extends FlexibleGrid {
             self.rows = rows;
             rows = randomPick(self.rows);
 
-            updateSlickGridData(self.mainGrid, rows);
+            grid.appendRows(rows);
+
             if (doCacheSelectableOptions) {
                 self.cacheSelectableOptions();
             }
@@ -357,8 +358,7 @@ export const run = function () {
     // Get the next 10 random spectrogram and replace existing ones with them
     $('#next-10').click(function() {
         let rows = randomPick(grid.rows);
-        grid.deleteAllRows();
-        grid.appendRows(rows);
+        updateSlickGridData(grid.mainGrid, rows);
     });
 };
 
