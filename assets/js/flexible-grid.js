@@ -26,7 +26,7 @@ export const defaultGridOptions = {
     editable: true,
     enableAddRow: false,
     asyncEditorLoading: true,
-    autoEdit: true,
+    autoEdit: false,
     enableTextSelectionOnCells: true,
     rowHeight: 25,
     defaultFormatter: editabilityAwareFormatter,
@@ -71,10 +71,9 @@ const toggleCheckBoxAndRadio = function (e, args) {
  */
 const selectTextForCopy = function (e, args) {
     let coldef = args.coldef;
-    let editable = coldef.editable;
     let copyable = coldef.copyable;
 
-    if (!editable && copyable) {
+    if (copyable) {
         let cellElement = $(args.e.target);
         cellElement.selectText();
     }
