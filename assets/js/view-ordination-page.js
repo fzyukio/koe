@@ -521,8 +521,11 @@ const showNonDataReason = function () {
     ce.dialogModalBody.append('<div>You need to extract an ordination first</div>');
     ce.dialogModal.modal('show');
 
-    ce.dialogModalOkBtn.off('click').one('click', function () {
-        ce.dialogModal.modal('hide');
+    ce.dialogModalCancelBtn.html('Dismiss');
+    ce.dialogModalOkBtn.parent().hide();
+    ce.dialogModal.on('hidden.bs.modal', function () {
+        ce.dialogModalOkBtn.parent().show();
+        ce.dialogModalCancelBtn.html('No');
     });
 };
 

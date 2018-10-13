@@ -92,6 +92,11 @@
     </div>
 {% endblock %}
 
+{% block modal-dialog %}
+    {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Dismiss' %}
+{% endblock %}
+
+
 {% block scripts %}
     {% debug_mode as is_in_debug_mode %}
     {% if is_in_debug_mode %}

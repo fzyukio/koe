@@ -28,6 +28,7 @@ const dialogModal = $('#dialog-modal');
 const dialogModalTitle = dialogModal.find('.modal-title');
 const dialogModalBody = dialogModal.find('.modal-body');
 const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
+const dialogModalCancelBtn = dialogModal.find('#dialog-modal-no-button');
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
@@ -41,6 +42,7 @@ const commonElements = {
     dialogModalTitle,
     dialogModalBody,
     dialogModalOkBtn,
+    dialogModalCancelBtn,
     alertSuccess,
     alertFailure,
     databaseCombo,
