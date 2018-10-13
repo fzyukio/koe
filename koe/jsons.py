@@ -351,21 +351,6 @@ tables =\
                     "editable": True,
                     "is_extra_attr": True
                 },
-                {
-                    "name": "Mean FF",
-                    "slug": "mean_ff",
-                    "type": "FLOAT"
-                },
-                {
-                    "name": "Min FF",
-                    "slug": "min_ff",
-                    "type": "FLOAT"
-                },
-                {
-                    "name": "Max FF",
-                    "slug": "max_ff",
-                    "type": "FLOAT"
-                },
             ]
         },
         "song-partition-grid": {

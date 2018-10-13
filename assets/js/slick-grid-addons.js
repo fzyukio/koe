@@ -182,8 +182,6 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
         let sid = sids[i];
         retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/fft/syllable/${sid}.png">${segLabel}</div>`;
     }
-
-    retval += '<div class="syllable end"><i class="fa fa-stop"></i></div>';
     return retval;
 };
 

@@ -134,13 +134,11 @@ classes should alter those!
     z-index: 2;
     overflow: visible;
 
-    &::after {
-      position: absolute;
-      right: 0;
-      border-radius: 0;
+    &::before {
+      content: '\f040';
       line-height: 20px;
-      content: '\f14b';
       font-family: FontAwesome;
+      padding-right: 5px;
     }
   }
 }
