@@ -131,9 +131,9 @@ a {
   z-index: 999;
   position: fixed;
   width: 100%;
-  bottom: calc(#{$bottom-height} + 20px);
+  bottom: 0;
+  margin-bottom: 0;
   display: none;
-  margin-bottom: 10px;
 }
 
 hr {

@@ -42,11 +42,6 @@ tables =\
                     "type": "URL"
                 },
                 {
-                    "name": "Species",
-                    "slug": "species",
-                    "type": "SHORT_TEXT"
-                },
-                {
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
@@ -120,22 +115,7 @@ tables =\
                     "name": "Track",
                     "slug": "song_track",
                     "type": "SHORT_TEXT"
-                },
-                {
-                    "name": "Mean FF",
-                    "slug": "mean_ff",
-                    "type": "FLOAT"
-                },
-                {
-                    "name": "Min FF",
-                    "slug": "min_ff",
-                    "type": "FLOAT"
-                },
-                {
-                    "name": "Max FF",
-                    "slug": "max_ff",
-                    "type": "FLOAT"
-                },
+                }
             ]
         },
         "version-grid": {
@@ -233,32 +213,50 @@ tables =\
                 {
                     "name": "Date",
                     "slug": "date",
-                    "type": "DATE"
+                    "type": "DATE",
+                    "editable": True,
+                    "is_attribute": True,
                 },
                 {
-                    "name": "Gender",
+                    "name": "Sex",
                     "slug": "gender",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_attribute": True,
                 },
                 {
                     "name": "Species",
                     "slug": "species",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editor": "Select",
+                    "editable": True,
+                    "is_attribute": True,
+                    "css_class": "overflow"
                 },
                 {
                     "name": "Quality",
                     "slug": "quality",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                    "is_attribute": True,
                 },
                 {
                     "name": "Individual",
                     "slug": "individual",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editor": "Select",
+                    "editable": True,
+                    "is_attribute": True,
+                    "css_class": "overflow"
                 },
                 {
                     "name": "Track",
                     "slug": "track",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editor": "Select",
+                    "editable": True,
+                    "is_attribute": True,
+                    "css_class": "overflow"
                 },
                 {
                     "name": "Sequence",

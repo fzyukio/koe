@@ -1,5 +1,7 @@
 /* global Slick */
 require('slickgrid/slick.core');
+require('slickgrid/slick.editors');
+require('slickgrid/slick.formatters');
 
 import {isNull, convertRawUrl} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
@@ -444,6 +446,69 @@ const IsoDateValidator = function (dateString) {
 };
 
 /**
+ * @return {string}
+ */
+const SpeciesFormatter = function(row, cell, value) {
+    if (value.genus && value.species) {
+        return value.genus + ' ' + value.species;
+    }
+    return '';
+};
+
+const SpeciesEditor = function(args) {
+    let $genus, $species;
+    let self = this;
+    let defaultValue;
+
+    this.init = function () {
+        $genus = $('<INPUT type=text style=\'width:40px\' />').
+            appendTo(args.container).
+            on('keydown', self.handleKeyDown);
+        $(args.container).append('&nbsp;');
+        $species = $('<INPUT type=text style=\'width:40px\' />').
+            appendTo(args.container).
+            on('keydown', self.handleKeyDown);
+        self.focus();
+    };
+    this.handleKeyDown = function (e) {
+        if (e.keyCode == $.ui.keyCode.LEFT || e.keyCode == $.ui.keyCode.RIGHT || e.keyCode == $.ui.keyCode.TAB) {
+            e.stopImmediatePropagation();
+        }
+    };
+    this.destroy = function () {
+        $(args.container).empty();
+    };
+    this.focus = function () {
+        $genus.focus();
+    };
+    this.serializeValue = function () {
+        return {genus: $genus.val().trim(), species: $species.val().trim()};
+    };
+    this.applyValue = function (item, state) {
+        item[args.column.field] = state;
+    };
+    this.loadValue = function (item) {
+        defaultValue = item[args.column.field];
+        $genus.val(defaultValue.genus);
+        $species.val(defaultValue.species);
+    };
+    this.isValueChanged = function () {
+        let value = args.item[args.column.field];
+        return value.genus != $genus.val().trim() || value.species != $species.val().trim();
+    };
+    this.validate = function () {
+        let genus = $genus.val().trim();
+        let species = $species.val().trim();
+        let regEx = /^[A-Z][a-z]+$/;
+        if (!genus.match(regEx) || !species.match(regEx)) {
+            return {valid: false, msg: 'Genus and Species must be alphabetic and start with an uppercase letter'};
+        }
+        return {valid: true, msg: null};
+    };
+    this.init();
+};
+
+/**
  * Validator bank
  */
 export const SLickValidator = {
@@ -459,6 +524,7 @@ export const SlickEditors = $.extend({}, Slick.Editors);
 SlickEditors.Date = DateEditorRewritten;
 SlickEditors.Float = FloatEditorRewritten;
 SlickEditors.Select = SelectizeEditor;
+SlickEditors.Species = SpeciesEditor;
 
 /*
  * Make a copy of Slick.Formater and then add new formatter
@@ -471,3 +537,4 @@ SlickFormatters.Image = ImageFormatter;
 SlickFormatters.Spects = SpectsFormatter;
 SlickFormatters.Url = UrlFormatter;
 SlickFormatters.Sequence = SequenceFormatter;
+SlickFormatters.Species = SpeciesFormatter;
