@@ -73,35 +73,6 @@ class ExemplarsGrid extends FlexibleGrid {
     }
 
     /**
-     * Trigger corresponding event with target and grid info
-     * @param e
-     * @param args
-     */
-    mouseHandler(e, args) {
-        const self = this;
-        let eventType = e.type;
-        let target = e.target;
-        let grid = args.grid;
-        let dataView = grid.getData();
-        let cell = grid.getCellFromEvent(e);
-        if (cell) {
-            let row = cell.row;
-            let col = cell.cell;
-            let coldef = grid.getColumns()[col];
-            let rowElement = $(e.target.parentElement);
-            let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {
-                e,
-                songId,
-                rowElement,
-                cell,
-                coldef,
-                target
-            });
-        }
-    }
-
-    /**
      * Overwrite because we want to deal with the rows differently
      * @param defaultArgs
      * @param extraArgs
@@ -185,23 +156,6 @@ const playAudio = function (e) {
     }
 };
 
-/**
- * Triggered on click. If the cell is not editable and is of type text, integer, float, highlight the entire cell
- * for Ctrl + C
- *
- * @param e
- * @param args
- */
-const selectTextForCopy = function (e, args) {
-    let coldef = args.coldef;
-    let editable = coldef.editable;
-    let copyable = coldef.copyable;
-
-    if (!editable && copyable) {
-        let cellElement = $(args.e.target);
-        cellElement.selectText();
-    }
-};
 
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
@@ -216,12 +170,6 @@ const selectTextForCopy = function (e, args) {
  */
 const subscribeFlexibleEvents = function () {
     debug('subscribeFlexibleEvents called');
-    grid.on('click', function (...args) {
-        let e = args[0];
-        e.preventDefault();
-        selectTextForCopy(...args);
-    });
-
     grid.on('mouseenter', attachHandlerToChildren);
     grid.on('mouseleave', removeHandlerFromChildrem);
 };

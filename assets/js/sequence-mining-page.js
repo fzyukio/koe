@@ -47,34 +47,6 @@ class Grid extends FlexibleGrid {
         this.granularity = granularity;
     }
 
-    /**
-     * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
-     * @param e
-     * @param args
-     */
-    mouseHandler(e, args) {
-        super.mouseHandler(e, args);
-
-        const self = this;
-        let eventType = e.type;
-        let grid = args.grid;
-        let dataView = grid.getData();
-        let cell = grid.getCellFromEvent(e);
-        if (cell) {
-            let row = cell.row;
-            let col = cell.cell;
-            let coldef = grid.getColumns()[col];
-            let rowElement = $(e.target.parentElement);
-            let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {
-                e,
-                songId,
-                rowElement,
-                coldef
-            });
-        }
-    }
-
     initMainGridContent(defaultArgs, extraArgs) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
@@ -93,7 +65,6 @@ class Grid extends FlexibleGrid {
 
             self.nodesDict = constructNodeDictionary(singletRows);
             fillInNodesInfo(self.nodesDict, pseudoRows);
-            // fillInRealEndNodesInfo(self.nodesDict, pseudoEndRows);
 
             updateSlickGridData(self.mainGrid, realRows);
             if (doCacheSelectableOptions) {
@@ -222,34 +193,12 @@ const initSlider = function () {
     });
 };
 
-/**
- * Triggered on click. If the cell is not editable and is of type text, integer, float, highlight the entire cell
- * for Ctrl + C
- *
- * @param e
- * @param args
- */
-const selectTextForCopy = function (e, args) {
-    let coldef = args.coldef;
-    let editable = coldef.editable;
-    let copyable = coldef.copyable;
-
-    if (!editable && copyable) {
-        let cellElement = $(args.e.target);
-        cellElement.selectText();
-    }
-};
 
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
  */
 const subscribeFlexibleEvents = function () {
     debug('subscribeFlexibleEvents called from songs-pages');
-    grid.on('click', function (...args) {
-        let e = args[0];
-        e.preventDefault();
-        selectTextForCopy(...args);
-    });
 };
 
 /**

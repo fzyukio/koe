@@ -42,6 +42,45 @@ const dialogModalBody = dialogModal.find('.modal-body');
 const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 
 
+/**
+ * Triggered on click. If the cell is of type checkbox/radio and the click falls within the vicinity of the cell, then
+ * toggle the checkbox/radio - this helps the user to not have to click the checkbox/radio precisely
+ *
+ * @param e
+ * @param args
+ */
+const toggleCheckBoxAndRadio = function (e, args) {
+    let cellElement = $(args.e.target);
+    let hasCheckBox = cellElement.find('input[type=checkbox]').closest('input[type=checkbox]');
+    let hasRadio = cellElement.find('input[type=radio]').closest('input[type=radio]');
+    if (hasCheckBox.length == 1) {
+        hasCheckBox.click();
+    }
+    if (hasRadio.length == 1) {
+        hasRadio.click();
+    }
+};
+
+
+/**
+ * Triggered on click. If the cell is not editable and is of type text, integer, float, highlight the entire cell
+ * for Ctrl + C
+ *
+ * @param e
+ * @param args
+ */
+const selectTextForCopy = function (e, args) {
+    let coldef = args.coldef;
+    let editable = coldef.editable;
+    let copyable = coldef.copyable;
+
+    if (!editable && copyable) {
+        let cellElement = $(args.e.target);
+        cellElement.selectText();
+    }
+};
+
+
 export class FlexibleGrid {
 
     /**
@@ -67,6 +106,9 @@ export class FlexibleGrid {
          */
         this.eventNotifier = $(document.createElement('div'));
         this.previousRowCacheName = this.gridType + 'previousRows';
+        this.defaultHandlers = {
+            click: [toggleCheckBoxAndRadio, selectTextForCopy]
+        }
     }
 
     /**
@@ -111,10 +153,12 @@ export class FlexibleGrid {
      * @param args
      */
     mouseHandler(e, args) {
+        const self = this;
         let eventType = e.type;
         let rowElement = $(e.target.parentElement);
+        let grid = args.grid;
         let cell = args.grid.getCellFromEvent(e);
-        this.currentMouseEvent = cell;
+        self.currentMouseEvent = cell;
 
         if (eventType === 'mouseenter') {
             rowElement.parent().find('.slick-row').removeClass('highlight');
@@ -122,6 +166,38 @@ export class FlexibleGrid {
         }
         else {
             rowElement.removeClass('highlight');
+        }
+
+        if (cell) {
+            self.onCellMouseEvent(e, grid, cell, rowElement);
+        }
+    }
+
+    onCellMouseEvent(e, grid, cell, rowElement) {
+        const self = this;
+        let eventType = e.type;
+        let target = e.target;
+        let dataView = grid.getData();
+        let row = cell.row;
+        let col = cell.cell;
+        let coldef = grid.getColumns()[col];
+        let songId = dataView.getItem(row).id;
+        let eventData = {
+            e,
+            songId,
+            rowElement,
+            coldef,
+            cell,
+            target
+        };
+
+        self.eventNotifier.trigger(eventType, eventData);
+
+        let handlers = self.defaultHandlers[eventType];
+        if (handlers) {
+            $.each(handlers, function (idx, handler) {
+                handler(e, eventData);
+            });
         }
     }
 

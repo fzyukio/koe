@@ -32,28 +32,6 @@ class Grid extends FlexibleGrid {
     }
 
     /**
-     * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
-     * @param e
-     * @param args
-     */
-    mouseHandler(e, args) {
-        super.mouseHandler(e, args);
-
-        const self = this;
-        let eventType = e.type;
-        let grid = args.grid;
-        let dataView = grid.getData();
-        let cell = grid.getCellFromEvent(e);
-        let row = cell.row;
-        let rowElement = $(e.target.parentElement);
-        let songId = dataView.getItem(row).id;
-        self.eventNotifier.trigger(eventType, {
-            songId,
-            rowElement
-        });
-    }
-
-    /**
      * Highlight the owner's measurement in the segmentation table when the corresponding spectrogram owner is mouseover
      * @param args indexed array {event: name of the event, target: the element that is being mouseover}
      */

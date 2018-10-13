@@ -19,34 +19,6 @@ class SegmentGrid extends FlexibleGrid {
             gridOptions
         });
     }
-
-    /**
-     * Highlight the active row on mouse over (super) and also highlight the corresponding segment on the spect
-     * @param e
-     * @param args
-     */
-    mouseHandler(e, args) {
-        super.mouseHandler(e, args);
-
-        const self = this;
-        let eventType = e.type;
-        let grid = args.grid;
-        let dataView = grid.getData();
-        let cell = grid.getCellFromEvent(e);
-        if (cell) {
-            let row = cell.row;
-            let col = cell.cell;
-            let coldef = grid.getColumns()[col];
-            let rowElement = $(e.target.parentElement);
-            let songId = dataView.getItem(row).id;
-            self.eventNotifier.trigger(eventType, {
-                e,
-                songId,
-                rowElement,
-                coldef
-            });
-        }
-    }
 }
 
 export const grid = new SegmentGrid();
@@ -96,41 +68,6 @@ const playAudio = function (e, args) {
         };
 
         queryAndPlayAudio(args_);
-    }
-};
-
-
-/**
- * Triggered on click. If the cell is of type checkbox and the click falls within the vicinity of the cell, then
- * toggle the checkbox - this helps the user to not have to click the checkbox precisely
- *
- * @param e
- * @param args
- */
-const toggleCheckBox = function (e, args) {
-    let cellElement = $(args.e.target);
-    let hasCheckBox = cellElement.find('input[type=checkbox]').closest('input[type=checkbox]');
-    if (hasCheckBox.length == 1) {
-        hasCheckBox.click();
-    }
-};
-
-
-/**
- * Triggered on click. If the cell is not editable and is of type text, integer, float, highlight the entire cell
- * for Ctrl + C
- *
- * @param e
- * @param args
- */
-const selectTextForCopy = function (e, args) {
-    let coldef = args.coldef;
-    let editable = coldef.editable;
-    let copyable = coldef.copyable;
-
-    if (!editable && copyable) {
-        let cellElement = $(args.e.target);
-        cellElement.selectText();
     }
 };
 
@@ -191,8 +128,6 @@ const subscribeFlexibleEvents = function () {
         let e = args[0];
         e.preventDefault();
         playAudio(...args);
-        toggleCheckBox(...args);
-        selectTextForCopy(...args);
     });
 
     grid.on('mouseenter', showBigSpectrogram);
