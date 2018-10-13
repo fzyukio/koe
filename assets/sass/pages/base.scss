@@ -510,6 +510,10 @@ body.loading #loading-spinner-modal {
 
 #help-content {
   max-width: 800px;
+
+  img {
+    max-width: 100%;
+  }
 }
 
 #contact-us-content {
@@ -518,6 +522,8 @@ body.loading #loading-spinner-modal {
 
 #help-content, #contact-us-content {
   margin: auto;
+  padding-bottom: 50px;
+
   p {
     text-align: justify;
   }
