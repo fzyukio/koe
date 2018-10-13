@@ -95,8 +95,19 @@ $visualisation-control-height: 32px;
 #oscillogram, #oscillogram-zoomed {
   .line {
     fill: none;
-    stroke: #007627;
     stroke-width: 1px;
+
+    &.Gray {
+      stroke: #000000;
+    }
+
+    &.Green {
+      stroke: #007627;
+    }
+
+    &.Jet {
+      stroke: #ff3400;
+    }
   }
 }
 

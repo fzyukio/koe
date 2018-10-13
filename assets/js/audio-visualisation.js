@@ -158,6 +158,7 @@ export class Visualiser {
         let self = this;
         let start = Math.max(0, self.currentImageIndex - self.numberOfImages);
         let end = Math.min(self.lastChunkIdx, self.currentImageIndex + self.numberOfImages);
+        let oscillogramLineClass = `line ${self.colourMap}`;
 
         let sliced = [];
         for (let i = start; i <= end; i++) {
@@ -278,7 +279,7 @@ export class Visualiser {
                     let img = self.spectrogramSpects.select(`#spect-${segBeg}`);
                     img.attr('xlink:href', dataURI);
                     let osc = self.oscillogramPaths.select(`#oscil-${segBeg}`);
-                    osc.append('path').attr('class', 'line').attr('d', plotLine(data));
+                    osc.append('path').attr('class', oscillogramLineClass).attr('d', plotLine(data));
                 }
             });
         }, deletePromises);
