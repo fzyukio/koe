@@ -233,7 +233,7 @@ class AudioFile(SimpleModel):
             raise CustomAssertionError('Species name must consist of Genus and Species')
 
         genus, species_code = parts
-        species, _ = Species.objects.get_or_create(genus=genus, species=species_code).first()
+        species, _ = Species.objects.get_or_create(genus=genus, species=species_code)
         Individual.objects.filter(audiofile__in=objs).update(species=species)
 
     @classmethod
@@ -252,10 +252,13 @@ class AudioFile(SimpleModel):
 
     @classmethod
     def set_date(cls, objs, value, extras={}):
-        try:
-            date = datetime.datetime.strptime(value, settings.DATE_INPUT_FORMAT).date()
-        except Exception as e:
-            raise CustomAssertionError('Invalid date: {}'.format(value))
+        if value.strip() == '':
+            date = None
+        else:
+            try:
+                date = datetime.datetime.strptime(value, settings.DATE_INPUT_FORMAT).date()
+            except Exception as e:
+                raise CustomAssertionError('Invalid date: {}'.format(value))
 
         AudioTrack.objects.filter(audiofile__in=objs).update(date=date)
 

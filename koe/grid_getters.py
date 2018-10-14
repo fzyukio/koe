@@ -105,7 +105,7 @@ def bulk_get_segment_info(segs, extras):
     else:
         segs = segs.filter(audio_file__database=current_database.id)
 
-    values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',
+    values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms',
                                    'audio_file__name',
                                    'audio_file__id',
                                    'audio_file__quality',
@@ -113,12 +113,10 @@ def bulk_get_segment_info(segs, extras):
                                    'audio_file__track__date',
                                    'audio_file__individual__name',
                                    'audio_file__individual__gender',
-                                   'audio_file__individual__species__genus',
-                                   'audio_file__individual__species__species'
                                    ))
 
     segids = [x[0] for x in values]
-    song_ids = [x[7] for x in values]
+    song_ids = [x[4] for x in values]
 
     extra_attr_values_list = ExtraAttrValue.objects \
         .filter(user__username=viewas, attr__klass=Segment.__name__, owner_id__in=segids) \
@@ -154,20 +152,17 @@ def bulk_get_segment_info(segs, extras):
         sim_order = np.squeeze(get_rawdata_from_binary(sim_bytes_path, len(sim_sids), np.int32)).tolist()
         id2order = dict(zip(sim_sids, sim_order))
 
-    for id, start, end, mean_ff, min_ff, max_ff, song_name, song_id, quality, track, date, individual, gender, genus, \
-            species in values:
+    for id, start, end, song_name, song_id, quality, track, date, individual, gender in values:
 
         index = id2order.get(id, None)
 
         spect_img = spect_fft_path(id, 'syllable', for_url=True)
         duration = end - start
-        species_str = '{} {}'.format(genus, species)
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, song_name)
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url,
                    dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff,
-                   spectrogram=spect_img, species=species_str)
+                   song_quality=quality, song_date=date, spectrogram=spect_img,)
         extra_attr_dict = extra_attr_values_lookup.get(id, {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(song_id, {})
 
@@ -346,8 +341,10 @@ def bulk_get_song_sequences(all_songs, extras):
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
             duration_ms = round(length * 1000 / fs)
+            genus = genus if genus else ''
+            species = species if species else ''
             species_str = '{} {}'.format(genus, species)
-            song_info = dict(filename=filename, url=url, track=track, individual=indv, gender=gender,
+            song_info = dict(filename=url, track=track, individual=indv, gender=gender,
                              quality=quality, date=date, duration=duration_ms, species=species_str)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
@@ -409,7 +406,7 @@ def bulk_get_segments_for_audio(segs, extras):
     file_id = extras.file_id
     viewas = extras.user
     segs = segs.filter(audio_file=file_id)
-    values = segs.values_list('id', 'start_time_ms', 'end_time_ms', 'mean_ff', 'min_ff', 'max_ff',)
+    values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
     ids = []
     rows = []
 
@@ -426,10 +423,10 @@ def bulk_get_segments_for_audio(segs, extras):
         extra_attr_dict = extra_attr_values_lookup[id]
         extra_attr_dict[attr] = value
 
-    for id, start, end, mean_ff, min_ff, max_ff in values:
+    for id, start, end in values:
         ids.append(id)
         duration = end - start
-        row = dict(id=id, start=start, end=end, duration=duration, mean_ff=mean_ff, min_ff=min_ff, max_ff=max_ff)
+        row = dict(id=id, start=start, end=end, duration=duration)
 
         extra_attr_dict = extra_attr_values_lookup.get(id, {})
 
