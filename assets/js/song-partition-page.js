@@ -723,21 +723,28 @@ export const run = function (commonElements) {
 
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));
 
-    grid.initMainGridHeader(gridArgs, extraArgs, function () {
-        grid.initMainGridContent(gridArgs, extraArgs, function () {
-            let syllableArray = grid.mainGrid.getData().getItems();
-            let syllableDict = {};
-            for (let i = 0; i < syllableArray.length; i++) {
-                let item = syllableArray[i];
-                syllableDict[item.id] = item;
-            }
-            setCache('syllableArray', undefined, syllableArray);
-            setCache('syllableDict', undefined, syllableDict);
-            spectViz.displaySegs();
+    return new Promise(function(resolve) {
+        grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+            grid.initMainGridContent(gridArgs, extraArgs).then(function() {
+                let syllableArray = grid.mainGrid.getData().getItems();
+                let syllableDict = {};
+                for (let i = 0; i < syllableArray.length; i++) {
+                    let item = syllableArray[i];
+                    syllableDict[item.id] = item;
+                }
+                setCache('syllableArray', undefined, syllableArray);
+                setCache('syllableDict', undefined, syllableDict);
+                spectViz.displaySegs();
 
+                resolve();
+            });
         });
     });
+};
 
+
+export const postRun = function () {
+    subscribeFlexibleEvents();
     initController();
     initKeyboardHooks();
     initDeleteSegmentsBtn();
@@ -747,11 +754,6 @@ export const run = function (commonElements) {
         let updated = populateNameAll(true);
         saveSongMetadata(updated);
     });
-};
-
-
-export const postRun = function () {
-    subscribeFlexibleEvents();
 };
 
 export const viewPortChangeHandler = function () {

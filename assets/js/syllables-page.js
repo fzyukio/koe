@@ -355,11 +355,6 @@ export const run = function (commonElements) {
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader(gridArgs, extraArgs, function () {
-        grid.initMainGridContent(gridArgs, extraArgs, focusOnGridOnInit);
-        subscribeSlickEvents();
-        subscribeFlexibleEvents();
-    });
 
     keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function () {
         grid.bulkSetValue('label');
@@ -381,6 +376,14 @@ export const run = function (commonElements) {
     });
 
     initSlider();
+
+    return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+        subscribeSlickEvents();
+        subscribeFlexibleEvents();
+        return grid.initMainGridContent(gridArgs, extraArgs).then(function() {
+            focusOnGridOnInit();
+        });
+    });
 };
 
 

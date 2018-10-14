@@ -290,7 +290,15 @@ export const run = function (commonElements) {
     spectViz.initController();
     spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
-    loadSongById(fileId).then(function({sig_, fs_}) {
+    postRequest({
+        requestSlug: 'koe/get-label-options',
+        data: {'file-id': fileId},
+        onSuccess(selectableOptions) {
+            setCache('selectableOptions', undefined, selectableOptions)
+        }
+    });
+
+    return loadSongById(fileId).then(function({sig_, fs_}) {
         audioData.sig = sig_;
         audioData.fs = fs_;
         audioData.length = sig_.length;
@@ -301,8 +309,8 @@ export const run = function (commonElements) {
         spectViz.visualiseSpectrogram();
         spectViz.drawBrush();
 
-        grid.initMainGridHeader(gridArgs, extraArgs, function () {
-            grid.initMainGridContent(gridArgs, extraArgs, function () {
+        return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+            return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
                 let syllableArray = grid.mainGrid.getData().getItems();
                 let syllableDict = {};
                 for (let i = 0; i < syllableArray.length; i++) {
@@ -316,22 +324,15 @@ export const run = function (commonElements) {
         });
     });
 
-    postRequest({
-        requestSlug: 'koe/get-label-options',
-        data: {'file-id': fileId},
-        onSuccess(selectableOptions) {
-            setCache('selectableOptions', undefined, selectableOptions)
-        }
-    });
-
-    initController();
-    initKeyboardHooks();
-    initDeleteSegmentsBtn();
 };
 
 
 export const postRun = function () {
+    initController();
+    initKeyboardHooks();
+    initDeleteSegmentsBtn();
     subscribeFlexibleEvents();
+    return Promise.resolve();
 };
 
 export const viewPortChangeHandler = function () {

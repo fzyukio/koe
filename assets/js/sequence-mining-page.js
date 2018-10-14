@@ -38,7 +38,7 @@ class Grid extends FlexibleGrid {
     init(granularity) {
 
         super.init({
-            'grid-name': 'sequences',
+            'grid-name': 'sequences-mining',
             'grid-type': 'sequence-mining-grid',
             'default-field': 'assocrule',
             gridOptions
@@ -59,24 +59,27 @@ class Grid extends FlexibleGrid {
             args.extras = JSON.stringify(extraArgs);
         }
 
-        let onSuccess = function (rows) {
-            let {singletRows, realRows, pseudoRows} = separateRows(rows);
-            self.rows = realRows;
+        return new Promise(function (resolve) {
+            let onSuccess = function (rows) {
+                let {singletRows, realRows, pseudoRows} = separateRows(rows);
+                self.rows = realRows;
 
-            self.nodesDict = constructNodeDictionary(singletRows);
-            fillInNodesInfo(self.nodesDict, pseudoRows);
+                self.nodesDict = constructNodeDictionary(singletRows);
+                fillInNodesInfo(self.nodesDict, pseudoRows);
 
-            updateSlickGridData(self.mainGrid, realRows);
-            if (doCacheSelectableOptions) {
-                self.cacheSelectableOptions();
-            }
-            focusOnGridOnInit();
-        };
+                updateSlickGridData(self.mainGrid, realRows);
+                if (doCacheSelectableOptions) {
+                    self.cacheSelectableOptions();
+                }
+                focusOnGridOnInit();
+                resolve();
+            };
 
-        postRequest({
-            requestSlug: 'get-grid-content',
-            data: args,
-            onSuccess
+            postRequest({
+                requestSlug: 'get-grid-content',
+                data: args,
+                onSuccess
+            });
         });
     }
 }
@@ -250,19 +253,22 @@ let extraArgs = {
  * Query grid content, extract graph content, display graph, and resubscribe events
  */
 const loadGrid = function () {
-    grid.initMainGridContent({}, extraArgs);
+    return grid.initMainGridContent({}, extraArgs);
 };
 
 export const run = function () {
     initAudioContext();
 
     grid.init(granularity);
-    grid.initMainGridHeader({}, extraArgs, function () {
-        loadGrid();
-        subscribeSlickEvents();
-        subscribeFlexibleEvents();
-    });
+    return grid.initMainGridHeader({}, extraArgs).
+        then(function () {
+            subscribeSlickEvents();
+            subscribeFlexibleEvents();
+            return loadGrid();
+        });
+};
 
+export const postRun = function() {
     initSlider();
     initOptions();
 };

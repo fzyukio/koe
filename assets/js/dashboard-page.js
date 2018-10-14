@@ -129,8 +129,8 @@ const initDeleteVersionBtn = function () {
 
 
 const reloadSyllableGrid = function () {
-    syllableGrid.initMainGridHeader(syllableGridArgs, syllableExtraArgs, function () {
-        syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs);
+    return syllableGrid.initMainGridHeader(syllableGridArgs, syllableExtraArgs).then(function () {
+        return syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs);
     });
 };
 
@@ -233,28 +233,31 @@ export const run = function (commonElements) {
         gridOptions
     });
 
-    databaseGrid.initMainGridHeader(databaseGridArgs, databaseExtraArgs, function () {
-        databaseGrid.initMainGridContent(databaseGridArgs, databaseExtraArgs);
-    });
+    return databaseGrid.initMainGridHeader(databaseGridArgs, databaseExtraArgs).then(function () {
+        databaseGrid.on('row-added', function (e, args) {
+            selected.databaseId = args.item.id;
+            dbAssignmentExtraArgs.database = selected.databaseId;
+            versionExtraArgs.database = selected.databaseId;
+            syllableExtraArgs.database = selected.databaseId;
 
-    databaseGrid.on('row-added', function (e, args) {
-        selected.databaseId = args.item.id;
-        dbAssignmentExtraArgs.database = selected.databaseId;
-        versionExtraArgs.database = selected.databaseId;
-        syllableExtraArgs.database = selected.databaseId;
+            backupBtns.prop('disabled', false);
+            addCollaborator.prop('disabled', false);
 
-        backupBtns.prop('disabled', false);
-        addCollaborator.prop('disabled', false);
+            return Promise.all([
+                dbAssignmentGrid.initMainGridHeader(dbAssignmentGridArgs, dbAssignmentExtraArgs),
+                versionGrid.initMainGridHeader(versionGridArgs, versionExtraArgs),
+                syllableGrid.initMainGridHeader(syllableGridArgs, syllableExtraArgs)
+            ]).then(function() {
+                return Promise.all([
+                    dbAssignmentGrid.initMainGridContent(dbAssignmentGridArgs, dbAssignmentExtraArgs),
+                    versionGrid.initMainGridContent(versionGridArgs, versionExtraArgs),
+                    syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs),
+                ])
 
-        dbAssignmentGrid.initMainGridHeader(dbAssignmentGridArgs, dbAssignmentExtraArgs, function () {
-            dbAssignmentGrid.initMainGridContent(dbAssignmentGridArgs, dbAssignmentExtraArgs);
+            })
         });
 
-        versionGrid.initMainGridHeader(versionGridArgs, versionExtraArgs, function () {
-            versionGrid.initMainGridContent(versionGridArgs, versionExtraArgs);
-        });
-
-        reloadSyllableGrid();
+        return databaseGrid.initMainGridContent(databaseGridArgs, databaseExtraArgs);
     });
 };
 

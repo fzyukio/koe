@@ -17,6 +17,7 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams} from './utils';
+import {postRequest} from './ajax-handler';
 require('no-going-back');
 
 let page;
@@ -94,6 +95,8 @@ const _preRun = function () {
         clearTimeout(timerId);
         alertEl.hide();
     });
+
+    return Promise.resolve();
 };
 
 
@@ -178,7 +181,7 @@ const showCreateDatabaseDialog = function (errorMessage) {
 };
 
 
-const initSidebar = function() {
+const initSidebar = function () {
     $('.menu-item-expandable > a').click(function () {
         $('.menu-submenu').slideUp(200);
         if ($(this).parent().hasClass('active')) {
@@ -201,13 +204,13 @@ const initSidebar = function() {
     });
 
     let currentPage = $('#sidebar-menu').attr('page');
-    $('.menu-item').each(function(idx, menuItemEL) {
+    $('.menu-item').each(function (idx, menuItemEL) {
         if (menuItemEL.getAttribute('page') === currentPage) {
             $(menuItemEL).addClass('active');
         }
     });
 
-    $('.menu-submenu li').each(function(idx, menuItemEL) {
+    $('.menu-submenu li').each(function (idx, menuItemEL) {
         if (menuItemEL.getAttribute('page') === currentPage) {
             $(menuItemEL).addClass('active');
             $(menuItemEL).parents('.menu-item-expandable').children('a').click();
@@ -224,11 +227,11 @@ const initSidebar = function() {
  * External arguments are meant to trigger some specific functions of a page. They shouldn't be propagated even to
  * links to the same page.
  */
-const initChangeArgSelections = function() {
+const initChangeArgSelections = function () {
     let locationOrigin = window.location.origin;
     let localtionPath = window.location.pathname;
 
-    $('.change-arg').click(function(e) {
+    $('.change-arg').click(function (e) {
         e.preventDefault();
         argDict[this.getAttribute('key')] = this.getAttribute('value');
         let replace = this.getAttribute('replace');
@@ -237,7 +240,7 @@ const initChangeArgSelections = function() {
         }
 
         let argString = '?';
-        $.each(argDict, function(k, v) {
+        $.each(argDict, function (k, v) {
             if (!k.startsWith('__')) {
                 argString += `${k}=${v}&`;
             }
@@ -270,7 +273,7 @@ const appendGetArguments = function () {
         let argsStart = href.indexOf('?');
 
         let argString = '?';
-        $.each(argDict, function(k, v) {
+        $.each(argDict, function (k, v) {
             if (!k.startsWith('_')) {
                 argString += `${k}=${v}&`;
             }
@@ -334,9 +337,6 @@ $(document).ready(function () {
     if (pageName === '/dashboard/') {
         page = require('dashboard-page');
     }
-    else if (pageName === '/version/') {
-        page = require('version-page');
-    }
     else if (pageName.startsWith('/song-partition/')) {
         page = require('song-partition-page');
     }
@@ -371,22 +371,32 @@ $(document).ready(function () {
         page = require('contact-us-page');
     }
 
-    _preRun();
-
-    if (!isNull(page)) {
-
-        if (typeof page.preRun == 'function') {
-            page.preRun();
+    let runPage = function () {
+        if (isNull(page)) {
+            return Promise.resolve();
         }
+        else {
 
-        page.run(commonElements);
+            if (typeof page.preRun == 'function') {
+                page.preRun();
+            }
 
-        if (typeof page.postRun == 'function') {
-            page.postRun();
+            return new Promise(function (resolve) {
+                page.run(commonElements).then(function () {
+                    if (typeof page.postRun == 'function') {
+                        page.postRun();
+                    }
+                    resolve();
+                });
+            });
         }
-    }
+    };
 
-    _postRun();
+    _preRun().then(function () {
+        return runPage()
+    }).then(function () {
+        return _postRun();
+    });
 
 });
 

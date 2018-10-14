@@ -80,10 +80,6 @@ class ExemplarsGrid extends FlexibleGrid {
     initMainGridContent(defaultArgs, extraArgs) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
-        let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions;
-        if (doCacheSelectableOptions === undefined) {
-            doCacheSelectableOptions = true;
-        }
 
         let args = deepCopy(self.defaultArgs);
         args['grid-type'] = self.gridType;
@@ -92,25 +88,14 @@ class ExemplarsGrid extends FlexibleGrid {
             args.extras = JSON.stringify(extraArgs);
         }
 
-        let onSuccess = function (rows) {
-            self.rows = rows;
-            rows = randomPick(self.rows);
-
-            grid.appendRows(rows);
-
-            if (doCacheSelectableOptions) {
-                self.cacheSelectableOptions();
-            }
-
-            focusOnGridOnInit();
-            subscribeSlickEvents();
-            subscribeFlexibleEvents();
-        };
-
-        postRequest({
-            requestSlug: 'get-grid-content',
-            data: args,
-            onSuccess
+        return new Promise(function(resolve) {
+            postRequest({
+                requestSlug: 'get-grid-content',
+                data: args,
+                onSuccess(rows) {
+                    resolve(rows);
+                }
+            });
         });
     }
 }
@@ -298,15 +283,27 @@ export const run = function () {
     initAudioContext();
 
     grid.init();
-    grid.initMainGridHeader({}, extraArgs, function () {
-        grid.initMainGridContent({}, extraArgs);
-    });
+
     initSlider();
 
     // Get the next 10 random spectrogram and replace existing ones with them
     $('#next-10').click(function() {
         let rows = randomPick(grid.rows);
         updateSlickGridData(grid.mainGrid, rows);
+    });
+
+    return grid.initMainGridHeader({}, extraArgs).then(function () {
+        subscribeSlickEvents();
+        subscribeFlexibleEvents();
+
+        return grid.initMainGridContent({}, extraArgs).then(function(rows) {
+            grid.rows = rows;
+            rows = randomPick(grid.rows);
+
+            grid.appendRows(rows);
+
+            focusOnGridOnInit();
+        });
     });
 };
 

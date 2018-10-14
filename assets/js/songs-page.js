@@ -3,7 +3,7 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
 import {debug, deepCopy, getUrl} from './utils';
-import {postRequest, uploadRequest} from './ajax-handler';
+import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
@@ -36,13 +36,8 @@ const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const uploadSongsBtn = $('#upload-songs-btn');
-const uploadCsvBtn = $('#upload-csv-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
-
-const csvUploadForm = $('#csv-upload-form');
-const csvUploadInput = csvUploadForm.find('input[type=file]');
-const csvUploadSubmitBtn = csvUploadForm.find('input[type=submit]');
 
 const uploadSongsModal = $('#upload-songs-modal');
 
@@ -229,26 +224,8 @@ const focusOnGridOnInit = function () {
  * Allow user to upload songs
  */
 const initUploadSongsBtn = function () {
-
     uploadSongsBtn.click(function () {
         uploadSongsModal.modal('show');
-    });
-
-    uploadCsvBtn.click(function () {
-        csvUploadInput.click();
-    });
-
-    csvUploadInput.change(function () {
-        csvUploadSubmitBtn.click();
-    });
-
-    csvUploadForm.submit(function (e) {
-        e.preventDefault();
-        let formData = new FormData(this);
-        uploadRequest({
-            requestSlug: 'koe/import-audio-metadata',
-            data: formData
-        });
     });
 };
 
@@ -443,18 +420,21 @@ export const run = function (commonElements) {
     let argDict = ce.argDict;
 
     grid.init(granularity);
-    grid.initMainGridHeader(gridArgs, extraArgs, function () {
-        grid.initMainGridContent(gridArgs, extraArgs, function() {
-            focusOnGridOnInit();
-            if (argDict.__action === 'upload') {
-                uploadSongsBtn.click();
-            }
-        });
-        subscribeSlickEvents();
-        subscribeFlexibleEvents();
-    });
 
-    initSlider();
+    return new Promise(function(resolve) {
+        grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+            subscribeSlickEvents();
+            subscribeFlexibleEvents();
+
+            grid.initMainGridContent(gridArgs, extraArgs).then(function() {
+                focusOnGridOnInit();
+                if (argDict.__action === 'upload') {
+                    uploadSongsBtn.click();
+                }
+                resolve();
+            });
+        });
+    });
 };
 
 export const postRun = function () {
@@ -463,6 +443,8 @@ export const postRun = function () {
     initUploadSongsBtn();
     initDeleteSongsBtn();
     initCopySongsBtn();
+    initSlider();
+    return Promise.resolve();
 };
 
 export const viewPortChangeHandler = function () {

@@ -402,33 +402,33 @@ export class FlexibleGrid {
         });
     }
 
-    initMainGridHeader(defaultArgs, extraArgs, callback) {
+    initMainGridHeader(defaultArgs, extraArgs) {
         let self = this;
         defaultArgs['grid-type'] = self.gridType;
         self.defaultArgs = defaultArgs;
 
-        let onSuccess = function (columns) {
-            self.columns = columns;
+        return new Promise(function (resolve) {
+            let onSuccess = function (columns) {
+                self.columns = columns;
 
-            renderSlickGrid(self.mainGridSelector, self.mainGrid, [], self.columns, defaultArgs);
+                renderSlickGrid(self.mainGridSelector, self.mainGrid, [], self.columns, defaultArgs);
 
-            self.postMainGridHeader();
-            self.addHeaderMenu();
+                self.postMainGridHeader();
+                self.addHeaderMenu();
 
-            initFilter(self.filterSelector, self.mainGrid, self.defaultFilterField);
+                initFilter(self.filterSelector, self.mainGrid, self.defaultFilterField);
 
-            if (typeof callback == 'function') {
-                callback();
-            }
-        };
+                resolve();
+            };
 
-        postRequest({
-            requestSlug: 'get-grid-column-definition',
-            data: {
-                'grid-type': self.gridType,
-                'extras': JSON.stringify(extraArgs)
-            },
-            onSuccess
+            postRequest({
+                requestSlug: 'get-grid-column-definition',
+                data: {
+                    'grid-type': self.gridType,
+                    'extras': JSON.stringify(extraArgs)
+                },
+                onSuccess
+            });
         });
     }
 
@@ -633,7 +633,7 @@ export class FlexibleGrid {
         setCache('selectableOptions', undefined, selectableColumns)
     }
 
-    initMainGridContent(defaultArgs, extraArgs, callback) {
+    initMainGridContent(defaultArgs, extraArgs) {
         let self = this;
         self.defaultArgs = defaultArgs || {};
         let doCacheSelectableOptions = self.defaultArgs.doCacheSelectableOptions;
@@ -648,22 +648,25 @@ export class FlexibleGrid {
             args.extras = JSON.stringify(extraArgs);
         }
 
-        let onSuccess = function (rows) {
-            self.rows = rows;
-            updateSlickGridData(self.mainGrid, rows);
-            if (doCacheSelectableOptions) {
-                self.cacheSelectableOptions();
-            }
+        return new Promise(function(resolve) {
+            let onSuccess = function (rows) {
+                self.rows = rows;
+                updateSlickGridData(self.mainGrid, rows);
+                if (doCacheSelectableOptions) {
+                    self.cacheSelectableOptions();
+                }
 
-            if (typeof callback === 'function') {
-                callback();
-            }
-        };
+                resolve();
 
-        postRequest({
-            requestSlug: 'get-grid-content',
-            data: args,
-            onSuccess
+                // if (typeof callback === 'function') {
+                //     callback();
+                // }
+            };
+            postRequest({
+                requestSlug: 'get-grid-content',
+                data: args,
+                onSuccess
+            });
         });
     }
 
