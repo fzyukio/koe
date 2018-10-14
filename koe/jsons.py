@@ -12,6 +12,7 @@ tables =\
                     "is_addon": True,
                     "type": "BOOLEAN",
                     "exportable": False,
+                    "importable": False,
                 },
                 {
                     "name": "ID",
@@ -199,16 +200,20 @@ tables =\
                     "is_addon": True,
                     "type": "BOOLEAN",
                     "exportable": False,
+                    "importable": False,
                 },
                 {
                     "name": "Filename",
-                    "slug": "url",
-                    "type": "URL"
+                    "slug": "filename",
+                    "type": "URL",
+                    "exportable": True,
+                    "importable": False,
                 },
                 {
                     "name": "Duration (msec)",
                     "slug": "duration",
-                    "type": "INTEGER"
+                    "type": "INTEGER",
+                    "importable": False,
                 },
                 {
                     "name": "Date",
@@ -293,6 +298,7 @@ tables =\
                     "is_addon": True,
                     "type": "BOOLEAN",
                     "exportable": False,
+                    "importable": False,
                 },
                 {
                     "name": "ID",
@@ -362,7 +368,8 @@ tables =\
                     "editable": False,
                     "is_addon": True,
                     "type": "BOOLEAN",
-                    "exportable": False
+                    "exportable": False,
+                    "importable": False,
                 },
                 {
                     "name": "Upload progress",

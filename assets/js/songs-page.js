@@ -17,6 +17,7 @@ class Grid extends FlexibleGrid {
             'grid-name': 'sequences',
             'grid-type': 'songs-grid',
             'default-field': 'filename',
+            'import-key': 'filename',
             gridOptions
         });
 

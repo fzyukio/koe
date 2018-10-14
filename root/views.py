@@ -5,7 +5,11 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db import IntegrityError
+from django.db import transaction
+from django.db.models import ForeignKey
+from django.db.models import ManyToManyField
 from django.db.models.base import ModelBase
+from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.http import HttpResponseServerError
 from django.utils import timezone
@@ -17,7 +21,7 @@ from tz_detect.utils import offset_to_timezone
 from koe import jsons
 from root.exceptions import CustomAssertionError
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
-    ColumnActionValue, get_bulk_id
+    ColumnActionValue, get_bulk_id, get_field
 
 error_tracker = settings.ERROR_TRACKER
 
@@ -119,6 +123,9 @@ def init_tables():
                 editable = getattr(klass, 'get_{}'.format(editable))
             column['editable'] = editable
 
+            importable = editable and column.get('importable', ValueTypes.get_associated_value(_type, 'importable'))
+            column['importable'] = importable
+
             if not has_bulk_getter:
                 getter = getattr(klass, 'get_{}'.format(slug), None)
                 if getter is None:
@@ -192,13 +199,14 @@ def get_grid_column_definition(request):
         css_class = column['cssClass']
         copyable = column['copyable']
         exportable = column['exportable']
+        importable = column['importable']
 
         if callable(editable):
             editable = 'True'
 
         col_def = dict(id=slug, field=slug, editable=editable, editor=editor, filter=filter,
                        formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
-                       cssClass=css_class, copyable=copyable, exportable=exportable)
+                       cssClass=css_class, copyable=copyable, exportable=exportable, importable=importable)
 
         if 'options' in column:
             col_def['options'] = column['options']
@@ -312,6 +320,77 @@ def change_properties(request):
                 setter([obj], val, DotMap(user=request.user))
 
     return True
+
+
+def change_properties_table(request):
+    """
+    Similar to change_properties, but this takes input from an array of rows
+    :param request:
+    :return:
+    """
+    rows = json.loads(request.POST['rows'])
+    grid_type = request.POST['grid-type']
+    missing_attrs = json.loads(request.POST['missing-attrs'])
+    attrs = json.loads(request.POST['attrs'])
+
+    # The last attribute in a row is always the ID
+    ids = [x[-1] for x in rows]
+
+    table = tables[grid_type]
+    columns = table['columns']
+    klass = table['class']
+    objs = klass.objects.filter(id__in=ids)
+
+    attr_editability = {c['slug']: c['editable'] for c in columns}
+    attr_setter = {c['slug']: c.get('setter', None) for c in columns}
+    id2obj = {x.id: x for x in objs}
+
+    bulk_list = {
+        x: ([], []) for x in attrs
+        if x not in missing_attrs and
+        attr_editability.get(x, False) and
+        attr_setter.get(x, None)
+    }
+
+    bulk_setter = {
+        x: attr_setter.get(x, None) for x in attrs
+        if x not in missing_attrs and
+        attr_editability.get(x, False) and
+        attr_setter.get(x, None)
+    }
+
+    for row_idx, row in enumerate(rows):
+        for attr_idx, attr in enumerate(attrs):
+            if attr in bulk_list:
+                row_id = ids[row_idx]
+                obj = id2obj[row_id]
+                value = row[attr_idx]
+
+                (bulk, vals) = bulk_list[attr]
+
+                bulk.append(obj)
+                vals.append(value)
+
+    with transaction.atomic():
+        for attr, (bulk, vals) in bulk_list.items():
+            setter = bulk_setter[attr]
+
+            # if the field is native and not foreign key to this model,
+            # we can bulk set multiple objects with multiple values
+            field = get_field(klass, attr)
+            if field and not isinstance(field, (ManyToManyField, ForeignObjectRel, ForeignKey)):
+                setter(bulk, vals, DotMap(user=request.user))
+
+            # Otherwise there is no way but to bulk set multiple objects that share the same value
+            else:
+                val2bulk = {}
+                for val, obj in zip(vals, bulk):
+                    if val not in val2bulk:
+                        val2bulk[val] = [obj]
+                    else:
+                        val2bulk[val].append(obj)
+                for val, bulk in val2bulk.items():
+                    setter(bulk, val, DotMap(user=request.user))
 
 
 def change_extra_attr_value(request):

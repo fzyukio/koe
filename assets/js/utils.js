@@ -278,6 +278,22 @@ export const isEmpty = function (str) {
 };
 
 
+export const extractHeader = function (columns, permission, importKey) {
+    let columnHeadings = [];
+    for (let i = 0; i < columns.length; i++) {
+        let column = columns[i];
+        let columnVal = column.field;
+        if (importKey !== undefined && columnVal === importKey) {
+            columnHeadings.unshift(columnVal);
+        }
+        else if (column[permission]) {
+            columnHeadings.push(columnVal)
+        }
+    }
+    return columnHeadings;
+};
+
+
 /**
  * Convert grid data to a CSV string
  * @param grid a SlickGrid
@@ -294,14 +310,7 @@ export const createCsv = function (grid, downloadType) {
     let itemsForDownload = downloadType == 'all' ? dataView.getItems() : dataView.getFilteredItems().slice(start, end);
 
     let columns = grid.getColumns();
-    let columnHeadings = [];
-    for (let i = 0; i < columns.length; i++) {
-        let column = columns[i];
-        let exportable = column.exportable;
-        if (exportable) {
-            columnHeadings.push(column.name)
-        }
-    }
+    let columnHeadings = extractHeader(columns, 'exportable');
 
     let rows = [];
     for (let i = 0; i < itemsForDownload.length; i++) {
@@ -603,14 +612,22 @@ export const showAlert = function (alertEl, message, delay = 5000, errorId = und
         clearTimeout(timerId);
     }
 
-    let promise = new Promise(function (resolve) {
-        timerId = setTimeout(function () {
-            alertEl.fadeOut(500, resolve);
-        }, delay);
-    });
+    let promise;
+    if (delay >= 0) {
 
-    alertEl.attr('timer-id', timerId);
-    alertEl.fadeIn();
+        promise = new Promise(function (resolve) {
+            timerId = setTimeout(function () {
+                alertEl.fadeOut(500, resolve);
+            }, delay);
+        });
+
+        alertEl.attr('timer-id', timerId);
+        alertEl.fadeIn();
+    }
+    else {
+        alertEl.fadeIn();
+        promise = Promise.resolve();
+    }
 
     return promise
 };
@@ -624,4 +641,43 @@ export const randomRange = function (limit) {
     let array = [...Array(limit).keys()];
     shuffle(array);
     return array
+};
+
+
+export const createTable = function($table, columns, rows, firstColBold) {
+    if ($table === undefined || $table.length === 0) {
+        $table = $('<table></table>');
+        $table.addClass('table table-bordered table-condensed table-striped table-hover');
+    }
+
+    let $thead = $('<thead></thead>');
+    let $tr = $('<tr></tr>');
+
+    $.each(columns, function(idx, column) {
+        let $th = `<th>${column}</th>`;
+        $tr.append($th);
+    });
+
+    $thead.append($tr);
+    $table.append($thead);
+
+    let tdsTemplate = columns.map(() => '<td></td>');
+    if (firstColBold) {
+        tdsTemplate[0] = '<th scope="row"></th>';
+    }
+
+    let $tbody = $('<tbody></tbody>');
+    $.each(rows, function(i, row) {
+        $tr = $('<tr></tr>');
+        let tds = deepCopy(tdsTemplate);
+        for (let j = 0; j < columns.length; j++) {
+            let $td = $(tds[j]).html(row[j]);
+            $tr.append($td);
+        }
+        $tbody.append($tr);
+    });
+
+    $table.append($tbody);
+
+    return $table;
 };

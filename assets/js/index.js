@@ -16,7 +16,8 @@ Promise.config({
  */
 window.Promise = Promise;
 
-import {isNull, createCsv, downloadBlob, getUrl, getGetParams} from './utils';
+import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, debug} from './utils';
 import {postRequest} from './ajax-handler';
 require('no-going-back');
 
@@ -286,6 +287,353 @@ const appendGetArguments = function () {
     });
 };
 
+
+/**
+ * Remove enclosing quotes from string if exist
+ * @param val
+ * @returns {*}
+ */
+function sanitise(val) {
+    if (val.startsWith('"')) {
+        val = val.substr(1, val.length - 2);
+    }
+    return val;
+}
+
+
+/**
+ * Find the column object (Slickgrid column) from the array of columns and the name of the column being searched for
+ * @param columns
+ * @param importKey
+ * @returns {*}
+ */
+function getKeyColumn(columns, importKey) {
+    let importKeyColumn;
+    $.each(columns, function (idx, column) {
+        if (column.field == importKey) {
+            importKeyColumn = column;
+            return false;
+        }
+        return true;
+    });
+    return importKeyColumn;
+}
+
+/**
+ * Get the field value of all item
+ * @param items
+ * @param column
+ */
+function getKeyFields(items, column) {
+    let importKey = column.field;
+    return items.map(function (x) {
+        let value = x[importKey];
+        if (column._formatter === 'Url') {
+            value = convertRawUrl(value).val;
+        }
+        return value;
+    });
+}
+
+/**
+ * Split raw csv text into sanitised header array and data body
+ * @param csvText
+ * @returns {{header, csvRows}}
+ */
+function splitCsv(csvText) {
+    let csvContent = csvText.split('\n');
+    if (csvContent.length === 0) {
+        throw new Error('File is empty');
+    }
+    let header = csvContent[0].split(',');
+    let csvRows = csvContent.slice(1);
+
+    for (let i = 0; i < csvRows.length; i++) {
+        csvRows[i] = csvRows[i].split(',').map((x) => sanitise(x));
+    }
+    return {header, csvRows};
+}
+
+/**
+ * Split the list of columns from header to two array: columns allowed to import vs disallowed.
+ * @param header
+ * @param permittedCols names of the columns that are allowed to import.
+ * @param importKey
+ * @returns {{unmatched: Array, matched: {}}}
+ */
+function matchColumns(header, permittedCols, importKey) {
+    let unmatched = [];
+    let matched = {};
+
+    $.each(header, function (csvCol, column) {
+        column = sanitise(column);
+
+        let permittedCol = permittedCols.indexOf(column);
+        if (permittedCol > -1) {
+            matched[permittedCol] = csvCol;
+        }
+        else {
+            unmatched.push(column)
+        }
+    });
+    if (Object.keys(matched).length === 0) {
+        throw new Error('Columns in your CSV don\'t match with any importable columns');
+    }
+
+    // The key column is ALWASY the first in permittedCols and it MUST have a match in matchedCols
+    // Careful, matchedCols[0] is not the first element (matchedCols is not an array), but the corresponding
+    // column index of the key column in the uploaded CSV.
+    if (matched[0] === undefined) {
+        throw new Error(`Key column "${importKey}" is missing from your CSV`);
+    }
+    return {unmatched, matched};
+}
+
+/**
+ * From the list of grid items and csv rows, find the rows that match grid items at key field and
+ * differ from the grid data at at least one other field
+ * @param items
+ * @param csvRows
+ * @param rowKeys
+ * @param matched
+ * @param permittedCols
+ * @param importKey
+ * @returns {{rows: Array, info: string}}
+ */
+function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey) {
+    let rows = [];
+    let idMatchCount = 0;
+    let totalRowCount = csvRows.length;
+    $.each(csvRows, function (_i, csvRow) {
+        let rowKey = csvRow[matched[0]];
+        let rowIdx = rowKeys.indexOf(rowKey);
+        if (rowIdx > -1) {
+            idMatchCount++;
+            let item = items[rowIdx];
+            let itemId = item.id;
+            let changed = false;
+
+            // We skip the key column (let permittedCol = 1 instead of 0), so we add it before the loop.
+            let row = [rowKey];
+            for (let permittedCol = 1; permittedCol < permittedCols.length; permittedCol++) {
+                let field = permittedCols[permittedCol];
+                let csvCol = matched[permittedCol];
+                if (undefined === csvCol) {
+                    row.push(null);
+                }
+                else {
+                    let csvCellVal = csvRow[csvCol];
+                    let itemFieldVal = item[field];
+
+                    if ((!isEmpty(itemFieldVal) || !isEmpty(csvCellVal)) && csvCellVal !== itemFieldVal) {
+                        changed = true;
+                    }
+                    row.push(csvCellVal);
+                }
+            }
+
+            // Only add rows that differ from the corresponding grid item
+            if (changed) {
+                // Always put the ID last so that it will not be rendered to the table which the user can see.
+                row.push(itemId);
+                rows.push(row);
+            }
+        }
+    });
+    let changedCount = rows.length;
+    if (changedCount === 0) {
+        throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
+    }
+
+    let info = `You CSV contains <strong>${totalRowCount}</strong> rows. 
+                <strong>${idMatchCount}</strong> rows have matching <strong>${importKey}</strong>.
+                <strong>${changedCount}</strong> rows differ from table value. 
+                The table will be updated based on these <strong>${changedCount}</strong> rows.`;
+
+    return {rows, info};
+}
+
+/**
+ * Read csv from text & perform other task to arrive at {rows: the rows that will update the grid, info: information
+ * about the data being imported and matched: list of columns that match the grid columns.
+ * @param csvText
+ * @param permittedCols
+ * @param importKey
+ * @param columns
+ * @param items
+ * @returns {Promise}
+ */
+function processCsv(csvText, permittedCols, importKey, columns, items) {
+    let importKeyColumn = getKeyColumn(columns, importKey);
+    let rowKeys = getKeyFields(items, importKeyColumn);
+
+    return new Promise(function (resolve, reject) {
+        try {
+            let {header, csvRows} = splitCsv(csvText);
+            let {matched} = matchColumns(header, permittedCols, importKey);
+            let {rows, info} = getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey);
+            resolve({rows, info, matched});
+        }
+        catch (e) {
+            debug(e);
+            reject(e);
+        }
+    });
+
+}
+
+
+/**
+ * Upload the data to server to update grid
+ * @param rows
+ * @param attrs
+ * @param missingAttrs
+ * @param gridType
+ * @returns {Promise}
+ */
+function uploadCsvToServer(rows, attrs, missingAttrs, gridType) {
+    return new Promise(function(resolve, reject) {
+        postRequest({
+            requestSlug: 'change-properties-table',
+            data: {
+                'grid-type': gridType,
+                rows: JSON.stringify(rows),
+                attrs: JSON.stringify(attrs),
+                'missing-attrs': JSON.stringify(missingAttrs)
+            },
+            onSuccess(data) {
+                resolve(data);
+            },
+            onFailure(data) {
+                reject(new Error(data));
+            }
+        });
+    });
+}
+
+
+/**
+ * Remove the key column because it is guaranteed to be the same between grid and csv
+ * @TODO maybe this is unnecessary - saves little data transfer but makes program harder to follow
+ * @param rows
+ * @param permittedCols
+ * @param matched
+ * @returns {{missingCols: Array}}
+ */
+function reduceData({rows, permittedCols, matched}) {
+    let missingCols = [];
+    $.each(permittedCols, function(permittedColIx, permittedCol) {
+        if (matched[permittedColIx] === undefined) {
+            missingCols.push(permittedCol)
+        }
+    });
+
+    let retval = {missingCols};
+
+    if (missingCols.length) {
+        retval.warning = 'The following columns are missing from your CSV: ' + missingCols.join(', ');
+    }
+
+    // Remove the key column because it is guaranteed to be the same between grid and csv - that's how we match them
+    retval.rows = rows.map((row) => row.slice(1));
+    retval.permittedCols = permittedCols.slice(1);
+
+    return retval;
+}
+
+
+/**
+ * Allow user to upload songs
+ */
+const initUploadCsv = function () {
+    if (page.grid && page.grid.importKey) {
+        let grid = page.grid.mainGrid;
+        let importKey = page.grid.importKey;
+        let gridType = page.grid.gridType;
+
+        let $modal = $('#upload-csv-modal');
+        let uploadCsvBtn = $modal.find('#upload-csv-btn');
+        let processCsvBtn = $modal.find('#process-csv-btn');
+        let uploadForm = $modal.find('#file-upload-form');
+        let uploadInput = uploadForm.find('input[type=file]');
+        let modalAlertFailure = $modal.find('.alert-danger');
+        let modalAlertWarning = $modal.find('.alert-warning');
+        let modalAlertSuccess = $modal.find('.alert-success');
+
+        let $table = $modal.find('table');
+        let columns = grid.getColumns();
+        let permittedCols = extractHeader(columns, 'importable', importKey);
+        let items = grid.getData().getItems();
+
+        uploadCsvBtn.on('click', function () {
+            uploadInput.click();
+        });
+
+        uploadInput.change(function (e) {
+            e.preventDefault();
+            let file = e.target.files[0];
+            let reader = new FileReader();
+
+            reader.onload = function () {
+                uploadInput.val(null);
+                processCsv(reader.result, permittedCols, importKey, columns, items).
+                    then(function ({rows, info, matched}) {
+                        if (info) {
+                            showAlert(modalAlertSuccess, info, -1);
+                        }
+
+                        $table.children().remove();
+
+                        createTable($table, permittedCols, rows, true);
+                        processCsvBtn.prop('disabled', false);
+
+                        let reduced = reduceData({rows, permittedCols, matched});
+                        rows = reduced.rows;
+                        permittedCols = reduced.permittedCols;
+                        let warning = reduced.warning;
+                        let missingCols = reduced.missingCols;
+
+                        if (warning) {
+                            showAlert(modalAlertWarning, warning, -1);
+                        }
+
+                        processCsvBtn.on('click', function() {
+                            uploadCsvToServer(rows, permittedCols, missingCols, gridType).
+                                then(function() {
+                                    processCsvBtn.prop('disabled', true);
+                                    uploadCsvBtn.prop('disabled', true);
+                                    processCsvBtn.off('click');
+                                    let msg = 'Data imported successfully. Page will reload';
+                                    showAlert(modalAlertSuccess, msg, 1500).then(function() {
+                                        window.location.reload();
+                                    });
+                                }).
+                                catch(function(err) {
+                                    showAlert(modalAlertFailure, err, -1);
+                                });
+                        });
+
+                    }).catch(function (err) {
+                        debug(err);
+                        processCsvBtn.prop('disabled', true);
+                        showAlert(modalAlertFailure, err, 15000);
+                    });
+            };
+            reader.readAsText(file);
+        });
+
+        $('#open-upload-csv-modal').click(function () {
+            $modal.find('.import-key').html(importKey);
+            $table.children().remove();
+            processCsvBtn.prop('disabled', true);
+            createTable($table, permittedCols);
+            $modal.modal('show');
+        });
+    }
+
+
+};
+
 /**
  * Put everything you need to run after the page has been loaded here
  */
@@ -321,6 +669,7 @@ const _postRun = function () {
     subMenuOpenRight();
     initChangeArgSelections();
     initSidebar();
+    initUploadCsv();
     appendGetArguments();
 };
 

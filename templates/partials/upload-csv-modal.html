@@ -1,0 +1,80 @@
+<form id="csv-upload-form" method="post" enctype="multipart/form-data" style="display: none">
+    <input type="file" name="file" accept="text/csv">
+    <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
+    <input type="submit">
+</form>
+<div class="modal fade in" id="upload-csv-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+     data-backdrop="static" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog" style="">
+        <div class="modal-content" style="">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload data to table</h3>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <h4>Upload a CSV file to change data in this table.</h4>
+                    <ul>
+                        <li>Each row in the CSV will be matched against rows
+                    in the current table using the value in column <strong><span class="import-key"></span></strong>.</li>
+                        <li>Only the following columns are accepted, unmatched columns are ignored.</li>
+                        <li>Rows that have <strong><span class="import-key"></span></strong> not found in the table is also ignored</li>
+                        <li>Rows that have the same values as current in the database will also be ignored</li>
+                        <li>The best approach is to export this table as CSV, make changes and then upload</li>
+                        <li>Mind you, most columns are exportable - only editable columns are importable.</li>
+                    </ul>
+
+                    <h4>These are the columns that can be imported if present in your CSV</h4>
+                    <ul>
+                        <li>Importable data from you CSV file will be appended to the table below after upload for your review.</li>
+                        <li>If everything looks fine, click "Process" after upload your CSV</li>
+                    </ul>
+                    <div class="table-wrapper">
+                        <table class="table table-bordered table-condensed table-striped table-hover">
+                        </table>
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <button type="button" class="close" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <div class="message"></div>
+                    </div>
+                    <div class="alert alert-warning">
+                        <button type="button" class="close" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <div class="message"></div>
+                    </div>
+                    <div class="alert alert-success">
+                        <button type="button" class="close" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <div class="message"></div>
+                    </div>
+                </div>
+
+                <br>
+            </div>
+
+            <div class="modal-footer">
+                <form id="file-upload-form" method="post" enctype="multipart/form-data" style="display: none">
+                    <input type="file" name="file" accept="text/csv">
+                    <input class="database-value" name="database" type="text" value="{{ current_database.id }}">
+                    <input type="submit">
+                </form>
+
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button id="upload-csv-btn" type="button" class="btn btn-primary">Upload</button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button disabled id="process-csv-btn" type="button" class="btn btn-primary">Process</button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button id="cancel-btn" data-dismiss="modal" role="button" type="button" class="btn btn-primary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

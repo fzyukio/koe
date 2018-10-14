@@ -584,3 +584,25 @@ body.loading #loading-spinner-modal {
   }
 
 }
+
+#upload-csv-modal {
+  .modal-dialog {
+    margin-top: 5% !important;
+    margin-bottom: 0;
+    width: 75%;
+
+    .alert {
+      display: none;
+      margin-bottom: 0;
+    }
+
+    .table-wrapper {
+      overflow: auto;
+      height: 400px;
+      table th, table td {
+        white-space: nowrap;
+      }
+
+    }
+  }
+}

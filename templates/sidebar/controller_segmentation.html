@@ -11,11 +11,13 @@
 {% endif %}
 
 
-<div class="sidebar-controllers last">
+<div class="sidebar-controllers">
     {% if db_assignment.can_modify_segments %}
         <button type="button" disabled id="delete-segments-btn" class="btn btn-xs btn-default btn-block">Delete selected</button>
         <button type="button" disabled id="save-segmentations-btn" class="btn btn-xs btn-default btn-block">Save segmentation</button>
     {% endif %}
+</div>
 
-    {% include "sidebar/download-csv-btns.html" %}
+<div class="sidebar-controllers last">
+    {% include "sidebar/download-csv-btns.html"%}
 </div>

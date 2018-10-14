@@ -61,6 +61,10 @@
     {% include 'partials/modal.html' with order='no-yes' yes='Yes' no='No' %}
 {% endblock %}
 
+{% if db_assignment and db_assignment.can_annotate %}
+    {% include 'partials/upload-csv-modal.html' %}
+{% endif %}
+
 <div class="alert alert-bottom alert-success">
     <button type="button" class="close" aria-label="Close">
         <span aria-hidden="true">&times;</span></button>

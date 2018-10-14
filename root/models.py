@@ -8,6 +8,7 @@ from django.db import models
 from django.db import utils
 from django.db.models.base import ModelBase
 from django.db.models.query import QuerySet
+from django_bulk_update.helper import bulk_update
 
 __all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
            'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel', 'InvitationCode',
@@ -177,6 +178,19 @@ class ValueTypes(MagicChoices):
         SEQUENCE: True,
     }
 
+    _IMPORTABLE = {
+        SHORT_TEXT: True,
+        LONG_TEXT: True,
+        DATE: True,
+        INTEGER: True,
+        FLOAT: True,
+        BOOLEAN: True,
+        BASE64_PNG: False,
+        IMAGE: False,
+        URL: False,
+        SEQUENCE: False,
+    }
+
     # This is a dictionary of transformable types, e.g. user is allowed to change property type from
     # SHORT_TEXT to LONG_TEXT (or to itself - SHORT_TEXT) but not any other type.
     # BOOL can become FLOAT or INTEGER because boolean is just 1 or 0, but nothing can go to boolean because that
@@ -302,12 +316,15 @@ class AutoSetterGetterMixin:
         :param value: value to set
         :return:
         """
-        if isinstance(objs, QuerySet):
-            objs.update({attr: value})
+        if not isinstance(objs, QuerySet):
+            objs = objs[0].__class__.objects.filter(id__in=[x.id for x in objs])
+
+        if isinstance(value, list):
+            for obj, val in zip(objs, value):
+                setattr(obj, attr, val)
+            bulk_update(objs, update_fields=[attr], batch_size=10000)
         else:
-            for obj in objs:
-                setattr(obj, attr, value)
-                obj.save()
+            objs.update(**{attr: value})
 
     @classmethod
     def _get_extra_(cls, objs, attr, extras):
@@ -330,10 +347,12 @@ class AutoSetterGetterMixin:
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
         str2val = value_getter[extra_attr.type]
 
-        values = ExtraAttrValue.objects \
+        values = ExtraAttrValue.objects\
             .filter(user=user, owner_id__in=objids, attr__name=attr).values_list('owner_id', 'value')
+
         for owner_id, value in values:
             retval[owner_id] = str2val(value)
+
         return retval
 
     @classmethod
@@ -468,3 +487,16 @@ def has_field(klass, field):
         fields = [x.name for x in klass._meta.fields]
         return field in fields
     return False
+
+
+def get_field(klass, name):
+    """
+    Get the field object given name
+    :param klass:
+    :param field:
+    :return: None if name is not a valid field
+    """
+    if isinstance(klass, ModelBase):
+        fields = {x.name: x for x in klass._meta.fields}
+        return fields.get(name, None)
+    return None

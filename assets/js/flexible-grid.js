@@ -91,6 +91,7 @@ export class FlexibleGrid {
         this.gridName = args['grid-name'];
         this.gridType = args['grid-type'];
         this.defaultFilterField = args['default-field'];
+        this.importKey = args['import-key'];
         this.currentMouseEvent = null;
 
         this.mainGridSelector = '#' + this.gridType;
