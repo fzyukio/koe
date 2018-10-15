@@ -84,15 +84,12 @@ class Individual(SimpleModel):
     Represents a bird.
     """
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     gender = models.CharField(max_length=16, null=True, blank=True)
     species = models.ForeignKey(Species, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
-
-    class Meta:
-        unique_together = ['name', 'species']
 
 
 class Database(SimpleModel):

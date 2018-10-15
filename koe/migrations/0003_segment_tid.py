@@ -14,7 +14,6 @@ def populate_tids(apps, schema_editor):
     This function will assign the same value of id to tid when the segment is first found.
     Any identical segment found after will have the same tid as the first found
     """
-    from datetime import timedelta
     db_alias = schema_editor.connection.alias
     segment_model = apps.get_model('koe', 'Segment')
 
