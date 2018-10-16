@@ -5,16 +5,15 @@
 {% block content-center %}
 
     <div id="contact-us-content">
-
-        <div class="controller-wrapper">
-            <div id="menu-opener">
-                <div class="input-group">
-                    <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
-                </div>
+        <div class="row no-margin">
+            <div class="col-xs-1 no-padding controller-wrapper" id="menu-opener">
+                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
+            </div>
+            <div class="col-xs-11 no-padding">
+                <img style="width: 200px" src="{% static 'images/help/koe-logo.jpg' %}">
             </div>
         </div>
 
-        <img style="width: 200px" src="{% static 'images/help/koe-logo.jpg' %}">
         <h3>Questions? Comments? Suggestions?</h3>
         <p>Koe is being developed at the Institute of Natural and Mathematical Sciences, Massey University, New Zealand
             by biologist Wesley Webb and computer scientist Yukio Fukuzawa</p>
