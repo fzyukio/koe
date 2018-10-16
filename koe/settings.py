@@ -6,15 +6,18 @@ from json import JSONEncoder
 
 import dj_database_url
 
-from maintenance import config as envconf, base_dir_join
+from maintenance import get_config
 
+envconf = get_config()
 BASE_DIR = envconf['base_dir']
-
 os.environ['PYTHONPATH'] = BASE_DIR
-
 SITE_ID = 1
-
 SECRET_KEY = envconf['secret_key']
+
+
+def base_dir_join(*args):
+    return os.path.join(BASE_DIR, *args)
+
 
 DEBUG = os.environ.get('DEBUG', None)
 if DEBUG:

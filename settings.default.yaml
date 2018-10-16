@@ -1,9 +1,4 @@
-# Default to docker's mysql:
-database_url: 'sqlite:///koe.db'
-
-# Other database url:
-#database_url: 'mysql://USER:PASSWORD@HOST:PORT/NAME'
-#database_url: 'postgres://USER:PASSWORD@HOST:PORT/NAME'
+database_url: 'mysql://koe:koe@localhost:3306/koe'
 
 language_code: 'en-nz'
 timezone: 'UTC'

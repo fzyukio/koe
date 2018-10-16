@@ -1,151 +1,40 @@
-# Django-grid
+Koe: open-source software to visualise, segment and classify acoustic units in animal vocalisations
+===
 
-This project is folked from https://github.com/vintasoftware/django-react-boilerplate
-Substantial changes include:
-- Upgrade to Django 2.0.1 (which is Python 3 exclusive)
-- Out-of-the-box grid management using Slickgrid on the client side
-- The model is fully compatible with MySql, Postgre and Sqlite
+## What is it?
+Koe is an application for classifying and analysing animal vocalisations.
+Koe offers bulk-labelling of units via interactive ordination plots, as well as visualisation and playback, segmentation, measurement, data filtering/exporting and new tools for analysing repertoire and sequence structure -- all in an integrated database.
 
-## Setup
-### First, make sure you have all the dependencies installed.
+![**Koe**'s unit table is designed for classifying, annotating and filtering units.  Each unit row contains a spectrogram which becomes enlarged during mouse-over.  Unit audio plays when a spectrogram is clicked. The table can be sorted/filtered by any columns. Sorting by the Similarity Index column arranges units by spectral similarity for expedited labelling. Example data are New Zealand bellbird *Anthornis melanura* song units.](docs/syllable-view.png)
 
-List of important dependencies:
-- Python 3
-- ffmpeg
-- mysql
-- postgre (if use postgre)
-- sqlite3 (if use sqlite3)
-- virtualenv
-- nodejs (>=9.0)
-- redis
+![**Segment songs into units** view, showing a song being segmented into units. The interface for partitioning recordings into songs is similar. Units are manually segmented by dragging over the spectrogram; unit endpoints can be re-adjusted at any time. A selection box can be clicked for playback. Spectrogram zoom, contrast and colourmap can be adjusted. Units can be labelled, or comments given. This example is a female New Zealand bellbird (*Anthornis melanura*) song from Hauturu.](docs/segmentation-view.png)
 
-#### For Debian/Ubuntu
-```shell
-sudo ./setup-ubuntu.sh
-sudo ./install-redis.sh
-```
+![*Koe*'s interactive ordination view allows the user to encircle groups of points on the plot with the lasso tool, to view their spectrograms and hear their audio. Mousing over a point in a selection highlights the corresponding spectrogram in the left-hand panel. Selections can be labelled in bulk directly on the plot or opened as a unit table to view detailed unit information. The user can zoom, toggle the visibility of classes, and export the plot as a vector graphic. This example shows a t-SNE ordination of 7189 units of male and female New Zealand bellbird **Anthornis melanura** song on Tiritiri Matangi Island.](docs/Ordination-view.png)
 
-#### For Mac:
-```
-Figure it out yourself
-```
+## How to install, run and deploy this on your own?
 
-### Install virtualenv, then
-```
-cd /path/to/project/
-virtualenv -p `which python3` .venv
-```
+I recommend using the official website at https://koe.io.ac.nz. However if you want to run Koe on your own computer/server, here's how:
 
-Add the following lines in `.venv/bin/activate`:
-```bash
-export DJANGO_SETTINGS_MODULE=koe.settings.production
-export SECRET_KEY='????????????????????????????????????????????'
-export ALLOWED_HOSTS='*'
-export EMAIL_CONFIG=in-v3.mailjet.com:306f80c638198c7284dd3833162cc881:7e9618e6955c3672aa86fa353fec74ba:587
-export FROM_EMAIL='fa@io.ac.nz'
-export REDIS_PORT=6379
-export REDIS_HOST=localhost
-export REDIS_URL='redis://'
-export REDIS_PASSWORD=''
-export PATH=$PATH:/usr/local/bin/
-export FFMPEG=/usr/local/bin/ffmpeg
-export WEBPACK_SERVER_PORT=9876
-## Database config
-#DB_TYPE=sqlite3
-DB_TYPE=mysql
-#DB_TYPE=postgresql
+[Install](docs/INSTALL.md)
 
-if test "$DB_TYPE" = "sqlite3"; then
-    export DB_ENGINE=django.db.backends.sqlite3
-    export DB_NAME=koe.db
-    export DB_USER=''
-    export DB_PASSWORD=''
-    export DB_PORT=''
-    export DB_HOST=''
-elif test "$DB_TYPE" = "postgresql"; then
-    export DB_ENGINE=django.db.backends.postgresql
-    export DB_NAME=yfukuzaw
-    export DB_USER='yfukuzaw'
-    export DB_PASSWORD=''
-    export DB_PORT='5444'
-    export DB_HOST='localhost'
-elif test "$DB_TYPE" = "mysql"; then
-    export DB_ENGINE=django.db.backends.mysql
-    export DB_NAME=koe
-    export DB_USER='koe'
-    export DB_PASSWORD='koe'
-    export DB_PORT=''
-    export DB_HOST='localhost'
-fi
-```
+[Run](docs/RUN.md)
 
-> Note: SECRET_KEY: A random string, use this [tool](https://www.miniwebtool.com/django-secret-key-generator/) to generate one   
-> Other variables: change to specific settings if necessary
+[Upgrade](docs/UPGRADE.md)
+
+[Deploy](docs/DEPLOY.md)
+
+## Licence
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+
+> TL;DR    
+>  - You are allowed to copy, use and distribute this work free of charge.    
+>  - You are allowed to change the source code and distribute that, given that you don't change the licence.    
+>  - No commercial use is allowed, for both this work and any derivative thereof.    
 
 
-Then
-```bash
-source .venv/bin/activate
-```
+Read the full [LICENCE](LICENCE.md) here
 
-## Install Python dependencies
-```bash
-pip install numpy
-pip install Cython
-pip install -r requirements.txt
-```
+Contact us if you want a different licence option.
 
-## Install NPM dependencies
-```bash
-npm install -g webpack
-npm install
-```
-
-## Initialise the database
-> The database must be initialised using this script.
-
-```bash
-./migrate.sh # Every time this runs it will drop the entire database and create a new one
-```
-
-## Build for development
-```bash
-yarn build
-yarn start # This command will run the server at port specified by $WEBPACK_SERVER_PORT
-```
-
-
-## Build for production
-```bash
-yarn build-prod # Compile Javascript and SCSS
-DEBUG=false python manage.py collectstatic --noinput # Collect static files to /static/
-```
-
-## Quick way to deploy on server:
-You should fully deploy your app if there is any Javascript change - as these need to be compiled and package by webpack
-To run this app on the server, config nginx or apache accordingly. The following scripts is written to deploy the app using gunicorn.
-
-Change file `deploy.sh` and `deploy-hot.sh` at the following lines:
-```bash
-REMOTE_ADDRESS=123.123.123.123
-REMOTE_USER=remote_user
-WORKSPACE=/path/to/project/on/server
-SSH_EXTRA_CREDENTIAL='-i /path/to/credential.pem' # Leave empty if not necessary
-APP_NAME=app_name
-```
-
-Run `deploy.sh` to fully deploy to the server
-Run `deploy-hot.sh` to simply pull the new, committed code onto the server workspace and restart the webserver
-
-# Licence
-MIT
-
-TL;DR: You can do what the hell you want with this, as long as you credit me and not hold me responsible for any problem whatsoever.
-
-Copyright (c) 2013-9999 Yukio Fukuzawa
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+## Copyright
+Copyright (c) 2013-9999 Yukio Fukuzawa. All rights reserved.

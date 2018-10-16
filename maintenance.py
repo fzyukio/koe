@@ -397,14 +397,6 @@ def probe_mysql():
     return len(error_messages) == 0
 
 
-config = get_config()
-populate_environment_variables(config)
-
-
-def base_dir_join(*args):
-    return os.path.join(config['base_dir'], *args)
-
-
 reset_db_functions = {
     'sqlite3': reset_sqlite,
     'postgresql': reset_postgres,
@@ -529,6 +521,9 @@ if __name__ == '__main__':
     parser.add_argument('--file', dest='backup_file', action='store',
                         help='path to the file to restore from or backup to.')
 
+    parser.add_argument('--generate-config', dest='generate_config', action='store_true', default=False,
+                        help='path to the file to restore from or backup to.')
+
     args = parser.parse_args()
     reset_db = args.reset_db
     restore_db = args.restore_db
@@ -536,6 +531,11 @@ if __name__ == '__main__':
     backup_file = args.backup_file
     empty_db = args.empty_db
     wait_db = args.wait_db
+    generate_config = args.generate_config
+    config = get_config()
+
+    if generate_config:
+        populate_environment_variables(config)
 
     if restore_db and backup_db:
         raise Exception('Cannot use both params --restore-database and --backup-database')
