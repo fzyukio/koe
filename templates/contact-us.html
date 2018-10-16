@@ -9,8 +9,14 @@
             <div class="col-xs-1 no-padding controller-wrapper" id="menu-opener">
                 <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
             </div>
-            <div class="col-xs-11 no-padding">
-                <img style="width: 200px" src="{% static 'images/help/koe-logo.jpg' %}">
+            <div id="koe-logo" class="col-xs-11 no-padding pull-right">
+                <div id="koe-logo-left" class="col-xs-4 no-padding-left">
+                    <img src="{% static 'images/help/koe-logo-no-text.jpg' %}">
+                </div>
+                <div id="koe-logo-right"  class="col-xs-8 no-padding">
+                    <div>声 [ja] /ko eꜜ/ <i class="fa fa-play playable" audio-src="{% static 'audio/koe-pronunciation.mp3' %}"></i></div>
+                    <div>alarm, cry, voice, (bird) song, chirp</div>
+                </div>
             </div>
         </div>
 

@@ -562,7 +562,7 @@ function reduceData({rows, permittedCols, matched}) {
  * Allow user to upload songs
  */
 const initUploadCsv = function () {
-    if (page.grid && page.grid.importKey) {
+    if (page && page.grid && page.grid.importKey) {
         let grid = page.grid.mainGrid;
         let importKey = page.grid.importKey;
         let gridType = page.grid.gridType;

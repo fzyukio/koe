@@ -1,4 +1,5 @@
 import {postRequest} from './ajax-handler';
+import {queryAndPlayAudio, initAudioContext} from './audio-handler';
 
 
 const trackInfoForm = $('#contact-us-form');
@@ -37,5 +38,13 @@ const initSaveTrackInfoBtn = function () {
 
 export const run = function () {
     initSaveTrackInfoBtn();
+    initAudioContext();
+    $('#koe-logo .playable').click(function () {
+        let audioSrc = this.getAttribute('audio-src');
+        queryAndPlayAudio({
+            url: audioSrc,
+            cacheKey: audioSrc
+        })
+    });
     return Promise.resolve();
 };

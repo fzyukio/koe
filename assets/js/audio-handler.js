@@ -235,9 +235,11 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
         callback(cached[0], cached[1]);
     }
     else {
-        let fileId = postData['file-id'];
-        let formData = convertToFormData(postData);
-
+        let formData, fileId;
+        if (!isNull(postData)) {
+            fileId = postData['file-id'];
+            formData = convertToFormData(postData);
+        }
         if (fileId) {
             let onSuccess = function (fileUrl) {
                 queryAndHandleAudioGetOrPost({
@@ -258,8 +260,8 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
             queryAndHandleAudioGetOrPost({
                 url,
                 cacheKey,
-                formData,
-                callback
+                callback,
+                formData
             });
         }
     }

@@ -524,11 +524,29 @@ body.loading #loading-spinner-modal {
 
 #contact-us-content {
   max-width: 500px;
+  #koe-logo {
+    height: 70px;
+    #koe-logo-left {
+      img {
+        height: 70px;
+      }
+    }
+    #koe-logo-right {
+      position: absolute;
+      text-align: right;
+      bottom: 0;
+      right: 0;
+
+      div:first-child {
+        font-size: 2em;
+      }
+    }
+  }
 }
 
 #help-content, #contact-us-content {
   margin: auto;
-  padding-bottom: 50px;
+  min-width: 335px;
 
   p {
     text-align: justify;
