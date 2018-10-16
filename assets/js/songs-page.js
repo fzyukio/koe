@@ -41,6 +41,7 @@ const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
 const uploadSongsModal = $('#upload-songs-modal');
+const databaseId = parseInt(uploadSongsModal.attr('database'));
 
 let ce;
 
@@ -247,8 +248,6 @@ const initDeleteSongsBtn = function () {
             selectedItems.push(item);
         }
 
-        let databaseId = ce.databaseCombo.attr('database');
-
         ce.dialogModalTitle.html(`Confirm delete ${numRows} song(s)`);
         ce.dialogModalBody.html(`Are you sure you want to delete these songs and all data associated with it? 
         Audio files (all formats) are also deleted. This action is not reverseable.`);
@@ -299,8 +298,6 @@ const initCopySongsBtn = function () {
             ids.push(item.id);
             selectedItems.push(item);
         }
-
-        let databaseId = ce.databaseCombo.attr('database');
 
         ce.dialogModalTitle.html(`Copy ${numRows} song(s) to a database`);
         ce.dialogModalBody.html(`Please provide the name of the target database for these files to be copied to. 
@@ -359,7 +356,6 @@ function setupSongsUpload() {
     let maxFilesize = 50;
 
     let dropzoneSelector = '#songs-upload';
-    let databaseId = parseInt(uploadSongsModal.attr('database'));
 
     let previewNode = document.querySelector('#template');
     previewNode.id = '';

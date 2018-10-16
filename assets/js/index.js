@@ -37,7 +37,6 @@ const dialogModalCancelBtn = dialogModal.find('#dialog-modal-no-button');
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
 
-const databaseCombo = $('#database-select-combo');
 let argDict = getGetParams();
 
 const commonElements = {
@@ -50,7 +49,6 @@ const commonElements = {
     dialogModalCancelBtn,
     alertSuccess,
     alertFailure,
-    databaseCombo,
     argDict
 };
 

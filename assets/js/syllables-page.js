@@ -287,8 +287,6 @@ const initDeleteSegmentsBtn = function () {
             itemsIds.push(item.id);
         }
 
-        let databaseId = ce.databaseCombo.attr('database');
-
         ce.dialogModalTitle.html(`Deleting ${numRows} syllable(s)`);
         ce.dialogModalBody.html(`Are you sure you want to delete these syllables and all data associated with it? 
         This action is not reverseable.`);
@@ -298,7 +296,7 @@ const initDeleteSegmentsBtn = function () {
         ce.dialogModalOkBtn.off('click').one('click', function () {
             let postData = {
                 ids: JSON.stringify(itemsIds),
-                'database-id': databaseId
+                'database-id': database
             };
             let onSuccess = function () {
                 let items = dataView.getItems();
