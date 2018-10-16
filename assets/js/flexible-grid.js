@@ -3,7 +3,8 @@ require('slickgrid/plugins/slick.autotooltips');
 require('slickgrid/plugins/slick.headermenu');
 
 import {postRequest} from './ajax-handler';
-import {isNull, getCache, setCache, deepCopy} from './utils';
+import {queryAndPlayAudio} from './audio-handler';
+import {isNull, getCache, setCache, deepCopy, getUrl} from './utils';
 import {
     appendSlickGridData,
     replaceSlickGridData,
@@ -80,6 +81,26 @@ const selectTextForCopy = function (e, args) {
 };
 
 
+const imgRegex = /.*?\/(\d+)\.png/;
+
+
+const playAudio = function (e, args) {
+    let target = args.e.target;
+    let img = $(target).closest('.has-image').find('img');
+    let imgSrc = img.attr('src');
+    let match = imgRegex.exec(imgSrc);
+    if (match) {
+        let segId = match[1];
+        let args_ = {
+            url: getUrl('send-request', 'koe/get-segment-audio-data'),
+            cacheKey: segId,
+            postData: {'segment-id': segId}
+        };
+        queryAndPlayAudio(args_);
+    }
+};
+
+
 export class FlexibleGrid {
 
     /**
@@ -107,8 +128,9 @@ export class FlexibleGrid {
         this.eventNotifier = $(document.createElement('div'));
         this.previousRowCacheName = this.gridType + 'previousRows';
         this.defaultHandlers = {
-            click: [toggleCheckBoxAndRadio, selectTextForCopy]
-        }
+            click: [toggleCheckBoxAndRadio, selectTextForCopy, playAudio]
+        };
+        setCache('grids', this.gridType, this);
     }
 
     /**
