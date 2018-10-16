@@ -1,6 +1,5 @@
 /* global d3*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {initAudioContext} from './audio-handler';
 import {debug, deepCopy, argmax} from './utils';
 import {updateSlickGridData} from './grid-utils'
 import {postRequest} from './ajax-handler';
@@ -257,8 +256,6 @@ const loadGrid = function () {
 };
 
 export const run = function () {
-    initAudioContext();
-
     grid.init(granularity);
     return grid.initMainGridHeader({}, extraArgs).
         then(function () {

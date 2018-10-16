@@ -141,14 +141,14 @@ export const getCookie = function (name) {
 };
 
 export const getCache = function (cache, key = undefined) {
-    if (key) {
+    if (isNull(key)) {
+        return window.appCache[cache];
+    }
+    else {
         if (isNull(window.appCache[cache])) {
             return undefined;
         }
         return window.appCache[cache][key];
-    }
-    else {
-        return window.appCache[cache];
     }
 };
 

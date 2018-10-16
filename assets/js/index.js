@@ -1,4 +1,5 @@
 /* eslint global-require: off */
+/* global keyboardJS */
 
 let Urls = window.Urls;
 export {
@@ -17,8 +18,10 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
-    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, debug} from './utils';
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, debug, getCache
+} from './utils';
 import {postRequest} from './ajax-handler';
+import {initAudioContext, queryAndPlayAudio} from './audio-handler';
 require('no-going-back');
 
 let page;
@@ -82,12 +85,152 @@ function viewPortChangeHandler() {
     });
 }
 
+
+const imgRegex = /.*?\/(\d+)\.png/;
+
+
+/**
+ * Play the sound if the current active cell is the spectrogram
+ * @param e
+ */
+const playAudioOnKey = function (e) {
+    let gridEl = $(e.path[0]).closest('.has-grid');
+    if (gridEl.length == 0) {
+        return;
+    }
+    let grid = getCache('grids', gridEl.attr('id'));
+    let grid_ = grid.mainGrid;
+    let activeCell = grid_.getActiveCell();
+    if (isNull(activeCell)) {
+        return;
+    }
+    let $activeCellEl = $(grid_.getCellNode(activeCell.row, activeCell.cell));
+
+    // This if statement will check if the click falls into the grid
+    // Because the actual target is lost, the only way we know that the activeCellEl is focused
+    // Is if the event's path contains the main grid
+    if (gridEl.has($activeCellEl).length > 0) {
+        if ($activeCellEl.hasClass('has-image')) {
+            let img = $activeCellEl.find('img');
+            let imgSrc = img.attr('src');
+            let match = imgRegex.exec(imgSrc);
+            if (match) {
+                let segId = match[1];
+                let args_ = {
+                    url: getUrl('send-request', 'koe/get-segment-audio-data'),
+                    cacheKey: segId,
+                    postData: {'segment-id': segId}
+                };
+                queryAndPlayAudio(args_);
+            }
+        }
+    }
+};
+
+
+/**
+ * Toogle checkbox at the row where the mouse is currently highlighting.
+ */
+const toggleSelectHighlightedRow = function (e) {
+    let gridEl = $(e.path[0]).closest('.has-grid');
+    if (gridEl.length > 0) {
+        let grid = getCache('grids', gridEl.attr('id'));
+        let currentMouseEvent = grid.currentMouseEvent;
+        let selectedRow = grid.getSelectedRows().rows;
+        let row = currentMouseEvent.row;
+        let index = selectedRow.indexOf(row);
+        if (index == -1) {
+            selectedRow.push(row);
+        }
+        else {
+            selectedRow.splice(index, 1);
+        }
+        grid.mainGrid.setSelectedRows(selectedRow);
+    }
+};
+
+
+/**
+ * Deselect all rows including rows hidden by the filter
+ * @param e
+ */
+const deselectAll = function (e) {
+    let gridEl = $(e.path[0]).closest('.has-grid');
+    if (gridEl.length > 0) {
+        let grid = getCache('grids', gridEl.attr('id'));
+        grid.mainGrid.setSelectedRows([]);
+    }
+};
+
+
+/**
+ * Jump to the next cell (on the same column) that has different value
+ */
+const jumpNext = function (e, type) {
+    let gridEl = $(e.path[0]).closest('.has-grid');
+    if (gridEl.length > 0) {
+        let grid = getCache('grids', gridEl.attr('id'));
+        let grid_ = grid.mainGrid;
+        let activeCell = grid_.getActiveCell();
+        if (activeCell) {
+            let field = grid_.getColumns()[activeCell.cell].field;
+            let items = grid_.getData().getFilteredItems();
+            let value = grid_.getDataItem(activeCell.row)[field];
+            let itemCount = items.length;
+            let begin, conditionFunc, incFunc;
+
+            if (type === 'down') {
+                begin = activeCell.row + 1;
+                incFunc = function (x) {
+                    return x + 1;
+                };
+                conditionFunc = function (x) {
+                    return x < itemCount;
+                }
+            }
+            else {
+                begin = activeCell.row - 1;
+                incFunc = function (x) {
+                    return x - 1;
+                };
+                conditionFunc = function (x) {
+                    return x > 0;
+                }
+            }
+
+            let i = begin;
+            while (conditionFunc(i)) {
+                if (items[i][field] != value) {
+                    grid_.gotoCell(i, activeCell.cell, false);
+                    break;
+                }
+                i = incFunc(i);
+            }
+        }
+    }
+};
+
+
+const initKeyboardShortcuts = function () {
+    keyboardJS.bind(['space'], playAudioOnKey);
+    keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
+    keyboardJS.bind(['ctrl + `'], deselectAll);
+    keyboardJS.bind(['shift + mod + down', 'ctrl + down', 'mod + down', 'ctrl + shift + down'], function (e) {
+        jumpNext(e, 'down');
+    });
+    keyboardJS.bind(['shift + mod + up', 'ctrl + up', 'mod + up', 'ctrl + shift + up'], function (e) {
+        jumpNext(e, 'up');
+    });
+};
+
+
 /**
  * Put everything you need to run before the page has been loaded here
  * @private
  */
 const _preRun = function () {
-
+    initAudioContext();
+    initKeyboardShortcuts();
     restoreModalAfterClosing();
     subMenuOpenRight();
     initChangeArgSelections();

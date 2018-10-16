@@ -1,8 +1,6 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {
-    changePlaybackSpeed, createAudioFromDataArray, initAudioContext, loadLocalAudioFile, loadSongById
-} from './audio-handler';
+import {changePlaybackSpeed, createAudioFromDataArray, loadLocalAudioFile, loadSongById} from './audio-handler';
 import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation'
@@ -718,7 +716,6 @@ export const run = function (commonElements) {
         spectViz.drawBrush();
     });
 
-    initAudioContext();
     initSaveTrackInfoBtn();
 
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));

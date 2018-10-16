@@ -1,6 +1,6 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {deepCopy, getUrl, getCache, setCache, debug, randomRange} from './utils';
-import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {changePlaybackSpeed, queryAndPlayAudio} from './audio-handler';
 import {postRequest} from './ajax-handler';
 import {updateSlickGridData} from './grid-utils';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -279,9 +279,6 @@ let extraArgs = {
 
 
 export const run = function () {
-
-    initAudioContext();
-
     grid.init();
 
     initSlider();

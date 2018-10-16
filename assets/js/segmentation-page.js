@@ -1,6 +1,6 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, initAudioContext, loadSongById} from './audio-handler';
+import {changePlaybackSpeed, loadSongById} from './audio-handler';
 import {deepCopy, setCache, getCache, isNumber} from './utils';
 import {postRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation';
@@ -283,7 +283,6 @@ export const run = function (commonElements) {
     setCache('file-length', undefined, fileLength);
     setCache('file-fs', undefined, fileFs);
 
-    initAudioContext();
     grid.init(fileId);
     spectViz = new Visualiser(vizContainerId);
     spectViz.initScroll();

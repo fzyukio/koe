@@ -2,7 +2,7 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
 import {postRequest} from './ajax-handler';
-import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {changePlaybackSpeed} from './audio-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -52,23 +52,6 @@ const initSlider = function () {
         let newvalue = $('.tooltip-inner').text();
         changePlaybackSpeed(parseInt(newvalue));
     });
-};
-
-const playAudio = function (e, args) {
-    let cellElement = $(args.e.target);
-    let hasImage = cellElement.closest('.has-image');
-    if (hasImage.length == 1) {
-        let segId = args.songId;
-        let data = {'segment-id': segId};
-
-        let args_ = {
-            url: getUrl('send-request', 'koe/get-segment-audio-data'),
-            cacheKey: segId,
-            postData: data
-        };
-
-        queryAndPlayAudio(args_);
-    }
 };
 
 
@@ -124,11 +107,6 @@ function onRowsRemoved(e, args) {
  */
 const subscribeFlexibleEvents = function () {
     debug('subscribeFlexibleEvents called');
-    grid.on('click', function (...args) {
-        let e = args[0];
-        e.preventDefault();
-        playAudio(...args);
-    });
 
     grid.on('mouseenter', showBigSpectrogram);
     grid.on('mouseleave', clearSpectrogram);
@@ -214,35 +192,6 @@ const clearSpectrogram = function () {
 
 
 /**
- * Play the sound if the current active cell is the spectrogram
- * @param e
- */
-const playAudioOnKey = function (e) {
-    let grid_ = grid.mainGrid;
-    let activeCell = grid_.getActiveCell();
-    if (activeCell) {
-        let activeCellEl = grid_.getCellNode(activeCell.row, activeCell.cell);
-
-        // This if statement will check if the click falls into the grid
-        // Because the actual target is lost, the only way we know that the activeCellEl is focused
-        // Is if the event's path contains the main grid
-        if ($(e.path[1]).has($(activeCellEl)).length) {
-            let column = grid_.getColumns()[activeCell.cell];
-            if (!column.editable) {
-                let fakeEvent = {target: activeCellEl};
-                let segId = grid_.getData().getItem(activeCell.row).id;
-                let args = {
-                    e: fakeEvent,
-                    songId: segId
-                };
-                playAudio(e, args);
-            }
-        }
-    }
-};
-
-
-/**
  * Highlight and show the big spectrogram when the active cell is a spectrogram
  * @param e
  * @param args
@@ -267,59 +216,6 @@ const showSpectrogramOnActiveCell = function (e, args) {
             };
             let args_ = {e: fakeEvent};
             showBigSpectrogram(fakeEvent, args_);
-        }
-    }
-};
-
-
-/**
- * Deselect all rows including rows hidden by the filter
- * @param e
- */
-const deselectAll = function () {
-    grid.mainGrid.setSelectedRows([]);
-};
-
-
-/**
- * Jump to the next cell (on the same column) that has different value
- */
-const jumpNext = function (type) {
-    let grid_ = grid.mainGrid;
-    let activeCell = grid_.getActiveCell();
-    if (activeCell) {
-        let field = grid_.getColumns()[activeCell.cell].field;
-        let items = grid_.getData().getFilteredItems();
-        let value = grid_.getDataItem(activeCell.row)[field];
-        let itemCount = items.length;
-        let begin, conditionFunc, incFunc;
-
-        if (type === 'down') {
-            begin = activeCell.row + 1;
-            incFunc = function (x) {
-                return x + 1;
-            };
-            conditionFunc = function (x) {
-                return x < itemCount;
-            }
-        }
-        else {
-            begin = activeCell.row - 1;
-            incFunc = function (x) {
-                return x - 1;
-            };
-            conditionFunc = function (x) {
-                return x > 0;
-            }
-        }
-
-        let i = begin;
-        while (conditionFunc(i)) {
-            if (items[i][field] != value) {
-                grid_.gotoCell(i, activeCell.cell, true);
-                break;
-            }
-            i = incFunc(i);
         }
     }
 };
@@ -352,8 +248,6 @@ export const run = function (commonElements) {
         extraArgs._holdout = ce.argDict._holdout;
     }
 
-    initAudioContext();
-
     grid.init();
 
     keyboardJS.bind(['mod+shift+l', 'ctrl+shift+l'], function () {
@@ -364,15 +258,6 @@ export const run = function (commonElements) {
     });
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         grid.bulkSetValue('label_subfamily');
-    });
-    keyboardJS.bind(['shift + space'], toggleSelectHighlightedRow);
-    keyboardJS.bind(['space'], playAudioOnKey);
-    keyboardJS.bind(['ctrl + `'], deselectAll);
-    keyboardJS.bind(['shift + mod + down', 'ctrl + down', 'mod + down', 'ctrl + shift + down'], function () {
-        jumpNext('down');
-    });
-    keyboardJS.bind(['shift + mod + up', 'ctrl + up', 'mod + up', 'ctrl + shift + up'], function () {
-        jumpNext('up');
     });
 
     initSlider();
@@ -386,25 +271,6 @@ export const run = function (commonElements) {
     });
 };
 
-
-/**
- * Toogle checkbox at the row where the mouse is currently highlighting.
- * @param e
- * @param args
- */
-const toggleSelectHighlightedRow = function () {
-    let currentMouseEvent = grid.currentMouseEvent;
-    let selectedRow = grid.getSelectedRows().rows;
-    let row = currentMouseEvent.row;
-    let index = selectedRow.indexOf(row);
-    if (index == -1) {
-        selectedRow.push(row);
-    }
-    else {
-        selectedRow.splice(index, 1);
-    }
-    grid.mainGrid.setSelectedRows(selectedRow);
-};
 
 /**
  * Allows user to remove songs

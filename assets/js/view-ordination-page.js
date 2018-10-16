@@ -1,5 +1,5 @@
 /* global Plotly, d3 */
-import {queryAndPlayAudio, initAudioContext, changePlaybackSpeed} from './audio-handler';
+import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {getUrl, getCache, setCache, isEmpty} from './utils';
 import {downloadRequest, postRequest} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
@@ -532,7 +532,6 @@ const showNonDataReason = function () {
 
 export const run = function (commonElements) {
     ce = commonElements;
-    initAudioContext();
     initSlider();
 
     if (isEmpty(metaPath) || isEmpty(bytesPath)) {

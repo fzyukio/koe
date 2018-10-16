@@ -1,7 +1,7 @@
 /* global Dropzone */
 
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {changePlaybackSpeed, queryAndPlayAudio} from './audio-handler';
 import {debug, deepCopy, getUrl} from './utils';
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -439,7 +439,6 @@ export const run = function (commonElements) {
 };
 
 export const postRun = function () {
-    initAudioContext();
     setupSongsUpload();
     initUploadSongsBtn();
     initDeleteSongsBtn();
