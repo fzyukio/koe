@@ -62,7 +62,7 @@ const subscribeFlexibleEvents = function () {
             deleteVersionBtn.prop('disabled', false);
         }
         else {
-            applyVersionBtn.prop('disabled', true);
+            deleteVersionBtn.prop('disabled', true);
         }
     });
 };
@@ -241,7 +241,10 @@ export const run = function (commonElements) {
             syllableExtraArgs.database = selected.databaseId;
 
             backupBtns.prop('disabled', false);
-            addCollaborator.prop('disabled', false);
+
+            if (args.item.__permission_editable) {
+                addCollaborator.prop('disabled', false);
+            }
 
             return Promise.all([
                 dbAssignmentGrid.initMainGridHeader(dbAssignmentGridArgs, dbAssignmentExtraArgs),
@@ -250,11 +253,11 @@ export const run = function (commonElements) {
             ]).then(function() {
                 return Promise.all([
                     dbAssignmentGrid.initMainGridContent(dbAssignmentGridArgs, dbAssignmentExtraArgs),
-                    versionGrid.initMainGridContent(versionGridArgs, versionExtraArgs),
-                    syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs),
+                    versionGrid.initMainGridContent(versionGridArgs, versionExtraArgs)
                 ])
-
-            })
+            }).then(function () {
+                return syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs);
+            });
         });
 
         return databaseGrid.initMainGridContent(databaseGridArgs, databaseExtraArgs);

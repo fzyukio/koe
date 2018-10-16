@@ -481,6 +481,7 @@ def bulk_get_history_entries(hes, extras):
             else:
                 url = 'File is missing'
                 file_size = 0
+                can_import = False
         else:
             file_size = 0
             url = 'Insufficient permission to download'
