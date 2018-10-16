@@ -12,14 +12,14 @@ from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermissio
     SimilarityIndex
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import spect_fft_path, history_path
+from root.utils import history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
-           'bulk_get_database', 'bulk_get_database_assignment', 'bulk_get_concise_ssegment_info']
+           'bulk_get_database', 'bulk_get_database_assignment', 'bulk_get_concise_segment_info']
 
 
-def bulk_get_concise_ssegment_info(segs, extras):
+def bulk_get_concise_segment_info(segs, extras):
     database_id = extras.database
     user = extras.user
     current_database = get_or_error(Database, dict(id=database_id))
@@ -49,9 +49,8 @@ def bulk_get_concise_ssegment_info(segs, extras):
 
     for id, start, end, song_name in values:
         ids.append(id)
-        img = spect_fft_path(id, 'syllable', for_url=True)
         duration = end - start
-        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song_name, spectrogram=img)
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song_name, spectrogram=id)
         if id in labels:
             row['label'] = labels[id]
         if id in families:
@@ -153,16 +152,14 @@ def bulk_get_segment_info(segs, extras):
         id2order = dict(zip(sim_sids, sim_order))
 
     for id, start, end, song_name, song_id, quality, track, date, individual, gender in values:
+        sim_index = id2order.get(id, None)
 
-        index = id2order.get(id, None)
-
-        spect_img = spect_fft_path(id, 'syllable', for_url=True)
         duration = end - start
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, song_name)
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url,
-                   dtw_index=index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date, spectrogram=spect_img,)
+                   dtw_index=sim_index, song_track=track, song_individual=individual, song_gender=gender,
+                   song_quality=quality, song_date=date, spectrogram=id,)
         extra_attr_dict = extra_attr_values_lookup.get(id, {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(song_id, {})
 

@@ -46,6 +46,7 @@ tables =\
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
+                    "formatter": "Spects",
                     "css_class": "has-image"
                 },
                 {
@@ -511,7 +512,7 @@ tables =\
         },
         "concise-syllables-grid": {
             "class": "koe.Segment",
-            "getter": "koe.bulk_get_concise_ssegment_info",
+            "getter": "koe.bulk_get_concise_segment_info",
             "columns": [
                 {
                     "name": "Start",
@@ -539,6 +540,7 @@ tables =\
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
+                    "formatter": "Spects",
                     "css_class": "has-image"
                 },
                 {
