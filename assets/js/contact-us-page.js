@@ -37,4 +37,5 @@ const initSaveTrackInfoBtn = function () {
 
 export const run = function () {
     initSaveTrackInfoBtn();
+    return Promise.resolve();
 };

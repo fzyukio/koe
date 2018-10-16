@@ -542,7 +542,7 @@ export const run = function (commonElements) {
         downloadTensorData().then(initCategorySelection);
         initClickHandlers();
     }
-
+    return Promise.resolve();
 };
 
 
@@ -614,12 +614,15 @@ export const postRun = function () {
      * Query database for all existing labels of all granularities
      * Construct selectable options to facilitate selectize's dropdown display
      */
-    postRequest({
-        requestSlug: 'koe/get-label-options',
-        data: {'database-id': databaseId, 'tmpdb-id': tmpDbId},
-        onSuccess(selectableOptions) {
-            setCache('selectableOptions', undefined, selectableOptions)
-        }
+    return new Promise(function(resolve) {
+        postRequest({
+            requestSlug: 'koe/get-label-options',
+            data: {'database-id': databaseId, 'tmpdb-id': tmpDbId},
+            onSuccess(selectableOptions) {
+                setCache('selectableOptions', undefined, selectableOptions);
+                resolve();
+            }
+        });
     });
 };
 

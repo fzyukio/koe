@@ -12,6 +12,7 @@ let form = $('#similarity-extraction-form');
 
 export const run = function () {
     initSelectize();
+    return Promise.resolve();
 };
 
 
@@ -59,4 +60,5 @@ export const postRun = function () {
         });
         return false;
     });
+    return Promise.resolve();
 };

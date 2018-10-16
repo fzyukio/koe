@@ -21,6 +21,7 @@ export const run = function () {
     storeOrdinationOptions();
     initSelectize();
     initMethodNDims();
+    return Promise.resolve();
 };
 
 const storeOrdinationOptions = function () {
@@ -144,4 +145,5 @@ export const postRun = function () {
         });
         return false;
     });
+    return Promise.resolve();
 };

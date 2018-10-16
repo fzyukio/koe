@@ -421,6 +421,7 @@ export const postRun = function () {
     initDeleteVersionBtn();
     initImportZipBtn();
     subscribeFlexibleEvents();
+    return Promise.resolve();
 };
 
 export const viewPortChangeHandler = function () {

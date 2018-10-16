@@ -89,6 +89,11 @@ function viewPortChangeHandler() {
 const _preRun = function () {
 
     restoreModalAfterClosing();
+    subMenuOpenRight();
+    initChangeArgSelections();
+    initSidebar();
+    initUploadCsv();
+    appendGetArguments();
 
     $('.alert .close').on('click', function () {
         let alertEl = $(this).parent();
@@ -96,6 +101,17 @@ const _preRun = function () {
         clearTimeout(timerId);
         alertEl.hide();
     });
+
+    const viewPortChangeCallback = function () {
+        viewPortChangeHandler().then(function () {
+            if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
+                page.viewPortChangeHandler();
+            }
+        });
+    };
+
+    window.addEventListener('orientationchange', viewPortChangeCallback);
+    window.addEventListener('resize', viewPortChangeCallback);
 
     return Promise.resolve();
 };
@@ -638,17 +654,6 @@ const initUploadCsv = function () {
  * Put everything you need to run after the page has been loaded here
  */
 const _postRun = function () {
-    const viewPortChangeCallback = function () {
-        viewPortChangeHandler().then(function () {
-            if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
-                page.viewPortChangeHandler();
-            }
-        });
-    };
-
-    window.addEventListener('orientationchange', viewPortChangeCallback);
-    window.addEventListener('resize', viewPortChangeCallback);
-
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
         window.location = this.getAttribute('url');
@@ -666,11 +671,6 @@ const _postRun = function () {
     });
 
     countDown();
-    subMenuOpenRight();
-    initChangeArgSelections();
-    initSidebar();
-    initUploadCsv();
-    appendGetArguments();
 };
 
 /**
@@ -725,24 +725,17 @@ $(document).ready(function () {
             return Promise.resolve();
         }
         else {
-
-            if (typeof page.preRun == 'function') {
-                page.preRun();
-            }
-
-            return new Promise(function (resolve) {
-                page.run(commonElements).then(function () {
-                    if (typeof page.postRun == 'function') {
-                        page.postRun();
-                    }
-                    resolve();
-                });
+            return page.run(commonElements).then(function () {
+                if (typeof page.postRun == 'function') {
+                    return page.postRun();
+                }
+                return Promise.resolve();
             });
         }
     };
 
     _preRun().then(function () {
-        return runPage()
+        return runPage();
     }).then(function () {
         return _postRun();
     });

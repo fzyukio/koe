@@ -19,6 +19,7 @@ export const run = function () {
     removeDisabledData();
     initSelectize();
     initCheckboxes();
+    return Promise.resolve();
 };
 
 const readHiddenData = function () {
@@ -167,4 +168,5 @@ export const postRun = function () {
         });
         return false;
     });
+    return Promise.resolve();
 };

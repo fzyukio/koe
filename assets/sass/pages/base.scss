@@ -332,8 +332,14 @@ body.loading #loading-spinner-modal {
 
 #menu-opener {
   width: $menu-opener-width;
-  font-size: $menu-opener-width;
-  padding-left: $menu-opener-padding-left;
+  .fa-bars:before {
+    font-size: $menu-opener-width;
+  }
+
+  .fa-white.fa-bars:before {
+    color: white !important;
+    font-size: unset;
+  }
 }
 
 #menu-closer {

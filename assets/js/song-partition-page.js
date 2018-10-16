@@ -754,6 +754,7 @@ export const postRun = function () {
         let updated = populateNameAll(true);
         saveSongMetadata(updated);
     });
+    return Promise.resolve();
 };
 
 export const viewPortChangeHandler = function () {

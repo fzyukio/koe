@@ -551,6 +551,7 @@ const initCreateTemporaryDatabaseBtn = function() {
 export const postRun = function () {
     initDeleteSegmentsBtn();
     initCreateTemporaryDatabaseBtn();
+    return Promise.resolve();
 };
 
 export const viewPortChangeHandler = function () {

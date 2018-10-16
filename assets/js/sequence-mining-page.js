@@ -271,6 +271,7 @@ export const run = function () {
 export const postRun = function() {
     initSlider();
     initOptions();
+    return Promise.resolve();
 };
 
 /**
