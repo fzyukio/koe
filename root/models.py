@@ -454,9 +454,6 @@ class User(AbstractUser, SimpleModel):
     id = models.AutoField(primary_key=True, editable=False, auto_created=True)
     invitation_code = models.ForeignKey(InvitationCode, on_delete=models.SET_NULL, null=True, blank=True)
 
-    def get_avatar(self):
-        return "https://api.adorable.io/avatars/200/" + self.email
-
 
 class ColumnActionValue(SimpleModel):
     """
