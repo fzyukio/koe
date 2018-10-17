@@ -4,7 +4,6 @@ import json
 import os
 import re
 import uuid
-from shutil import copyfile
 import numpy as np
 
 import csv
@@ -140,10 +139,6 @@ def delete_audio_files(request):
         seg_spect_path = spect_fft_path(segment_id, 'syllable')
         if os.path.isfile(seg_spect_path):
             os.remove(seg_spect_path)
-
-        seg_mask_path = spect_mask_path(segment_id)
-        if os.path.isfile(seg_mask_path):
-            os.remove(seg_mask_path)
 
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=associated_segments_ids).delete()
 
@@ -435,20 +430,6 @@ def copy_audio_files(request):
         ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)
     except IntegrityError as e:
         raise CustomAssertionError(e)
-
-    for old_segment_id, new_segment_id in segments_old_id_to_new_id.items():
-        # Copy spectrograms / signal masks:
-        new_mask_img = spect_mask_path(new_segment_id)
-        new_spect_img = spect_fft_path(new_segment_id, 'syllable')
-
-        old_mask_img = spect_mask_path(old_segment_id)
-        old_spect_img = spect_fft_path(old_segment_id, 'syllable')
-
-        if os.path.isfile(old_mask_img):
-            copyfile(old_mask_img, new_mask_img)
-
-        if os.path.isfile(old_spect_img):
-            copyfile(old_spect_img, new_spect_img)
 
     return True
 

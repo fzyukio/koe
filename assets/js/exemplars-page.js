@@ -124,14 +124,11 @@ const initSlider = function () {
     });
 };
 
-const imgRegex = /.*?\/(\d+)\.png/;
 
 const playAudio = function (e) {
     e.preventDefault();
-    let imgSrc = this.getAttribute('src');
-    let match = imgRegex.exec(imgSrc);
-    if (match) {
-        let segId = match[1];
+    let segId = this.getAttribute('seg-id');
+    if (segId) {
         let args_ = {
             url: getUrl('send-request', 'koe/get-segment-audio-data'),
             cacheKey: segId,

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from PIL import Image
 from django.conf import settings
@@ -232,45 +233,54 @@ def extract_spectrogram(audio_file):
     :param audio_file:
     :return:
     """
-    segs_info = Segment.objects.filter(audio_file=audio_file).values_list('id', 'start_time_ms', 'end_time_ms')
-    song_name = audio_file.name
+    segs_info = Segment.objects.filter(audio_file=audio_file).values_list('tid', 'start_time_ms', 'end_time_ms')
 
-    filepath = wav_path(song_name)
+    missing_segs_info = []
 
-    fs, sig = wav_2_mono(filepath)
-    duration_ms = len(sig) * 1000 / fs
-
-    _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
-    file_spect = np.abs(s * scale)
-
-    height, width = np.shape(file_spect)
-    file_spect = np.flipud(file_spect)
-
-    file_spect = np.log10(file_spect)
-    file_spect = ((file_spect - global_min_spect_pixel) / interval64)
-    file_spect[np.isinf(file_spect)] = 0
-    file_spect = file_spect.astype(np.int)
-
-    file_spect = file_spect.reshape((width * height,), order='C')
-    file_spect[file_spect >= 64] = 63
-    file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
-    file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape(
-        (height, width)) * 255
-    file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape(
-        (height, width)) * 255
-    file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape(
-        (height, width)) * 255
-
-    for seg_id, start, end in segs_info:
-        roi_start = int(start / duration_ms * width)
-        roi_end = int(np.ceil(end / duration_ms * width))
-
-        seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
-        seg_spect_img = Image.fromarray(seg_spect_rgb)
-        seg_spect_path = spect_fft_path(seg_id, 'syllable')
+    for tid, start, end in segs_info:
+        seg_spect_path = spect_fft_path(tid, 'syllable')
         ensure_parent_folder_exists(seg_spect_path)
+        if os.path.isfile(seg_spect_path):
+            missing_segs_info.append((seg_spect_path, start, end))
 
-        seg_spect_img.save(seg_spect_path, format='PNG')
+    if len(missing_segs_info) > 0:
+
+        song_name = audio_file.name
+
+        filepath = wav_path(song_name)
+
+        fs, sig = wav_2_mono(filepath)
+        duration_ms = len(sig) * 1000 / fs
+
+        _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
+        file_spect = np.abs(s * scale)
+
+        height, width = np.shape(file_spect)
+        file_spect = np.flipud(file_spect)
+
+        file_spect = np.log10(file_spect)
+        file_spect = ((file_spect - global_min_spect_pixel) / interval64)
+        file_spect[np.isinf(file_spect)] = 0
+        file_spect = file_spect.astype(np.int)
+
+        file_spect = file_spect.reshape((width * height,), order='C')
+        file_spect[file_spect >= 64] = 63
+        file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
+        file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape(
+            (height, width)) * 255
+        file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape(
+            (height, width)) * 255
+        file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape(
+            (height, width)) * 255
+
+        for path, start, end in missing_segs_info:
+            roi_start = int(start / duration_ms * width)
+            roi_end = int(np.ceil(end / duration_ms * width))
+
+            seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
+            seg_spect_img = Image.fromarray(seg_spect_rgb)
+
+            seg_spect_img.save(path, format='PNG')
 
 
 def assert_permission(user, database, required_level):

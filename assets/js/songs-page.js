@@ -416,6 +416,9 @@ export const run = function (commonElements) {
     ce = commonElements;
     let argDict = ce.argDict;
 
+    setupSongsUpload();
+    initUploadSongsBtn();
+
     grid.init(granularity);
 
     return new Promise(function(resolve) {
@@ -435,8 +438,6 @@ export const run = function (commonElements) {
 };
 
 export const postRun = function () {
-    setupSongsUpload();
-    initUploadSongsBtn();
     initDeleteSongsBtn();
     initCopySongsBtn();
     initSlider();

@@ -84,9 +84,6 @@ function viewPortChangeHandler() {
 }
 
 
-const imgRegex = /.*?\/(\d+)\.png/;
-
-
 /**
  * Play the sound if the current active cell is the spectrogram
  * @param e
@@ -110,10 +107,8 @@ const playAudioOnKey = function (e) {
     if (gridEl.has($activeCellEl).length > 0) {
         if ($activeCellEl.hasClass('has-image')) {
             let img = $activeCellEl.find('img');
-            let imgSrc = img.attr('src');
-            let match = imgRegex.exec(imgSrc);
-            if (match) {
-                let segId = match[1];
+            let segId = img.attr('seg-id');
+            if (segId) {
                 let args_ = {
                     url: getUrl('send-request', 'koe/get-segment-audio-data'),
                     cacheKey: segId,

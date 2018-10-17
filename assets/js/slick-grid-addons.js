@@ -96,15 +96,25 @@ const ImageFormatter = function (row, cell, imgUrl) {
  * @returns {string}
  * @constructor
  */
-const SpectsFormatter = function (row, cell, value) {
-    if (Array.isArray(value)) {
-        let retval = '';
-        $.each(value, function (idx, sid) {
-            retval += `<img src="/user_data/spect/fft/syllable/${sid}.png" height="100%"/>`;
-        });
-        return retval;
-    }
-    return `<img src="/user_data/spect/fft/syllable/${value}.png" height="100%"/>`;
+const SpectsFormatter = function (row, cell, idsTids) {
+    let retval = '';
+    $.each(idsTids, function (idx, idsTid) {
+        let id = idsTid[0];
+        let tid = idsTid[1];
+        retval += `<img seg-id="${id}" src="/user_data/spect/fft/syllable/${tid}.png" height="100%"/>`;
+    });
+    return retval;
+};
+
+
+/**
+ * Render one or many images given the id or array of ids of the spectrograms
+ * spetrogram images are located at /user_data/spect/fft/syllable/<ID>.png
+ * @returns {string}
+ * @constructor
+ */
+const SpectFormatter = function (row, cell, value, columnDef, dataContext) {
+    return `<img seg-id="${dataContext.id}" src="/user_data/spect/fft/syllable/${value}.png" height="100%"/>`;
 };
 
 
@@ -168,7 +178,7 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
     let segLabels = song['sequence-labels'];
     let segStarts = song['sequence-starts'];
     let segEnds = song['sequence-ends'];
-    let sids = song['sequence-ids'];
+    let tids = song['sequence-tids'];
 
     let retval = `<div class="syllable start full-audio" start=0 end=${duration}>
                   <i class="fa fa-play" aria-hidden="true"></i>
@@ -179,8 +189,8 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
         let start = segStarts[i];
         let end = segEnds[i];
         let segLabel = segLabels[i];
-        let sid = sids[i];
-        retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/fft/syllable/${sid}.png">${segLabel}</div>`;
+        let tid = tids[i];
+        retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/fft/syllable/${tid}.png">${segLabel}</div>`;
     }
     return retval;
 };
@@ -533,6 +543,7 @@ SlickFormatters.Select = SelectionFormatter;
 SlickFormatters.Checkmark = CheckmarkFormatter;
 SlickFormatters.Image = ImageFormatter;
 SlickFormatters.Spects = SpectsFormatter;
+SlickFormatters.Spect = SpectFormatter;
 SlickFormatters.Url = UrlFormatter;
 SlickFormatters.Sequence = SequenceFormatter;
 SlickFormatters.Species = SpeciesFormatter;

@@ -46,7 +46,7 @@ tables =\
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
-                    "formatter": "Spects",
+                    "formatter": "Spect",
                     "css_class": "has-image"
                 },
                 {
@@ -540,7 +540,7 @@ tables =\
                     "name": "Spectrogram",
                     "slug": "spectrogram",
                     "type": "IMAGE",
-                    "formatter": "Spects",
+                    "formatter": "Spect",
                     "css_class": "has-image"
                 },
                 {

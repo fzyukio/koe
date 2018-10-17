@@ -29,7 +29,7 @@ def bulk_get_concise_segment_info(segs, extras):
         return ids, rows
 
     segs = segs.filter(audio_file__database=current_database.id)
-    values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms', 'audio_file__name'))
+    values = list(segs.values_list('id', 'tid', 'start_time_ms', 'end_time_ms', 'audio_file__name'))
     segids = [x[0] for x in values]
 
     label_attr = settings.ATTRS.segment.label
@@ -47,10 +47,10 @@ def bulk_get_concise_segment_info(segs, extras):
     families = {x: y for x, y in families}
     subfamilies = {x: y for x, y in subfamilies}
 
-    for id, start, end, song_name in values:
+    for id, tid, start, end, song_name in values:
         ids.append(id)
         duration = end - start
-        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song_name, spectrogram=id)
+        row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=song_name, spectrogram=tid)
         if id in labels:
             row['label'] = labels[id]
         if id in families:
@@ -104,7 +104,7 @@ def bulk_get_segment_info(segs, extras):
     else:
         segs = segs.filter(audio_file__database=current_database.id)
 
-    values = list(segs.values_list('id', 'start_time_ms', 'end_time_ms',
+    values = list(segs.values_list('id', 'tid', 'start_time_ms', 'end_time_ms',
                                    'audio_file__name',
                                    'audio_file__id',
                                    'audio_file__quality',
@@ -115,7 +115,7 @@ def bulk_get_segment_info(segs, extras):
                                    ))
 
     segids = [x[0] for x in values]
-    song_ids = [x[4] for x in values]
+    song_ids = [x[5] for x in values]
 
     extra_attr_values_list = ExtraAttrValue.objects \
         .filter(user__username=viewas, attr__klass=Segment.__name__, owner_id__in=segids) \
@@ -151,7 +151,7 @@ def bulk_get_segment_info(segs, extras):
         sim_order = np.squeeze(get_rawdata_from_binary(sim_bytes_path, len(sim_sids), np.int32)).tolist()
         id2order = dict(zip(sim_sids, sim_order))
 
-    for id, start, end, song_name, song_id, quality, track, date, individual, gender in values:
+    for id, tid, start, end, song_name, song_id, quality, track, date, individual, gender in values:
         sim_index = id2order.get(id, None)
 
         duration = end - start
@@ -159,7 +159,7 @@ def bulk_get_segment_info(segs, extras):
         url = '[{}]({})'.format(url, song_name)
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url,
                    dtw_index=sim_index, song_track=track, song_individual=individual, song_gender=gender,
-                   song_quality=quality, song_date=date, spectrogram=id,)
+                   song_quality=quality, song_date=date, spectrogram=tid,)
         extra_attr_dict = extra_attr_values_lookup.get(id, {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(song_id, {})
 
@@ -189,11 +189,16 @@ def bulk_get_exemplars(objs, extras):
 
     if isinstance(current_database, Database):
         if isinstance(objs, QuerySet):
-            ids = objs.filter(audio_file__database=current_database).values_list('id', flat=True)
+            id2tid = {x: y for x, y in objs.values_list('id', 'tid')}
+            ids = id2tid.keys()
         else:
-            ids = [x.id for x in objs if x.audio_file.database == current_database]
+            objs = [x for x in objs if x.audio_file.database == current_database]
+            id2tid = {x.id: x.tid for x in objs}
+            ids = id2tid.keys()
     else:
         ids = current_database.ids
+        segs = Segment.objects.filter(id__in=ids)
+        id2tid = {x: y for x, y in segs.values_list('id', 'tid')}
 
     values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, attr__name=granularity, owner_id__in=ids,
                                            user__username=viewas) \
@@ -225,9 +230,10 @@ def bulk_get_exemplars(objs, extras):
 
     rows = []
     ids = []
-    for cls, count, exemplars in class_to_exemplars:
+    for cls, count, exemplar_ids in class_to_exemplars:
         if cls:
-            row = dict(id=cls, cls=cls, count=count, spectrograms=exemplars)
+            exemplar_id2tid = [(x, id2tid[x]) for x in exemplar_ids]
+            row = dict(id=cls, cls=cls, count=count, spectrograms=exemplar_id2tid)
             rows.append(row)
             ids.append(cls)
 
@@ -262,7 +268,7 @@ def get_sequence_info_empty_songs(empty_songs):
         url = '[{}]({})'.format(url, filename)
         duration_ms = round(length * 1000 / fs)
         species_str = '{} {}'.format(genus, species)
-        row = dict(id=song_id, filename=filename, url=url, track=track, individual=indv, gender=gender,
+        row = dict(id=song_id, filename=url, track=track, individual=indv, gender=gender,
                    quality=quality, date=date, duration=duration_ms, species=species_str)
         ids.append(song_id)
         rows.append(row)
@@ -295,7 +301,7 @@ def bulk_get_song_sequences(all_songs, extras):
         song_ids = segs.values_list('audio_file').distinct()
         all_songs = AudioFile.objects.filter(id__in=song_ids)
 
-    values = segs.values_list('id', 'start_time_ms', 'end_time_ms',
+    values = segs.values_list('id', 'tid', 'start_time_ms', 'end_time_ms',
                               'audio_file__name',
                               'audio_file__id',
                               'audio_file__quality',
@@ -333,7 +339,8 @@ def bulk_get_song_sequences(all_songs, extras):
     # Bagging song syllables by song name
     songs = {}
 
-    for seg_id, start, end, filename, song_id, quality, length, fs, track, date, indv, gender, genus, species in values:
+    for seg_id, tid, start, end, filename, song_id, quality, length, fs, track, date, indv, gender, genus, species\
+            in values:
         if song_id not in songs:
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
@@ -349,7 +356,7 @@ def bulk_get_song_sequences(all_songs, extras):
             segs_info = songs[song_id]['segs']
 
         label = seg_id_to_label.get(seg_id, '__NONE__')
-        segs_info.append((seg_id, label, start, end))
+        segs_info.append((tid, label, start, end))
 
     for song_id, info in songs.items():
         song_info = info['song']
@@ -358,13 +365,13 @@ def bulk_get_song_sequences(all_songs, extras):
         sequence_labels = []
         sequence_starts = []
         sequence_ends = []
-        sequence_ids = []
+        sequence_tids = []
 
-        for seg_id, label, start, end in segs_info:
+        for tid, label, start, end in segs_info:
             sequence_labels.append(label)
             sequence_starts.append(start)
             sequence_ends.append(end)
-            sequence_ids.append(seg_id)
+            sequence_tids.append(tid)
 
         sequence_str = '-'.join('\"{}\"'.format(x) for x in sequence_labels)
 
@@ -374,7 +381,7 @@ def bulk_get_song_sequences(all_songs, extras):
         row['sequence-labels'] = sequence_labels
         row['sequence-starts'] = sequence_starts
         row['sequence-ends'] = sequence_ends
-        row['sequence-ids'] = sequence_ids
+        row['sequence-tids'] = sequence_tids
 
         extra_attr_dict = extra_attr_values_lookup.get(song_id, {})
         for attr in extra_attr_dict:
