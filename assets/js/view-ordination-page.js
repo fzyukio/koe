@@ -30,6 +30,7 @@ let highlightedInfo = {};
 let inLassoSelectionMode = false;
 const dataMatrix = [];
 const rowsMetadata = [];
+// const dataText = [];
 const labelDatum = {};
 let plotObj;
 
@@ -300,11 +301,15 @@ const plot = function () {
         let ys = [];
         let zs = [];
         let x, y, z;
-        let rowsMetadataStr = [];
+        let rowsText = [];
+
+        let groupMetadata = [];
         $.each(ids, function (idx, rowIdx) {
             let row = dataMatrix[rowIdx];
-            let rowMetadata = rowsMetadata[rowIdx];
-            rowsMetadataStr.push(rowMetadata.join(', '));
+            let metadata = rowsMetadata[rowIdx];
+            groupMetadata.push(metadata);
+            let rowText = makeText(metadata);
+            rowsText.push(rowText);
             x = row[0];
             y = row[1];
             xs.push(x);
@@ -321,7 +326,11 @@ const plot = function () {
         let trace = {
             x: xs,
             y: ys,
-            text: rowsMetadataStr,
+
+            // plotly does not allow custom field here so we have no choice but to use 'text' to store metadata
+            text: groupMetadata,
+            hovertext: rowsText,
+            hoverinfo: 'text',
             name: className,
             mode: 'markers',
             marker: markers[classNo],
@@ -376,7 +385,7 @@ function registerPlotlyEvents() {
 
 const initCategorySelection = function () {
     $.each(labelDatum, function (labelType) {
-        if (labelType !== 'id') {
+        if (labelType !== 'id' && labelType !== 'tid') {
             let option = `<li class="not-active"><a href="#" value="${labelType}">${labelType}</a></li>`;
             labelTyleSelectEl.append(option);
         }
@@ -436,8 +445,8 @@ function playSyl(sylId) {
 }
 
 const handleClick = function ({points}) {
-    let pointText = points[0].text;
-    let sylId = parseInt(pointText.substr(0, pointText.indexOf(',')));
+    let metadata = points[0].text;
+    let sylId = parseInt(metadata.id);
     playSyl(sylId);
 };
 
@@ -449,24 +458,24 @@ const handleClick = function ({points}) {
  * @returns {*}
  */
 function addSylToHighlight(point, override = false) {
-    let pointText = point.text;
-    let textParts = pointText.split(', ');
-    let pointId = textParts[0];
-    let element = highlighted[pointId];
+    let rowMetadata = point.text;
+    let segId = rowMetadata.id;
+    let segTid = rowMetadata.tid;
+    let element = highlighted[segId];
     let allow = override || !inLassoSelectionMode;
     if (element === undefined && allow) {
         let legendSymbol = legendSymbols[point.data.name];
 
         element = $(`
-<div class="syl-spect" id="${pointId}">
-    <img src="/user_data/spect/fft/syllable/${pointId}.png"/>
+<div class="syl-spect" id="${segId}">
+    <img src="/user_data/spect/fft/syllable/${segTid}.png"/>
     <div class="syl-details">
         <svg width="13px" height="13px">${legendSymbol}</svg>
-        <span>${pointId}</span>
+        <span>${segId}</span>
     </div>
 </div>`);
-        highlighted[pointId] = element;
-        highlightedInfo[pointId] = textParts;
+        highlighted[segId] = element;
+        highlightedInfo[segId] = rowMetadata;
         sylSpects.prepend(element);
     }
     return element;
@@ -548,6 +557,37 @@ export const run = function (commonElements) {
 const columnsMap = {};
 const id2idx = {};
 
+/**
+ * Create a newline separated text to be displayed on mousehover from metadata, each field one line
+ * @param rowMetadata
+ * @returns {string}
+ */
+function makeText(rowMetadata) {
+    let retval = [];
+    $.each(rowMetadata, function (colName, colVal) {
+        retval.push(`${colName}: ${colVal}`);
+    });
+    return retval.join('<br>');
+}
+
+/**
+ * Create a dict from columns and rows. They must have the same number of elements and their order must match
+ * @param columnNames: an array that contains at least: 'id', 'tid', 'label'
+ * @param row an array that contains the values for the fields in columnNames
+ * @returns {*}
+ */
+function makeMetadata(columnNames, row) {
+    let nCols = columnNames.length;
+    if (row.length !== nCols) {
+        return {error: 'Can\'t render text due to number of columns and row length are different'};
+    }
+    let retval = {};
+    for (let i = 0; i < nCols; i++) {
+        retval[columnNames[i]] = row[i];
+    }
+    return retval;
+}
+
 
 const downloadTensorData = function () {
     body.addClass('loading');
@@ -572,13 +612,17 @@ const downloadTensorData = function () {
         }
 
         for (let rowIdx = 0; rowIdx < csvBodyRows.length; rowIdx++) {
-            let rowMetadata = csvBodyRows[rowIdx].split('\t');
+            let csvRow = csvBodyRows[rowIdx].split('\t');
+            let rowMetadata = makeMetadata(columnNames, csvRow);
             rowsMetadata.push(rowMetadata);
-            id2idx[rowMetadata[0]] = rowIdx;
-            for (let colIdx = 1; colIdx < rowMetadata.length; colIdx++) {
+            // let rowText = makeText(rowsMetadata);
+            // dataText.push(rowText);
+
+            id2idx[csvRow[0]] = rowIdx;
+            for (let colIdx = 1; colIdx < csvRow.length; colIdx++) {
                 let columnType = columnNames[colIdx];
                 let labelData = labelDatum[columnType];
-                let label = rowMetadata[colIdx];
+                let label = csvRow[colIdx];
                 if (labelData[label] === undefined) {
                     labelData[label] = [rowIdx];
                 }
@@ -679,13 +723,13 @@ const setLabel = function (field) {
                 data: postData,
                 onSuccess() {
                     let labelData = labelDatum[field];
-                    let colIdx = columnsMap[field];
+                    // let colIdx = columnsMap[field];
                     if (labelData[value] === undefined) {
                         labelData[value] = [];
                     }
                     let category = labelData[value];
-                    $.each(highlightedInfo, function (id, textParts) {
-                        let oldLabel = textParts[colIdx];
+                    $.each(highlightedInfo, function (id, metadata) {
+                        let oldLabel = metadata[field];
                         let oldCategory = labelData[oldLabel];
                         let rowIdx = id2idx[id];
                         let pos = oldCategory.indexOf(rowIdx);
@@ -693,16 +737,11 @@ const setLabel = function (field) {
                             oldCategory.splice(pos, 1);
                             category.push(rowIdx);
                         }
-                        rowsMetadata[rowIdx][colIdx] = value;
+                        rowsMetadata[rowIdx][field] = value;
                     });
 
                     plot();
                     registerPlotlyEvents();
-                    // console.log(selectedSyls);
-                    // console.log(field);
-                    // console.log(value);
-                    // console.log(rowsMetadata);
-                    // console.log(labelDatum);
                 }
             });
         })
