@@ -438,19 +438,9 @@ def delete_segments(request):
     assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
 
     segments = Segment.objects.filter(id__in=ids, audio_file__database=database)
-    ids = segments.values_list('id', flat=True)
+    segments.update(active=False)
+    delete_segments_async.delay()
 
-    for segment_id in ids:
-        seg_spect_path = spect_fft_path(segment_id, 'syllable')
-        if os.path.isfile(seg_spect_path):
-            os.remove(seg_spect_path)
-
-        seg_mask_path = spect_mask_path(segment_id)
-        if os.path.isfile(seg_mask_path):
-            os.remove(seg_mask_path)
-
-    # ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=ids).delete()
-    segments.delete()
     return True
 
 
