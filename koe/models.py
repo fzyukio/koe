@@ -198,6 +198,11 @@ class DatabaseAssignment(SimpleModel):
         return retval
 
 
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super(ActiveManager, self).get_queryset().filter(active=True)
+
+
 class AudioFile(SimpleModel):
     """
     Represent a song
@@ -216,6 +221,10 @@ class AudioFile(SimpleModel):
     # To facilitate copying database - when an AudioFile object is copied, another object is created
     # with the same name but different database, and reference this object as its original
     original = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+
+    active = models.BooleanField(default=True)
+    objects = ActiveManager()
+    fobjs = models.Manager()
 
     class Meta:
         unique_together = ['name', 'database']
@@ -310,6 +319,10 @@ class Segment(SimpleModel):
     mean_ff = models.FloatField(null=True)
     min_ff = models.FloatField(null=True)
     max_ff = models.FloatField(null=True)
+
+    active = models.BooleanField(default=True)
+    objects = ActiveManager()
+    fobjs = models.Manager()
 
     def __str__(self):
         return '{} - {}:{}'.format(self.audio_file.name, self.start_time_ms, self.end_time_ms)

@@ -379,9 +379,11 @@ export class FlexibleGrid {
      */
     deleteRows(rows) {
         let dataView = this.mainGrid.getData();
+        dataView.beginUpdate();
         for (let i = 0; i < rows.length; i++) {
             dataView.deleteItem(rows[i]);
         }
+        dataView.endUpdate();
     }
 
     /**

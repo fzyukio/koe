@@ -6,13 +6,15 @@ from django.db import models
 from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
+from koe.celery import app
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
-from koe.models import DistanceMatrix, Segment, DatabaseAssignment, Database, DatabasePermission, TemporaryDatabase
+from koe.models import DistanceMatrix, Segment, DatabaseAssignment, Database, DatabasePermission, TemporaryDatabase,\
+    AudioFile
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
-from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists
+from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists, audio_path
 
 window_size = 256
 noverlap = 256 * 0.75
@@ -331,3 +333,62 @@ def get_or_error(obj, key):
         raise CustomAssertionError('{} doesn\'t exist'.format(key))
 
     return value
+
+
+@app.task(bind=False)
+def delete_segments_async():
+    segments = Segment.fobjs.filter(active=False)
+    this_vl = segments.values_list('id', 'tid')
+    this_tids = [x[1] for x in this_vl]
+    this_sids = [x[0] for x in this_vl]
+
+    other_vl = Segment.objects.filter(tid__in=this_tids).values_list('id', 'tid')
+
+    tid2ids = {x: [] for x in this_tids}
+    path_template = spect_fft_path('{}', 'syllable')
+
+    for id, tid in other_vl:
+        tid2ids[tid].append(id)
+
+    # These segmnents might share the same spectrogram with other segments. Only delete the spectrogramn
+    # if there is only one segment (ID) associated with the syllable's TID
+    for tid, ids in tid2ids.items():
+        if len(ids) == 1:
+            spect_path = path_template.format(tid)
+            if os.path.isfile(spect_path):
+                os.remove(spect_path)
+
+    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=this_sids).delete()
+    segments.delete()
+
+
+@app.task(bind=False)
+def delete_audio_files_async():
+    audio_files = AudioFile.fobjs.filter(active=False)
+    audio_files_ids = audio_files.values_list('id', flat=True)
+
+    ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__, owner_id__in=audio_files_ids).delete()
+
+    # If the audio file is not original - just delete the model
+    # Otherwise, search if there are clones. If there are, make one of the clones the new original
+    # If there is no clone, delete the real audio files (wav and mp4)
+
+    for af in audio_files:
+        if af.original is None:
+            clones = AudioFile.objects.filter(original=af).order_by('id')
+            first_clone = clones.first()
+            if first_clone:
+                clones.update(original=first_clone)
+                first_clone.original = None
+                first_clone.save()
+            else:
+                af_name = af.name
+                if not af_name.endswith('.wav'):
+                    af_name += '.wav'
+                wav = wav_path(af_name)
+                mp4 = audio_path(af_name, settings.AUDIO_COMPRESSED_FORMAT)
+                if os.path.isfile(wav):
+                    os.remove(wav)
+                if os.path.isfile(mp4):
+                    os.remove(mp4)
+        af.delete()

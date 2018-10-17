@@ -97,9 +97,6 @@ def import_audio_files(request):
         fullname = file.name
         name, ext = os.path.splitext(fullname)
 
-        # Removing the preceeding dot, e.g. ".wav" -> "wav"
-        ext = ext[1:]
-
         unique_name = name
         is_unique = not AudioFile.objects.filter(name=unique_name).exists()
         postfix = 0
@@ -108,6 +105,7 @@ def import_audio_files(request):
             unique_name = '{}({})'.format(name, postfix)
             is_unique = not AudioFile.objects.filter(name=unique_name).exists()
 
+        unique_name += ext
         unique_name_wav = wav_path(unique_name)
         unique_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
 
@@ -227,4 +225,8 @@ def get_audio_file_url(request):
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
-    return audio_path(audio_file.name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
+    audio_file_name = audio_file.name
+    if not audio_file_name.endswith('.wav'):
+        audio_file_name += '.wav'
+
+    return audio_path(audio_file_name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)

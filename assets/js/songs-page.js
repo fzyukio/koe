@@ -268,9 +268,7 @@ const initDeleteSongsBtn = function () {
                     `Something's wrong. The server says ${response}. Files might have been deleted.`;
             };
             let onSuccess = function () {
-                for (let i = 0; i < numRows; i++) {
-                    dataView.deleteItem(ids[i]);
-                }
+                grid.deleteRows(ids);
             };
             ce.dialogModal.modal('hide');
             postRequest({

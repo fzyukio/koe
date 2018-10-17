@@ -14,7 +14,8 @@ from django.db.models import Q
 from dotmap import DotMap
 
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
-from koe.model_utils import extract_spectrogram, assert_permission, get_or_error
+from koe.model_utils import extract_spectrogram, assert_permission, get_or_error, delete_audio_files_async,\
+    delete_segments_async
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel
 from root.exceptions import CustomAssertionError
@@ -132,18 +133,13 @@ def delete_audio_files(request):
         raise CustomAssertionError('You\'re trying to delete files that don\'t belong to database {}. '
                                    'Are you messing with Javascript?'.format(database.name))
 
-    associated_segments_ids = Segment.objects.filter(audio_file__in=audio_files_ids)\
-        .values_list('id', flat=True)
+    segments = Segment.objects.filter(audio_file__in=audio_files)
 
-    for segment_id in associated_segments_ids:
-        seg_spect_path = spect_fft_path(segment_id, 'syllable')
-        if os.path.isfile(seg_spect_path):
-            os.remove(seg_spect_path)
+    segments.update(active=False)
+    audio_files.update(active=False)
 
-    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=associated_segments_ids).delete()
-
-    ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__, owner_id__in=audio_files_ids).delete()
-    audio_files.delete()
+    delete_segments_async.delay()
+    delete_audio_files_async.delay()
     return True
 
 
