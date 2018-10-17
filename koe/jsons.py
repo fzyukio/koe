@@ -5,6 +5,7 @@ tables =\
         "segment-info": {
             "class": "koe.Segment",
             "getter": "koe.bulk_get_segment_info",
+            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",
@@ -194,6 +195,7 @@ tables =\
         "songs-grid": {
             "class": "koe.AudioFile",
             "getter": "koe.bulk_get_song_sequences",
+            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",
@@ -292,6 +294,7 @@ tables =\
         "segments-grid": {
             "class": "koe.Segment",
             "getter": "koe.bulk_get_segments_for_audio",
+            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",

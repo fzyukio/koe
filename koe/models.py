@@ -21,7 +21,7 @@ from root.utils import history_path, ensure_parent_folder_exists, pickle_path, w
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
     'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
-    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex'
+    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'validate_editability'
 ]
 
 
@@ -111,6 +111,13 @@ class Database(SimpleModel):
             raise CustomAssertionError('Database name must be non-empty and can only contain alphabets, digits and '
                                        'underscores')
         super(Database, self).save(**kwargs)
+
+    def get_assigned_permission(self, user):
+        da = DatabaseAssignment.objects.filter(database=self, user=user).first()
+        if da:
+            return da.permission
+        else:
+            return 0
 
     @classmethod
     def get_editability_validation(cls, databases, extras):
@@ -457,6 +464,14 @@ class TemporaryDatabase(IdOrderedModel):
 
         return Database.objects.filter(id__in=list(map(int, self._databases.split(','))))
 
+    def get_assigned_permission(self, user):
+        databases = self.get_databases()
+        ps = DatabaseAssignment.objects.filter(database__in=databases, user=user).values_list('permission', flat=True)
+        if len(ps) > 0:
+            return min(ps)
+        else:
+            return DatabasePermission.VIEW
+
 
 class HistoryEntry(SimpleModel):
     """
@@ -707,3 +722,18 @@ def _mymodel_delete(sender, instance, **kwargs):
             os.remove(filepath)
         else:
             warning('File {} doesnot exist.'.format(filepath))
+
+
+def validate_editability(extras):
+    database_id = extras.get('database', None)
+    tmpdb_id = extras.get('tmpdb', None)
+    user = extras['user']
+
+    if database_id:
+        permission = Database.objects.get(id=database_id).get_assigned_permission(user)
+    elif tmpdb_id:
+        permission = TemporaryDatabase.objects.get(id=tmpdb_id).get_assigned_permission(user)
+    else:
+        raise CustomAssertionError('database or tmpdb is required')
+
+    return permission >= DatabasePermission.ANNOTATE

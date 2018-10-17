@@ -59,6 +59,11 @@ def get_attrs(objs, table, extras):
             rows.append(row)
 
     viewas = extras.viewas
+    editable = extras.editable
+
+    if not editable:
+        return rows
+
     if not viewas or viewas == extras.user.username:
         for column in table['columns']:
             attr = column['slug']
@@ -71,7 +76,6 @@ def get_attrs(objs, table, extras):
 
             for row in rows:
                 id = row['id']
-                # row[attr_editable] = editabilities[id]
                 if not editabilities[id]:
                     row[attr_editable] = False
 
@@ -92,9 +96,13 @@ def init_tables():
         table['class'] = klass
 
         has_bulk_getter = 'getter' in table
+        has_check_editable = 'editable' in table
 
         if has_bulk_getter:
             table['getter'] = global_namespace[table['getter']]
+        if has_check_editable:
+            table['editable'] = global_namespace[table['editable']]
+
         for column in table['columns']:
             has_setter = 'setter' in column
             is_addon = column.get('is_addon', False)
@@ -179,6 +187,11 @@ def get_grid_column_definition(request):
     table_name = request.POST['grid-type']
     table = tables[table_name]
     extras = json.loads(request.POST.get('extras', '{}'))
+    extras['user'] = user
+
+    table_editable = table.get('editable', True)
+    if callable(table_editable):
+        table_editable = table_editable(extras)
 
     viewas = extras.get('viewas', user.username)
     user_is_editing = viewas == user.username
@@ -202,7 +215,9 @@ def get_grid_column_definition(request):
         importable = column['importable']
 
         if callable(editable):
-            editable = 'True'
+            editable = table_editable
+        else:
+            editable = editable and table_editable
 
         col_def = dict(id=slug, field=slug, editable=editable, editor=editor, filter=filter,
                        formatter=formatter, sortable=sortable, hasTotal=has_total, totalLabel=total_label,
@@ -254,6 +269,9 @@ def get_grid_content(request):
         extras[key] = value
 
     table = tables[grid_type]
+    table_editable = table.get('editable', True)
+    if callable(table_editable):
+        extras.editable = table_editable(extras)
 
     klass = table['class']
     objs = klass.objects.all()

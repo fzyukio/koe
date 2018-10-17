@@ -11,6 +11,7 @@ from koe.model_utils import get_user_databases, get_or_error
 from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase,\
     SimilarityIndex
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
+from root.exceptions import CustomAssertionError
 from root.models import ExtraAttr, ExtraAttrValue
 from root.utils import history_path
 
@@ -285,7 +286,13 @@ def bulk_get_song_sequences(all_songs, extras):
     """
     granularity = extras.granularity
     current_database = get_user_databases(extras.user)
+    permission = current_database.get_assigned_permission(extras.user)
     viewas = extras.viewas
+
+    if permission < DatabasePermission.VIEW:
+        raise CustomAssertionError('You don\'t have permission to view this database')
+
+    extras.permission = permission
 
     if isinstance(current_database, Database):
         if isinstance(all_songs, QuerySet):

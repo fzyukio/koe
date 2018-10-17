@@ -43,11 +43,14 @@ def populate_context(obj, context):
         specified_db = gets['tmpdb']
         db_class = TemporaryDatabase
 
-    if specified_db and specified_db != current_database.name:
+    if specified_db and (current_database is None or specified_db != current_database.name):
         current_database = get_or_error(db_class, dict(name=specified_db))
 
         current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database,
                                                                owner_id=user.id, user=user).first()
+        if current_database_value is None:
+            current_database_value = ExtraAttrValue(attr=settings.ATTRS.user.current_database, owner_id=user.id,
+                                                    user=user)
         current_database_value.value = '{}_{}'.format(db_class.__name__, current_database.id)
         current_database_value.save()
 
@@ -107,7 +110,7 @@ class SegmentationView(TemplateView):
         context['file_id'] = file_id
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
-        context['database'] = audio_file.database.name
+        context['database'] = audio_file.database.id
 
         context['song_info'] = {
             'Length': '{:5.2f} secs'.format(audio_file.length / audio_file.fs),
@@ -243,16 +246,17 @@ class FeatureExtrationView(FormView):
         populate_context(self, context)
         database = context['current_database']
 
-        if isinstance(database, TemporaryDatabase):
-            data_matrices = DataMatrix.objects.filter(tmpdb=database)
-        else:
-            data_matrices = DataMatrix.objects.filter(database=database)
+        if database is not None:
+            if isinstance(database, TemporaryDatabase):
+                data_matrices = DataMatrix.objects.filter(tmpdb=database)
+            else:
+                data_matrices = DataMatrix.objects.filter(database=database)
 
-        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
-        incomplete_dms = data_matrices.filter(task__stage__lt=TaskProgressStage.COMPLETED)
+            completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+            incomplete_dms = data_matrices.filter(task__stage__lt=TaskProgressStage.COMPLETED)
 
-        context['completed_dms'] = completed_dms
-        context['incomplete_dms'] = incomplete_dms
+            context['completed_dms'] = completed_dms
+            context['incomplete_dms'] = incomplete_dms
         context['all_incomplete_dms2tasks'] = get_incomplete_tasks(DataMatrix)
 
         return context
@@ -329,20 +333,21 @@ class OrdinationExtrationView(FormView):
         populate_context(self, context)
         database = context['current_database']
 
-        if isinstance(database, TemporaryDatabase):
-            data_matrices = DataMatrix.objects.filter(tmpdb=database)
-        else:
-            data_matrices = DataMatrix.objects.filter(database=database)
+        if database is not None:
+            if isinstance(database, TemporaryDatabase):
+                data_matrices = DataMatrix.objects.filter(tmpdb=database)
+            else:
+                data_matrices = DataMatrix.objects.filter(database=database)
 
-        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
-        all_ords = Ordination.objects.filter(dm__in=completed_dms)
+            completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+            all_ords = Ordination.objects.filter(dm__in=completed_dms)
 
-        completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
-        incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
+            completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+            incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
 
-        context['completed_dms'] = completed_dms
-        context['completed_ords'] = completed_ords
-        context['incomplete_ords'] = incomplete_ords
+            context['completed_dms'] = completed_dms
+            context['completed_ords'] = completed_ords
+            context['incomplete_ords'] = incomplete_ords
         context['all_incomplete_ords2tasks'] = get_incomplete_tasks(Ordination)
 
         return context
@@ -405,18 +410,20 @@ class SimilarityExtrationView(FormView):
         populate_context(self, context)
         database = context['current_database']
 
-        if isinstance(database, TemporaryDatabase):
-            data_matrices = DataMatrix.objects.filter(tmpdb=database)
-        else:
-            data_matrices = DataMatrix.objects.filter(database=database)
+        if database is not None:
+            if isinstance(database, TemporaryDatabase):
+                data_matrices = DataMatrix.objects.filter(tmpdb=database)
+            else:
+                data_matrices = DataMatrix.objects.filter(database=database)
 
-        completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
-        all_ords = Ordination.objects.filter(dm__in=completed_dms)
+            completed_dms = data_matrices.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+            all_ords = Ordination.objects.filter(dm__in=completed_dms)
 
-        completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
+            completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
 
-        context['completed_dms'] = completed_dms
-        context['completed_ords'] = completed_ords
+            context['completed_dms'] = completed_dms
+            context['completed_ords'] = completed_ords
+
         context['all_incomplete_sims2tasks'] = get_incomplete_tasks(SimilarityIndex)
 
         return context
@@ -520,36 +527,37 @@ def get_home_page(request):
 def extra_syllables_context(request, context):
     database = context['current_database']
     user = request.user
-    if isinstance(database, Database):
-        similarities = SimilarityIndex.objects.filter(Q(dm__database=database) | Q(ord__dm__database=database))
-        cur_sim_val = ExtraAttrValue.objects\
-            .filter(attr=settings.ATTRS.user.database_sim_attr, user=user, owner_id=database.id).first()
-    else:
-        similarities = SimilarityIndex.objects.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
-        cur_sim_val = ExtraAttrValue.objects\
-            .filter(attr=settings.ATTRS.user.tmpdb_sim_attr, user=user, owner_id=database.id).first()
+    if database:
+        if isinstance(database, Database):
+            similarities = SimilarityIndex.objects.filter(Q(dm__database=database) | Q(ord__dm__database=database))
+            cur_sim_val = ExtraAttrValue.objects\
+                .filter(attr=settings.ATTRS.user.database_sim_attr, user=user, owner_id=database.id).first()
+        else:
+            similarities = SimilarityIndex.objects.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
+            cur_sim_val = ExtraAttrValue.objects\
+                .filter(attr=settings.ATTRS.user.tmpdb_sim_attr, user=user, owner_id=database.id).first()
 
-    context['similarities'] = similarities
+        context['similarities'] = similarities
 
-    cur_sim_id = None
-    if cur_sim_val:
-        cur_sim_id = int(cur_sim_val.value)
+        cur_sim_id = None
+        if cur_sim_val:
+            cur_sim_id = int(cur_sim_val.value)
 
-    sim_id = request.GET.get('similarity', None)
-    if sim_id is None:
-        if cur_sim_id is not None:
-            sim_id = cur_sim_id
-    else:
-        sim_id = int(sim_id)
-        if cur_sim_id is not None and cur_sim_id != sim_id:
-            cur_sim_val.value = str(sim_id)
-            cur_sim_val.save()
+        sim_id = request.GET.get('similarity', None)
+        if sim_id is None:
+            if cur_sim_id is not None:
+                sim_id = cur_sim_id
+        else:
+            sim_id = int(sim_id)
+            if cur_sim_id is not None and cur_sim_id != sim_id:
+                cur_sim_val.value = str(sim_id)
+                cur_sim_val.save()
 
-    if sim_id is None:
-        current_similarity = similarities.first()
-    else:
-        current_similarity = SimilarityIndex.objects.filter(id=sim_id).first()
-    context['current_similarity'] = current_similarity
+        if sim_id is None:
+            current_similarity = similarities.first()
+        else:
+            current_similarity = SimilarityIndex.objects.filter(id=sim_id).first()
+        context['current_similarity'] = current_similarity
     return context
 
 
