@@ -27,11 +27,13 @@ def user_creation_handler(sender, **kwargs):
     if not created or raw:
         return
 
-    invitation_code = user.invitation_code.code
-    if invitation_code in invitation_code_privileges:
-        privilege = invitation_code_privileges[invitation_code]
-        database = Database.objects.filter(name=privilege['database']).first()
-        permission = privilege['permission']
+    invitation_code = user.invitation_code
+    if invitation_code is not None:
+        code = invitation_code.code
+        if invitation_code in invitation_code_privileges:
+            privilege = invitation_code_privileges[code]
+            database = Database.objects.filter(name=privilege['database']).first()
+            permission = privilege['permission']
 
-        if database:
-            DatabaseAssignment.objects.create(user=user, database=database, permission=permission)
+            if database:
+                DatabaseAssignment.objects.create(user=user, database=database, permission=permission)

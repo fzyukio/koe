@@ -43,11 +43,8 @@ class UserSignInForm(ErrorMixin, forms.Form):
 
 class UserRegistrationForm(ErrorMixin, forms.Form):
     code = forms.CharField(
-        required=True,
+        required=False,
         max_length=255,
-        error_messages={
-            'required': 'This field is required'
-        },
         widget=forms.TextInput(attrs={'placeholder': 'Invitation code'})
     )
 

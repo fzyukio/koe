@@ -100,11 +100,12 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
         last_name = form_data['last_name']
         first_name = form_data['first_name']
 
-        invitation_code = InvitationCode.objects.filter(code=code, expiry__gte=now).first()
-
-        if invitation_code is None:
-            form.add_error('code', 'Invitation code doesn\'t exist or has expired')
-            has_error = True
+        invitation_code = None
+        if code != '':
+            invitation_code = InvitationCode.objects.filter(code=code, expiry__gte=now).first()
+            if invitation_code is None:
+                form.add_error('code', 'Invitation code doesn\'t exist or has expired')
+                has_error = True
         duplicate_email = User.objects.filter(email__iexact=email).exists()
         duplicate_username = User.objects.filter(username__iexact=username).exists()
 
