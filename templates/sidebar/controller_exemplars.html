@@ -1,8 +1,6 @@
 {% load custom_tags %}
 <div class="sidebar-controllers">
-    {% if not current_database.is_real %}
-            <div>This is a Collection</div>
-        {% endif %}
+    {% include "sidebar/collection-warning.html" %}
     {% include "sidebar/database-picker.html" %}
     {% include "sidebar/viewas-picker.html" %}
     {% include "sidebar/granularity-picker.html" %}

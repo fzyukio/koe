@@ -809,6 +809,22 @@ const _postRun = function () {
     countDown();
 };
 
+const showErrorDialog = function (errMsg) {
+    dialogModalTitle.html('Oops, something\'s not right');
+
+    dialogModalBody.children().remove();
+    dialogModalBody.append(`<div>${errMsg}</div>`);
+    dialogModal.modal('show');
+
+    dialogModalCancelBtn.html('Dismiss');
+    dialogModalOkBtn.parent().hide();
+    dialogModal.on('hidden.bs.modal', function () {
+        dialogModalOkBtn.parent().show();
+        dialogModalCancelBtn.html('No');
+    });
+};
+
+
 /**
  * Loading the page by URL's location, e.g localhost:8000/herd-allocation
  */
@@ -861,11 +877,15 @@ $(document).ready(function () {
             return Promise.resolve();
         }
         else {
-            return page.run(commonElements).then(function () {
-                if (typeof page.postRun == 'function') {
-                    return page.postRun();
-                }
-                return Promise.resolve();
+            let preRun = page.preRun || (() => Promise.resolve());
+
+            return preRun(commonElements).then(function () {
+                return page.run(commonElements).then(function () {
+                    if (typeof page.postRun == 'function') {
+                        return page.postRun();
+                    }
+                    return Promise.resolve();
+                });
             });
         }
     };
@@ -874,6 +894,9 @@ $(document).ready(function () {
         return runPage();
     }).then(function () {
         return _postRun();
+    }).catch(function (e) {
+        debug(e);
+        showErrorDialog(e);
     });
 
 });

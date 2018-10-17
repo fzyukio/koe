@@ -1,6 +1,6 @@
 /* global d3*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {debug, deepCopy, argmax} from './utils';
+import {debug, deepCopy, argmax, isNull} from './utils';
 import {updateSlickGridData} from './grid-utils'
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -84,8 +84,11 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-let granularity = $('#sequence-mining-grid').attr('granularity');
-let viewas = $('#sequence-mining-grid').attr('viewas');
+const $segmentGrid = $('#sequence-mining-grid');
+const granularity = $segmentGrid.attr('granularity');
+const viewas = $segmentGrid.attr('viewas');
+const database = $segmentGrid.attr('database');
+const tmpdb = $segmentGrid.attr('tmpdb');
 const gridStatus = $('#grid-status');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
@@ -243,6 +246,8 @@ const focusOnGridOnInit = function () {
 let extraArgs = {
     granularity,
     viewas,
+    database,
+    tmpdb,
     usegap: false,
     maxgap: null,
     mingap: null,
@@ -255,6 +260,18 @@ const loadGrid = function () {
     return grid.initMainGridContent({}, extraArgs);
 };
 
+
+export const preRun = function() {
+    initSlider();
+    initOptions();
+
+    if (isNull(database) && isNull(tmpdb)) {
+        return Promise.reject(new Error('Please choose a database.'))
+    }
+    return Promise.resolve();
+};
+
+
 export const run = function () {
     grid.init(granularity);
     return grid.initMainGridHeader({}, extraArgs).
@@ -265,11 +282,6 @@ export const run = function () {
         });
 };
 
-export const postRun = function() {
-    initSlider();
-    initOptions();
-    return Promise.resolve();
-};
 
 /**
  * Bind event handlers to the buttons/checkboxes/sliders in the control panel

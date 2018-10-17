@@ -2,7 +2,7 @@
 
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, queryAndPlayAudio} from './audio-handler';
-import {debug, deepCopy, getUrl} from './utils';
+import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -26,8 +26,11 @@ class Grid extends FlexibleGrid {
 }
 
 export const grid = new Grid();
-let granularity = $('#songs-grid').attr('granularity');
-let viewas = $('#songs-grid').attr('viewas');
+const $segmentGrid = $('#songs-grid');
+const granularity = $segmentGrid.attr('granularity');
+const viewas = $segmentGrid.attr('viewas');
+const database = $segmentGrid.attr('database');
+const tmpdb = $segmentGrid.attr('tmpdb');
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
@@ -41,7 +44,7 @@ const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
 const uploadSongsModal = $('#upload-songs-modal');
-const databaseId = parseInt(uploadSongsModal.attr('database'));
+const databaseId = uploadSongsModal.attr('database');
 
 let ce;
 
@@ -342,6 +345,8 @@ const initCopySongsBtn = function () {
 let extraArgs = {
     granularity,
     viewas,
+    database,
+    tmpdb
 };
 
 let gridArgs = {
@@ -412,6 +417,16 @@ function setupSongsUpload() {
     });
 }
 
+
+export const preRun = function() {
+    initSlider();
+
+    if (isNull(database) && isNull(tmpdb)) {
+        return Promise.reject(new Error('Please choose a database.'))
+    }
+    return Promise.resolve();
+};
+
 export const run = function (commonElements) {
     ce = commonElements;
     let argDict = ce.argDict;
@@ -440,7 +455,6 @@ export const run = function (commonElements) {
 export const postRun = function () {
     initDeleteSongsBtn();
     initCopySongsBtn();
-    initSlider();
     return Promise.resolve();
 };
 

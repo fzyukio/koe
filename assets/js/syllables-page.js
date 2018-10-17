@@ -1,6 +1,6 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {deepCopy, getUrl, getCache, setCache, debug} from './utils';
+import {deepCopy, getUrl, getCache, setCache, debug, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed} from './audio-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -242,6 +242,16 @@ let gridArgs = {
 };
 
 
+export const preRun = function() {
+    initSlider();
+
+    if (isNull(database) && isNull(tmpdb)) {
+        return Promise.reject(new Error('Please choose a database.'))
+    }
+    return Promise.resolve();
+};
+
+
 export const run = function (commonElements) {
     ce = commonElements;
     if (ce.argDict._holdout) {
@@ -259,8 +269,6 @@ export const run = function (commonElements) {
     keyboardJS.bind(['mod+shift+s', 'ctrl+shift+s'], function () {
         grid.bulkSetValue('label_subfamily');
     });
-
-    initSlider();
 
     return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
         subscribeSlickEvents();

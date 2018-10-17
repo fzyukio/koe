@@ -675,10 +675,6 @@ export class FlexibleGrid {
                 }
 
                 resolve();
-
-                // if (typeof callback === 'function') {
-                //     callback();
-                // }
             };
             postRequest({
                 requestSlug: 'get-grid-content',

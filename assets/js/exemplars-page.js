@@ -1,5 +1,5 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {deepCopy, getUrl, getCache, setCache, debug, randomRange} from './utils';
+import {deepCopy, getUrl, getCache, setCache, debug, randomRange, isNull} from './utils';
 import {changePlaybackSpeed, queryAndPlayAudio} from './audio-handler';
 import {postRequest} from './ajax-handler';
 import {updateSlickGridData} from './grid-utils';
@@ -101,8 +101,11 @@ class ExemplarsGrid extends FlexibleGrid {
 }
 
 export const grid = new ExemplarsGrid();
-let granularity = $('#exemplars-grid').attr('granularity');
-let viewas = $('#exemplars-grid').attr('viewas');
+const $segmentGrid = $('#exemplars-grid');
+const granularity = $segmentGrid.attr('granularity');
+const viewas = $segmentGrid.attr('viewas');
+const database = $segmentGrid.attr('database');
+const tmpdb = $segmentGrid.attr('tmpdb');
 
 const tooltip = $('#spectrogram-details-tooltip');
 const tooltipImg = tooltip.find('img');
@@ -271,14 +274,24 @@ const focusOnGridOnInit = function () {
 
 let extraArgs = {
     granularity,
-    viewas
+    viewas,
+    database,
+    tmpdb
+};
+
+
+export const preRun = function() {
+    initSlider();
+
+    if (isNull(database) && isNull(tmpdb)) {
+        return Promise.reject(new Error('Please choose a database.'))
+    }
+    return Promise.resolve();
 };
 
 
 export const run = function () {
     grid.init();
-
-    initSlider();
 
     // Get the next 10 random spectrogram and replace existing ones with them
     $('#next-10').click(function() {

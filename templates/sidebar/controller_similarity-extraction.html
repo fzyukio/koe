@@ -1,6 +1,4 @@
 <div class="sidebar-controllers last">
-    {% if not current_database.is_real %}
-            <div>This is a Collection</div>
-        {% endif %}
+    {% include "sidebar/collection-warning.html" %}
     {% include "sidebar/database-picker.html" %}
 </div>

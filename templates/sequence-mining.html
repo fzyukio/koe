@@ -27,8 +27,11 @@
                     </div>
                 </div>
             </div>
-            <div class="has-grid" id="sequence-mining-grid" granularity="{{ granularity }}"
-                 viewas="{{ viewas.username }}"></div>
+            <div class="has-grid" id="sequence-mining-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"
+                {% if current_database is not None %}
+                    {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                {% endif %}>
+            </div>
         </div>
 
         <div class="col-md-7 col-lg-8 no-padding" id="graph">

@@ -15,6 +15,7 @@ const gridEl = $('#segments-grid');
 const fileId = gridEl.attr('file-id');
 const fileLength = gridEl.attr('length');
 const fileFs = gridEl.attr('fs');
+const database = gridEl.attr('database');
 const speedSlider = $('#speed-slider');
 let spectViz;
 const saveSegmentationBtn = $('#save-segmentations-btn');
@@ -263,6 +264,7 @@ const initKeyboardHooks = function () {
 
 let extraArgs = {
     'file_id': fileId,
+    database
 };
 
 let gridArgs = {
@@ -270,10 +272,34 @@ let gridArgs = {
     doCacheSelectableOptions: false
 };
 
-export const run = function (commonElements) {
+export const preRun = function (commonElements) {
     ce = commonElements;
     let zoom = ce.argDict._zoom || 100;
     let colourMap = ce.argDict._cm || 'Green';
+
+    initController();
+    spectViz = new Visualiser(vizContainerId);
+    spectViz.initScroll();
+    spectViz.initController();
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
+
+    return new Promise(function (resolve, reject) {
+        postRequest({
+            requestSlug: 'koe/get-label-options',
+            data: {'file-id': fileId},
+            onSuccess(selectableOptions) {
+                setCache('selectableOptions', undefined, selectableOptions);
+                resolve();
+            },
+            onFailure(responseMessage) {
+                reject(new Error(responseMessage));
+            },
+            immediate: true
+        });
+    });
+};
+
+export const run = function () {
 
     /*
      * Clear all temporary variables
@@ -282,20 +308,7 @@ export const run = function (commonElements) {
     setCache('file-id', undefined, fileId);
     setCache('file-length', undefined, fileLength);
     setCache('file-fs', undefined, fileFs);
-
     grid.init(fileId);
-    spectViz = new Visualiser(vizContainerId);
-    spectViz.initScroll();
-    spectViz.initController();
-    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
-
-    postRequest({
-        requestSlug: 'koe/get-label-options',
-        data: {'file-id': fileId},
-        onSuccess(selectableOptions) {
-            setCache('selectableOptions', undefined, selectableOptions)
-        }
-    });
 
     return loadSongById(fileId).then(function({sig_, fs_}) {
         audioData.sig = sig_;
@@ -327,7 +340,6 @@ export const run = function (commonElements) {
 
 
 export const postRun = function () {
-    initController();
     initKeyboardHooks();
     initDeleteSegmentsBtn();
     subscribeFlexibleEvents();

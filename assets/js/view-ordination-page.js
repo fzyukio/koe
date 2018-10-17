@@ -615,8 +615,6 @@ const downloadTensorData = function () {
             let csvRow = csvBodyRows[rowIdx].split('\t');
             let rowMetadata = makeMetadata(columnNames, csvRow);
             rowsMetadata.push(rowMetadata);
-            // let rowText = makeText(rowsMetadata);
-            // dataText.push(rowText);
 
             id2idx[csvRow[0]] = rowIdx;
             for (let colIdx = 1; colIdx < csvRow.length; colIdx++) {

@@ -6,7 +6,7 @@
         <div class="btn-group pull-right">
             <button type="button" class="btn btn-xs btn-default dropdown-toggle"
                     data-toggle="dropdown"
-                    data-hover="dropdown"> {{ current_database.name }}
+                    data-hover="dropdown"> {{ current_database.name | truncatechars:15 }}
                 <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">

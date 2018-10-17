@@ -1,6 +1,6 @@
 {% load custom_tags %}
 
-{% if not current_database.is_real %}
+{% if current_database is not None and not current_database.is_real %}
     <div class="sidebar-controllers">
     {%  if current_database.user == user %}
         <div>You are viewing a Collection you created. You cannot change song segmentation. If you so wish, please switch to database <strong>{{ database }}</strong></div>

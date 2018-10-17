@@ -84,7 +84,9 @@
             </div>
 
             <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
-                 {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}">
+                 {% if current_database is not None %}
+                    {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                 {% endif %}>
             </div>
         </div>
 
