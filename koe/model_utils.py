@@ -229,12 +229,14 @@ def get_user_databases(user):
     return current_database
 
 
-def extract_spectrogram(audio_file):
+@app.task(bind=False)
+def extract_spectrogram(audio_file_id):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
     :param audio_file:
     :return:
     """
+    audio_file = AudioFile.objects.get(id=audio_file_id)
     segs_info = Segment.objects.filter(audio_file=audio_file).values_list('tid', 'start_time_ms', 'end_time_ms')
 
     missing_segs_info = []
@@ -242,7 +244,7 @@ def extract_spectrogram(audio_file):
     for tid, start, end in segs_info:
         seg_spect_path = spect_fft_path(tid, 'syllable')
         ensure_parent_folder_exists(seg_spect_path)
-        if os.path.isfile(seg_spect_path):
+        if not os.path.isfile(seg_spect_path):
             missing_segs_info.append((seg_spect_path, start, end))
 
     if len(missing_segs_info) > 0:

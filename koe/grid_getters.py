@@ -416,12 +416,17 @@ def bulk_get_segments_for_audio(segs, extras):
     """
     file_id = extras.file_id
     viewas = extras.user
-    segs = segs.filter(audio_file=file_id)
-    values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
+
+    if not isinstance(segs, QuerySet):
+        segids = [x.id for x in segs]
+        # segs = Segment.objects.filter(id=segids).filter(audio_file=file_id)
+        values = [(x.id, x.start_time_ms, x.end_time_ms) for x in segs]
+    else:
+        segs = segs.filter(audio_file=file_id)
+        values = segs.values_list('id', 'start_time_ms', 'end_time_ms')
+        segids = [x[0] for x in values]
     ids = []
     rows = []
-
-    segids = [x[0] for x in values]
 
     extra_attr_values_list = ExtraAttrValue.objects \
         .filter(user__username=viewas, attr__klass=Segment.__name__, owner_id__in=segids) \

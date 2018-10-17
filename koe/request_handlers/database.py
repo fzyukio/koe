@@ -1,7 +1,6 @@
 import datetime
 import io
 import json
-import os
 import re
 import uuid
 import numpy as np
@@ -20,7 +19,6 @@ from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
-from root.utils import spect_fft_path, spect_mask_path
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
@@ -199,7 +197,7 @@ def save_segmentation(request):
     id_to_exiting_item = {x['id']: x for x in old_segments}
 
     to_update = []
-    to_delete = []
+    to_delete_id = []
 
     for segment in segments:
         id = segment.id
@@ -210,17 +208,7 @@ def save_segmentation(request):
 
             to_update.append(segment)
         else:
-            to_delete.append(segment)
-
-    to_delete_segment_ids = []
-    for segment in to_delete:
-        segment_id = segment.id
-        to_delete_segment_ids.append(segment_id)
-        seg_spect_path = spect_fft_path(segment_id, 'syllable')
-        if os.path.isfile(seg_spect_path):
-            os.remove(seg_spect_path)
-
-    ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=to_delete_segment_ids).delete()
+            to_delete_id.append(segment.id)
 
     label_attr = settings.ATTRS.segment.label
     family_attr = settings.ATTRS.segment.family
@@ -230,8 +218,8 @@ def save_segmentation(request):
     with transaction.atomic():
         for segment in to_update:
             segment.save()
-        for segment in to_delete:
-            segment.delete()
+
+        Segment.objects.filter(id__in=to_delete_id).update(active=False)
 
         for segment, label, family, subfamily, note in new_segments:
             segment.save()
@@ -246,10 +234,12 @@ def save_segmentation(request):
             if note:
                 ExtraAttrValue.objects.create(user=user, attr=note_attr, owner_id=segment.id, value=note)
 
-    extract_spectrogram(audio_file)
-
     segments = Segment.objects.filter(audio_file=audio_file)
     _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id, user=user))
+
+    extract_spectrogram.delay(audio_file.id)
+    delete_segments_async.delay()
+
     return rows
 
 
