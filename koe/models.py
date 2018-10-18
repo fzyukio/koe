@@ -21,7 +21,7 @@ from root.utils import history_path, ensure_parent_folder_exists, pickle_path, w
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
     'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
-    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'validate_editability'
+    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex'
 ]
 
 
@@ -120,7 +120,14 @@ class Database(SimpleModel):
             return 0
 
     @classmethod
-    def get_editability_validation(cls, databases, extras):
+    def filter(cls, extras):
+        user = extras.user
+
+        assigned_db_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id')
+        return Database.objects.filter(id__in=assigned_db_ids)
+
+    @classmethod
+    def get_row_editability(cls, databases, extras):
         user = extras.user
         retval = {database.id: False for database in databases}
         editable_db = DatabaseAssignment.objects\
@@ -183,7 +190,7 @@ class DatabaseAssignment(SimpleModel):
         return self.user.is_superuser or self.permission >= DatabasePermission.ASSIGN_USER
 
     @classmethod
-    def get_editability_validation(cls, das, extras):
+    def get_row_editability(cls, das, extras):
         database_id = extras.database
         user = extras.user
         das = das.filter(database=database_id)
@@ -301,6 +308,10 @@ class AudioFile(SimpleModel):
         obj.name = name
         obj.save()
 
+    @classmethod
+    def get_table_editability(cls, *args, **kwargs):
+        return set_editable_for_real_db(*args, **kwargs)
+
 
 class Segment(SimpleModel):
     """
@@ -329,6 +340,10 @@ class Segment(SimpleModel):
 
     class Meta:
         ordering = ('audio_file', 'start_time_ms')
+
+    @classmethod
+    def get_table_editability(cls, *args, **kwargs):
+        return set_editable_for_real_db(*args, **kwargs)
 
 
 options.DEFAULT_NAMES += 'attrs',
@@ -514,7 +529,7 @@ class HistoryEntry(SimpleModel):
         super(HistoryEntry, self).save(*args, **kwargs)
 
     @classmethod
-    def get_editability_validation(cls, hes, extras):
+    def get_row_editability(cls, hes, extras):
         database_id = extras.database
         user = extras.user
         hes = hes.filter(database=database_id)
@@ -737,7 +752,7 @@ def _mymodel_delete(sender, instance, **kwargs):
             warning('File {} doesnot exist.'.format(filepath))
 
 
-def validate_editability(extras):
+def set_editable_for_real_db(extras):
     database_id = extras.get('database', None)
     tmpdb_id = extras.get('tmpdb', None)
     user = extras['user']

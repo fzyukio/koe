@@ -729,13 +729,7 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
      */
     grid.onBeforeEditCell.subscribe(function (e, args_) {
         let field = args_.column.field;
-        let fieldEditability = '__' + field + '_editable';
-        let editable = true;
-        if (!isNull(args_.item[fieldEditability])) {
-            editable = args_.item[fieldEditability];
-        }
-        let value = args_.item[field];
-        args_.item['_old_' + field] = value;
+        args_.item['_old_' + field] = args_.item[field];
 
         if (args_.row === args_.grid.getDataLength()) {
             return true;
@@ -754,7 +748,8 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
              */
             if (item._isNew) return true;
 
-            return (args_.column.editable !== false && item.editable !== false && editable);
+            let fieldEditability = '__' + field + '_editable';
+            return args_.item[fieldEditability];
         }
     });
 

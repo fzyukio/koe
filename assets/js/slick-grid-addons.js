@@ -3,7 +3,7 @@ require('slickgrid/slick.core');
 require('slickgrid/slick.editors');
 require('slickgrid/slick.formatters');
 
-import {isNull, convertRawUrl} from './utils';
+import {isNull, convertRawUrl, getValue} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 
 export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
@@ -16,17 +16,14 @@ export const editabilityAwareFormatter = function (row, cell, value, columnDef, 
 
     let field = columnDef.field;
 
-    let fieldEditability = '__' + field + '_editable';
-    let columnEditable = columnDef.editable;
-    let cellEditable = item[fieldEditability];
-    if (isNull(cellEditable)) {
-        cellEditable = columnEditable;
-    }
-    else {
-        cellEditable = cellEditable && columnEditable;
-    }
+    let columnEditable = columnDef.editable || false;
+    let itemEditable = getValue(item, '__editable', columnEditable);
 
-    let editability = cellEditable ? 'editable' : 'non-editable';
+    let fieldEditability = '__' + field + '_editable';
+    let fieldEditable = getValue(item, fieldEditability, itemEditable);
+
+    let editability = fieldEditable ? 'editable' : 'non-editable';
+    item[fieldEditability] = fieldEditable;
 
     if (!isNull(value)) {
         try {

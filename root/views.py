@@ -58,26 +58,25 @@ def get_attrs(objs, table, extras):
                 row[attr] = attrs[attr][id]
             rows.append(row)
 
-    viewas = extras.viewas
-    editable = extras.editable
+    table_editable = table['table-editable']
+    if callable(table_editable):
+        table_editable = table_editable(extras)
 
-    if not editable:
+    get_row_editability = table['row-editable']
+
+    if not table_editable:
         return rows
 
+    viewas = extras.viewas
     if not viewas or viewas == extras.user.username:
-        for column in table['columns']:
-            attr = column['slug']
-            editable = column['editable']
-            attr_editable = '__{}_editable'.format(attr)
-            if callable(editable):
-                editabilities = editable(objs, extras)
-            else:
-                editabilities = {id: editable for id in ids}
+        if get_row_editability is not None:
+            editabilities = get_row_editability(objs, extras)
 
             for row in rows:
                 id = row['id']
-                if not editabilities[id]:
-                    row[attr_editable] = False
+                row_editable = editabilities[id]
+                if row_editable != table_editable:
+                    row['__editable'] = row_editable
 
     return rows
 
@@ -96,12 +95,13 @@ def init_tables():
         table['class'] = klass
 
         has_bulk_getter = 'getter' in table
-        has_check_editable = 'editable' in table
 
         if has_bulk_getter:
             table['getter'] = global_namespace[table['getter']]
-        if has_check_editable:
-            table['editable'] = global_namespace[table['editable']]
+
+        table['table-editable'] = getattr(klass, 'get_table_editability', True)
+        table['row-editable'] = getattr(klass, 'get_row_editability', None)
+        table['filter'] = getattr(klass, 'filter', None)
 
         for column in table['columns']:
             has_setter = 'setter' in column
@@ -189,7 +189,7 @@ def get_grid_column_definition(request):
     extras = json.loads(request.POST.get('extras', '{}'))
     extras['user'] = user
 
-    table_editable = table.get('editable', True)
+    table_editable = table['table-editable']
     if callable(table_editable):
         table_editable = table_editable(extras)
 
@@ -269,12 +269,12 @@ def get_grid_content(request):
         extras[key] = value
 
     table = tables[grid_type]
-    table_editable = table.get('editable', True)
-    if callable(table_editable):
-        extras.editable = table_editable(extras)
-
     klass = table['class']
-    objs = klass.objects.all()
+    filter = table['filter']
+    if filter is None:
+        objs = klass.objects.all()
+    else:
+        objs = filter(extras)
     rows = get_attrs(objs, table, extras)
     return rows
 

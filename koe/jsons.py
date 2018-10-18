@@ -5,7 +5,6 @@ tables =\
         "segment-info": {
             "class": "koe.Segment",
             "getter": "koe.bulk_get_segment_info",
-            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",
@@ -145,7 +144,7 @@ tables =\
                     "slug": "note",
                     "type": "SHORT_TEXT",
                     "is_attribute": True,
-                    "editable": "editability_validation"
+                    "editable": True
                 },
                 {
                     "name": "Format version",
@@ -195,7 +194,6 @@ tables =\
         "songs-grid": {
             "class": "koe.AudioFile",
             "getter": "koe.bulk_get_song_sequences",
-            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",
@@ -294,7 +292,6 @@ tables =\
         "segments-grid": {
             "class": "koe.Segment",
             "getter": "koe.bulk_get_segments_for_audio",
-            "editable": 'koe.validate_editability',
             "columns": [
                 {
                     "slug": "_sel",
@@ -476,18 +473,20 @@ tables =\
         "database-grid": {
             "class": "koe.Database",
             "getter": "koe.bulk_get_database",
+            "filter": True,
             "columns": [
                 {
                     "name": "Name",
                     "slug": "name",
                     "type": "SHORT_TEXT",
-                    "editable": 'editability_validation',
-                    "is_attribute": True
+                    "is_attribute": True,
+                    "editable": True,
                 },
                 {
                     "name": "Permission",
                     "slug": "permission",
-                    "type": "SHORT_TEXT"
+                    "type": "SHORT_TEXT",
+                    "editable": False
                 }
             ]
         },
@@ -509,7 +508,7 @@ tables =\
                     "choices": "koe.DatabasePermission",
                     "css_class": "overflow",
                     "is_attribute": True,
-                    "editable": "editability_validation"
+                    "editable": True
                 }
             ]
         },

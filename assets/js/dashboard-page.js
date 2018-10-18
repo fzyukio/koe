@@ -242,7 +242,7 @@ export const run = function (commonElements) {
 
             backupBtns.prop('disabled', false);
 
-            if (args.item.__permission_editable) {
+            if (args.item.__name_editable) {
                 addCollaborator.prop('disabled', false);
             }
 

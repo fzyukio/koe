@@ -268,6 +268,15 @@ export const isNull = function (val) {
 };
 
 
+export const getValue = function (obj, attr, def) {
+    let val = obj[attr];
+    if (val === undefined) {
+        return def;
+    }
+    return val;
+};
+
+
 /**
  * A more consistent way to check for a string being empty
  * @param str
