@@ -228,7 +228,6 @@ const _preRun = function () {
     subMenuOpenRight();
     initChangeArgSelections();
     initSidebar();
-    initUploadCsv();
     appendGetArguments();
 
     $('.alert .close').on('click', function () {
@@ -805,6 +804,8 @@ const _postRun = function () {
         let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
         downloadBlob(blob, filename);
     });
+
+    initUploadCsv();
 
     countDown();
 };

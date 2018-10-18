@@ -230,6 +230,7 @@ const focusOnGridOnInit = function () {
  */
 const initUploadSongsBtn = function () {
     uploadSongsBtn.click(function () {
+        $('#previews').children().remove();
         uploadSongsModal.modal('show');
     });
 };
@@ -392,7 +393,7 @@ function setupSongsUpload() {
                 self.removeFile(file);
             });
 
-            self.on('success', function(file, response) {
+            self.on('successmultiple', function(file, response) {
                 let rows = JSON.parse(response).message;
                 let lastRow = rows[rows.length - 1];
                 grid.appendRows(rows);

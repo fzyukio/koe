@@ -99,15 +99,14 @@ def import_audio_files(request):
         if ext:
             ext = ext.lower()
 
-        unique_name = name
+        unique_name = fullname
         is_unique = not AudioFile.objects.filter(name=unique_name).exists()
         postfix = 0
         while not is_unique:
             postfix += 1
-            unique_name = '{}({})'.format(name, postfix)
+            unique_name = '{}({}){}'.format(name, postfix, ext)
             is_unique = not AudioFile.objects.filter(name=unique_name).exists()
 
-        unique_name += ext
         unique_name_wav = wav_path(unique_name)
         unique_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
 
