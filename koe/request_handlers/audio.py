@@ -96,6 +96,8 @@ def import_audio_files(request):
         file = File(file=f)
         fullname = file.name
         name, ext = os.path.splitext(fullname)
+        if ext:
+            ext = ext.lower()
 
         unique_name = name
         is_unique = not AudioFile.objects.filter(name=unique_name).exists()
@@ -226,7 +228,7 @@ def get_audio_file_url(request):
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
     audio_file_name = audio_file.name
-    if not audio_file_name.endswith('.wav'):
+    if not audio_file_name.lower().endswith('.wav'):
         audio_file_name += '.wav'
 
     return audio_path(audio_file_name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)

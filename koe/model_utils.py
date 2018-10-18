@@ -385,7 +385,7 @@ def delete_audio_files_async():
                 first_clone.save()
             else:
                 af_name = af.name
-                if not af_name.endswith('.wav'):
+                if not af_name.lower().endswith('.wav'):
                     af_name += '.wav'
                 wav = wav_path(af_name)
                 mp4 = audio_path(af_name, settings.AUDIO_COMPRESSED_FORMAT)

@@ -22,7 +22,7 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
-            'make_tmpdb', 'change_tmpdb_name']
+           'make_tmpdb', 'change_tmpdb_name']
 
 
 def import_audio_metadata(request):
