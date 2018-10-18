@@ -341,7 +341,8 @@ export class Visualiser {
     drawBrush() {
         let self = this;
         self.spectBrush = d3.brushX();
-        self.spectBrush.extent([[self.spectXScale.domain()[0], 0], [self.spectXScale.domain()[1], self.spectHeight]]);
+        let range = self.spectXScale.range();
+        self.spectBrush.extent([[range[0], 0], [range[1], self.spectHeight]]);
 
         self.spectBrush.on('start', function () {
             self.spectHandle.attr('display', 'unset');
