@@ -23,6 +23,7 @@ import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
 import {postRequest} from './ajax-handler';
 import {initAudioContext, queryAndPlayAudio} from './audio-handler';
 require('no-going-back');
+const md5 = require('md5');
 
 let page;
 
@@ -368,6 +369,13 @@ const initSidebar = function () {
             $(menuItemEL).parents('.menu-item-expandable').children('a').click();
         }
     });
+
+    let avatarImg = $('#user-pic img');
+    let userEmail = avatarImg.attr('email');
+    avatarImg.attr('email', '');
+    let hash = md5(userEmail.trim().toLowerCase());
+    let gravatar = `//www.gravatar.com/avatar/${hash}?s=56`;
+    avatarImg.attr('src', gravatar);
 };
 
 
