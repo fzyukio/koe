@@ -28,7 +28,10 @@
     </div>
 
     <div class="row no-margin">
-        <div class="has-grid" id="song-partition-grid" database-id="{{ current_database.id }}">
+        <div class="has-grid" id="song-partition-grid"
+        {% if current_database is not None %}
+            {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+         {% endif %}>
         </div>
     </div>
 {% endblock %}

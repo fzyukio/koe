@@ -93,6 +93,16 @@ $selectize-input-margin-bottom: 10px;
   }
 }
 
+.show-on-progress {
+  display: none;
+
+  #track-info {
+    .input-group input {
+      color: unset;
+    }
+  }
+}
+
 #song-name-pattern .selectize-control {
   margin-top: $selectize-input-margin-top;
   margin-bottom: $selectize-input-margin-bottom;

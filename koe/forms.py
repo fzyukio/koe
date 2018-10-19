@@ -22,7 +22,7 @@ class SongPartitionForm(ErrorMixin, forms.Form):
 
     date = forms.DateField(
         input_formats=settings.DATE_INPUT_FORMATS,
-        required=False,
+        required=True,
         widget=forms.DateInput(
             attrs={
                 'placeholder': 'YYYY-MM-DD'

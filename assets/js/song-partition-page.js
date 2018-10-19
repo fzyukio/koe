@@ -19,14 +19,18 @@ const vizContainerId = '#track-visualisation';
 let spectViz;
 let ce;
 
-const gridEl = $('#song-partition-grid');
-const databaseId = gridEl.attr('database-id');
+const $segmentGrid = $('#song-partition-grid');
+const database = $segmentGrid.attr('database');
+const tmpdb = $segmentGrid.attr('tmpdb');
+
 const speedSlider = $('#speed-slider');
 
 const saveSongsBtn = $('#save-songs-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
+
 const trackInfoForm = $('#track-info');
-const saveTrackInfoBtn = trackInfoForm.find('#save-track-info');
+
+const saveTrackInfoBtn = $('.save-track-info');
 const $songNamePattern = $('#song-name-pattern');
 const $songNamePatternInput = $songNamePattern.find('input');
 
@@ -279,7 +283,7 @@ const saveSongsToDb = function () {
         let formData = new FormData();
         formData.append('file', blob, item.name);
         formData.append('item', JSON.stringify(item));
-        formData.append('database-id', databaseId);
+        formData.append('database-id', database);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
 
         return promiseChain.then(function () {
@@ -442,6 +446,8 @@ const initKeyboardHooks = function () {
 
 let extraArgs = {
     'track_id': trackInfoForm.find('#id_track_id').attr('valid'),
+    database,
+    tmpdb
 };
 
 let gridArgs = {
@@ -451,7 +457,7 @@ let gridArgs = {
 
 const uploadModal = $('#upload-modal');
 const cancelDownloadBtn = uploadModal.find('#cancel-upload-btn');
-const uploadProgressWrapper = uploadModal.find('.progress');
+const uploadProgressWrapper = uploadModal.find('.show-on-progress');
 const uploadProgressBar = uploadProgressWrapper.find('.progress-bar');
 
 /**
@@ -475,6 +481,11 @@ const initUploadSongsBtn = function () {
         audioUploadInput.change(function (e) {
             e.preventDefault();
             let file = e.target.files[0];
+            let filename = file.name;
+            filename = filename.substr(0, filename.length - '.wav'.length);
+
+            let trackName = trackInfoForm.find('#id_name');
+            trackName.val(filename);
 
             let onProgress = function (evt) {
                 if (evt.lengthComputable) {
@@ -529,7 +540,9 @@ const initUploadSongsBtn = function () {
                 onAbort,
                 onLoadStart
             }).then(function ({sig, fs}) {
-                uploadModal.modal('hide');
+                saveTrackInfoBtn.parent().show();
+                uploadSongsBtn.parent().hide();
+
                 resolve({sig_: sig, fs_: fs});
             });
         });
@@ -566,6 +579,7 @@ const initSaveTrackInfoBtn = function () {
                     patternValues['$track-name'] = name;
 
                     let date = trackDateInput.val();
+                    setupDatePicker(date);
                     if (date) {
                         date = new Date(date);
                         let day = date.getDate();
@@ -606,6 +620,8 @@ const initSaveTrackInfoBtn = function () {
 
                     // eslint-disable-next-line dot-notation
                     extraArgs['track_id'] = trackInfoForm.find('#id_track_id').attr('value');
+                    uploadModal.modal('hide');
+                    $('#replaceable-after').append(trackInfoForm);
                 }
             }
         });
@@ -682,6 +698,36 @@ function initSelectize(options) {
         populateNameAll();
     });
 }
+
+
+/**
+ * Attach bootstrap-datepicker to the track date
+ * @param today date string in yyyy-mm-dd format
+ */
+function setupDatePicker(today) {
+    let trackDate = trackInfoForm.find('#id_date');
+    trackDate.bootstrapDP({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true,
+        todayBtn: true,
+        defaultViewDate: today,
+        templates: {
+            leftArrow: '<i class="fa fa-arrow-circle-left"></i>',
+            rightArrow: '<i class="fa fa-arrow-circle-right"></i>'
+        }
+    });
+}
+
+export const preRun = function() {
+    let today = new Date();
+    let todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+
+    let trackDate = trackInfoForm.find('#id_date');
+    trackDate.val(todayStr);
+    setupDatePicker(todayStr);
+    return Promise.resolve();
+};
 
 
 export const run = function (commonElements) {

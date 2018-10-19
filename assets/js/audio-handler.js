@@ -1,5 +1,5 @@
 const bufferToWav = require('audiobuffer-to-wav');
-import {isNull, noop, getUrl} from './utils';
+import {isNull, noop} from './utils';
 import {handleResponse, postRequest} from './ajax-handler';
 
 /**
@@ -331,18 +331,24 @@ export const loadLocalAudioFile = function ({
  */
 export const loadSongById = function(songId) {
     let data = {'file-id': songId};
-    let args = {
-        url: getUrl('send-request', 'koe/get-file-audio-data'),
-        postData: data,
-        cacheKey: songId,
-    };
 
     return new Promise(function (resolve) {
-        queryAndHandleAudio(
-            args,
-            function (sig_, fs_) {
-                resolve({sig_, fs_});
+        postRequest({
+            requestSlug: 'koe/get-audio-file-url',
+            data,
+            immediate: true,
+            noSpinner: true,
+            onSuccess(fileUrl) {
+                let urlParts = fileUrl.split('/');
+                let filename = urlParts[urlParts.length - 1];
+                queryAndHandleAudioGetOrPost({
+                    url: fileUrl,
+                    cacheKey: songId,
+                    callback(sig_, fs_) {
+                        resolve({sig_, fs_, name_: filename});
+                    }
+                });
             }
-        );
+        });
     });
 };
