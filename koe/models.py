@@ -272,7 +272,7 @@ class AudioFile(SimpleModel):
 
     @classmethod
     def set_date(cls, objs, value, extras={}):
-        if value.strip() == '':
+        if value is None or value.strip() == '':
             date = None
         else:
             try:

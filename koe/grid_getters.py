@@ -268,6 +268,8 @@ def get_sequence_info_empty_songs(empty_songs):
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, filename)
         duration_ms = round(length * 1000 / fs)
+        genus = genus if genus else ''
+        species = species if species else ''
         species_str = '{} {}'.format(genus, species)
         row = dict(id=song_id, filename=url, track=track, individual=indv, gender=gender,
                    quality=quality, date=date, duration=duration_ms, species=species_str)
