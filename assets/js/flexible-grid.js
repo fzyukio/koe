@@ -34,8 +34,11 @@ export const defaultGridOptions = {
 };
 
 
-const inputText = $('<input type="text" class="form-control"/>');
-const inputSelect = $('<select class="selectize" ></select>');
+const inputEls = {
+    Date: $('<input type="text" class="form-control"/>'),
+    Select: $('<select class="selectize" ></select>'),
+    _default: $('<input type="text" class="form-control"/>')
+};
 
 const dialogModal = $('#dialog-modal');
 const dialogModalTitle = dialogModal.find('.modal-title');
@@ -485,8 +488,9 @@ export class FlexibleGrid {
     }
 
 
-    bulkSetValue(field) {
+    bulkSetValue(column) {
         let self = this;
+        let field = column.field;
         let grid = self.mainGrid;
         let selectedRows = grid.getSelectedRows();
         let numRows = selectedRows.length;
@@ -502,16 +506,19 @@ export class FlexibleGrid {
                 selectedItems.push(item);
             }
 
+            let columnEditor = column._editor;
+            let inputEl = inputEls[columnEditor] || inputEls._default;
+            // const isSelectize = Boolean(selectableOptions);
+
+            dialogModalBody.children().remove();
+            dialogModalBody.append(inputEl);
+
             let selectableColumns = getCache('selectableOptions');
             let selectableOptions = selectableColumns[field];
 
-            const isSelectize = Boolean(selectableOptions);
-            let inputEl = isSelectize ? inputSelect : inputText;
-            dialogModalBody.children().remove();
-            dialogModalBody.append(inputEl);
             let defaultValue = inputEl.val();
 
-            if (isSelectize) {
+            if (columnEditor === 'Select') {
                 let control = inputEl[0].selectize;
                 if (control) control.destroy();
 
@@ -520,6 +527,21 @@ export class FlexibleGrid {
 
                 dialogModal.on('shown.bs.modal', function () {
                     inputEl[0].selectize.focus();
+                });
+            }
+            else if (columnEditor === 'Date') {
+                dialogModal.on('shown.bs.modal', function () {
+                    inputEl.bootstrapDP({
+                        format: 'yyyy-mm-dd',
+                        autoclose: true,
+                        todayHighlight: true,
+                        todayBtn: true,
+                        templates: {
+                            leftArrow: '<i class="fa fa-arrow-circle-left"></i>',
+                            rightArrow: '<i class="fa fa-arrow-circle-right"></i>'
+                        }
+                    });
+                    inputEl.focus();
                 });
             }
             else {
@@ -614,7 +636,7 @@ export class FlexibleGrid {
                     FlexibleGrid.insertFilterHandler(field, $filterInput);
                 }
                 else if (command == 'set-value') {
-                    self.bulkSetValue(field);
+                    self.bulkSetValue(args.column);
                 }
             });
             grid.registerPlugin(headerMenuPlugin);
