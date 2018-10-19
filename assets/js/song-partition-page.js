@@ -1,7 +1,7 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, createAudioFromDataArray, loadLocalAudioFile, loadSongById} from './audio-handler';
-import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug} from './utils';
+import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug, pad} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation'
 import {initSelectizeSimple} from './selectize-formatter';
@@ -72,12 +72,14 @@ let defaultPatterns;
 
 /**
  * Generate and store name for an item based on the selected pattern.
- * @param item
+ * @param itemIdx index of this item in the list of grid items
+ * @param item the item
  * @param force if true, change name even if the corresponding song has already been saved to database
  * @returns {boolean} true if the item's name has been changed
  */
-function populateName(item, force = false) {
+function populateName(itemIdx, item, force = false) {
     let items = grid.mainGrid.getData().getItems();
+    let lengthPadded = String(items.length).length;
     let needChange = false;
     if (force || (!isNumber(item.id) && item.id.startsWith('new:'))) {
         needChange = true;
@@ -99,13 +101,8 @@ function populateName(item, force = false) {
             $.each(patterns, function (idx, pattern) {
                 let patternValue;
                 if (pattern == '$order') {
-                    let i = 0;
-                    for (; i < items.length; i++) {
-                        if (items[i].id === item.id) {
-                            break;
-                        }
-                    }
-                    patternValue = i + 1;
+                    let based1 = itemIdx + 1;
+                    patternValue = pad(based1, lengthPadded);
                 }
                 else {
                     patternValue = patternValues[pattern];
@@ -131,20 +128,10 @@ function populateName(item, force = false) {
  * @returns {Array} array of updated itemns
  */
 function populateNameAll(force = false) {
-    let patterns = namePatternInput.items;
-    postRequest({
-        requestSlug: 'koe/set-preference',
-        data: {
-            key: namingPref,
-            value: JSON.stringify(patterns)
-        },
-        immediate: true
-    });
-
     let items = grid.mainGrid.getData().getItems();
     let updated = [];
     $.each(items, function (idx, item) {
-        let changed = populateName(item, force);
+        let changed = populateName(idx, item, force);
         if (changed) {
             updated.push(item)
         }
@@ -217,9 +204,9 @@ class Grid extends FlexibleGrid {
         }
 
         if (eventType === 'segment-created') {
-            populateName(target);
             // This will add the item to syllableArray too
             dataView.addItem(target);
+            populateNameAll();
 
             syllableDict[target.id] = target
         }
@@ -694,7 +681,7 @@ function handleInputAdded(value, data) {
  * Query last saved patterns and turn that into option array
  * @returns {Promise}
  */
-function getStoredPattern() {
+function getPattern() {
     return new Promise(function (resolve) {
         postRequest({
             requestSlug: 'koe/get-preference',
@@ -727,6 +714,21 @@ function getStoredPattern() {
     });
 }
 
+/**
+ * Save the current pattern to the server
+ */
+function savePattern() {
+    let patterns = namePatternInput.items;
+    postRequest({
+        requestSlug: 'koe/set-preference',
+        data: {
+            key: namingPref,
+            value: JSON.stringify(patterns)
+        },
+        immediate: true
+    });
+}
+
 
 /**
  * Initialise a selectize attached to #song-name-pattern input with some default options
@@ -748,10 +750,12 @@ function initSelectize(options) {
         if (value in patternValues) {
             namePatternInput.removeOption(value);
         }
+        savePattern();
         populateNameAll();
     });
 
     namePatternInput.on('item_add', function () {
+        savePattern();
         populateNameAll();
     });
 }
@@ -784,7 +788,7 @@ export const preRun = function() {
     trackDate.val(todayStr);
     setupDatePicker(todayStr);
 
-    return getStoredPattern().then(function ({options, patterns}) {
+    return getPattern().then(function ({options, patterns}) {
         $.each(options, function (idx, option) {
             defaultOptions.push(option);
             patternValues[option.value] = option.text;

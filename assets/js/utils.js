@@ -690,3 +690,17 @@ export const createTable = function($table, columns, rows, firstColBold) {
 
     return $table;
 };
+
+
+/**
+ * Pad number with leading character, e.g. 1 => '0001'
+ * @param num integer number
+ * @param size number of digits including the number, e.g. size of '000123' is 6
+ * @param char the character to pad, default to 0
+ * @returns {string}
+ */
+export const pad = function(num, size, char = '0') {
+    let s = String(num);
+    while (s.length < size) s = char + s;
+    return s;
+};
