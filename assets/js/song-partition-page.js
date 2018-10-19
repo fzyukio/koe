@@ -36,6 +36,8 @@ const $songNamePatternInput = $songNamePattern.find('input');
 
 const renameAllBtn = $('#rename-all-btn');
 
+const namingPref = 'songs-partition-naming-scheme';
+
 let namePatternInput;
 const defaultOptions = [
     {
@@ -66,6 +68,7 @@ const defaultSelectizeArgs = {
 };
 
 const patternValues = {};
+let defaultPatterns;
 
 /**
  * Generate and store name for an item based on the selected pattern.
@@ -128,6 +131,16 @@ function populateName(item, force = false) {
  * @returns {Array} array of updated itemns
  */
 function populateNameAll(force = false) {
+    let patterns = namePatternInput.items;
+    postRequest({
+        requestSlug: 'koe/set-preference',
+        data: {
+            key: namingPref,
+            value: JSON.stringify(patterns)
+        },
+        immediate: true
+    });
+
     let items = grid.mainGrid.getData().getItems();
     let updated = [];
     $.each(items, function (idx, item) {
@@ -570,6 +583,7 @@ const initSaveTrackInfoBtn = function () {
                     let trackDateInput = trackInfoForm.find('#id_date');
 
                     let name = trackNameInput.val();
+
                     let options = deepCopy(defaultOptions);
 
                     options.push({
@@ -609,7 +623,7 @@ const initSaveTrackInfoBtn = function () {
                         patternValues['$track-month'] = month;
                         patternValues['$track-year'] = year;
                     }
-                    namePatternInput.refreshOptions();
+                    // namePatternInput.refreshOptions();
 
                     initSelectize(options);
 
@@ -677,6 +691,44 @@ function handleInputAdded(value, data) {
 
 
 /**
+ * Query last saved patterns and turn that into option array
+ * @returns {Promise}
+ */
+function getStoredPattern() {
+    return new Promise(function (resolve) {
+        postRequest({
+            requestSlug: 'koe/get-preference',
+            data: {
+                key: namingPref
+            },
+            onSuccess(value) {
+                let options = [];
+                let patterns = [];
+                if (value) {
+                    patterns = JSON.parse(value);
+                    $.each(patterns, function (idx, pattern) {
+                        let index$ = pattern.indexOf('$');
+
+                        // Do not add patterns that start with $. These will be added later
+                        // Only add the ones that are indexed e.g. blah$0, foo$1
+                        if (index$ > 0) {
+                            let text = pattern.substr(0, index$);
+                            options.push({
+                                value: pattern,
+                                text,
+                            });
+                        }
+                    });
+                }
+                resolve({options, patterns});
+            },
+            immediate: true
+        });
+    });
+}
+
+
+/**
  * Initialise a selectize attached to #song-name-pattern input with some default options
  * @param options
  */
@@ -685,6 +737,11 @@ function initSelectize(options) {
         namePatternInput.destroy();
     }
     namePatternInput = initSelectizeSimple($songNamePatternInput, options, defaultSelectizeArgs);
+
+    $.each(defaultPatterns, function (idx, pattern) {
+        namePatternInput.addItem(pattern, true);
+    });
+
     namePatternInput.on('option_add', handleInputAdded);
 
     namePatternInput.on('item_remove', function (value) {
@@ -726,7 +783,14 @@ export const preRun = function() {
     let trackDate = trackInfoForm.find('#id_date');
     trackDate.val(todayStr);
     setupDatePicker(todayStr);
-    return Promise.resolve();
+
+    return getStoredPattern().then(function ({options, patterns}) {
+        $.each(options, function (idx, option) {
+            defaultOptions.push(option);
+            patternValues[option.value] = option.text;
+        });
+        defaultPatterns = patterns;
+    });
 };
 
 
@@ -791,7 +855,7 @@ export const postRun = function () {
     initController();
     initKeyboardHooks();
     initDeleteSegmentsBtn();
-    initSelectize(defaultOptions);
+    // initSelectize(defaultOptions, withPattern);
 
     renameAllBtn.click(function () {
         let updated = populateNameAll(true);

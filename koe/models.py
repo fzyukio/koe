@@ -21,7 +21,7 @@ from root.utils import history_path, ensure_parent_folder_exists, pickle_path, w
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
     'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
-    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex'
+    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'Preference'
 ]
 
 
@@ -715,6 +715,15 @@ class DerivedTensorData(TensorData):
 
     def get_bytes_path(self):
         return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.bytes'.format(self.name))[1:]
+
+
+class Preference(SimpleModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+
+    class Meta:
+        unique_together = ['user', 'key']
 
 
 @receiver(post_delete, sender=HistoryEntry)
