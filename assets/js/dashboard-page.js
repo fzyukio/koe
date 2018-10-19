@@ -1,6 +1,7 @@
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {deepCopy, getUrl, getCache, setCache} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
+import {replaceSidebar} from './sidebar';
 
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -305,6 +306,7 @@ function initCreateDatabaseButton() {
                 dialogModal.one('hidden.bs.modal', function () {
                     databaseGrid.appendRowAndHighlight(row);
                 });
+                replaceSidebar(viewPortChangeHandler);
                 dialogModal.modal('hide');
             }).fail(function (response) {
                 dialogModal.one('hidden.bs.modal', function () {

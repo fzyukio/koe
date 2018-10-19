@@ -22,8 +22,8 @@ import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
 } from './utils';
 import {postRequest} from './ajax-handler';
 import {initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {initSidebar} from './sidebar';
 require('no-going-back');
-const md5 = require('md5');
 
 let page;
 
@@ -228,7 +228,6 @@ const _preRun = function () {
     restoreModalAfterClosing();
     subMenuOpenRight();
     initChangeArgSelections();
-    initSidebar();
     appendGetArguments();
 
     $('.alert .close').on('click', function () {
@@ -331,51 +330,6 @@ const showCreateDatabaseDialog = function (errorMessage) {
             dialogModal.modal('hide');
         });
     });
-};
-
-
-const initSidebar = function () {
-    $('.menu-item-expandable > a').click(function () {
-        $('.menu-submenu').slideUp(200);
-        if ($(this).parent().hasClass('active')) {
-            $('.menu-item-expandable').removeClass('active');
-            $(this).parent().removeClass('active');
-        }
-        else {
-            $('.menu-item-expandable').removeClass('active');
-            $(this).next('.menu-submenu').slideDown(200);
-            $(this).parent().addClass('active');
-        }
-    });
-
-    $('.siderbar-toggler').click(function () {
-        $('#content-wrapper').toggleClass('toggled').toggleClass('not-toggled');
-        if (!isNull(page) && typeof page.viewPortChangeHandler === 'function') {
-            setTimeout(page.viewPortChangeHandler, 250);
-        }
-
-    });
-
-    let currentPage = $('#sidebar-menu').attr('page');
-    $('.menu-item').each(function (idx, menuItemEL) {
-        if (menuItemEL.getAttribute('page') === currentPage) {
-            $(menuItemEL).addClass('active');
-        }
-    });
-
-    $('.menu-submenu li').each(function (idx, menuItemEL) {
-        if (menuItemEL.getAttribute('page') === currentPage) {
-            $(menuItemEL).addClass('active');
-            $(menuItemEL).parents('.menu-item-expandable').children('a').click();
-        }
-    });
-
-    let avatarImg = $('#user-pic img');
-    let userEmail = avatarImg.attr('email');
-    avatarImg.attr('email', '');
-    let hash = md5(userEmail.trim().toLowerCase());
-    let gravatar = `//www.gravatar.com/avatar/${hash}?s=56`;
-    avatarImg.attr('src', gravatar);
 };
 
 
@@ -797,6 +751,12 @@ const initUploadCsv = function () {
  * Put everything you need to run after the page has been loaded here
  */
 const _postRun = function () {
+    let pageViewportHandler;
+    if (!isNull(page)) {
+        pageViewportHandler = page.viewPortChangeHandler;
+    }
+    initSidebar(pageViewportHandler);
+
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();
         window.location = this.getAttribute('url');
@@ -814,7 +774,6 @@ const _postRun = function () {
     });
 
     initUploadCsv();
-
     countDown();
 };
 
