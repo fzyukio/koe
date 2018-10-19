@@ -14,6 +14,7 @@ const stateBeforeDisplaying = 4;
 const stateDisplayed = 5;
 
 const defaultNfft = 256;
+const defaultDownSampleFactor = 20;
 
 const contrastSlider = $('#contrast-slider');
 const playSongBtn = $('#play-song');
@@ -136,22 +137,37 @@ export class Visualiser {
                 changed[arg] = true;
             }
         });
+
         if (changed.zoom) {
-            if (self.zoom <= 100) {
-                self.nfft = defaultNfft / (self.zoom / 100);
-                self.frameSize = self.nfft;
-                self.fft = new FFT(self.nfft);
+            if (self.nfft !== defaultNfft) {
+                self.nfft = defaultNfft;
+                self.prepareFft();
             }
-            else {
-                if (self.nfft !== defaultNfft) {
-                    self.nfft = defaultNfft;
-                    self.fft = new FFT(self.nfft);
-                }
-                self.frameSize = Math.floor(defaultNfft / (self.zoom / 100));
-            }
+            self.frameSize = Math.floor(defaultNfft / (self.zoom / 100));
+            self.downSampleFactor = Math.max(defaultDownSampleFactor, Math.floor(defaultDownSampleFactor / (self.zoom / 100)));
             self.noverlap = self.nfft - self.frameSize;
             self.tickInterval = Math.floor(self.frameSize / 10) * 20;
         }
+    }
+
+    prepareFft() {
+        let self = this;
+        let nfft = self.nfft;
+        let fft = new FFT(self.nfft);
+        self.fft = fft;
+        self.fftComplexArray = fft.createComplexArray();
+        let window = new Float32Array(nfft);
+        let cos = Math.cos;
+        let PI = Math.PI;
+        let i;
+
+        /*
+         * This is Hann window
+         */
+        for (i = 0; i < nfft; i++) {
+            window[i] = 0.5 * (1 - cos(PI * 2 * i / (nfft - 1)));
+        }
+        self.window = window;
     }
 
     displayAsPromises() {
@@ -229,7 +245,10 @@ export class Visualiser {
 
             let data = [];
 
-            for (let i = 0; i < subSig.length; i += 10) {
+            if (self.downSampleFactor === undefined) {
+                throw new Error('self.downSampleFactor is undefined')
+            }
+            for (let i = 0; i < subSig.length; i += self.downSampleFactor) {
                 data.push({
                     x: i,
                     y: subSig[i]
@@ -250,7 +269,7 @@ export class Visualiser {
                 if (spect === null) {
                     debug(`Calculate chunk: ${segBeg}`);
                     renderStatus.state = stateBeforeCalculation;
-                    spect = transposeFlipUD(calcSpect(self.sig, subSegs, self.fft));
+                    spect = transposeFlipUD(calcSpect(self.sig, subSegs, self.fft, self.fftComplexArray, self.window));
                     renderStatus.spect = spect;
                     renderStatus.state = stateCalculated;
                     return spect;

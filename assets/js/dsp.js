@@ -3,29 +3,16 @@
  * @param sig
  * @param segs
  * @param fft
+ * @param fftComplexArray
+ * @param window
  */
-export const calcSpect = function (sig, segs, fft) {
+export const calcSpect = function (sig, segs, fft, fftComplexArray, window) {
     const nfft = segs[0][1] - segs[0][0];
     const nframes = segs.length;
     const spect = [];
     let fbeg, fend, i, j;
-    const window = new Float32Array(nfft);
     const windowed = new Float32Array(nfft);
-    const cos = Math.cos;
-    const PI = Math.PI;
     const log = Math.log10;
-
-    /*
-     * This is Hann window
-     */
-    for (i = 0; i < nfft; i++) {
-        window[i] = 0.5 * (1 - cos(PI * 2 * i / (nfft - 1)));
-    }
-
-    /*
-     * FFT each frame and accumulate the result
-     */
-    const frameFT = fft.createComplexArray();
 
     for (i = 0; i < nframes; i++) {
         fbeg = segs[i][0];
@@ -35,7 +22,7 @@ export const calcSpect = function (sig, segs, fft) {
             windowed[j] = slice[j] * window[j];
         }
 
-        fft.realTransform(frameFT, windowed);
+        fft.realTransform(fftComplexArray, windowed);
 
         const frameFTArr = [];
 
@@ -45,8 +32,8 @@ export const calcSpect = function (sig, segs, fft) {
          * being the real and even element being the complex part. So the array is 4 times as large as the actual one-sided
          * spectrum. The power density spectra is calculated as 10*log10(real^2 + complex^2), or 10*log10(even^2 + odd^2)
          */
-        for (j = 0; j < frameFT.length / 4; j++) {
-            frameFTArr.push(10 * log(frameFT[2 * j] * frameFT[2 * j] + frameFT[2 * j + 1] * frameFT[2 * j + 1]));
+        for (j = 0; j < fftComplexArray.length / 4; j++) {
+            frameFTArr.push(10 * log(fftComplexArray[2 * j] * fftComplexArray[2 * j] + fftComplexArray[2 * j + 1] * fftComplexArray[2 * j + 1]));
         }
         spect.push(frameFTArr);
     }
