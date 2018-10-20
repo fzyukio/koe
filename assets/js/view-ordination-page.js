@@ -1,7 +1,7 @@
 /* global Plotly, d3 */
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {getUrl, getCache, setCache, isEmpty} from './utils';
-import {downloadRequest, postRequest} from './ajax-handler';
+import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
@@ -12,7 +12,6 @@ const metaPath = plotDiv.attr('metadata');
 const bytesPath = plotDiv.attr('bytes');
 const databaseId = plotDiv.attr('database');
 const tmpDbId = plotDiv.attr('tmpdb');
-const body = $('body');
 const sylSpects = $('#syl-spects');
 const labelTyleSelectEl = $('#label-type');
 
@@ -30,9 +29,9 @@ let highlightedInfo = {};
 let inLassoSelectionMode = false;
 const dataMatrix = [];
 const rowsMetadata = [];
-// const dataText = [];
 const labelDatum = {};
 let plotObj;
+let spinner;
 
 const saveSvgOption = {
     name: 'Save SVG',
@@ -278,7 +277,6 @@ function extractLegends() {
 }
 
 const plot = function () {
-    body.addClass('loading');
     let classType = labelTyleSelectEl.parent().find('#selected-label-type').html();
     let traces = [];
     let class2RowIdx = labelDatum[classType];
@@ -361,7 +359,6 @@ const plot = function () {
     plotDiv.find('.modebar').css('position', 'relative');
     relayout();
     extractLegends();
-    body.removeClass('loading');
 };
 
 
@@ -369,7 +366,15 @@ const plot = function () {
  * Listen to some events on the plotly chart
  */
 function registerPlotlyEvents() {
-    plotDiv[0].on('plotly_click', handleClick).on('plotly_hover', handleHover).on('plotly_selected', handleSelected);
+    plotDiv[0].
+        on('plotly_click', handleClick).
+        on('plotly_hover', handleHover).
+        on('plotly_selected', handleSelected).
+        on('plotly_afterplot', function () {
+            if (spinner) {
+                spinner.clear();
+            }
+        });
 
     plotDiv.find('.modebar-btn[data-title="Lasso Select"]').click(function () {
         setLassoSelectionMode(true);
@@ -547,6 +552,8 @@ export const run = function (commonElements) {
         showNonDataReason();
     }
     else {
+        spinner = createSpinner();
+        spinner.start();
         downloadTensorData().then(initCategorySelection);
         initClickHandlers();
     }
@@ -590,8 +597,6 @@ function makeMetadata(columnNames, row) {
 
 
 const downloadTensorData = function () {
-    body.addClass('loading');
-
     let downloadMeta = downloadRequest(metaPath, null);
     let downloadBytes = downloadRequest(bytesPath, Float32Array);
 
@@ -638,8 +643,6 @@ const downloadTensorData = function () {
             byteStart += ncols;
             byteEnd += ncols;
         }
-
-        body.removeClass('loading');
     });
 };
 
@@ -662,7 +665,8 @@ export const postRun = function () {
             onSuccess(selectableOptions) {
                 setCache('selectableOptions', undefined, selectableOptions);
                 resolve();
-            }
+            },
+            spinner: null
         });
     });
 };
@@ -738,6 +742,8 @@ const setLabel = function (field) {
                         rowsMetadata[rowIdx][field] = value;
                     });
 
+                    spinner = createSpinner();
+                    spinner.start();
                     plot();
                     registerPlotlyEvents();
                 }

@@ -16,7 +16,6 @@ function defaultMsgGen(isSuccess, response) {
 }
 
 
-const body = $('body');
 const delayOnSuccess = 500;
 const delayOnFailure = 4000;
 
@@ -131,6 +130,34 @@ export const handleResponse = function ({
     if (immediate) callback(responseMessage);
 };
 
+
+const body = $('body');
+
+/**
+ * Create two functions, start() to show the spinner; clear() to clear the spinner
+ * @param delayStart: in millisecond. The spinner will not show if clear() is called within this amount of time.
+ * @returns {{start: start, clear: clear}}
+ */
+export const createSpinner = function(delayStart = 300) {
+    let timerId;
+
+    let start = function () {
+        timerId = setTimeout(function () {
+            body.addClass('loading');
+            body.css('cursor', 'progress');
+        }, delayStart);
+    };
+
+    let clear = function () {
+        clearTimeout(timerId);
+        body.removeClass('loading');
+        body.css('cursor', 'default');
+    };
+
+    return {start, clear};
+};
+
+
 /**
  *
  * @param url the direct URL to send request. If left empty, requestSlug will be used
@@ -143,12 +170,16 @@ export const handleResponse = function ({
  * @param onFailure callback when failure
  * @param onProgress callback when progress changes
  * @param immediate whether or not to call callback right after showing the notification
- * @param noSpinner if true, don't show the spinner during AJAX loads
+ * @param spinner
  */
 const ajaxRequest = function ({
     url, requestSlug, data, msgGen = noop, type = 'POST', ajaxArgs = {}, onSuccess = noop, onFailure = noop,
-    onProgress = noop, immediate = false, noSpinner = false
+    onProgress = noop, immediate = false, spinner = undefined
 }) {
+
+    if (spinner === undefined) {
+        spinner = createSpinner();
+    }
 
     if (url) {
         ajaxArgs.url = url;
@@ -164,17 +195,17 @@ const ajaxRequest = function ({
         ajaxArgs.contentType = false;
     }
 
-    ajaxArgs.beforeSend = function () {
-        if (!noSpinner) {
-            body.addClass('loading');
+    ajaxArgs.beforeSend = function() {
+        if (spinner) {
+            spinner.start()
         }
-        body.css('cursor', 'progress');
     };
+
     ajaxArgs.success = function (response) {
-        if (!noSpinner) {
-            body.removeClass('loading');
+        if (spinner) {
+            spinner.clear();
         }
-        body.css('cursor', 'default');
+
         handleResponse({
             response,
             msgGen,
@@ -184,9 +215,10 @@ const ajaxRequest = function ({
         })
     };
     ajaxArgs.error = function (response) {
-        if (!noSpinner) {
-            body.removeClass('loading');
+        if (spinner) {
+            spinner.clear();
         }
+        body.removeClass('loading');
         body.css('cursor', 'default');
         handleResponse({
             response: response.responseText,

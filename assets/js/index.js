@@ -18,7 +18,7 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
-    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, debug, getCache
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError
 } from './utils';
 import {postRequest} from './ajax-handler';
 import {initAudioContext, queryAndPlayAudio} from './audio-handler';
@@ -588,7 +588,7 @@ function processCsv(csvText, permittedCols, importKey, columns, items) {
             resolve({rows, info, matched});
         }
         catch (e) {
-            debug(e);
+            logError(e);
             reject(e);
         }
     });
@@ -727,7 +727,7 @@ const initUploadCsv = function () {
                         });
 
                     }).catch(function (err) {
-                        debug(err);
+                        logError(err);
                         processCsvBtn.prop('disabled', true);
                         showAlert(modalAlertFailure, err, 15000);
                     });
@@ -863,7 +863,7 @@ $(document).ready(function () {
     }).then(function () {
         return _postRun();
     }).catch(function (e) {
-        debug(e);
+        logError(e);
         showErrorDialog(e);
     });
 

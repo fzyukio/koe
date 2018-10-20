@@ -43,6 +43,12 @@ export const debug = function (str) {
     }
 };
 
+
+export const logError = function(err) {
+    // eslint-disable-next-line
+    console.log(err);
+};
+
 export const isNumber = function (str) {
     return !isNaN(str);
 };

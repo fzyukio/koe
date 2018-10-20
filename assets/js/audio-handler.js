@@ -1,6 +1,6 @@
 const bufferToWav = require('audiobuffer-to-wav');
 import {isNull, noop} from './utils';
-import {handleResponse, postRequest} from './ajax-handler';
+import {handleResponse, postRequest, createSpinner} from './ajax-handler';
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -20,8 +20,6 @@ let cachedArrays = {};
  * Playback speed, global
  */
 let playbackSpeed = 100;
-
-const body = $('body');
 
 /**
  * Self-explanatory
@@ -181,14 +179,10 @@ const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callbac
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
 
-    xhr.onloadstart = function () {
-        body.addClass('loading');
-        body.css('cursor', 'progress');
-    };
-    xhr.onloadend = function () {
-        body.removeClass('loading');
-        body.css('cursor', 'default');
-    };
+    let spinner = createSpinner();
+
+    xhr.onloadstart = spinner.start;
+    xhr.onloadend = spinner.clear;
 
     // We expect the response to be audio/mp4 when success, and text when failure.
     // So we need this to change the response type accordingly
@@ -253,7 +247,6 @@ export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback
                 data: postData,
                 onSuccess,
                 immediate: true,
-                noSpinner: true
             });
         }
         else {
@@ -337,7 +330,6 @@ export const loadSongById = function(songId) {
             requestSlug: 'koe/get-audio-file-url',
             data,
             immediate: true,
-            noSpinner: true,
             onSuccess(fileUrl) {
                 let urlParts = fileUrl.split('/');
                 let filename = urlParts[urlParts.length - 1];
