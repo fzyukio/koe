@@ -414,6 +414,12 @@ tables =\
                     "is_attribute": True
                 },
                 {
+                    "name": "Sex",
+                    "slug": "gender",
+                    "type": "SHORT_TEXT",
+                    "editable": True,
+                },
+                {
                     "name": "Type",
                     "slug": "type",
                     "type": "SHORT_TEXT",

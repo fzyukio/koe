@@ -198,9 +198,16 @@ def import_audio_file(request):
     individual_name = item.get('individual', None)
     note = item.get('note', None)
     type = item.get('type', None)
+    sex = item.get('gender', None)
 
     if individual_name is not None:
-        individual, _ = Individual.objects.get_or_create(name=individual_name)
+        individual = Individual.objects.filter(name=individual_name).first()
+        if individual is None:
+            individual = Individual.objects.create(name=individual_name, gender=sex)
+        elif sex is not None:
+            individual.gender = sex
+            individual.save()
+
         audio_file.individual = individual
 
     if quality:
