@@ -310,7 +310,9 @@ export const run = function () {
     setCache('file-fs', undefined, fileFs);
     grid.init(fileId);
 
-    return loadSongById(fileId).then(function({sig_, fs_}) {
+    let loadSongPromise = loadSongById.bind({predefinedSongId: fileId});
+
+    return loadSongPromise().then(function({sig_, fs_}) {
         audioData.sig = sig_;
         audioData.fs = fs_;
         audioData.length = sig_.length;

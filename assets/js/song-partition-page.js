@@ -481,11 +481,6 @@ const initUploadSongsBtn = function () {
         audioUploadInput.change(function (e) {
             e.preventDefault();
             let file = e.target.files[0];
-            let filename = file.name;
-            filename = filename.substr(0, filename.length - '.wav'.length);
-
-            let trackName = trackInfoForm.find('#id_name');
-            trackName.val(filename);
 
             let onProgress = function (evt) {
                 if (evt.lengthComputable) {
@@ -540,10 +535,8 @@ const initUploadSongsBtn = function () {
                 onAbort,
                 onLoadStart
             }).then(function ({sig, fs}) {
-                saveTrackInfoBtn.parent().show();
-                uploadSongsBtn.parent().hide();
-
-                resolve({sig_: sig, fs_: fs});
+                let filename = file.name;
+                resolve({sig_: sig, fs_: fs, name_: filename});
             });
         });
     });
@@ -747,7 +740,12 @@ function initSelectize(options) {
     namePatternInput.on('option_add', handleInputAdded);
 
     namePatternInput.on('item_remove', function (value) {
-        if (value in patternValues) {
+
+        // If the value being deleted is a derivative, e.g. it isn't one of the predefined patterns (which start with $)
+        // And it is the first of all same-value patterns (which ends with $0 - other derivatives end with $1, $2, ...)
+        // Then we will also remove it from the pattern dictionary.
+        // Otherwise keep it there so that it can be selected again
+        if (!(value.startsWith('$') || value.endsWith('$0'))) {
             namePatternInput.removeOption(value);
         }
         savePattern();
@@ -781,12 +779,7 @@ function setupDatePicker(today) {
 }
 
 export const preRun = function() {
-    let today = new Date();
-    let todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-
-    let trackDate = trackInfoForm.find('#id_date');
-    trackDate.val(todayStr);
-    setupDatePicker(todayStr);
+    initSaveTrackInfoBtn();
 
     return getPattern().then(function ({options, patterns}) {
         $.each(options, function (idx, option) {
@@ -795,7 +788,29 @@ export const preRun = function() {
         });
         defaultPatterns = patterns;
     });
+
 };
+
+/**
+ * Initialise track name and track date given the info from uploaded file.
+ * Currently uses today for initial date value - but could use file's last modified...
+ * @param filename name of the file
+ */
+function populateTrackInfo(filename) {
+    filename = filename.substr(0, filename.length - '.wav'.length);
+    let trackName = trackInfoForm.find('#id_name');
+    trackName.val(filename);
+
+    let today = new Date();
+    let todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+
+    let trackDate = trackInfoForm.find('#id_date');
+    trackDate.val(todayStr);
+    setupDatePicker(todayStr);
+
+    saveTrackInfoBtn.parent().show();
+    uploadSongsBtn.parent().hide();
+}
 
 
 export const run = function (commonElements) {
@@ -804,10 +819,10 @@ export const run = function (commonElements) {
     let loadSongPromise;
 
     if (predefinedSongId) {
-        loadSongPromise = loadSongById(predefinedSongId);
+        loadSongPromise = loadSongById.bind({predefinedSongId})
     }
     else {
-        loadSongPromise = initUploadSongsBtn();
+        loadSongPromise = initUploadSongsBtn
     }
 
     let zoom = ce.argDict._zoom || 100;
@@ -818,7 +833,15 @@ export const run = function (commonElements) {
     spectViz.initController();
     spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
-    loadSongPromise.then(function ({sig_, fs_}) {
+    loadSongPromise().then(function ({sig_, fs_, name_}) {
+        if (predefinedSongId) {
+            populateTrackInfo(uuid4());
+            uploadModal.find('.save-track-info').click();
+        }
+        else {
+            populateTrackInfo(name_);
+        }
+
         audioData.sig = sig_;
         audioData.fs = fs_;
         audioData.length = sig_.length;
@@ -829,8 +852,6 @@ export const run = function (commonElements) {
         spectViz.visualiseSpectrogram();
         spectViz.drawBrush();
     });
-
-    initSaveTrackInfoBtn();
 
     grid.init(trackInfoForm.find('#id_track_id').attr('value'));
 

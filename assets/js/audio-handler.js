@@ -322,7 +322,8 @@ export const loadLocalAudioFile = function ({
  * @param songId
  * @returns {Promise}
  */
-export const loadSongById = function(songId) {
+export const loadSongById = function() {
+    let songId = this.predefinedSongId;
     let data = {'file-id': songId};
 
     return new Promise(function (resolve) {
