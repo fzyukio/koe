@@ -190,7 +190,7 @@ def bulk_get_exemplars(objs, extras):
 
     if isinstance(current_database, Database):
         if isinstance(objs, QuerySet):
-            id2tid = {x: y for x, y in objs.values_list('id', 'tid')}
+            id2tid = {x: y for x, y in objs.filter(audio_file__database=current_database).values_list('id', 'tid')}
             ids = id2tid.keys()
         else:
             objs = [x for x in objs if x.audio_file.database == current_database]
