@@ -10,7 +10,7 @@ import {
     replaceSlickGridData,
     renderSlickGrid,
     initFilter,
-    updateSlickGridData
+    updateSlickGridData, findColumn
 } from './grid-utils';
 import {editabilityAwareFormatter} from './slick-grid-addons';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
@@ -488,10 +488,11 @@ export class FlexibleGrid {
     }
 
 
-    bulkSetValue(column) {
+    bulkSetValue(field) {
         let self = this;
-        let field = column.field;
         let grid = self.mainGrid;
+        let columns = grid.getColumns();
+        let column = findColumn(columns, field);
         let selectedRows = grid.getSelectedRows();
         let numRows = selectedRows.length;
         if (numRows > 0) {
@@ -636,7 +637,7 @@ export class FlexibleGrid {
                     FlexibleGrid.insertFilterHandler(field, $filterInput);
                 }
                 else if (command == 'set-value') {
-                    self.bulkSetValue(args.column);
+                    self.bulkSetValue(field);
                 }
             });
             grid.registerPlugin(headerMenuPlugin);

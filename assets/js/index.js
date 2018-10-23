@@ -23,6 +23,7 @@ import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
 import {postRequest} from './ajax-handler';
 import {initAudioContext, queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
+import {findColumn} from 'grid-utils';
 require('no-going-back');
 
 let page;
@@ -415,24 +416,6 @@ function sanitise(val) {
 
 
 /**
- * Find the column object (Slickgrid column) from the array of columns and the name of the column being searched for
- * @param columns
- * @param importKey
- * @returns {*}
- */
-function getKeyColumn(columns, importKey) {
-    let importKeyColumn;
-    $.each(columns, function (idx, column) {
-        if (column.field == importKey) {
-            importKeyColumn = column;
-            return false;
-        }
-        return true;
-    });
-    return importKeyColumn;
-}
-
-/**
  * Get the field value of all item
  * @param items
  * @param column
@@ -577,7 +560,7 @@ function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCol
  * @returns {Promise}
  */
 function processCsv(csvText, permittedCols, importKey, columns, items) {
-    let importKeyColumn = getKeyColumn(columns, importKey);
+    let importKeyColumn = findColumn(columns, importKey);
     let rowKeys = getKeyFields(items, importKeyColumn);
 
     return new Promise(function (resolve, reject) {
