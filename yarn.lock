@@ -3845,7 +3845,13 @@ jquery.event.drag@^2.2.2:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/jquery.event.drag/-/jquery.event.drag-2.2.2.tgz#11bbbf83f4c6ef5f3b5065564663913c9f964be1"
 
-jquery@>=1.5, "jquery@>=1.7.1 <4.0.0", jquery@>=1.8.0, jquery@^3.1.1:
+jquery.scrollintoview@^1.9.4:
+  version "1.9.4"
+  resolved "https://registry.yarnpkg.com/jquery.scrollintoview/-/jquery.scrollintoview-1.9.4.tgz#b4b88e1de36ebdf92e6c2a31d9e537a425bfb24e"
+  dependencies:
+    jquery ">=1.4"
+
+jquery@>=1.4, jquery@>=1.5, "jquery@>=1.7.1 <4.0.0", jquery@>=1.8.0, jquery@^3.1.1:
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.3.1.tgz#958ce29e81c9790f31be7792df5d4d95fc57fbca"
 

@@ -1,9 +1,11 @@
 /* global Plotly, d3 */
+require('bootstrap-slider/dist/bootstrap-slider.js');
+require('jquery.scrollintoview/jquery.scrollintoview.js');
+
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {getUrl, getCache, setCache, isEmpty} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
-require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const speedSlider = $('#speed-slider');
 const plotId = 'plotly-plot';
@@ -496,7 +498,10 @@ function highlightSyl(element) {
     });
 
     if (element) {
-        element[0].scrollIntoViewIfNeeded();
+        element.scrollintoview({
+            duration: 'normal',
+            direction: 'vertical',
+        });
         element.addClass('active');
     }
 }
