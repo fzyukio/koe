@@ -24,13 +24,12 @@ I recommend using the official website at https://koe.io.ac.nz. However if you w
 [Deploy](docs/DEPLOY.md)
 
 ## Licence
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.
+This work is licensed under Affero General Public License Version 3.0
 
 > TL;DR    
->  - You are allowed to copy, use and distribute this work free of charge.    
->  - You are allowed to change the source code and distribute that, given that you don't change the licence.    
->  - No commercial use is allowed, for both this work and any derivative thereof.    
-
+>  - You are allowed to copy, use and distribute this work free of charge.
+>  - You are allowed to change the source code (create a derivative)
+>  - Any derivative must be made publicly available under the same, or compatible licence.    
 
 Read the full [LICENCE](LICENCE.md) here
 
