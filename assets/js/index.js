@@ -775,6 +775,25 @@ const showErrorDialog = function (errMsg) {
 };
 
 
+const openNewWindow = window.open;
+
+/**
+ * Replace open() with a version that can detect popup blocker, and displays the message in that case
+ * @param urlToOpen
+ */
+window.open = function (urlToOpen) {
+    let popupWindow = openNewWindow(urlToOpen, 'myWindow', '');
+    try {
+        popupWindow.focus();
+    }
+    catch (e) {
+        let errMsg = `
+            <p>Koe was prevented from opening a new window to <a href="${urlToOpen}">${urlToOpen}</a> by your browser.</p>
+            <p>Please whitelist this website in <strong>Pop-ups and Redirects</strong> settings.</p>`;
+        showErrorDialog(errMsg);
+    }
+};
+
 /**
  * Loading the page by URL's location, e.g localhost:8000/herd-allocation
  */

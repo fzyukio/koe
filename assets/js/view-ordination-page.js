@@ -145,6 +145,7 @@ function initClickHandlers() {
             requestSlug: 'koe/hold-ids',
             data: {ids: Object.keys(highlighted).join()},
             onSuccess() {
+                // openNewWindow(redirectUrl);
                 window.open(redirectUrl);
             }
         });
