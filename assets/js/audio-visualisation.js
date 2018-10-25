@@ -2,7 +2,7 @@
 /* eslint no-console: off */
 const FFT = require('fft.js');
 import {spectToUri, globalMinSpectPixel, globalMaxSpectPixel} from './visual-utils';
-import {stopAudio, playAudioDataArray} from './audio-handler';
+import {stopAudio, playAudioDataArray, resumeAudioContext} from './audio-handler';
 import {getCache, calcSegments, setCache, uuid4, debug, smoothScrollTo, deepCopy} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
 
@@ -584,7 +584,9 @@ export class Visualiser {
             }
         };
 
-        playAudioDataArray(self.sig, self.fs, playAudioArgs);
+        resumeAudioContext().then(function () {
+            playAudioDataArray(self.sig, self.fs, playAudioArgs);
+        })
     }
 
     pausePlayback() {

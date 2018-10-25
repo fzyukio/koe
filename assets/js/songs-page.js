@@ -78,7 +78,6 @@ const playAudio = function (e, args) {
                 endSec: end
             }
         };
-
         queryAndPlayAudio(args_);
     }
 };

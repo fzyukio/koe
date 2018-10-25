@@ -21,7 +21,7 @@ import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
     createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError
 } from './utils';
 import {postRequest} from './ajax-handler';
-import {initAudioContext, queryAndPlayAudio} from './audio-handler';
+import {queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
 import {findColumn} from 'grid-utils';
 require('no-going-back');
@@ -224,7 +224,6 @@ const initKeyboardShortcuts = function () {
  * @private
  */
 const _preRun = function () {
-    initAudioContext();
     initKeyboardShortcuts();
     restoreModalAfterClosing();
     subMenuOpenRight();

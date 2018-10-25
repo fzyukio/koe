@@ -1,3 +1,4 @@
+require('../vendor/AudioContextMonkeyPatch');
 const bufferToWav = require('audiobuffer-to-wav');
 import {isNull, noop} from './utils';
 import {handleResponse, postRequest, createSpinner} from './ajax-handler';
@@ -7,7 +8,7 @@ import {handleResponse, postRequest, createSpinner} from './ajax-handler';
  * this instance must always be closed when not playing audio
  * @type {*}
  */
-let audioContext = null;
+let audioContext = new AudioContext();
 
 /**
  * the global instance of AudioBuffer (we maintain only one instance at all time)
@@ -29,22 +30,31 @@ export const changePlaybackSpeed = function (newSpeed) {
     playbackSpeed = newSpeed;
 };
 
+
 /**
- * Make sure we have a suitable AudioContext class
+ * Safari (since 2017?) and Chrome (from November 2018) and maybe other browsers in the future prohibit audiocontext
+ * from playing before user has interacted with the page. This function MUST be called before any AJAX call is made.
+ * So the procedure is: onclick -> call resumeAudioContext --> make AJAX call if necessary -> playAudioDataArray()
+ *
+ * DO NOT CALL THIS unless playAudioDataArray is next in line. Other functions in this library already do that
  */
-export const initAudioContext = function () {
+export const resumeAudioContext = function () {
 
-    if (!window.AudioContext) {
-        if (!window.webkitAudioContext) {
-            alert('Your browser does not support any AudioContext and cannot play back this audio.');
-            return;
-        }
-        window.AudioContext = window.webkitAudioContext;
+    /*
+     * Prevent multiple audio playing at the same time: stop any instance if audioContext that is currently running
+     */
+    if (audioContext.state === 'running') {
+        return audioContext.close().then(function () {
+            audioContext = new AudioContext();
+        }).then(function () {
+            audioContext.resume();
+        });
     }
-
-    audioContext = new AudioContext();
-    audioContext.close();
+    else {
+        return audioContext.resume();
+    }
 };
+
 
 /**
  * Plays a owner of the audio from begin point to end point
@@ -54,17 +64,6 @@ export const initAudioContext = function () {
  * @param onEndedCallback callback to be called when the audio finishes
  */
 const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback = null, onEndedCallback = null}) {
-    if (isNull(audioContext) || audioContext.state === 'closed') {
-        audioContext = new AudioContext();
-    }
-
-    /*
-     * Prevent multiple audio playing at the same time: stop any instance if audioContext that is currently running
-     */
-    else if (!isNull(audioContext) && audioContext.state === 'running') {
-        audioContext.close();
-        audioContext = new AudioContext();
-    }
     let source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
 
@@ -86,7 +85,7 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
 
     source.start(0, beginSec, endSec - beginSec);
     source.onended = function () {
-        audioContext.close();
+        audioContext.suspend();
         if (typeof onEndedCallback === 'function') {
             onEndedCallback();
         }
@@ -99,8 +98,7 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
  */
 export const stopAudio = function () {
     if (!isNull(audioContext) && audioContext.state === 'running') {
-        audioContext.close();
-        audioContext = new AudioContext();
+        audioContext.suspend();
     }
 };
 
@@ -223,7 +221,7 @@ const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callbac
  * @param cacheKey key to persist this song/segment in the cache
  * @param callback
  */
-export const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
+const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
     let cached = cachedArrays[cacheKey];
     if (cacheKey && cached) {
         callback(cached[0], cached[1]);
@@ -273,9 +271,12 @@ export const queryAndPlayAudio = function ({url, postData, cacheKey, playAudioAr
         cacheKey,
         postData
     };
-    queryAndHandleAudio(args, function (sig, fs) {
-        playAudioDataArray(sig, fs, playAudioArgs);
-    });
+    resumeAudioContext().then(function () {
+        queryAndHandleAudio(args, function (sig, fs) {
+            playAudioDataArray(sig, fs, playAudioArgs);
+        });
+    })
+
 };
 
 /**
@@ -322,7 +323,7 @@ export const loadLocalAudioFile = function ({
  * @param songId
  * @returns {Promise}
  */
-export const loadSongById = function() {
+export const loadSongById = function () {
     let songId = this.predefinedSongId;
     let data = {'file-id': songId};
 

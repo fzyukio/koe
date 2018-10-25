@@ -447,7 +447,6 @@ function playSyl(sylId) {
         cacheKey: sylId,
         postData: data
     };
-
     queryAndPlayAudio(args_);
 }
 
