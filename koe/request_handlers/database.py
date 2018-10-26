@@ -503,7 +503,7 @@ def make_tmpdb(request):
     chksum = IdOrderedModel.calc_chksum(ids)
     existing = TemporaryDatabase.objects.filter(chksum=chksum).first()
     if existing is not None:
-        raise CustomAssertionError(existing.name)
+        return existing.name
 
     name = uuid.uuid4().hex
     tmpdb = TemporaryDatabase(name=name, user=request.user, _databases=database)
