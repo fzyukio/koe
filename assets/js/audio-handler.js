@@ -50,6 +50,10 @@ export const resumeAudioContext = function () {
             audioContext.resume();
         });
     }
+    else if (audioContext.state === 'closed') {
+        audioContext = new AudioContext();
+        return audioContext.resume();
+    }
     else {
         return audioContext.resume();
     }
@@ -85,10 +89,11 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
 
     source.start(0, beginSec, endSec - beginSec);
     source.onended = function () {
-        audioContext.suspend();
-        if (typeof onEndedCallback === 'function') {
-            onEndedCallback();
-        }
+        audioContext.close().then(function () {
+            if (typeof onEndedCallback === 'function') {
+                onEndedCallback();
+            }
+        });
     };
 };
 
