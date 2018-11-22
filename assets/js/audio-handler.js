@@ -300,11 +300,16 @@ export const loadLocalAudioFile = function ({
             onLoad(e);
             const arrayBuffer = reader.result;
             audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
-                let fullAudioDataArray = _audioBuffer.getChannelData(0);
+                let numberOfChannels = _audioBuffer.numberOfChannels;
+                let dataArrays = [];
+                for (let i = 0; i < numberOfChannels; i++) {
+                    dataArrays.push(_audioBuffer.getChannelData(i));
+                }
                 let sampleRate = _audioBuffer.sampleRate;
+
                 resolve({
-                    sig: fullAudioDataArray,
-                    fs: sampleRate
+                    dataArrays,
+                    sampleRate
                 });
             });
         };
@@ -338,8 +343,8 @@ export const loadSongById = function () {
                 queryAndHandleAudioGetOrPost({
                     url: fileUrl,
                     cacheKey: songId,
-                    callback(sig_, fs_) {
-                        resolve({sig_, fs_, name_: filename});
+                    callback(sig, sampleRate) {
+                        resolve({dataArrays: [sig], sampleRate, filename});
                     }
                 });
             }

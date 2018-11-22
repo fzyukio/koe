@@ -25,6 +25,8 @@ const zoomOptions = $('.select-zoom');
 const zoomBtnText = $('#zoom-btn-text');
 const cmOptions = $('.select-cm');
 const cmBtnText = $('#cm-btn-text');
+let channelOptions = null;
+const channelBtnText = $('#channel-btn-text');
 
 let startPlaybackAt;
 let playbackSpeed;
@@ -454,17 +456,39 @@ export class Visualiser {
             attr('display', 'none');
     }
 
-    setData({sig, fs, length, durationMs}) {
+    setData({dataArrays, fs, length, durationMs}) {
         const self = this;
-        self.sig = sig;
+        self.dataArrays = dataArrays;
         self.fs = fs;
         self.durationMs = durationMs;
         self.length = length;
+        self.populateChannelOptions();
+    }
+
+    populateChannelOptions() {
+        const self = this;
+        let nChannels = self.dataArrays.length;
+        const channelOptionUl = $('#channel-btn ul.dropdown-menu');
+        for (let i = 0; i < nChannels; i++) {
+            let option = `<li class="${i == 0 ? 'active' : ''}"><a class="select-channel" href="#" value=${i}>${i + 1}</a></li>`;
+            channelOptionUl.append(option);
+        }
+        if (nChannels > 1) {
+            $('#channel-btn button').prop('disabled', false);
+        }
+        channelOptions = $('.select-channel');
+        self.setChannel(0);
+    }
+
+    setChannel(channelIdx) {
+        const self = this;
+        let sig = self.dataArrays[channelIdx];
+        self.sig = sig;
 
         let minY = 99999;
         let maxY = -99999;
         let y;
-        for (let i = 0; i < length; i++) {
+        for (let i = 0; i < self.length; i++) {
             y = sig[i];
             if (minY > y) minY = y;
             if (maxY < y) maxY = y;
@@ -899,6 +923,23 @@ export class Visualiser {
             cmBtnText.html($this.html());
 
             self.resetArgs({colourMap});
+            self.initCanvas();
+            self.visualisationPromiseChainHead.cancel();
+            self.visualisationPromiseChainHead = undefined;
+            self.imagesAreInitialised = false;
+            self.visualiseSpectrogram();
+            self.drawBrush();
+            self.displaySegs();
+        });
+
+        channelOptions.click(function () {
+            let $this = $(this);
+            let channel = $this.attr('value');
+            channelOptions.parent().removeClass('active');
+            $this.parent().addClass('active');
+            channelBtnText.html($this.html());
+
+            self.setChannel(channel);
             self.initCanvas();
             self.visualisationPromiseChainHead.cancel();
             self.visualisationPromiseChainHead = undefined;

@@ -277,7 +277,7 @@ const saveSongsToDb = function () {
         let startSample = Math.floor(startMs * nSamples / durationMs);
         let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
 
-        let subSig = audioData.sig.slice(startSample, endSample);
+        let subSig = spectViz.sig.slice(startSample, endSample);
         let blob = createAudioFromDataArray(subSig, audioData.fs);
 
         let formData = new FormData();
@@ -534,9 +534,9 @@ const initUploadSongsBtn = function () {
                 onLoad,
                 onAbort,
                 onLoadStart
-            }).then(function ({sig, fs}) {
+            }).then(function ({dataArrays, sampleRate}) {
                 let filename = file.name;
-                resolve({sig_: sig, fs_: fs, name_: filename});
+                resolve({dataArrays, sampleRate, filename});
             });
         });
     });
@@ -829,25 +829,25 @@ export const run = function (commonElements) {
     let colourMap = ce.argDict._cm || 'Green';
 
     spectViz = new Visualiser(vizContainerId);
-    spectViz.initScroll();
-    spectViz.initController();
-    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
-    loadSongPromise().then(function ({sig_, fs_, name_}) {
+    loadSongPromise().then(function ({dataArrays, sampleRate, filename}) {
         if (predefinedSongId) {
             populateTrackInfo(uuid4());
             uploadModal.find('.save-track-info').click();
         }
         else {
-            populateTrackInfo(name_);
+            populateTrackInfo(filename);
         }
 
-        audioData.sig = sig_;
-        audioData.fs = fs_;
-        audioData.length = sig_.length;
-        audioData.durationMs = audioData.length * 1000 / fs_;
+        audioData.dataArrays = dataArrays;
+        audioData.fs = sampleRate;
+        audioData.length = dataArrays[0].length;
+        audioData.durationMs = audioData.length * 1000 / sampleRate;
 
         spectViz.setData(audioData);
+        spectViz.initScroll();
+        spectViz.initController();
+        spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
         spectViz.initCanvas();
         spectViz.visualiseSpectrogram();
         spectViz.drawBrush();

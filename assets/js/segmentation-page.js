@@ -279,8 +279,6 @@ export const preRun = function (commonElements) {
 
     initController();
     spectViz = new Visualiser(vizContainerId);
-    spectViz.initScroll();
-    spectViz.initController();
     spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
     return new Promise(function (resolve, reject) {
@@ -312,14 +310,15 @@ export const run = function () {
 
     let loadSongPromise = loadSongById.bind({predefinedSongId: fileId});
 
-    return loadSongPromise().then(function({sig_, fs_}) {
-        audioData.sig = sig_;
-        audioData.fs = fs_;
-        audioData.length = sig_.length;
-        audioData.durationMs = audioData.length * 1000 / fs_;
+    return loadSongPromise().then(function({dataArrays, sampleRate}) {
+        audioData.dataArrays = dataArrays;
+        audioData.fs = sampleRate;
+        audioData.length = dataArrays[0].length;
+        audioData.durationMs = audioData.length * 1000 / sampleRate;
 
         spectViz.setData(audioData);
         spectViz.initCanvas();
+        spectViz.initController();
         spectViz.visualiseSpectrogram();
         spectViz.drawBrush();
 
