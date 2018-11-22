@@ -307,7 +307,7 @@ const initDeleteSegmentsBtn = function () {
                 'database-id': database
             };
             let onSuccess = function () {
-                let items = dataView.getItems();
+                let items = dataView.getFilteredItems();
                 let newItems = [];
                 for (let i = 0; i < numRows; i++) {
                     let row = selectedRows[i];
