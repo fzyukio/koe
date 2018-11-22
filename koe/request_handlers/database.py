@@ -503,14 +503,14 @@ def make_tmpdb(request):
     chksum = IdOrderedModel.calc_chksum(ids)
     existing = TemporaryDatabase.objects.filter(chksum=chksum).first()
     if existing is not None:
-        return existing.name
+        return dict(name=existing.name, created=False)
 
     name = uuid.uuid4().hex
     tmpdb = TemporaryDatabase(name=name, user=request.user, _databases=database)
     tmpdb.ids = ids
     tmpdb.save()
 
-    return name
+    return dict(name=name, created=True)
 
 
 def change_tmpdb_name(request):

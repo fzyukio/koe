@@ -402,9 +402,9 @@ const initCreateTemporaryDatabaseBtn = function() {
             requestSlug: 'koe/make-tmpdb',
             data: postData,
             immediate: true,
-            onSuccess(name) {
+            onSuccess({name, created}) {
                 generatedName = name;
-                showDialog();
+                showDialog(created);
             },
             onFailure(message) {
                 dialogModalTitle.html('Collection with these IDs already exists...');
