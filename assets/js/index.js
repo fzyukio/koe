@@ -18,7 +18,7 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
-    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError, uuid4
 } from './utils';
 import {postRequest} from './ajax-handler';
 import {queryAndPlayAudio} from './audio-handler';
@@ -782,7 +782,7 @@ const openNewWindow = window.open;
  * @param urlToOpen
  */
 window.open = function (urlToOpen) {
-    let popupWindow = openNewWindow(urlToOpen, 'myWindow', '');
+    let popupWindow = openNewWindow(urlToOpen, uuid4(), '');
     try {
         popupWindow.focus();
     }
