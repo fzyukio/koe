@@ -99,7 +99,7 @@ raven
 h5py==2.8.0rc1
 git+https://github.com/fzyukio/spectrum
 scikit-image
-pycspade>=0.3.2
+pycspade>=0.4
 django-extensions
 ipython[notebook]
 pymlfunc==0.0.3

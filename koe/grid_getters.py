@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models.functions import Lower
 from django.db.models.query import QuerySet
 from django.urls import reverse
-from pycspade import cspade
+from pycspade import spade
 
 from koe.model_utils import get_user_databases, get_or_error
 from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase,\
@@ -631,9 +631,9 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     if nsequences == 0:
         return ids, rows
 
-    support = max(int(nsequences * 0.01), 3)
+    support = max(int(nsequences * 0.01), 1) / nsequences
 
-    result = cspade(data=sequences, support=support, maxgap=maxgap)
+    result = spade(data=sequences, support=support, maxgap=maxgap)
     mined_objects = result['mined_objects']
 
     for idx, seq in enumerate(mined_objects):
