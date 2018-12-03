@@ -517,6 +517,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     current_database = get_user_databases(extras.user)
     viewas = extras.viewas
 
+    support = float(extras.get('support', 0.01))
     use_gap = extras.usegap
     maxgap = extras.maxgap if use_gap else 1
     mingap = extras.mingap if use_gap else -99999
@@ -631,9 +632,12 @@ def bulk_get_song_sequence_associations(all_songs, extras):
     if nsequences == 0:
         return ids, rows
 
-    support = max(int(nsequences * 0.01), 1) / nsequences
+    support = max(int(nsequences * support), 1) / nsequences
 
-    result = spade(data=sequences, support=support, maxgap=maxgap)
+    try:
+        result = spade(data=sequences, support=support, maxgap=maxgap)
+    except RuntimeError as e:
+        raise CustomAssertionError('SPADE error: {}'.format(str(e)))
     mined_objects = result['mined_objects']
 
     for idx, seq in enumerate(mined_objects):

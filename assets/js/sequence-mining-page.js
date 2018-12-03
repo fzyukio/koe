@@ -243,6 +243,8 @@ const focusOnGridOnInit = function () {
     $($('div[hidefocus]')[0]).focus();
 };
 
+let defaultArgs = {};
+
 let extraArgs = {
     granularity,
     viewas,
@@ -257,7 +259,7 @@ let extraArgs = {
  * Query grid content, extract graph content, display graph, and resubscribe events
  */
 const loadGrid = function () {
-    return grid.initMainGridContent({}, extraArgs);
+    return grid.initMainGridContent(defaultArgs, extraArgs);
 };
 
 
@@ -272,9 +274,12 @@ export const preRun = function() {
 };
 
 
-export const run = function () {
+export const run = function (commonElements) {
+    let argDict = commonElements.argDict;
+    extraArgs.support = argDict.support;
+
     grid.init(granularity);
-    return grid.initMainGridHeader({}, extraArgs).
+    return grid.initMainGridHeader(defaultArgs, extraArgs).
         then(function () {
             subscribeSlickEvents();
             subscribeFlexibleEvents();
