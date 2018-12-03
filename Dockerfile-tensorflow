@@ -28,9 +28,11 @@ COPY requirements.txt /
 RUN pwd && ls -l / && pip install Cython numpy && pip install -r /requirements.txt --no-cache-dir
 
 COPY requirements-dev.txt /
-
 RUN pwd && ls -l / && pip install -r /requirements-dev.txt --no-cache-dir
- 
+
+COPY requirements-upgrade.txt /
+RUN pip install -r /requirements-upgrade.txt --no-cache-dir
+
 RUN python -m ipykernel.kernelspec
 
 WORKDIR /code
