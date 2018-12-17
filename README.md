@@ -24,12 +24,12 @@ I recommend using the official website at https://koe.io.ac.nz. However if you w
 [Deploy](docs/DEPLOY.md)
 
 ## Licence
-This work is licensed under Affero General Public License Version 3.0
+This work is licensed under GPL v.3 with Commons Clause.
 
-> TL;DR    
->  - You are allowed to copy, use and distribute this work free of charge.
->  - You are allowed to change the source code (create a derivative)
->  - Any derivative must be made publicly available under the same, or compatible licence.    
+> TL;DR
+>  - No commercial.
+>  - Free to use.
+>  - Any modification must be made publicly available under the same licence.
 
 Read the full [LICENCE](LICENCE.md) here
 
