@@ -1,12 +1,8 @@
 import numpy as np
+from librosa import feature as rosaft
 
-from koe.features.utils import unroll_args, get_psddb, get_psd
-
-
-# @profile
-def duration(args):
-    start, end = unroll_args(args, ['start', 'end'])
-    return end - start
+from koe.features.utils import get_psd, get_sig, unroll_args
+from koe.features.utils import get_psddb
 
 
 # @profile
@@ -41,14 +37,31 @@ def max_frame_power(args):
 
 
 # @profile
-def dominant_frequency(args):
-    """
-    Max frequency is the frequency at which max power occurs
-    :param args:
-    :return:
-    """
-    psddb = get_psddb(args)
+def tonnetz(args):
+    sig = get_sig(args)
     fs = args['fs']
-    max_indices = np.argmax(psddb, axis=0)
-    nyquist = fs / 2.0
-    return max_indices / psddb.shape[0] * nyquist
+    return rosaft.tonnetz(y=sig, sr=fs)
+
+
+# @profile
+def chroma_stft(args):
+    psd = get_psd(args)
+    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    hopsize = nfft - noverlap
+    return rosaft.chroma_stft(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+
+
+# @profile
+def chroma_cqt(args):
+    sig = get_sig(args)
+    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    hopsize = nfft - noverlap
+    return rosaft.chroma_cqt(y=sig, sr=fs, hop_length=hopsize)
+
+
+# @profile
+def chroma_cens(args):
+    sig = get_sig(args)
+    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    hopsize = nfft - noverlap
+    return rosaft.chroma_cens(y=sig, sr=fs, hop_length=hopsize)

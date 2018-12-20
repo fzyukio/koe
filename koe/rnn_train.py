@@ -6,17 +6,14 @@ import os
 import pickle
 
 import numpy as np
-import tensorflow as tf
-from numpy import random
-
 from django.conf import settings
-
-from koe.rnn_models import DataProvider
 
 num_historical = 5
 
 
 def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
+    import tensorflow as tf
+
     # Define weights
     weights = {
         'out': tf.Variable(tf.random_normal([n_hidden, n_classes]), name='weights')
@@ -62,8 +59,12 @@ def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
     return tf.matmul(outputs, weights['out']) + biases['out']
 
 
-def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='model'):
-    dp.split_folds(nfolds)
+def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='model', disable_gpu=False):
+    if disable_gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    import tensorflow as tf
+
+    dp.split(nfolds)
     # Parameters
     batch_size = len(dp.data) // nfolds
     display_step = 200
@@ -161,47 +162,3 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
             vl_lens = validset.lens
             vl_accuracy = sess.run(accuracy, feed_dict={x: vl_data, y: vl_label, lens: vl_lens})
             print('Fold {}, Valid Accuracy: {}'.format(k + 1, vl_accuracy))
-
-
-def generate_sequences(n_samples=1000, max_seq_len=20, min_seq_len=3, max_value=1000, shape1=1):
-    """
-    Create a dataset of dynamic length sequences. Two kinds of sequences are generated:
-     1. Linear: random start, but continuous thereafter, e.g. [6,7,8,9]; [10, 11, 12, 13, 14, 15]
-     2. Random:  random numbers
-    The sequences can be two dimensional, row-based
-    :param n_samples: number of sequences
-    :param max_seq_len: max length
-    :param min_seq_len: min length
-    :param max_value: max value of any data point
-    :param shape1: size of the second dimension
-    :return: list of sequences and their respective labels, e.g. ['linear', 'random', 'random', 'linear', ...]
-    """
-    data = []
-    labels = []
-    for i in range(n_samples):
-        # Random sequence length
-        length = random.randint(min_seq_len, max_seq_len)
-        # Add a random or linear int sequence (50% prob)
-        s = []
-        if random.random() < .5:
-            # Generate a linear sequence
-            label = 'linear'
-            for i in range(shape1):
-                rand_start = random.randint(0, max_value - length)
-                s_ = np.arange(rand_start, rand_start + length).reshape((length, 1))
-                s.append(s_)
-        else:
-            # Generate a random sequence
-            label = 'random'
-            for i in range(shape1):
-                s_ = random.randint(0, max_value, size=length).reshape((length, 1))
-                s.append(s_)
-        data.append(np.hstack(s))
-        labels.append(label)
-    return data, labels
-
-
-if __name__ == '__main__':
-    data, labels = generate_sequences(n_samples=1500, max_seq_len=20, min_seq_len=3, max_value=1000, shape1=1)
-    data_provider = DataProvider(data, labels)
-    train(data_provider, nfolds=10, name='toy5')

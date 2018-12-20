@@ -232,146 +232,71 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
     return out
 
 
-def split_classwise(labels, test_ratio):
+def split_classwise(labels, ratio, nfolds, balanced=False, limits=None):
     """
-    Split the dataset into training set, test set, and (optionally) validate set.
-    These ratios are maintained for each class - so unbalanced dataset can still be split reliably
+    Create a training set indices and test set indices such that the k-ratio is preserved for all classes and the number
+    of instances per class is within a range
+    :param nfolds:
+    :param balanced: if True, the number of instances per class is more or less equal
+    :param limits: tuple (low-limit = min number of instances per class, high-limit = max number of instances per class)
+                   if None, will default to (k, 1.5*k)
     :param labels:
-    :param test_ratio:
-    :param validate_ratio:
+    :param ratio: ratio of the test set over all instances. Must be > 0 and <= 0.5
     :return:
     """
-    assert test_ratio < 1.
     assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
-    label_sorted_indices = np.argsort(labels)
-    sorted_labels = labels[label_sorted_indices]
-
-    uniques, counts = np.unique(sorted_labels, return_counts=True)
-    nclasses = len(uniques)
-
-    # To make sure we always have at least one instance per class, we need a minimum number of instances such that
-    # the test_ratio and validate_ratio each yields at least 1
-    # E.g, if test ratio is 0.1, there must be at least 10 instances
-    train_ratio = 1. - test_ratio
-    min_count = np.floor(1 / min(test_ratio, train_ratio))
-
-    if np.any(counts < min_count):
-        where = np.where(counts < min_count)[0]
-        err = 'The following classes don\'t have enough instances to guarantee one per train/test sets:\n'
-        for ind in where:
-            err += 'class: {} -- {} instances\n'.format(uniques[ind], counts[ind])
-        raise ValueError(err)
-
-    train = []
-    test = []
-
-    for i in range(nclasses):
-        ninstances = counts[i]
-        label = uniques[i]
-        instance_indices = np.where(labels == label)[0]
-        np.random.shuffle(instance_indices)
-
-        ntrains = int(np.floor(ninstances * train_ratio))
-        ntests = ninstances - ntrains
-
-        train.append(instance_indices[:ntrains])
-        test.append(instance_indices[ntrains:ntrains + ntests])
-
-    train = np.concatenate(train)
-    test = np.concatenate(test)
-    np.random.shuffle(train)
-    np.random.shuffle(test)
-
-    return train, test
-
-
-def get_kfold_indices(labels, k):
-    """
-    Create a training set indices and test set indices such that the k-ratio is preserved for all classes
-    This function is better suited for unbalanced data, e.g. some classes only have very few instances, such that
-     the normal way (randomised then split k-ways) might end up having some instances having no instances in the
-     training or test set
-    :param labels: 1-D array (int) contains enumerated labels
-    :param k:
-    :return: k-item array. Each element is a dict(test=test_indices, train=train_indices). The indices are randomised
-    """
-    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
+    assert 0. <= ratio <= .5, 'Ratio must be within [0, 0.5]'
 
     label_sorted_indices = np.argsort(labels)
     sorted_labels = labels[label_sorted_indices]
 
     uniques, counts = np.unique(sorted_labels, return_counts=True)
 
-    if np.any(counts < k):
-        raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'.format(k, k))
+    if ratio > 0.:
+        assert nfolds <= int(np.floor(1. / ratio + 0.01)), 'Ratio {} doesn\'t permit {} folds'.format(ratio, nfolds)
 
-    nclasses = len(uniques)
+    if balanced:
+        if limits:
+            lolimit = limits[0]
+            uplimit = limits[1]
+        else:
+            lolimit = nfolds
+            uplimit = int(np.floor(nfolds * 1.5))
+    else:
+        lolimit = nfolds
+        uplimit = None
 
-    fold_indices = np.ndarray((len(labels), ), dtype=np.int32)
-
-    grant_added = 0
-
-    for i in range(nclasses):
-        ninstances = counts[i]
-        nremainings = ninstances
-        label = uniques[i]
-        instance_indices = np.where(labels == label)[0]
-        np.random.shuffle(instance_indices)
-        test_ind_start = 0
-
-        added = 0
-
-        for k_ in range(k):
-            ntests = nremainings // (k - k_)
-            nremainings -= ntests
-
-            kth_fold_instance_indices = instance_indices[test_ind_start: test_ind_start + ntests]
-
-            added += len(kth_fold_instance_indices)
-            fold_indices[kth_fold_instance_indices] = k_
-            test_ind_start += ntests
-
-        grant_added += added
-    return fold_indices
-
-
-def split_kfold_classwise(labels, k):
-    """
-    Create a training set indices and test set indices such that the k-ratio is preserved for all classes
-    This function is better suited for unbalanced data, e.g. some classes only have very few instances, such that
-     the normal way (randomised then split k-ways) might end up having some instances having no instances in the
-     training or test set
-    :param labels: 1-D array (int) contains enumerated labels
-    :param k:
-    :return: k-item array. Each element is a dict(test=test_indices, train=train_indices). The indices are randomised
-    """
-    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
-
-    label_sorted_indices = np.argsort(labels)
-    sorted_labels = labels[label_sorted_indices]
-
-    uniques, counts = np.unique(sorted_labels, return_counts=True)
-
-    if np.any(counts < k):
-        raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'.format(k, k))
+    if np.any(counts < lolimit):
+        if limits:
+            raise ValueError(
+                'Lower limit of range[{},{}] is too big - there are classes that have less than {} instances'
+                .format(lolimit, uplimit, lolimit))
+        else:
+            raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'
+                             .format(nfolds, nfolds))
 
     nclasses = len(uniques)
     folds = []
-    for i in range(k):
+    for _ in range(nfolds):
         folds.append(dict(train=[], test=[]))
 
     for i in range(nclasses):
-        ninstances = counts[i]
+        if uplimit:
+            ninstances = int(min(max(lolimit, counts[i]), uplimit))
+        else:
+            ninstances = int(max(lolimit, counts[i]))
+
         nremainings = ninstances
         label = uniques[i]
         instance_indices = np.where(labels == label)[0]
         np.random.shuffle(instance_indices)
+        instance_indices = instance_indices[:ninstances]
         test_ind_start = 0
 
-        for k_ in range(k):
-            fold = folds[k_]
+        for k in range(nfolds):
+            fold = folds[k]
 
-            ntests = nremainings // (k - k_)
+            ntests = int(np.floor(ninstances * ratio))
             nremainings -= ntests
 
             fold['test'].append(instance_indices[test_ind_start: test_ind_start + ntests])
@@ -379,7 +304,7 @@ def split_kfold_classwise(labels, k):
                 np.concatenate((instance_indices[0:test_ind_start], instance_indices[test_ind_start + ntests:])))
 
             test_ind_start += ntests
-        assert nremainings == 0
+        assert nremainings >= 0
 
     for fold in folds:
         fold['test'] = np.concatenate(fold['test'])
@@ -387,7 +312,6 @@ def split_kfold_classwise(labels, k):
 
         np.random.shuffle(fold['test'])
         np.random.shuffle(fold['train'])
-
     return folds
 
 

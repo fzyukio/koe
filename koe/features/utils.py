@@ -10,15 +10,14 @@ from spectrum import dpss
 
 @memoize(timeout=None)
 def _cached_get_window(name, nfft):
-    assert name in ['hann', 'dpss1', 'dpss2']
-    if name == 'hann':
-        return signal.get_window('hann', nfft)
-    else:
+    if name.startswith('dpss'):
+        assert name in ['dpss1', 'dpss2']
+        type = int(name[4:]) - 1
         tapers, eigen = dpss(nfft, 1.5, 2)
-        if name == 'dpss1':
-            return tapers[:, 0]
-        else:
-            return tapers[:, 1]
+        return tapers[:, type]
+
+    else:
+        return signal.get_window(name, nfft)
 
 
 # @profile
@@ -91,9 +90,14 @@ def get_spectrogram(wav_file_path, fs, start, end, nfft, noverlap, win_length, c
 def unroll_args(args, requires):
     retval = []
     for require in requires:
-        val = args[require]
+        if isinstance(require, tuple):
+            val = args.get(require[0], require[1])
+        else:
+            val = args[require]
         retval.append(val)
-    return tuple(retval)
+    if len(requires) > 1:
+        return tuple(retval)
+    return val
 
 
 # @profile

@@ -45,7 +45,7 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature):
 
     duration_ms = length * 1000 / fs
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
-                win_length=win_length, center=False)
+                win_length=win_length, center=False, order=44)
 
     extractor = feature_extractors[feature.name]
     tids = []
@@ -99,11 +99,16 @@ def extract_segment_features_for_segments(task, sids, features, f2bs):
 
     for feature in features:
         index_filename, value_filename = f2bs[feature]
-        existing_tids = binstorage.retrieve_ids(index_filename)
-        sorted_ids, sort_order = np.unique(existing_tids, return_index=True)
 
-        non_existing_idx = np.where(np.logical_not(np.isin(tids, sorted_ids)))
-        missing_tids = tids[non_existing_idx]
+        if force:
+            tids_target = tids
+        else:
+            existing_tids = binstorage.retrieve_ids(index_filename)
+            sorted_ids, sort_order = np.unique(existing_tids, return_index=True)
+
+            non_existing_idx = np.where(np.logical_not(np.isin(tids, sorted_ids)))
+            missing_tids = tids[non_existing_idx]
+            tids_target = missing_tids
 
         af_to_segments = {}
 
@@ -325,26 +330,35 @@ def get_or_wait(task_id):
 
 
 @app.task(bind=False)
-# @profile
-def extract_database_measurements(task_id):
-    task = get_or_wait(task_id)
+def extract_database_measurements(arg=None, force=False):
+    if isinstance(arg, int):
+        task = get_or_wait(arg)
+    else:
+        task = arg
     runner = TaskRunner(task)
     try:
         runner.preparing()
 
-        cls, dm_id = task.target.split(':')
-        dm_id = int(dm_id)
-        assert cls == DataMatrix.__name__
-        dm = DataMatrix.objects.get(id=dm_id)
+        if isinstance(task, Task):
+            cls, dm_id = task.target.split(':')
+            dm_id = int(dm_id)
+            assert cls == DataMatrix.__name__
+            dm = DataMatrix.objects.get(id=dm_id)
 
-        if dm.database:
-            segments = Segment.objects.filter(audio_file__database=dm.database)
-            sids = segments.values_list('id', flat=True)
+            if dm.database:
+                segments = Segment.objects.filter(audio_file__database=dm.database)
+                sids = segments.values_list('id', flat=True)
+            else:
+                sids = dm.tmpdb.ids
+            features_hash = dm.features_hash
+            aggregations_hash = dm.aggregations_hash
         else:
-            sids = dm.tmpdb.ids
+            sids = task.sids
+            features_hash = task.features_hash
+            aggregations_hash = task.aggregations_hash
 
-        features = Feature.objects.filter(id__in=dm.features_hash.split('-'))
-        aggregations = Aggregation.objects.filter(id__in=dm.aggregations_hash.split('-'))
+        features = Feature.objects.filter(id__in=features_hash.split('-'))
+        aggregations = Aggregation.objects.filter(id__in=aggregations_hash.split('-'))
         aggregators = [aggregator_map[x.name] for x in aggregations]
 
         # feature to binstorage's files
@@ -370,7 +384,7 @@ def extract_database_measurements(task_id):
                 value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
                 fa2bs[feature][aggregator] = (index_filename, value_filename)
 
-        tids, f2tid2fvals = extract_segment_features_for_segments(runner, sids, features, f2bs)
+        tids, f2tid2fvals = extract_segment_features_for_segments(runner, sids, features, f2bs, force)
 
         for feature, (index_filename, value_filename) in f2bs.items():
             _tids, _fvals = f2tid2fvals.get(feature, (None, None))
@@ -380,7 +394,7 @@ def extract_database_measurements(task_id):
                 binstorage.store(_tids, _fvals, index_filename, value_filename)
 
         runner.wrapping_up()
-        child_task = Task(user=task.user, parent=task)
+        child_task = task.__class__(user=task.user, parent=task)
         child_task.save()
         child_runner = TaskRunner(child_task)
         child_runner.preparing()
@@ -388,20 +402,21 @@ def extract_database_measurements(task_id):
         aggregate_feature_values(child_runner, sids, f2bs, fa2bs, features, aggregators)
         child_runner.complete()
 
-        full_sids_path = dm.get_sids_path()
-        full_bytes_path = dm.get_bytes_path()
-        full_cols_path = dm.get_cols_path()
+        if isinstance(task, Task):
+            full_sids_path = dm.get_sids_path()
+            full_bytes_path = dm.get_bytes_path()
+            full_cols_path = dm.get_cols_path()
 
-        data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
+            data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
 
-        ndarray_to_bytes(data, full_bytes_path)
-        ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
+            ndarray_to_bytes(data, full_bytes_path)
+            ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
 
-        with open(full_cols_path, 'w', encoding='utf-8') as f:
-            json.dump(col_inds, f)
+            with open(full_cols_path, 'w', encoding='utf-8') as f:
+                json.dump(col_inds, f)
 
-        dm.ndims = data.shape[1]
-        dm.save()
+            dm.ndims = data.shape[1]
+            dm.save()
         runner.complete()
 
     except Exception as e:
@@ -421,6 +436,23 @@ def ica(data, ndims, **kwargs):
     params.update(kwargs)
     dim_reduce_func = FastICA(**params)
     return dim_reduce_func.fit_transform(data)
+
+
+def pca_optimal(data, max_ndims, min_explained):
+    """
+    Incrementally increase the dimensions of PCA until sum explained reached a threshold
+    :param data: 2D ndarray
+    :param max_ndims: maximum number of dimensions to try. Return when reached even if explained threshold hasn't.
+    :param min_explained: The minimum explained threshold. Might not reached.
+    :return: sum explained and the PCA result.
+    """
+    for ndim in range(2, max_ndims):
+        dim_reduce_func = PCA(n_components=ndim)
+        retval = dim_reduce_func.fit_transform(data)
+        explained = np.sum(dim_reduce_func.explained_variance_ratio_)
+        if explained >= min_explained:
+            break
+    return explained, retval
 
 
 def tsne(data, ndims, **kwargs):

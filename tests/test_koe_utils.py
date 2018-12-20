@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
-from koe.utils import segments, split_kfold_classwise, divide_conquer, one_hot
+from koe.utils import segments, split_classwise, divide_conquer, one_hot
 
 
 @memoize(timeout=60)
@@ -105,8 +105,8 @@ class KoeUtilsTest(TestCase):
 
         labels = np.array(labels, dtype=int)
         np.random.shuffle(labels)
-        folds_iter1 = split_kfold_classwise(labels, k)
-        folds_iter2 = split_kfold_classwise(labels, k)
+        folds_iter1 = split_classwise(labels, k)
+        folds_iter2 = split_classwise(labels, k)
 
         sorted_indices = np.arange(len(labels))
         self.assertEqual(len(folds_iter1), k)

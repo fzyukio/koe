@@ -4,10 +4,12 @@ from django.test import TestCase
 from librosa import feature as rosaft
 from librosa.core.spectrum import _spectrogram
 
+from koe.features.freq_domain import spectral_flatness, spectral_bandwidth, spectral_centroid, spectral_contrast,\
+    spectral_rolloff
+from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_psd, stft_from_sig
 from koe.management.commands.utils import wav_2_mono
 
-from koe.features import librosa_features
 
 nfft = 512
 noverlap = nfft * 3 // 4
@@ -39,36 +41,36 @@ class Test(TestCase):
 
     def test_spectral_flatness(self):
         correct = rosaft.spectral_flatness(y=self.sig, S=None, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.spectral_flatness(self.args)
+        actual = spectral_flatness(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)
 
     def test_spectral_bandwidth(self):
         correct = rosaft.spectral_bandwidth(y=self.sig, sr=self.fs, S=None, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.spectral_bandwidth(self.args)
+        actual = spectral_bandwidth(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)
 
     def test_spectral_centroid(self):
         correct = rosaft.spectral_centroid(y=self.sig, sr=self.fs, S=None, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.spectral_centroid(self.args)
+        actual = spectral_centroid(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)
 
     def test_spectral_contrast(self):
         correct = rosaft.spectral_contrast(y=self.sig, sr=self.fs, S=None, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.spectral_contrast(self.args)
+        actual = spectral_contrast(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)
 
     def test_spectral_rolloff(self):
         correct = rosaft.spectral_rolloff(y=self.sig, sr=self.fs, S=None, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.spectral_rolloff(self.args)
+        actual = spectral_rolloff(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)
 
     def test_mfcc(self):
         correct = rosaft.mfcc(y=self.sig, sr=self.fs, n_fft=nfft, hop_length=stepsize)
-        actual = librosa_features.mfcc(self.args)
+        actual = mfcc(self.args)
 
         self.assertTrue(np.abs(correct - actual).max() < tol)

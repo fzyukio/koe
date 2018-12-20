@@ -6,6 +6,7 @@ import re
 from abc import abstractmethod
 from logging import warning
 
+from django.utils import timezone
 import django.db.models.options as options
 import numpy as np
 from django.conf import settings
@@ -616,6 +617,23 @@ class TaskProgressStage(MagicChoices):
     WRAPPING_UP = 400
     COMPLETED = 500
     ERROR = 600
+
+
+class NonDbTask:
+    def __init__(self, **kwargs):
+        self.id = 0
+        self.user = kwargs.get('user', None)
+        self.parent = kwargs.get('parent', None)
+        self.stage = TaskProgressStage.NOT_STARTED
+        self.created = timezone.now()
+        self.started = None
+        self.completed = None
+        self.pc_complete = 0.
+        self.message = None
+        self.target = None
+
+    def save(self):
+        pass
 
 
 class Task(SimpleModel):

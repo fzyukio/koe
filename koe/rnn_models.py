@@ -1,10 +1,10 @@
 import numpy as np
 from numpy import random
 
-from koe.utils import one_hot, split_kfold_classwise, split_classwise
+from koe.utils import one_hot, split_classwise
 
 
-def inds2dataset(inds, data, labels, lens):
+def inds2dataset(inds, data, labels, lens=None):
     """
     Collect data by given indices & stuff them in a separate dataset
     :param inds: column indices of the selected data points
@@ -18,7 +18,8 @@ def inds2dataset(inds, data, labels, lens):
     for ind in inds:
         dataset.data.append(data[ind])
         dataset.labels.append(labels[ind])
-        dataset.lens.append(lens[ind])
+        if lens:
+            dataset.lens.append(lens[ind])
     return dataset
 
 
@@ -54,7 +55,8 @@ class DataSet:
         for ind in inds:
             self.data.append(data_[ind])
             self.labels.append(labels_[ind])
-            self.lens.append(lens_[ind])
+            if lens_:
+                self.lens.append(lens_[ind])
 
     def all(self):
         return self.data, self.labels, self.lens
@@ -84,55 +86,55 @@ class TrainableSet(DataSet):
         self.fold_id = 0
         self.enum_labels = enum_labels
 
-    def split(self, nparts=10):
-        """
-        Shuffle and divide the data into two smaller sets: train and test
-        :param nparts:
-        :return:
-        """
-        assert nparts > 2, 'Test set must be less than training set'
-        self.shuffle()
-        train, test = split_classwise(self.enum_labels, test_ratio=1 / nparts)
+    def make_folds(self, nfolds, ratio=None):
+        if ratio is None:
+            ratio = 1. / nfolds
+        self.folds = split_classwise(self.enum_labels, ratio, nfolds)
+        return self.folds
+
+    def get_fold(self, k):
+        fold = self.folds[k]
+        train = fold['train']
+        valid = fold['test']
 
         trainset = inds2dataset(train, self.data, self.labels, self.lens)
+        validset = inds2dataset(valid, self.data, self.labels, self.lens)
+
+        return trainset, validset
+
+
+class DataProvider:
+    def __init__(self, data, labels, balanced=False):
+        assert len(data) == len(labels)
+        self.data = data
+        self.labels = labels
+        self.balanced = balanced
+        self.lens = None
+        self.unique_labels, self.enum_labels = np.unique(labels, return_inverse=True)
+        self.folds = None
+
+    def split(self, ratio, limits=None):
+        fold = split_classwise(self.enum_labels, ratio, nfolds=1, balanced=self.balanced, limits=limits)
+        train = fold[0]['train']
+        test = fold[0]['test']
+
+        trainable_enum_labels = self.enum_labels[train]
+
+        trainset = inds2dataset(train, self.data, self.labels, self.lens).make_trainable(trainable_enum_labels)
         testset = inds2dataset(test, self.data, self.labels, self.lens)
 
         return trainset, testset
 
 
-# class FoldedDataSet(DataSet):
-#     def __init__(self, enum_labels, dataset):
-#         super(FoldedDataSet, self).__init__(dataset)
-#         self.folds = None
-#         self.fold_id = 0
-#         self.enum_labels = enum_labels
-#
-#     def split_kfold(self, k):
-#         """
-#         This facilitates k-fold validation for the training process.
-#         Iterate through the folds, when the last fold is called, shuffle the dataset and divide into k-folds again
-#         :param k: number of folds to be divided
-#         :return:
-#         """
-#         if self.folds is None or len(self.folds) != k:
-#             self.folds = split_kfold_classwise(self.enum_labels, k)
-#             self.fold_id = 0
-#         elif self.fold_id >= len(self.folds) - 1:
-#             self.shuffle()
-#             self.folds = split_kfold_classwise(self.enum_labels, k)
-#             self.fold_id = 0
-#         else:
-#             self.fold_id += 1
-#
-#         fold = self.folds[self.fold_id]
-#         trainset = inds2dataset(fold['train'], self.data, self.labels, self.lens)
-#         validset = inds2dataset(fold['test'], self.data, self.labels, self.lens)
-#
-#         return trainset, validset
+class EnumDataProvider(DataProvider):
+    def __init__(self, data, labels, balanced=False):
+        super(EnumDataProvider, self).__init__(data, labels, balanced)
+        self.labels_original = self.labels
+        self.labels = self.enum_labels
 
 
-class DataProvider:
-    def __init__(self, data, labels, use_pseudo_end=False):
+class OneHotSequenceProvider(DataProvider):
+    def __init__(self, data, labels, balanced=False, use_pseudo_end=False):
         """
         Convert row-based data and nominal labels (e.g. using strings) into data suitable for a dynamic RNN.
         Each data sequence is a np.ndarray, they must have the same number of rows. They can have diff nums of columns.
@@ -146,7 +148,7 @@ class DataProvider:
         :param use_pseudo_end: if true, the end of each data sequence will be appended with a row filled by value 2
                                we chose 2 as it is outside of the data range
         """
-        assert len(data) == len(labels)
+        super(OneHotSequenceProvider, self).__init__(data, labels, balanced)
         self.labels, self.unique_labels, self.enum_labels = one_hot(labels)
 
         # Find min-max of data
@@ -203,18 +205,3 @@ class DataProvider:
         self.input_len = shape1
         self.output_len = self.n_classes = len(self.unique_labels)
         self.seq_max_len = max_seq_len
-        self.folds = None
-
-    def split_folds(self, nfolds):
-        self.folds = split_kfold_classwise(self.enum_labels, nfolds)
-
-    def get_fold(self, k):
-        fold = self.folds[k]
-        train = fold['train']
-        test = fold['test']
-        trainable_enum_labels = self.enum_labels[train]
-
-        traintestset = inds2dataset(train, self.data, self.labels, self.lens).make_trainable(trainable_enum_labels)
-        validset = inds2dataset(test, self.data, self.labels, self.lens)
-
-        return traintestset, validset

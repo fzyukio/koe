@@ -34,12 +34,13 @@ def send_email(task, success):
 
 
 class TaskRunner:
-    def __init__(self, task):
+    def __init__(self, task, do_send_email=True):
         self.task = task
         if task.parent is None:
             prefix = 'Task #{} owner: {}'.format(task.id, task.user.username)
         else:
             prefix = '--Subtask #{} from Task #{} owner: {}'.format(task.id, task.parent.id, task.user.username)
+        self.do_send_email = do_send_email
         self.tick_interval = 1
         self.tick_count = 0
         self.next_count = 0
@@ -65,14 +66,16 @@ class TaskRunner:
         self.task.pc_complete = 100.
         self.task.save()
         self._advance(TaskProgressStage.COMPLETED)
-        send_email(self.task, True)
+        if self.do_send_email:
+            send_email(self.task, True)
 
     def error(self, e):
         from django.conf import settings
         error_tracker = settings.ERROR_TRACKER
         error_tracker.captureException()
         self._advance(TaskProgressStage.ERROR, str(e))
-        send_email(self.task, False)
+        if self.do_send_email:
+            send_email(self.task, False)
 
     def _change_suffix(self):
         stage_name = stage_dict[self.task.stage]

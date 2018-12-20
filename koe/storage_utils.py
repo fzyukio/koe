@@ -1,6 +1,8 @@
 import os
 
 import numpy as np
+from django.db.models import Case
+from django.db.models import When
 
 from koe.models import Segment, AudioFile
 from root.utils import data_path
@@ -30,6 +32,12 @@ def get_sids_tids(database, population_name=None):
     tids = tids[sids_sort_order]
 
     return sids, tids
+
+
+def get_tids(database, sids):
+    preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
+    tids = Segment.objects.filter(audio_file__database=database, id__in=sids).order_by(preserved).values_list('tid')
+    return np.array(tids, dtype=np.int32)
 
 
 def get_binstorage_locations(features, aggregators):
