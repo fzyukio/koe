@@ -6,6 +6,8 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db import utils
+from django.db.models import Case
+from django.db.models import When
 from django.db.models.base import ModelBase
 from django.db.models.query import QuerySet
 from django_bulk_update.helper import bulk_update
@@ -317,7 +319,9 @@ class AutoSetterGetterMixin:
         :return:
         """
         if not isinstance(objs, QuerySet):
-            objs = objs[0].__class__.objects.filter(id__in=[x.id for x in objs])
+            ids = [x.id for x in objs]
+            preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(ids)])
+            objs = objs[0].__class__.objects.filter(id__in=ids).order_by(preserved)
 
         if isinstance(value, list):
             for obj, val in zip(objs, value):

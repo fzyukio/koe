@@ -248,13 +248,15 @@ class AudioFile(SimpleModel):
 
     @classmethod
     def set_species(cls, objs, value, extras={}):
-        parts = value.split(' ')
-        if len(parts) != 2:
-            raise CustomAssertionError('Species name must consist of Genus and Species')
+        value = value.strip()
+        if value:
+            parts = value.split(' ')
+            if len(parts) != 2:
+                raise CustomAssertionError('Species name must consist of Genus and Species')
 
-        genus, species_code = parts
-        species, _ = Species.objects.get_or_create(genus=genus, species=species_code)
-        Individual.objects.filter(audiofile__in=objs).update(species=species)
+            genus, species_code = parts
+            species, _ = Species.objects.get_or_create(genus=genus, species=species_code)
+            Individual.objects.filter(audiofile__in=objs).update(species=species)
 
     @classmethod
     def set_individual(cls, objs, name, extras={}):

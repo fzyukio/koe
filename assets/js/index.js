@@ -410,7 +410,7 @@ function sanitise(val) {
     if (val.startsWith('"')) {
         val = val.substr(1, val.length - 2);
     }
-    return val;
+    return val.trim();
 }
 
 
@@ -436,7 +436,7 @@ function getKeyFields(items, column) {
  * @returns {{header, csvRows}}
  */
 function splitCsv(csvText) {
-    let csvContent = csvText.split('\n');
+    let csvContent = csvText.trim().match(/[^\r\n]+/g);
     if (csvContent.length === 0) {
         throw new Error('File is empty');
     }
