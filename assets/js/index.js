@@ -24,6 +24,7 @@ import {postRequest} from './ajax-handler';
 import {queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
 import {findColumn} from 'grid-utils';
+const Papa = require('papaparse');
 require('no-going-back');
 
 let page;
@@ -430,24 +431,6 @@ function getKeyFields(items, column) {
     });
 }
 
-/**
- * Split raw csv text into sanitised header array and data body
- * @param csvText
- * @returns {{header, csvRows}}
- */
-function splitCsv(csvText) {
-    let csvContent = csvText.trim().match(/[^\r\n]+/g);
-    if (csvContent.length === 0) {
-        throw new Error('File is empty');
-    }
-    let header = csvContent[0].split(',');
-    let csvRows = csvContent.slice(1);
-
-    for (let i = 0; i < csvRows.length; i++) {
-        csvRows[i] = csvRows[i].split(',').map((x) => sanitise(x));
-    }
-    return {header, csvRows};
-}
 
 /**
  * Split the list of columns from header to two array: columns allowed to import vs disallowed.
@@ -564,10 +547,27 @@ function processCsv(csvText, permittedCols, importKey, columns, items) {
 
     return new Promise(function (resolve, reject) {
         try {
-            let {header, csvRows} = splitCsv(csvText);
-            let {matched} = matchColumns(header, permittedCols, importKey);
-            let {rows, info} = getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey);
-            resolve({rows, info, matched});
+            let csvRows = [];
+            Papa.parse(csvText, {
+                skipEmptyLines: true,
+                step(results, parser) {
+                    if (results.errors.length) {
+                        let errorMessage = results.errors.map((x) => x.message).join(';');
+                        let e = new Error(`Error parsing CSV: ${errorMessage}`);
+                        logError(e);
+                        parser.abort();
+                        reject(e);
+                    }
+                    let row = results.data[0];
+                    csvRows.push(row);
+                },
+                complete() {
+                    let header = csvRows.splice(0, 1)[0];
+                    let {matched} = matchColumns(header, permittedCols, importKey);
+                    let {rows, info} = getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey);
+                    resolve({rows, info, matched});
+                }
+            });
         }
         catch (e) {
             logError(e);
