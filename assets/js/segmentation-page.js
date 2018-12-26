@@ -280,6 +280,7 @@ export const preRun = function (commonElements) {
     initController();
     spectViz = new Visualiser(vizContainerId);
     spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
+    spectViz.initScroll();
 
     return new Promise(function (resolve, reject) {
         postRequest({
