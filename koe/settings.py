@@ -321,6 +321,8 @@ else:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     STATICFILES_DIRS = (
         base_dir_join('assets'),
+        base_dir_join('node_modules/keyboardjs/dist'),
+        base_dir_join('node_modules/bluebird/js/browser'),
     )
 
     MIDDLEWARE.insert(

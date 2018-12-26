@@ -3947,9 +3947,9 @@ kdbush@^1.0.1:
   version "1.0.1"
   resolved "http://registry.npmjs.org/kdbush/-/kdbush-1.0.1.tgz#3cbd03e9dead9c0f6f66ccdb96450e5cecc640e0"
 
-keyboardjs@^2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/keyboardjs/-/keyboardjs-2.4.1.tgz#7c5ad28695a21b6c4d066681c127376a60f9acd1"
+keyboardjs@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/keyboardjs/-/keyboardjs-2.5.0.tgz#93ae177ae0338e2ed87456d43f2ccefc357cf2ed"
 
 kind-of@^3.0.2:
   version "3.2.2"

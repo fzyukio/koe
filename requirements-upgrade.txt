@@ -1,1 +1,1 @@
-pycspade==0.4.5
+pycspade==0.6.2
