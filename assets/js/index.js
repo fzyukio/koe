@@ -18,7 +18,7 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
-    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError, uuid4
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError, uuid4, toJSONLocal
 } from './utils';
 import {postRequest} from './ajax-handler';
 import {queryAndPlayAudio} from './audio-handler';
@@ -750,7 +750,8 @@ const _postRun = function () {
         let csvContent = createCsv(page.grid.mainGrid, downloadType);
 
         let d = new Date();
-        let filename = `koe-${gridType}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}.csv`;
+        let dateString = toJSONLocal(d);
+        let filename = `koe-${gridType}-${dateString}.csv`;
         let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
         downloadBlob(blob, filename);
     });

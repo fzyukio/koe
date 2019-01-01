@@ -710,3 +710,17 @@ export const pad = function(num, size, char = '0') {
     while (s.length < size) s = char + s;
     return s;
 };
+
+/**
+ * Date to string format yyyy-mm-dd_hh-mm-ss
+ * @param date
+ * @returns {string}
+ */
+export function toJSONLocal (date) {
+    let local = new Date(date);
+    local.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    let formatted = local.toJSON();
+    let dateStr = formatted.slice(0, 10);
+    let timeStr = formatted.slice(11, 19).replace(/:/g, '-');
+    return `${dateStr}_${timeStr}`;
+}
