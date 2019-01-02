@@ -1,10 +1,12 @@
 import {initSelectizeSimple} from './selectize-formatter';
-import {postRequest} from './ajax-handler';
+import {postRequest, downloadRequest, createSpinner} from './ajax-handler';
+import {toJSONLocal, downloadBlob, getUrl} from './utils';
 
 let dataMatrixSelectEl;
 let featuresSectionEl = $('#id_features');
 let aggregationsSectionEl = $('#id_aggregations');
 let scheduleBtn = $('#schedule-btn');
+let downloadBtn = $('#download-btn');
 
 let dataMatrixSelectizeHandler;
 
@@ -99,10 +101,12 @@ const initCheckboxes = function () {
         if (dm) {
             dataMatrixSelectizeHandler.setValue(dm, true);
             scheduleBtn.prop('disabled', true);
+            downloadBtn.prop('disabled', false);
         }
         else {
             dataMatrixSelectizeHandler.setValue(null, true);
             scheduleBtn.prop('disabled', false);
+            downloadBtn.prop('disabled', true);
         }
     };
 
@@ -133,12 +137,67 @@ const initSelectize = function () {
             let aggregation = aggregations[i];
             aggregationsSectionEl.find(`input[value=${aggregation}]`).prop('checked', true);
         }
+        downloadBtn.prop('disabled', false);
     });
 };
+
+
+/**
+ * Download tensor's binary and ids, then turn them into a csv file.
+ * The CSV can be HUGE - because it's text, but the binaries are relative small and are static.
+ * @param tensorInfo
+ */
+const downloadDataMatrixAsCsv = function (tensorInfo) {
+    let spinner = createSpinner();
+    spinner.start();
+
+    let bytesPath = '/' + tensorInfo['bytes-path'];
+    let sidsPath = '/' + tensorInfo['sids-path'];
+    let dbname = tensorInfo['database-name'];
+    let d = new Date();
+    let dateString = toJSONLocal(d);
+    let filename = `${dbname}-${dateString}.csv`;
+
+    let downloadSids = downloadRequest(sidsPath, Int32Array);
+    let downloadBytes = downloadRequest(bytesPath, Float32Array);
+
+    Promise.all([downloadSids, downloadBytes]).then(function (values) {
+        let sids = values[0];
+        let bytes = values[1];
+        let ncols = bytes.length / sids.length;
+        let csvRows = [];
+        let byteStart = 0;
+        let byteEnd = ncols;
+        for (let i = 0; i < sids.length; i++) {
+            let sid = sids[i];
+            let measurements = bytes.slice(byteStart, byteEnd);
+            let csvRow = `${sid},${measurements.join(',')}`;
+            csvRows.push(csvRow);
+            byteStart += ncols;
+            byteEnd += ncols;
+        }
+        let csvContent = csvRows.join('\n');
+        let blob = new Blob([csvContent], {type: 'text/csv;charset=ascii;'});
+
+        spinner.clear();
+        downloadBlob(blob, filename);
+    });
+};
+
 
 export const postRun = function () {
     scheduleBtn.click(function () {
         form.submit();
+    });
+    downloadBtn.click(function () {
+        let dmId = dataMatrixSelectEl.val();
+        postRequest({
+            url: getUrl('send-request', 'koe/get-datamatrix-file-paths'),
+            data: {'dmid': dmId},
+            onSuccess (data) {
+                downloadDataMatrixAsCsv(data);
+            }
+        });
     });
     form.submit(function (e) {
         e.preventDefault();

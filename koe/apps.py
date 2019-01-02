@@ -73,6 +73,7 @@ class KoeConfig(AppConfig):
                     register_app_modules(self.name, 'request_handlers.tensorviz')
                     register_app_modules(self.name, 'request_handlers.preferences')
                     register_app_modules(self.name, 'request_handlers.templates')
+                    register_app_modules(self.name, 'request_handlers.features')
                     register_app_modules(self.name, 'models')
                     register_app_modules('root', 'models')
                     register_app_modules(self.name, 'grid_getters')
