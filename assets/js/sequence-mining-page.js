@@ -60,13 +60,13 @@ class Grid extends FlexibleGrid {
 
         return new Promise(function (resolve) {
             let onSuccess = function (rows) {
-                let {singletRows, realRows, pseudoRows} = separateRows(rows);
-                self.rows = realRows;
+                let {singletRows, pseudoRows} = separateRows(rows);
+                self.rows = rows;
 
                 self.nodesDict = constructNodeDictionary(singletRows);
                 fillInNodesInfo(self.nodesDict, pseudoRows);
 
-                updateSlickGridData(self.mainGrid, realRows);
+                updateSlickGridData(self.mainGrid, rows);
                 if (doCacheSelectableOptions) {
                     self.cacheSelectableOptions();
                 }
@@ -99,11 +99,10 @@ const gridStatusNTotal = gridStatus.find('#ntotal');
  * - Rows that starts with a pseudo start will be used to visualise node's probability to be a start
  * - Anything else will be used to display in the table and visualis node's connectivity
  * @param rows
- * @returns {{singletRows: Array, realRows: Array, pseudoRows: Array}}
+ * @returns {{singletRows: Array, pseudoRows: Array}}
  */
 const separateRows = function(rows) {
     let singletRows = [];
-    let realRows = [];
     let pseudoRows = [];
 
     $.each(rows, function(idx, row) {
@@ -114,14 +113,10 @@ const separateRows = function(rows) {
         else if (sequence.startsWith(pseudoStartName) || sequence.endsWith(pseudoEndName)) {
             pseudoRows.push(row);
         }
-        else {
-            realRows.push(row)
-        }
     });
 
     return {
         singletRows,
-        realRows,
         pseudoRows
     };
 };
