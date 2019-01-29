@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.manifold import TSNE
 from sklearn.metrics import confusion_matrix
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
 from koe.utils import accum
@@ -69,8 +70,17 @@ def dummy(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs)
     return retval
 
 
-def svm(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False):
-    model = SVC(kernel='linear')
+def svm_linear(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    model = SVC(kernel='linear', **kwargs)
+    retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
+
+    fake_importances = np.zeros((train_x.shape[1],))
+    retval = list(retval) + [fake_importances]
+    return retval
+
+
+def svm_rbf(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    model = SVC(kernel='rbf', **kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
 
     fake_importances = np.zeros((train_x.shape[1],))
@@ -103,12 +113,23 @@ def qda(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False):
     return retval
 
 
+def nnet(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    model = MLPClassifier(**kwargs)
+    retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
+
+    fake_importances = np.zeros((train_x.shape[1],))
+    retval = list(retval) + [fake_importances]
+    return retval
+
+
 classifiers = {
     'rf': random_forest,
-    'svm': svm,
+    'svm_linear': svm_linear,
+    'svm_rbf': svm_rbf,
     'gnb': gaussian_nb,
     'lda': lda,
     'qda': qda,
+    'nnet': nnet,
     'dummy': dummy
 }
 
