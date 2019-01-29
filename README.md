@@ -24,12 +24,9 @@ I recommend using the official website at https://koe.io.ac.nz. However if you w
 [Deploy](docs/DEPLOY.md)
 
 ## Licence
-This work is licensed under Affero General Public License Version 3.0
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-> TL;DR    
->  - You are allowed to copy, use and distribute this work free of charge.
->  - You are allowed to change the source code (create a derivative)
->  - Any derivative must be made publicly available under the same, or compatible licence.    
+This work is distrbuted under GPL version 3.0 licence. 
 
 Read the full [LICENCE](LICENCE.md) here
 
