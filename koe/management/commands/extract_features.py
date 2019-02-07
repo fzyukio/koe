@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
         database = get_or_error(Database, dict(name__iexact=database_name))
 
-        features = Feature.objects.all().order_by('id').filter(name='spectral_flux')
+        features = Feature.objects.all().order_by('id')
         aggregations = Aggregation.objects.filter(enabled=True).order_by('id')
 
         enabled_features = []

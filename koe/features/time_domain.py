@@ -16,7 +16,7 @@ def zero_crossing_rate(args):
     nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
     hopsize = nfft - noverlap
     zcr = rosaft.zero_crossing_rate(y=sig, frame_length=nfft, hop_length=hopsize, center=False)
-    return zcr.reshape((len(zcr), 1))
+    return zcr.reshape((zcr.size, 1))
 
 
 def time_axis(args):
