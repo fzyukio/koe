@@ -23,6 +23,7 @@ feature_whereabout = {
         ('spectral_decrease', False, True),
         ('harmonic_ratio', False, True),
         ('fundamental_frequency', False, True),
+        ('spectrum', False, False),
         # ('total_energy', True, True),
         # ('aggregate_entropy', True, True),
         # ('average_entropy', True, True),

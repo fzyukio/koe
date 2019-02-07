@@ -11,6 +11,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
+from koe.neuralnet_models import ConvolutionalNeuralNetwork
 from koe.utils import accum
 from koe.utils import split_classwise
 
@@ -117,6 +118,14 @@ def nnet(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
     model = MLPClassifier(**kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
 
+    fake_importances = np.zeros((train_x.shape[1],))
+    retval = list(retval) + [fake_importances]
+    return retval
+
+
+def cnn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    model = ConvolutionalNeuralNetwork(**kwargs)
+    retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
     fake_importances = np.zeros((train_x.shape[1],))
     retval = list(retval) + [fake_importances]
     return retval

@@ -10,6 +10,11 @@ from memoize import memoize
 eps = 0.00000001
 
 
+def spectrum(args):
+    psd = get_psd(args)
+    return psd
+
+
 def spectral_bandwidth(args):
     psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
