@@ -1,8 +1,10 @@
 import json
+import pickle
 
 import numpy as np
 from django.core.management.base import BaseCommand
-from progress.bar import Bar
+from hyperopt import Trials
+from hyperopt import fmin, tpe, hp
 from scipy.stats import zscore
 
 from koe.aggregator import aggregator_map
@@ -59,7 +61,7 @@ class Command(BaseCommand):
         parser.add_argument('--label-level', action='store', dest='label_level', default='label', type=str,
                             help='Level of labelling to use', )
 
-        parser.add_argument('--min-occur', action='store', dest='min_occur', default=10, type=int,
+        parser.add_argument('--min-occur', action='store', dest='min_occur', default=2, type=int,
                             help='Ignore syllable classes that have less than this number of instances', )
 
         parser.add_argument('--ipc', action='store', dest='ipc', default=None, type=int,
@@ -83,7 +85,7 @@ class Command(BaseCommand):
         niters = options['niters']
         profile = options.get('profile', None)
         tsv_file = profile + '.tsv'
-
+        trials_file = profile + '.trials'
         if ipc is not None:
             assert ipc <= min_occur, 'Instances per class cannot exceed as min-occur'
             ipc_min = ipc
@@ -183,165 +185,120 @@ class Command(BaseCommand):
             v2t_ratio = valid_ratio / (train_ratio + valid_ratio)
             nfolds = int(np.floor(1. / v2t_ratio + 0.01))
 
-            n_estimators_choices = np.linspace(1, 100, 20, endpoint=True, dtype=np.int)
-            min_samples_split_choices = np.linspace(2, 21, 10, endpoint=True, dtype=np.int)
-            min_samples_leaf_choices = np.linspace(1, 20, 10, endpoint=True, dtype=np.int)
+            params_names = []
+            params_converters = []
+            params_count = 0
+
+            def loss(params):
+                classifier_args = {}
+                for i in range(params_count):
+                    param_name = params_names[i]
+                    param_converter = params_converters[i]
+                    param_value = params[i]
+                    classifier_args[param_name] = param_converter(param_value)
+
+                print(classifier_args)
+                score = perform_k_fold(classifier, trainvalidset, nfolds, v2t_ratio, nlabels, **classifier_args)
+                return 1. - score
+
+            n_estimators_choices = hp.uniform('n_estimators', 40, 100)
+            min_samples_split_choices = hp.uniform('min_samples_split', 2, 21)
+            min_samples_leaf_choices = hp.uniform('min_samples_leaf', 1, 20)
+
             n_features = data.shape[1]
             auto_gamma = 1 / n_features
-            gamma_choices = np.linspace(auto_gamma / 10, auto_gamma * 10, 10, endpoint=True, dtype=np.float)
-            c_choices = np.linspace(0.1, 100, 10, endpoint=True, dtype=np.float)
-            hidden_layer_sizes_choices = [
-                (100, ), (200, ), (400, ),
-                (100, 100), (100, 200), (100, 400),
-                (200, 100), (200, 200), (200, 400),
-                (400, 100), (400, 200), (400, 400),
-            ]
+            gamma_choices = hp.uniform('gamma', auto_gamma / 10, auto_gamma * 10)
+            c_choices = hp.loguniform('C', -1, 2)
+            hidden_layer_size_choices = hp.uniform('hidden_layer_sizes', n_features // 2, n_features)
 
             choices = {
                 'rf': {
-                    'n_estimators': n_estimators_choices,
-                    'min_samples_split': min_samples_split_choices,
-                    'min_samples_leaf': min_samples_leaf_choices,
-                    # 'max_features': max_features_choices
+                    'n_estimators': (lambda x: int(np.round(x)), n_estimators_choices),
+                    'min_samples_split': (lambda x: int(np.round(x)), min_samples_split_choices),
+                    'min_samples_leaf': (lambda x: int(np.round(x)), min_samples_leaf_choices),
                 },
                 'svm_rbf': {
-                    'gamma': gamma_choices,
-                    'C': c_choices
+                    'gamma': (float, gamma_choices),
+                    'C': (float, c_choices),
                 },
                 'svm_linear': {
-                    'C': c_choices
+                    'C': (float, c_choices),
                 },
                 'nnet': {
-                    'hidden_layer_sizes': hidden_layer_sizes_choices
+                    'hidden_layer_sizes': (lambda x: (int(np.round(x)),), hidden_layer_size_choices)
                 }
             }
 
+            space = []
+            for arg_name, (converter, arg_values) in choices[clsf_type].items():
+                space.append(arg_values)
+                params_names.append(arg_name)
+                params_converters.append(converter)
+                params_count += 1
+
+            trials = Trials()
+            best = fmin(fn=loss, space=space, algo=tpe.suggest, max_evals=10, trials=trials)
+            print(best)
+
+            with open(trials_file, 'wb') as f:
+                pickle.dump(trials, f)
+
+            best_trial = trials.best_trial
+            best_trial_args_values_ = best_trial['misc']['vals']
             best_trial_args_values = {}
+            for arg_name, arg_values in best_trial_args_values_.items():
+                converter = choices[clsf_type][arg_name][0]
+                arg_value = converter(arg_values[0])
+                best_trial_args_values[arg_name] = arg_value
 
-            for arg_name, arg_values in choices[clsf_type].items():
-                # space = [hp.choice(arg_name, arg_values)]
-                losses = []
-                ids = []
+            model_args = ['id'] + list(best_trial_args_values.keys()) + ['accuracy']
 
-                def loss_func(params):
-                    arg_value = params[0]
-                    classifier_args = best_trial_args_values.copy()
-                    classifier_args[arg_name] = arg_value
-                    print('classifier_args = {}'.format(classifier_args))
-                    score = perform_k_fold(classifier, trainvalidset, nfolds, v2t_ratio, nlabels, **classifier_args)
-                    return 1. - score
-
-                for idx, arg_value in enumerate(arg_values):
-                    loss = loss_func((arg_value, ))
-                    ids.append(idx)
-                    losses.append(loss)
-
-                best_loss_idx = np.argmin(losses)
-                best_arg_value = arg_values[best_loss_idx]
-                best_trial_args_values[arg_name] = best_arg_value
-
-                model_args = ['id'] + list(best_trial_args_values.keys()) + ['accuracy']
-
-                model_args_values = {x: [] for x in model_args}
-                for idx, loss in enumerate(losses):
-                    if idx == best_loss_idx:
-                        idx_str = 'Best'
+            model_args_values = {x: [] for x in model_args}
+            for idx, trial in enumerate(trials.trials):
+                if trial == best_trial:
+                    idx = 'Best'
+                trial_args_values = trial['misc']['vals']
+                for arg_name in model_args:
+                    if arg_name == 'id':
+                        model_args_values['id'].append(idx)
+                    elif arg_name == 'accuracy':
+                        trial_accuracy = 1. - trial['result']['loss']
+                        model_args_values['accuracy'].append(trial_accuracy)
                     else:
-                        idx_str = str(idx)
-                    # trial_args_values = trial['misc']['vals']
-                    for arg_name_ in model_args:
-                        if arg_name_ == 'id':
-                            model_args_values['id'].append(idx_str)
-                        elif arg_name_ == 'accuracy':
-                            trial_accuracy = 1. - loss
-                            model_args_values['accuracy'].append(trial_accuracy)
-                        else:
-                            if arg_name_ == arg_name:
-                                val = arg_values[idx]
-                            else:
-                                val = best_trial_args_values[arg_name_]
-                            model_args_values[arg_name_].append(val)
-
-                with open(tsv_file, open_mode, encoding='utf-8') as f:
-                    for arg in model_args:
-                        values = model_args_values[arg]
-                        f.write('{}\t'.format(arg))
-                        f.write('\t'.join(map(str, values)))
-                        f.write('\n')
-                    open_mode = 'a'
+                        # choice = choices[clsf_type][arg_name]
+                        converter = choices[clsf_type][arg_name][0]
+                        val = converter(trial_args_values[arg_name][0])
+                        # val = choice[choice_idx]
+                        model_args_values[arg_name].append(val)
 
             # Perform classification on the test set
-            nfolds = int(np.floor(1 / test_ratio + 0.01))
-            ntrials = nfolds * niters
-            label_prediction_scores = [0] * ntrials
-            label_hitss = [0] * ntrials
-            label_missess = [0] * ntrials
-            label_hitrates = np.empty((ntrials, nlabels))
-            label_hitrates[:] = np.nan
-            importancess = np.empty((ntrials, data.shape[1]))
-            cfmats = np.ndarray((ntrials, nlabels, nlabels))
-            ind = 0
+            train_x = np.array(trainvalidset.data)
+            train_y = np.array(trainvalidset.labels, dtype=np.int32)
+            test_x = np.array(testset.data)
+            test_y = np.array(testset.labels, dtype=np.int32)
 
-            bar = Bar('Features: {}. Classifier: {} Data type: {}...'
-                      .format(ftgroup_name, clsf_type, source), max=ntrials)
-
-            for iter in range(niters):
-                traintetset, _ = dp.split(0, limits=(ipc_min, ipc_max))
-                traintetset.make_folds(nfolds, test_ratio)
-
-                for k in range(nfolds):
-                    trainset, testset = traintetset.get_fold(k)
-                    train_x = np.array(trainset.data)
-                    train_y = np.array(trainset.labels, dtype=np.int32)
-                    test_x = np.array(testset.data)
-                    test_y = np.array(testset.labels, dtype=np.int32)
-
-                    score, label_hits, label_misses, cfmat, importances =\
-                        classifier(train_x, train_y, test_x, test_y, nlabels, True, **best_trial_args_values)
-
-                    label_prediction_scores[ind] = score
-                    label_hitss[ind] = label_hits
-                    label_missess[ind] = label_misses
-
-                    label_hitrate = label_hits / (label_hits + label_misses).astype(np.float)
-
-                    label_hitrates[ind, :] = label_hitrate
-                    importancess[ind, :] = importances
-                    cfmats[ind, :, :] = cfmat
-
-                    bar.next()
-                    ind += 1
-            bar.finish()
-
-            mean_label_prediction_scores = np.nanmean(label_prediction_scores)
-            std_label_prediction_scores = np.nanstd(label_prediction_scores)
-            sum_cfmat = np.nansum(cfmats, axis=0)
+            score, label_hits, label_misses, cfmat, importances =\
+                classifier(train_x, train_y, test_x, test_y, nlabels, True, **best_trial_args_values)
+            lb_hitrates = label_hits / (label_hits + label_misses).astype(np.float)
 
             with open(tsv_file, open_mode, encoding='utf-8') as f:
+                for arg in model_args:
+                    values = model_args_values[arg]
+                    f.write('{}\t'.format(arg))
+                    f.write('\t'.join(map(str, values)))
+                    f.write('\n')
+
                 f.write('Results using best-model\'s paramaters on testset\n')
 
                 if source == 'full':
-                    f.write('Feature group\tNdims\tLabel prediction mean\tstdev\t{}\n'
+                    f.write('Feature group\tNdims\tLabel prediction score\t{}\n'
                             .format('\t '.join(unique_labels)))
-                    f.write('{}\t{}\t{}\t{}\t{}\n'
-                            .format(ftgroup_name, ndims, mean_label_prediction_scores, std_label_prediction_scores,
-                                    '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
+                    f.write('{}\t{}\t{}\t{}\n'
+                            .format(ftgroup_name, ndims, score, '\t'.join(map(str, lb_hitrates))))
                 else:
-                    f.write('Feature group\tNdims\tPCA explained\tPCA Dims\tLabel prediction mean\tstdev\t{}\n'
+                    f.write('Feature group\tNdims\tPCA explained\tPCA Dims\tLabel prediction score\t{}\n'
                             .format('\t '.join(unique_labels)))
-                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
-                            .format(ftgroup_name, ndims, explained, pca_dims, mean_label_prediction_scores,
-                                    std_label_prediction_scores,
-                                    '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
-
-                f.write('\t')
-                f.write('\t'.join(unique_labels))
+                    f.write('{}\t{}\t{}\t{}\t{}\t{}\n'
+                            .format(ftgroup_name, ndims, explained, pca_dims, score, '\t'.join(map(str, lb_hitrates))))
                 f.write('\n')
-                for i in range(nlabels):
-                    label = unique_labels[i]
-                    cfrow = sum_cfmat[:, i]
-                    f.write(label)
-                    f.write('\t')
-                    f.write('\t'.join(map(str, cfrow)))
-                    f.write('\n')
-                f.write('\n')
+                open_mode = 'a'
