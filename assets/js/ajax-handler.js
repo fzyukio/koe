@@ -29,6 +29,27 @@ export const postRequest = function (args) {
 };
 
 
+export const postPromise = function (args) {
+    let onSuccess = args.onSuccess;
+    let onFailure = args.onFailure;
+
+    if (onSuccess !== undefined || onFailure !== undefined) {
+        throw new Error('Success and Failure are handled by Promise, thus cannot be provided as arguments');
+    }
+
+    return new Promise(function (resolve, reject) {
+        args.type = 'POST';
+        args.onSuccess = function(response) {
+            resolve(response);
+        };
+        args.onFailure = function (response) {
+            reject(response);
+        };
+        ajaxRequest(args);
+    });
+};
+
+
 /**
  * Make a request to download file by GET
  * @param url

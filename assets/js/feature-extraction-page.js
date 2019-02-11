@@ -1,5 +1,5 @@
 import {initSelectizeSimple} from './selectize-formatter';
-import {postRequest, downloadRequest, createSpinner} from './ajax-handler';
+import {postRequest, downloadRequest, createSpinner, postPromise} from './ajax-handler';
 import {toJSONLocal, downloadBlob, getUrl} from './utils';
 
 let dataMatrixSelectEl;
@@ -160,18 +160,28 @@ const downloadDataMatrixAsCsv = function (tensorInfo) {
 
     let downloadSids = downloadRequest(sidsPath, Int32Array);
     let downloadBytes = downloadRequest(bytesPath, Float32Array);
+    let downloadSegmentInfo = postPromise({
+        url: getUrl('send-request', 'koe/get-sid-info'),
+        data: {path: sidsPath}
+    });
 
-    Promise.all([downloadSids, downloadBytes]).then(function (values) {
-        let sids = values[0];
-        let bytes = values[1];
+    Promise.all([downloadSegmentInfo, downloadSids, downloadBytes]).then(function (values) {
+        let segInfo = values[0][0];
+        let songInfo = values[0][1];
+        let sids = values[1];
+        let bytes = values[2];
         let ncols = bytes.length / sids.length;
         let csvRows = [];
         let byteStart = 0;
         let byteEnd = ncols;
         for (let i = 0; i < sids.length; i++) {
-            let sid = sids[i];
+            let info = segInfo[i];
+            let songId = info[0];
+            let startMs = info[1];
+            let endMs = info[2];
+            let songName = songInfo[songId];
             let measurements = bytes.slice(byteStart, byteEnd);
-            let csvRow = `${sid},${measurements.join(',')}`;
+            let csvRow = `${songName},${startMs},${endMs},${measurements.join(',')}`;
             csvRows.push(csvRow);
             byteStart += ncols;
             byteEnd += ncols;
