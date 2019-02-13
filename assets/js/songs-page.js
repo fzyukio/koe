@@ -1,10 +1,12 @@
 /* global Dropzone */
 
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, queryAndPlayAudio} from './audio-handler';
+import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost} from './audio-handler';
 import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
+const JSZip = require('jszip/dist/jszip.min.js');
+const filesaver = require('file-saver/dist/FileSaver.min.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 30;
@@ -40,12 +42,19 @@ const gridStatusNSelected = gridStatus.find('#nselected');
 const gridStatusNTotal = gridStatus.find('#ntotal');
 
 const uploadSongsBtn = $('#upload-songs-btn');
+const downloadSongsBtn = $('#download-songs-btn');
 const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
 const uploadSongsModal = $('#upload-songs-modal');
-const databaseId = uploadSongsModal.attr('database');
+const downloadSongsModal = $('#download-songs-modal');
+const downloadProgressBar = downloadSongsModal.find('.progress-bar');
 
+const totalFilesCount = $('#total-files-count');
+const currentFileNumber = $('#current-file-no');
+const currentFileName = $('#current-file-name');
+
+const databaseId = uploadSongsModal.attr('database');
 let ce;
 
 const initSlider = function () {
@@ -231,6 +240,104 @@ const initUploadSongsBtn = function () {
     uploadSongsBtn.click(function () {
         $('#previews').children().remove();
         uploadSongsModal.modal('show');
+    });
+};
+
+/**
+ * Allow users to download songs
+ */
+const initDownloadSongsBtn = function () {
+    downloadSongsBtn.click(function () {
+        let grid_ = grid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let numRows = selectedRows.length;
+        let ids = [];
+        let selectedItems = [];
+        let dataView = grid_.getData();
+        for (let i = 0; i < numRows; i++) {
+            let item = dataView.getItem(selectedRows[i]);
+            ids.push(item.id);
+            selectedItems.push(item);
+        }
+        postRequest({
+            requestSlug: 'koe/get-audio-files-urls',
+            data: {'file-ids': JSON.stringify(ids), format: 'wav'},
+            onSuccess(urls) {
+                let zip = new JSZip();
+                downloadSongsModal.modal('show');
+                let numAddedFiles = 0;
+                totalFilesCount.html(urls.length);
+
+                /**
+                 * Put audio data into the zip container
+                 * @param filename
+                 * @param byteArray
+                 * @param fs
+                 */
+                function handleDownloadedAudio(filename, byteArray, fs) {
+                    let blob = createAudioFromDataArray(byteArray, fs);
+                    zip.file(filename, blob);
+                    numAddedFiles++;
+                    let percentLoaded = numAddedFiles / numRows * 100;
+                    percentLoaded = percentLoaded.toFixed(2);
+
+                    downloadProgressBar.css('width', `${percentLoaded}%`);
+                    downloadProgressBar.attr('aria-valuenow', percentLoaded);
+                    downloadProgressBar.html(`${percentLoaded}%`);
+                    currentFileName.html(filename);
+                    currentFileNumber.html(numAddedFiles);
+
+                    if (numAddedFiles == urls.length) {
+                        zip.generateAsync({type: 'blob'}).then(function (content) {
+                            filesaver.saveAs(content, 'audiofiles.zip');
+                            downloadSongsModal.modal('hide');
+                            downloadSongsModal.on('hidden.bs.modal', function() {
+                                downloadProgressBar.css('width', '0%');
+                                downloadProgressBar.attr('aria-valuenow', 0);
+                                downloadProgressBar.html('0%');
+                                currentFileName.html('');
+                                currentFileNumber.html('');
+                                totalFilesCount.html('');
+                            });
+                        });
+                    }
+                }
+
+                for (let i = 0; i < urls.length; i++) {
+                    let url = urls[i];
+                    let urlParts = url.split('/');
+                    let filename = urlParts[urlParts.length - 1];
+
+                    queryAndHandleAudioGetOrPost({
+                        url,
+                        cacheKey: url,
+                        callback(byteArray, fs) {
+                            handleDownloadedAudio(filename, byteArray, fs);
+                        }
+                    });
+                }
+            },
+            immediate: true,
+        });
+
+
+        // downloadSongsModal.modal('show');
+        // for (let i = 0; i < numRows; i++) {
+        //     let song = dataView.getItem(selectedRows[i]);
+        //     postRequest({
+        //         requestSlug: 'koe/get-audio-file-url',
+        //         data: {'file-id': song.id},
+        //         onSuccess: function (url) {
+        //
+        //
+        //             let percentLoaded = (i+1.0) / numRows;
+        //             downloadProgressBar.css('width', `${percentLoaded}%`);
+        //             downloadProgressBar.attr('aria-valuenow', percentLoaded);
+        //             downloadProgressBar.html(`${percentLoaded}%`);
+        //         },
+        //         immediate: true,
+        //     });
+        // }
     });
 };
 
@@ -431,6 +538,7 @@ export const run = function (commonElements) {
 
     setupSongsUpload();
     initUploadSongsBtn();
+    initDownloadSongsBtn();
 
     grid.init(granularity);
 

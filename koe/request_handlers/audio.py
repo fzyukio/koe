@@ -16,7 +16,8 @@ from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTr
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists, wav_path, audio_path
 
-__all__ = ['get_segment_audio_data', 'import_audio_files', 'get_audio_file_url', 'import_audio_file']
+__all__ = ['get_segment_audio_data', 'import_audio_files', 'get_audio_file_url', 'import_audio_file',
+           'get_audio_files_urls']
 
 
 def _match_target_amplitude(sound, loudness=-10):
@@ -238,3 +239,26 @@ def get_audio_file_url(request):
         audio_file_name += '.wav'
 
     return audio_path(audio_file_name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
+
+
+def get_audio_files_urls(request):
+    user = request.user
+
+    file_ids = get_or_error(request.POST, 'file-ids')
+    file_ids = json.loads(file_ids)
+    format = request.POST.get('format', settings.AUDIO_COMPRESSED_FORMAT)
+    audio_files = AudioFile.objects.filter(id__in=file_ids)
+    audio_files_names = audio_files.values_list('name', flat=True)
+    database_ids = audio_files.values_list('database', flat=True).distinct()
+    databases = Database.objects.filter(id__in=database_ids)
+    for database in databases:
+        assert_permission(user, database, DatabasePermission.VIEW)
+
+    wav_file_paths = []
+    for audio_file_name in audio_files_names:
+        if not audio_file_name.lower().endswith('.wav'):
+            audio_file_name += '.wav'
+        wav_file_path = audio_path(audio_file_name, format, for_url=True)
+        wav_file_paths.append(wav_file_path)
+
+    return wav_file_paths

@@ -144,6 +144,7 @@ class DatabasePermission(MagicChoices):
     ANNOTATE = 200
     IMPORT_DATA = 300
     COPY_FILES = 400
+    DOWNLOAD_FILES = 450
     ADD_FILES = 500
     MODIFY_SEGMENTS = 600
     DELETE_FILES = 700
@@ -176,6 +177,9 @@ class DatabaseAssignment(SimpleModel):
 
     def can_copy_files(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.COPY_FILES
+
+    def can_download_files(self):
+        return self.user.is_superuser or self.permission >= DatabasePermission.DOWNLOAD_FILES
 
     def can_add_files(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.ADD_FILES

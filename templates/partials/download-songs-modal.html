@@ -1,0 +1,22 @@
+<div class="modal fade in" id="download-songs-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel"
+     data-backdrop="static" aria-hidden="true" style="display: none;"
+     {% if current_database.is_real %}database="{{ current_database.id }}"{% endif %}>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Downloading songs</h3>
+            </div>
+            <div class="modal-body">
+                <div id="instruction" class="bs-callout bs-callout-primary" style="">
+                    <h4>Competed <span id="current-file-no"></span>/<span id="total-files-count"></span></h4>
+                    <span id="current-file-name"></span>
+                </div>
+
+                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0"
+                     aria-valuemax="100" aria-valuenow="0">
+                    <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

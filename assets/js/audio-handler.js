@@ -164,7 +164,7 @@ const convertToFormData = function (data) {
  * @param cacheKey key to persist this song/segment in the cache
  * @param callback
  */
-const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callback}) {
+export const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callback}) {
     const reader = new FileReader();
     reader.onload = function () {
         const arrayBuffer = reader.result;
