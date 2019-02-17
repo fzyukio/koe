@@ -40,12 +40,15 @@ stepsize = nfft - noverlap
 
 
 # @profile
-def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature):
+def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **kwargs):
     fs, length = get_wav_info(wav_file_path)
 
     duration_ms = length * 1000 / fs
     args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
                 win_length=win_length, center=False, order=44)
+
+    for v, k in kwargs.items():
+        args[v] = k
 
     extractor = feature_extractors[feature.name]
     tids = []
