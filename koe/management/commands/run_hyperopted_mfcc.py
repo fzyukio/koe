@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 
@@ -9,17 +8,13 @@ from hyperopt import fmin, tpe, hp
 from scipy.stats import zscore
 
 from koe.aggregator import aggregator_map
-from koe.feature_utils import pca_optimal
-from koe.features.feature_extract import feature_map, ftgroup_names
 from koe.management.commands.extract_mfcc_multiparams import extract_mfcc_multiparams
 from koe.management.commands.lstm import get_labels_by_sids, exclude_no_labels
 from koe.ml_utils import classifiers, get_ratios
 from koe.model_utils import get_or_error
-from koe.models import Database, DataMatrix, Feature, Aggregation
+from koe.models import Database, Aggregation
 from koe.rnn_models import EnumDataProvider
-from koe.storage_utils import get_tids, get_sids_tids
-from koe.ts_utils import bytes_to_ndarray
-from koe.ts_utils import get_rawdata_from_binary
+from koe.storage_utils import get_sids_tids
 from koe.utils import split_classwise
 from root.models import User
 
@@ -45,6 +40,25 @@ def perform_k_fold(classifier, tvset, nfolds, v2a_ratio, nlabels, **classifier_a
             classifier(train_x, train_y, valid_x, valid_y, nlabels, **classifier_args)
         scores.append(score)
     return np.mean(scores)
+
+
+converters = {
+    'svm_rbf': {
+        'C': lambda x: 10 ** float(x),
+        'gamma': lambda x: float(x)
+    },
+    'svm_linear': {
+        'C': lambda x: 10 ** float(x),
+    },
+    'nnet': {
+        'hidden_layer_sizes': lambda x: (x, )
+    },
+    'rf': {
+        'n_estimators': lambda x: x,
+        'min_samples_split': lambda x: x,
+        'min_samples_leaf': lambda x: x,
+    },
+}
 
 
 class Command(BaseCommand):
@@ -102,7 +116,7 @@ class Command(BaseCommand):
             ipc_min = min_occur
             ipc_max = int(np.floor(min_occur * 1.5))
 
-        train_ratio, valid_ratio, test_ratio = get_ratios(ratio_)
+        train_ratio, valid_ratio = get_ratios(ratio_, 2)
 
         open_mode = 'w'
 
@@ -120,7 +134,7 @@ class Command(BaseCommand):
             _sids, _tids, _labels = exclude_no_labels(_sids, _tids, _labels, no_label_ids)
 
         unique_labels, enum_labels = np.unique(_labels, return_inverse=True)
-        fold = split_classwise(enum_labels, ratio=test_ratio, limits=(min_occur, int(np.floor(min_occur * 1.5))),
+        fold = split_classwise(enum_labels, ratio=valid_ratio, limits=(min_occur, int(np.floor(min_occur * 1.5))),
                                nfolds=1, balanced=True)
         train = fold[0]['train']
         test = fold[0]['test']
@@ -130,31 +144,48 @@ class Command(BaseCommand):
         tids = _tids[all_indices]
         labels = _labels[all_indices]
 
+        with open('/tmp/hyperopt.pkl', 'rb') as f:
+            saved = pickle.load(f)
+
+        performance_data = saved[clsf_type]
+        accuracies = performance_data['accuracies']
+        groups = performance_data['groups']
+        params = performance_data['params']
+
+        group_name = '{}-{}'.format('mfcc', source)
+        group_member_inds = np.where(groups == group_name)
+        group_accuracies = accuracies[group_member_inds]
+
+        best_acc_idx = np.argmax(group_accuracies)
+
+        group_params = {}
+        best_params = {}
+        for param_name in params:
+            param_values = np.array(params[param_name])
+            group_param_values = param_values[group_member_inds]
+            group_params[param_name] = group_param_values
+
+            converter = converters[clsf_type][param_name]
+            best_params[param_name] = converter(group_param_values[best_acc_idx])
+
         params_names = []
         params_converters = []
         params_count = 0
 
+        v2t_ratio = valid_ratio / (train_ratio + valid_ratio)
+        nfolds = int(np.floor(1. / v2t_ratio + 0.01))
+
         def loss(params):
             mfcc_args = {}
-            classifier_args = {}
             for i in range(params_count):
                 param_name = params_names[i]
                 param_converter = params_converters[i]
                 param_value = params[i]
-
-                if param_name.startswith('mfcc:'):
-                    real_name = param_name[5:]
-                    mfcc_args[real_name] = param_converter(param_value)
-                else:
-                    classifier_args[param_name] = param_converter(param_value)
+                mfcc_args[param_name] = param_converter(param_value)
 
             _fmin = mfcc_args['fmin']
             _fmax = mfcc_args['fmax']
             _ncep = mfcc_args['ncep']
-
-            # _fmin = 100
-            # _fmax = 18000
-            # _ncep = 48
 
             extract_mfcc_multiparams(database_name, load_dir, _ncep, _fmin, _fmax)
 
@@ -186,55 +217,21 @@ class Command(BaseCommand):
             nlabels = len(unique_labels)
 
             dp = EnumDataProvider(data, labels, balanced=True)
-            trainvalidset, _ = dp.split(0, limits=(min_occur, int(np.floor(min_occur * 1.5))))
+            trainvalidset, _ = dp.split(0, limits=(ipc_min, ipc_max))
 
-            v2t_ratio = valid_ratio / (train_ratio + valid_ratio)
-            nfolds = int(np.floor(1. / v2t_ratio + 0.01))
-
-            print(classifier_args)
-            score = perform_k_fold(classifier, trainvalidset, nfolds, v2t_ratio, nlabels, **classifier_args)
+            score = perform_k_fold(classifier, trainvalidset, nfolds, v2t_ratio, nlabels, **best_params)
             return 1. - score
-
-        n_estimators_choices = hp.uniform('n_estimators', 40, 100)
-        min_samples_split_choices = hp.uniform('min_samples_split', 2, 21)
-        min_samples_leaf_choices = hp.uniform('min_samples_leaf', 1, 20)
-        gamma_choices = hp.uniform('gamma', 0.1, 10)
-        c_choices = hp.loguniform('C', -1, 2)
-        hidden_layer_size_choices = hp.uniform('hidden_layer_sizes', 100, 1000)
-
-        choices = {
-            'rf': {
-                'n_estimators': (lambda x: int(np.round(x)), n_estimators_choices),
-                'min_samples_split': (lambda x: int(np.round(x)), min_samples_split_choices),
-                'min_samples_leaf': (lambda x: int(np.round(x)), min_samples_leaf_choices),
-            },
-            'svm_rbf': {
-                'gamma': (float, gamma_choices),
-                'C': (float, c_choices),
-            },
-            'svm_linear': {
-                'C': (float, c_choices),
-            },
-            'nnet': {
-                'hidden_layer_sizes': (lambda x: (int(np.round(x)),), hidden_layer_size_choices)
-            }
-        }
 
         ncep_choices = hp.uniform('ncep', 13, 48)
         fmin_choices = hp.uniform('fmin', 0, 5)
         fmax_choices = hp.uniform('fmax', 8, 24)
         mfcc_params = {
-            'mfcc:ncep': (lambda x: int(np.round(x)), ncep_choices),
-            'mfcc:fmin': (lambda x: int(np.round(x) * 100), fmin_choices),
-            'mfcc:fmax': (lambda x: int(np.round(x) * 1000), fmax_choices),
+            'ncep': (lambda x: int(np.round(x)), ncep_choices),
+            'fmin': (lambda x: int(np.round(x) * 100), fmin_choices),
+            'fmax': (lambda x: int(np.round(x) * 1000), fmax_choices),
         }
 
         space = []
-        for arg_name, (converter, arg_values) in choices[clsf_type].items():
-            space.append(arg_values)
-            params_names.append(arg_name)
-            params_converters.append(converter)
-            params_count += 1
 
         for arg_name, (converter, arg_values) in mfcc_params.items():
             space.append(arg_values)
@@ -243,7 +240,7 @@ class Command(BaseCommand):
             params_count += 1
 
         trials = Trials()
-        best = fmin(fn=loss, space=space, algo=tpe.suggest, max_evals=20, trials=trials)
+        best = fmin(fn=loss, space=space, algo=tpe.suggest, max_evals=100, trials=trials)
         print(best)
 
         with open(trials_file, 'wb') as f:
@@ -253,10 +250,7 @@ class Command(BaseCommand):
         best_trial_args_values_ = best_trial['misc']['vals']
         best_trial_args_values = {}
         for arg_name, arg_values in best_trial_args_values_.items():
-            if arg_name in choices[clsf_type]:
-                converter = choices[clsf_type][arg_name][0]
-            else:
-                converter = mfcc_params['mfcc:' + arg_name][0]
+            converter = mfcc_params[arg_name][0]
             arg_value = converter(arg_values[0])
             best_trial_args_values[arg_name] = arg_value
 
@@ -274,12 +268,8 @@ class Command(BaseCommand):
                     trial_accuracy = 1. - trial['result']['loss']
                     model_args_values['accuracy'].append(trial_accuracy)
                 else:
-                    if arg_name in choices[clsf_type]:
-                        converter = choices[clsf_type][arg_name][0]
-                    else:
-                        converter = mfcc_params['mfcc:' + arg_name][0]
+                    converter = mfcc_params[arg_name][0]
                     val = converter(trial_args_values[arg_name][0])
-                    # val = choice[choice_idx]
                     model_args_values[arg_name].append(val)
 
         with open(tsv_file, open_mode, encoding='utf-8') as f:

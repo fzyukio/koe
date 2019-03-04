@@ -208,8 +208,8 @@ class Command(BaseCommand):
             n_features = data.shape[1]
             auto_gamma = 1 / n_features
             gamma_choices = hp.uniform('gamma', auto_gamma / 10, auto_gamma * 10)
-            c_choices = hp.loguniform('C', -1, 2)
-            hidden_layer_size_choices = hp.uniform('hidden_layer_sizes', n_features // 2, n_features)
+            c_choices = hp.uniform('C', -1, 2)
+            hidden_layer_size_choices = hp.uniform('hidden_layer_sizes', 100, 5000)
 
             choices = {
                 'rf': {
@@ -219,10 +219,10 @@ class Command(BaseCommand):
                 },
                 'svm_rbf': {
                     'gamma': (float, gamma_choices),
-                    'C': (float, c_choices),
+                    'C': (lambda x: 10 ** x, c_choices),
                 },
                 'svm_linear': {
-                    'C': (float, c_choices),
+                    'C': (lambda x: 10 ** x, c_choices),
                 },
                 'nnet': {
                     'hidden_layer_sizes': (lambda x: (int(np.round(x)),), hidden_layer_size_choices)
@@ -237,7 +237,8 @@ class Command(BaseCommand):
                 params_count += 1
 
             trials = Trials()
-            best = fmin(fn=loss, space=space, algo=tpe.suggest, max_evals=10, trials=trials)
+            max_evals = params_count * 30
+            best = fmin(fn=loss, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
             print(best)
 
             with open(trials_file, 'wb') as f:

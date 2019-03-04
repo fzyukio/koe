@@ -1,7 +1,5 @@
-r"""
-Clustering validation.
-"""
 import json
+import pickle
 
 import numpy as np
 from django.core.management.base import BaseCommand
@@ -21,19 +19,37 @@ from koe.ts_utils import bytes_to_ndarray
 from koe.ts_utils import get_rawdata_from_binary
 from root.models import User
 
+converters = {
+    'svm_rbf': {
+        'C': lambda x: 10 ** float(x),
+        'gamma': lambda x: float(x)
+    },
+    'svm_linear': {
+        'C': lambda x: 10 ** float(x),
+    },
+    'nnet': {
+        'hidden_layer_sizes': lambda x: (x, )
+    },
+    'rf': {
+        'n_estimators': lambda x: x,
+        'min_samples_split': lambda x: x,
+        'min_samples_leaf': lambda x: x,
+    },
+}
+
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--classifier', action='store', dest='clsf_type', required=True, type=str,
                             help='Can be svm, rf (Random Forest), gnb (Gaussian Naive Bayes), lda', )
 
-        parser.add_argument('--database', action='store', dest='database_name', required=True, type=str,
+        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
                             help='E.g Bellbird, Whale, ..., case insensitive', )
 
         parser.add_argument('--source', action='store', dest='source', required=True, type=str,
                             help='Can be full, pca', )
 
-        parser.add_argument('--annotator', action='store', dest='annotator_name', default='superuser', type=str,
+        parser.add_argument('--annotator-name', action='store', dest='annotator_name', default='superuser', type=str,
                             help='Name of the person who owns this database, case insensitive', )
 
         parser.add_argument('--label-level', action='store', dest='label_level', default='label', type=str,
@@ -42,12 +58,14 @@ class Command(BaseCommand):
         parser.add_argument('--min-occur', action='store', dest='min_occur', default=2, type=int,
                             help='Ignore syllable classes that have less than this number of instances', )
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=10, type=int)
+        parser.add_argument('--ipc', action='store', dest='ipc', default=None, type=int,
+                            help='Use this value as number of instances per class. Must be <= min-occur', )
 
-        # parser.add_argument('--ratio', action='store', dest='ratio', required=False, default=0.1, type=float)
         parser.add_argument('--ratio', action='store', dest='ratio', required=False, default='80:10:10', type=str)
 
-        parser.add_argument('--to-csv', dest='csv_filename', action='store', required=False)
+        parser.add_argument('--niters', action='store', dest='niters', required=False, default=10, type=int)
+
+        parser.add_argument('--profile', dest='profile', action='store', required=False)
 
     def handle(self, *args, **options):
         clsf_type = options['clsf_type']
@@ -56,11 +74,23 @@ class Command(BaseCommand):
         annotator_name = options['annotator_name']
         label_level = options['label_level']
         min_occur = options['min_occur']
+        ipc = options['ipc']
         ratio_ = options['ratio']
         niters = options['niters']
-        csv_filename = options.get('csv_filename', None)
+        profile = options.get('profile', None)
+        tsv_file = profile + '.tsv'
+        trials_file = profile + '.trials'
+        if ipc is not None:
+            assert ipc <= min_occur, 'Instances per class cannot exceed as min-occur'
+            ipc_min = ipc
+            ipc_max = ipc
+        else:
+            ipc_min = min_occur
+            ipc_max = int(np.floor(min_occur * 1.5))
 
         train_ratio, valid_ratio = get_ratios(ratio_, 2)
+
+        open_mode = 'w'
 
         assert clsf_type in classifiers.keys(), 'Unknown _classify: {}'.format(clsf_type)
         classifier = classifiers[clsf_type]
@@ -118,15 +148,6 @@ class Command(BaseCommand):
         unique_labels = np.unique(labels)
         nlabels = len(unique_labels)
 
-        if csv_filename:
-            with open(csv_filename, 'w', encoding='utf-8') as f:
-                if source == 'pca':
-                    f.write('Feature group\tNdims\tPCA explained\tPCA Dims\tLabel prediction mean\tstdev\t{}\n'
-                            .format('\t '.join(unique_labels)))
-                else:
-                    f.write('Feature group\tNdims\tLabel prediction mean\tstdev\t{}\n'
-                            .format('\t '.join(unique_labels)))
-
         for ftgroup_name, feature_names in ftgroup_names.items():
             if ftgroup_name == 'all':
                 features = list(feature_map.values())
@@ -152,6 +173,30 @@ class Command(BaseCommand):
                 explained, data = pca_optimal(data, ndims, 0.9)
                 pca_dims = data.shape[1]
 
+            with open('/tmp/hyperopt.pkl', 'rb') as f:
+                saved = pickle.load(f)
+
+            performance_data = saved[clsf_type]
+            accuracies = performance_data['accuracies']
+            groups = performance_data['groups']
+            params = performance_data['params']
+
+            group_name = '{}-{}'.format(ftgroup_name, source)
+            group_member_inds = np.where(groups == group_name)
+            group_accuracies = accuracies[group_member_inds]
+
+            best_acc_idx = np.argmax(group_accuracies)
+
+            group_params = {}
+            best_params = {}
+            for param_name in params:
+                param_values = np.array(params[param_name])
+                group_param_values = param_values[group_member_inds]
+                group_params[param_name] = group_param_values
+
+                converter = converters[clsf_type][param_name]
+                best_params[param_name] = converter(group_param_values[best_acc_idx])
+
             dp = EnumDataProvider(data, labels, balanced=True)
 
             nfolds = int(np.floor(1 / valid_ratio + 0.01))
@@ -170,7 +215,7 @@ class Command(BaseCommand):
                       .format(ftgroup_name, clsf_type, source), max=ntrials)
 
             for iter in range(niters):
-                traintetset, _ = dp.split(0, limits=(min_occur, int(np.floor(min_occur * 1.5))))
+                traintetset, _ = dp.split(0, limits=(ipc_min, ipc_max))
                 traintetset.make_folds(nfolds, valid_ratio)
                 for k in range(nfolds):
                     trainset, testset = traintetset.get_fold(k)
@@ -180,7 +225,7 @@ class Command(BaseCommand):
                     test_y = np.array(testset.labels, dtype=np.int32)
 
                     score, label_hits, label_misses, cfmat, importances = \
-                        classifier(train_x, train_y, test_x, test_y, nlabels, True)
+                        classifier(train_x, train_y, test_x, test_y, nlabels, True, **best_params)
 
                     label_prediction_scores[ind] = score
                     label_hitss[ind] = label_hits
@@ -200,29 +245,29 @@ class Command(BaseCommand):
             std_label_prediction_scores = np.nanstd(label_prediction_scores)
             sum_cfmat = np.nansum(cfmats, axis=0)
 
-            if csv_filename:
-                with open(csv_filename, 'a', encoding='utf-8') as f:
-                    if source == 'full':
-                        f.write('{}\t{}\t{}\t{}\t{}\n'
-                                .format(ftgroup_name, ndims, mean_label_prediction_scores, std_label_prediction_scores,
-                                        '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
-                    else:
-                        f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
-                                .format(ftgroup_name, ndims, explained, pca_dims, mean_label_prediction_scores,
-                                        std_label_prediction_scores,
-                                        '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
+            with open(tsv_file, open_mode, encoding='utf-8') as f:
+                if source == 'full':
+                    f.write('{}\t{}\t{}\t{}\t{}\n'
+                            .format(ftgroup_name, ndims, mean_label_prediction_scores, std_label_prediction_scores,
+                                    '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
+                else:
+                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
+                            .format(ftgroup_name, ndims, explained, pca_dims, mean_label_prediction_scores,
+                                    std_label_prediction_scores,
+                                    '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
+
+                f.write('Accuracy: \n')
+                f.write('\t'.join(list(map(str, label_prediction_scores))))
+                f.write('\n')
+                f.write('\t')
+                f.write('\t'.join(unique_labels))
+                f.write('\n')
+                for i in range(nlabels):
+                    label = unique_labels[i]
+                    cfrow = sum_cfmat[:, i]
+                    f.write(label)
                     f.write('\t')
-                    f.write('\t'.join(unique_labels))
+                    f.write('\t'.join(map(str, cfrow)))
                     f.write('\n')
-                    for i in range(nlabels):
-                        label = unique_labels[i]
-                        cfrow = sum_cfmat[:, i]
-                        f.write(label)
-                        f.write('\t')
-                        f.write('\t'.join(map(str, cfrow)))
-                        f.write('\n')
-                    f.write('\n')
-            else:
-                print('{}: {} by {}: mean = {} std = {}'
-                      .format(ftgroup_name, clsf_type, source, mean_label_prediction_scores,
-                              std_label_prediction_scores))
+                f.write('\n')
+                open_mode = 'a'
