@@ -10,7 +10,7 @@ require('checkboxselectcolumn');
 require('radioselectcolumn');
 require('rowselectionmodel');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
-import {getCache, isNumber, setCache, isNull, deepCopy} from './utils';
+import {getCache, isNumber, setCache, isNull, deepCopy, convertRawUrl} from './utils';
 import {SlickFormatters, SLickValidator, SlickEditors, RowMoveableFormatter} from './slick-grid-addons';
 
 /**
@@ -295,6 +295,38 @@ const gridFilter = function (item, filters) {
     return true;
 };
 
+
+/**
+ * Convert and preserve the clean text and the rendered URL of an item
+ * @param items an array of items
+ * @param columns columns of the grids
+ */
+const handleUrl = function (items, columns) {
+    const handleSingleItem = function(item, fieldName, fieldDisplay) {
+        if (item[fieldDisplay]) {
+            return;
+        }
+        let {url, val} = convertRawUrl(item[fieldName]);
+        if (url) {
+            item[fieldName] = val;
+            item[fieldDisplay] = `<a href="${url}" target="_blank">${val}</a>`
+        }
+    };
+
+    for (let j = 0; j < columns.length; j++) {
+        let column = columns[j];
+        let fieldName = column.field;
+        if (column._formatter === 'Url') {
+            // let fieldUrl = '_url_' + fieldName;
+            // let fieldCleaned = '_cleaned_' + fieldName;
+            let fieldDisplay = '_displayed_' + fieldName;
+            $.each(items, function(idx, item) {
+                handleSingleItem(item, fieldName, fieldDisplay);
+            });
+        }
+    }
+};
+
 /**
  * Update the grid data - the current row arrangement is kept.
  * @param grid
@@ -309,6 +341,7 @@ export const updateSlickGridData = function (grid, rows) {
             for (let i = 0; i < rows.length; i++) {
                 rows[i].id = i;
             }
+            handleUrl(rows, grid.getColumns());
             dataView.setItems(rows);
         }
         else {
@@ -336,7 +369,7 @@ export const updateSlickGridData = function (grid, rows) {
                     dataView.deleteItem(row.id);
                 }
             });
-
+            handleUrl(toAdd, grid.getColumns());
             $.each(toAdd, function (i, row) {
                 dataView.addItem(row)
             });

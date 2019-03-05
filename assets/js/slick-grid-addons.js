@@ -3,7 +3,7 @@ require('slickgrid/slick.core');
 require('slickgrid/slick.editors');
 require('slickgrid/slick.formatters');
 
-import {isNull, convertRawUrl, getValue} from './utils';
+import {isNull, getValue} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 
 export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
@@ -144,19 +144,8 @@ const UrlFormatter = function (row, cell, value, columnDef, dataContext) {
      */
 
     let fieldName = columnDef.field;
-    let fieldUrl = '_url_' + fieldName;
-
-    if (dataContext[fieldUrl]) {
-        return `<a href="${dataContext[fieldUrl]}" target="_blank">${value}</a>`
-    }
-
-    let {url, val} = convertRawUrl(value);
-    if (url) {
-        dataContext[fieldUrl] = url;
-        dataContext[fieldName] = val;
-        return `<a href="${url}" target="_blank">${val}</a>`
-    }
-    return val;
+    let fieldDisplay = '_displayed_' + fieldName;
+    return dataContext[fieldDisplay];
 };
 
 

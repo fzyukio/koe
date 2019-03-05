@@ -337,9 +337,6 @@ export const createCsv = function (grid, downloadType) {
             let exportable = column.exportable;
             if (exportable) {
                 let fieldValue = item[columnField];
-                if (column._formatter === 'Url') {
-                    fieldValue = convertRawUrl(fieldValue).val;
-                }
                 row.push(`${fieldValue || ''}`);
             }
         }
