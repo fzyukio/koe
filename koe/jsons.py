@@ -99,7 +99,7 @@ tables =\
                     "type": "DATE"
                 },
                 {
-                    "name": "Gender",
+                    "name": "Sex",
                     "slug": "song_gender",
                     "type": "SHORT_TEXT"
                 },
