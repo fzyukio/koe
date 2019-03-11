@@ -77,8 +77,8 @@ tables =\
                     "css_class": "overflow"
                 },
                 {
-                    "name": "Dendrogram Index",
-                    "slug": "dtw_index",
+                    "name": "Similarity Index",
+                    "slug": "sim_index",
                     "type": "INTEGER"
                 },
                 {
@@ -100,7 +100,7 @@ tables =\
                 },
                 {
                     "name": "Sex",
-                    "slug": "song_gender",
+                    "slug": "sex",
                     "type": "SHORT_TEXT"
                 },
                 {
@@ -174,11 +174,11 @@ tables =\
             "columns": [
                 {
                     "name": "Class",
-                    "slug": "cls",
+                    "slug": "class",
                     "type": "SHORT_TEXT"
                 },
                 {
-                    "name": "Exemplar count",
+                    "name": "Count",
                     "slug": "count",
                     "type": "INTEGER"
                 },
@@ -225,10 +225,11 @@ tables =\
                 },
                 {
                     "name": "Sex",
-                    "slug": "gender",
+                    "slug": "sex",
                     "type": "SHORT_TEXT",
                     "editable": True,
                     "is_attribute": True,
+                    "setter": "set_gender"
                 },
                 {
                     "name": "Species",
@@ -470,7 +471,7 @@ tables =\
                     "type": "FLOAT"
                 },
                 {
-                    "name": "Assocociation Rule",
+                    "name": "Association Rule",
                     "slug": "assocrule",
                     "type": "SHORT_TEXT",
                 }

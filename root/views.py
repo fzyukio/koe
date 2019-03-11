@@ -144,7 +144,9 @@ def init_tables():
                 column['getter'] = getter
 
             if has_setter:
-                setter = global_namespace[column['setter']]
+                setter = getattr(klass, column['setter'], None)
+                if setter is None:
+                    setter = global_namespace[column['setter']]
             else:
                 setter = getattr(klass, 'set_{}'.format(slug), None)
                 if setter is None:

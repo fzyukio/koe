@@ -53,7 +53,7 @@ class SegmentationView(TemplateView):
             'Quality': quality if quality else 'Unknown',
             'Track': track.name if track else 'Unknown',
             'Individual': individual.name if individual else 'Unknown',
-            'Gender': individual.gender if individual else 'Unknown'
+            'Sex': individual.gender if individual else 'Unknown'
         }
 
         song_extra_attr_values_list = ExtraAttrValue.objects\

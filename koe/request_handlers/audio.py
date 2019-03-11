@@ -199,7 +199,7 @@ def import_audio_file(request):
     individual_name = item.get('individual', None)
     note = item.get('note', None)
     type = item.get('type', None)
-    sex = item.get('gender', None)
+    sex = item.get('sex', None)
 
     if individual_name is not None:
         individual = Individual.objects.filter(name=individual_name).first()

@@ -62,7 +62,7 @@ def import_audio_metadata(request):
         genus = row['genus']
         quality = row['quality']
         individual_name = row['individual']
-        gender = row['gender']
+        gender = row['sex']
         date_str = row['date']
         track_name = row['track']
         date = None

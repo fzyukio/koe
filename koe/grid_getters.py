@@ -159,7 +159,7 @@ def bulk_get_segment_info(segs, extras):
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, song_name)
         row = dict(id=id, start_time_ms=start, end_time_ms=end, duration=duration, song=url,
-                   dtw_index=sim_index, song_track=track, song_individual=individual, song_gender=gender,
+                   sim_index=sim_index, song_track=track, song_individual=individual, sex=gender,
                    song_quality=quality, song_date=date, spectrogram=tid,)
         extra_attr_dict = extra_attr_values_lookup.get(id, {})
         song_extra_attr_dict = song_extra_attr_values_lookup.get(song_id, {})
@@ -234,7 +234,8 @@ def bulk_get_exemplars(objs, extras):
     for cls, count, exemplar_ids in class_to_exemplars:
         if cls:
             exemplar_id2tid = [(x, id2tid[x]) for x in exemplar_ids]
-            row = dict(id=cls, cls=cls, count=count, spectrograms=exemplar_id2tid)
+            row = dict(id=cls, count=count, spectrograms=exemplar_id2tid)
+            row['class'] = cls
             rows.append(row)
             ids.append(cls)
 
@@ -354,7 +355,7 @@ def bulk_get_song_sequences(all_songs, extras):
             url = '[{}]({})'.format(url, filename)
             duration_ms = round(length * 1000 / fs)
             species_str = '{} {}'.format(genus, species) if species and genus else ''
-            song_info = dict(filename=url, track=track, individual=indv, gender=gender,
+            song_info = dict(filename=url, track=track, individual=indv, sex=gender,
                              quality=quality, date=date, duration=duration_ms, species=species_str)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
