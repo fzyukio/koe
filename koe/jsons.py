@@ -449,11 +449,11 @@ tables =\
                     "slug": "transcount",
                     "type": "INTEGER"
                 },
-                {
-                    "name": "Accumulated occurrences",
-                    "slug": "accumoccurs",
-                    "type": "INTEGER"
-                },
+                # {
+                #     "name": "Accumulated occurrences",
+                #     "slug": "accumoccurs",
+                #     "type": "INTEGER"
+                # },
                 {
                     "name": "Support",
                     "slug": "support",

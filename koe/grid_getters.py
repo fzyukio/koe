@@ -653,7 +653,7 @@ def bulk_get_song_sequence_associations(all_songs, extras):
             items_str.append(item_str)
         assocrule = ' => '.join(items_str)
 
-        row = dict(id=idx, chainlength=len(items), transcount=seq.noccurs, accumoccurs=seq.accum_occurs,
+        row = dict(id=idx, chainlength=len(items), transcount=seq.noccurs,
                    confidence=conf, lift=lift, support=seq.noccurs / nsequences, assocrule=assocrule)
 
         rows.append(row)
