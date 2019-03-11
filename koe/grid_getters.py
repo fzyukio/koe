@@ -268,9 +268,8 @@ def get_sequence_info_empty_songs(empty_songs):
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, filename)
         duration_ms = round(length * 1000 / fs)
-        genus = genus if genus else ''
-        species = species if species else ''
-        species_str = '{} {}'.format(genus, species)
+        species_str = '{} {}'.format(genus, species) if species and genus else ''
+
         row = dict(id=song_id, filename=url, track=track, individual=indv, gender=gender,
                    quality=quality, date=date, duration=duration_ms, species=species_str)
         ids.append(song_id)
@@ -354,9 +353,7 @@ def bulk_get_song_sequences(all_songs, extras):
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
             duration_ms = round(length * 1000 / fs)
-            genus = genus if genus else ''
-            species = species if species else ''
-            species_str = '{} {}'.format(genus, species)
+            species_str = '{} {}'.format(genus, species) if species and genus else ''
             song_info = dict(filename=url, track=track, individual=indv, gender=gender,
                              quality=quality, date=date, duration=duration_ms, species=species_str)
             segs_info = []
