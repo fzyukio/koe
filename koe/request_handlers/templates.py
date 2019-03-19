@@ -59,7 +59,7 @@ def populate_context(obj, context):
     context['db_assignment'] = db_assignment
 
     context['my_tmpdbs'] = TemporaryDatabase.objects.filter(user=user)
-    context['other_tmpdbs'] = TemporaryDatabase.objects.exclude(user=user)
+    # context['other_tmpdbs'] = TemporaryDatabase.objects.exclude(user=user)
 
     if db_class == Database:
         underlying_databases = [current_database]

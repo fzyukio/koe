@@ -501,7 +501,7 @@ def make_tmpdb(request):
     ids = np.sort(ids)
 
     chksum = IdOrderedModel.calc_chksum(ids)
-    existing = TemporaryDatabase.objects.filter(chksum=chksum).first()
+    existing = TemporaryDatabase.objects.filter(chksum=chksum, user=request.user).first()
     if existing is not None:
         return dict(name=existing.name, created=False)
 
