@@ -22,7 +22,7 @@ function randomPick(rows) {
     let rndRows = [];
     $.each(rows, function(idx, row) {
         let rndRow = {
-            id: row.id, cls: row.cls, count: row.count
+            id: row.id, class: row.class, count: row.count
         };
         let spectrograms = row.spectrograms;
         let nSpectrograms = spectrograms.length;
@@ -67,7 +67,7 @@ class ExemplarsGrid extends FlexibleGrid {
         super.init({
             'grid-name': 'exemplars',
             'grid-type': 'exemplars-grid',
-            'default-field': 'cls',
+            'default-field': 'class',
             gridOptions
         });
     }
