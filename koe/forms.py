@@ -75,7 +75,6 @@ class OrdinationExtractionForm(ErrorMixin, forms.Form):
             ('pca', 'Principal Component Analysis'),
             ('ica', 'Independent Component Analysis'),
             ('tsne', 't-SNE (with PCA preprocessing)'),
-            ('mds', 'Multi-Dimensional Scaling')
         )
     )
 

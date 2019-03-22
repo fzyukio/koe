@@ -436,7 +436,7 @@ def mds(data, ndims):
     return coordinate
 
 
-methods = {'pca': pca, 'ica': pca, 'tsne': tsne, 'mds': mds}
+methods = {'pca': pca, 'ica': pca, 'tsne': tsne}
 
 
 @app.task(bind=False)

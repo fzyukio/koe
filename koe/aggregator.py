@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ced import pyed
 from koe.features.feature_extract import feature_extractors
 from koe.management.commands.chirp_generator import generate_chirp
 from pymlfunc import normxcorr2
@@ -32,6 +31,7 @@ def _cached_get_chirp_feature(feature_name, args):
 
 
 def dtw_chirp(feature, seg_feature_value, args):
+    from ced import pyed
     if seg_feature_value.ndim == 2:
         dim0 = seg_feature_value.shape[0]
     else:
