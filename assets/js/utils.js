@@ -5,6 +5,9 @@ require('jquery.browser');
 require('jquery-getscrollbarwidth');
 require('devtools-detect');
 
+const JSZip = require('jszip/dist/jszip.min.js');
+const filesaver = require('file-saver/dist/FileSaver.min.js');
+
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library
  */
@@ -360,9 +363,18 @@ export const createCsv = function (grid, downloadType) {
  * Facilitate downloading a blob as file
  * @param blob an instance of Blob
  * @param filename name with extension
+ * @param aszip boolean, if true the content will be zipped
  */
-export const downloadBlob = function (blob, filename) {
-    if (navigator.msSaveBlob) {
+export const downloadBlob = function (blob, filename, aszip) {
+    if (aszip) {
+        let zip = new JSZip();
+        zip.file(filename, blob);
+
+        zip.generateAsync({type: 'blob', compression: 'DEFLATE'}).then(function (content) {
+            filesaver.saveAs(content, `${filename}.zip`);
+        });
+    }
+    else if (navigator.msSaveBlob) {
         navigator.msSaveBlob(blob, filename);
     }
     else {

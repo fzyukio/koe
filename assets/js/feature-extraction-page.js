@@ -175,13 +175,14 @@ const downloadDataMatrixAsCsv = function (tensorInfo) {
         let byteStart = 0;
         let byteEnd = ncols;
         for (let i = 0; i < sids.length; i++) {
+            let sid = sids[i];
             let info = segInfo[i];
             let songId = info[0];
             let startMs = info[1];
             let endMs = info[2];
             let songName = songInfo[songId];
             let measurements = bytes.slice(byteStart, byteEnd);
-            let csvRow = `${songName},${startMs},${endMs},${measurements.join(',')}`;
+            let csvRow = `${songName},${sid},${startMs},${endMs},${measurements.join(',')}`;
             csvRows.push(csvRow);
             byteStart += ncols;
             byteEnd += ncols;
@@ -190,7 +191,7 @@ const downloadDataMatrixAsCsv = function (tensorInfo) {
         let blob = new Blob([csvContent], {type: 'text/csv;charset=ascii;'});
 
         spinner.clear();
-        downloadBlob(blob, filename);
+        downloadBlob(blob, filename, true);
     });
 };
 
