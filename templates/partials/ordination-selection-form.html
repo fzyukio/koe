@@ -22,14 +22,14 @@
         <option value="">---------</option>
         {% for ord in completed_ords %}
             <option value="{{ ord.id }}">
-                {{ ord }} | Completed
+                {{ ord }} {% if ord.params %} | {{ ord.params }} {% endif %} | Completed
             </option>
         {% endfor %}
-        {% for ord in incomplete_ords %}
-            <option value="{{ ord.id }}">
-                {{ ord }} | Not completed yet
-            </option>
-        {% endfor %}
+{#        {% for ord in incomplete_ords %}#}
+{#            <option value="{{ ord.id }}">#}
+{#                {{ ord }} {% if ord.params %} | {{ ord.params }} {% endif %} | Not completed yet#}
+{#            </option>#}
+{#        {% endfor %}#}
     </select>
     {{ form.ordination.errors }}
 </div>
@@ -53,4 +53,10 @@
     <label for="{{ form.ndims.id_for_label }}" class="control-label">Number of dimensions</label>
     {{ form.ndims|add_error_class:"has-error"|add_class:"form-control" }}
     {{ form.ndims.errors }}
+</div>
+
+<div class="form-group">
+    <label for="{{ form.params.id_for_label }}" class="control-label">Extra parameters</label>
+    {{ form.params|add_error_class:"has-error"|add_class:"form-control" }}
+    {{ form.params.errors }}
 </div>

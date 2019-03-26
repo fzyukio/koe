@@ -12,6 +12,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from sortedcontainers import SortedDict
 
 from koe.utils import base64_to_array, array_to_base64
 from root.exceptions import CustomAssertionError
@@ -664,6 +665,7 @@ class Ordination(SimpleModel, BinaryStoredMixin):
     dm = models.ForeignKey(DataMatrix, on_delete=models.CASCADE)
     method = models.CharField(max_length=255)
     ndims = models.IntegerField()
+    params = models.CharField(max_length=255, default='')
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
 
     def _get_path(self, ext):
@@ -674,6 +676,30 @@ class Ordination(SimpleModel, BinaryStoredMixin):
 
     def get_name(self):
         return self.__str__()
+
+    @classmethod
+    def clean_params(cls, params):
+        """
+        Valid params at least must have the correct syntax, that is, they must construct a dictionary
+        :param params:
+        :return:
+        """
+        param_dict = cls.params_to_kwargs(params)
+        cleaned_params_list = []
+        for key, value in param_dict.items():
+            cleaned_params_list.append('{}={}'.format(key, repr(value)))
+        return ','.join(cleaned_params_list)
+
+    @classmethod
+    def params_to_kwargs(cls, params):
+        """
+        Valid params at least must have the correct syntax, that is, they must construct a dictionary
+        :param params:
+        :return:
+        """
+        param_dict = eval('dict(' + params + ')')
+        param_dict = SortedDict(param_dict)
+        return param_dict
 
 
 class SimilarityIndex(SimpleModel, BinaryStoredMixin):

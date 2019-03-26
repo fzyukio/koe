@@ -276,11 +276,11 @@ class OrdinationExtrationView(FormView):
             all_ords = Ordination.objects.filter(dm__in=completed_dms)
 
             completed_ords = all_ords.filter(Q(task=None) | Q(task__stage__gte=TaskProgressStage.COMPLETED))
-            incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
+            # incomplete_ords = all_ords.filter(task__stage__lt=TaskProgressStage.COMPLETED)
 
             context['completed_dms'] = completed_dms
             context['completed_ords'] = completed_ords
-            context['incomplete_ords'] = incomplete_ords
+            # context['incomplete_ords'] = incomplete_ords
         context['all_incomplete_ords2tasks'] = get_incomplete_tasks(Ordination)
 
         return context
@@ -305,9 +305,11 @@ class OrdinationExtrationView(FormView):
         dm_id = form_data['data_matrix']
         method = form_data['method']
         ndims = form_data['ndims']
+        params = form_data['params']
+        params = Ordination.clean_params(params)
 
         dm = get_or_error(DataMatrix, dict(id=dm_id))
-        if Ordination.objects.filter(dm=dm, method=method, ndims=ndims).exists():
+        if Ordination.objects.filter(dm=dm, method=method, ndims=ndims, params=params).exists():
             form.add_error('ordination', 'Already extracted')
             has_error = True
 
@@ -317,7 +319,7 @@ class OrdinationExtrationView(FormView):
             rendered = render_to_string('partials/ordination-selection-form.html', context=context)
             return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
 
-        ord = Ordination(dm=dm, method=method, ndims=ndims)
+        ord = Ordination(dm=dm, method=method, ndims=ndims, params=params)
         ord.save()
 
         task = Task(user=user, target='{}:{}'.format(Ordination.__name__, ord.id))

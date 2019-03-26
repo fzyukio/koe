@@ -405,33 +405,42 @@ def extract_database_measurements(task_id):
         runner.error(e)
 
 
-def pca(data, ndims):
-    dim_reduce_func = PCA(n_components=ndims)
+def pca(data, ndims, **kwargs):
+    params = dict(n_components=ndims)
+    params.update(kwargs)
+    kwargs['n_components'] = ndims
+    dim_reduce_func = PCA(**params)
     return dim_reduce_func.fit_transform(data)
 
 
-def ica(data, ndims):
-    dim_reduce_func = FastICA(n_components=ndims)
+def ica(data, ndims, **kwargs):
+    params = dict(n_components=ndims)
+    params.update(kwargs)
+    dim_reduce_func = FastICA(**params)
     return dim_reduce_func.fit_transform(data)
 
 
-def tsne(data, ndims):
+def tsne(data, ndims, **kwargs):
     assert 2 <= ndims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
     pca_dims = min(50, data.shape[1])
     data = pca(data, pca_dims)
 
-    tsne = TSNE(n_components=ndims, verbose=1, perplexity=10, n_iter=4000)
+    params = dict(n_components=ndims, verbose=1, perplexity=10, n_iter=4000)
+    params.update(kwargs)
+    tsne = TSNE(**params)
     tsne_results = tsne.fit_transform(data)
 
     return tsne_results
 
 
-def mds(data, ndims):
+def mds(data, ndims, **kwargs):
     pca_dims = max(50, data.shape[1])
     data = pca(data, pca_dims)
 
+    params = dict(n_components=ndims, dissimilarity='precomputed', random_state=7, verbose=1, max_iter=1000)
+    params.update(kwargs)
     similarities = squareform(pdist(data, 'euclidean'))
-    model = MDS(n_components=ndims, dissimilarity='precomputed', random_state=7, verbose=1, max_iter=1000)
+    model = MDS(**params)
     coordinate = model.fit_transform(similarities)
     return coordinate
 
@@ -454,6 +463,7 @@ def construct_ordination(task_id):
         dm = ord.dm
         method_name = ord.method
         ndims = ord.ndims
+        param_kwargs = Ordination.params_to_kwargs(ord.params)
 
         assert dm.task is None or dm.task.is_completed()
         assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
@@ -471,7 +481,7 @@ def construct_ordination(task_id):
         data[np.where(np.isinf(data))] = 0
 
         method = methods[method_name]
-        result = method(data, ndims)
+        result = method(data, ndims, **param_kwargs)
 
         runner.wrapping_up()
 

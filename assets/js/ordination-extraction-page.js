@@ -6,6 +6,7 @@ let ordinationSelectEl;
 let scheduleBtn = $('#schedule-btn');
 let methodSectionEl = $('#id_method');
 let ndimsSectionEl = $('#id_ndims');
+let paramsSectionEl = $('#id_params');
 
 let dataMatrixSelectizeHandler;
 let ordinationSelectizeHandler;
@@ -38,7 +39,9 @@ const readHiddenData = function () {
         let dmId = el.getAttribute('dm');
         let method = el.getAttribute('method');
         let ndims = el.getAttribute('ndims');
-        ordDetails[ordId] = {dmId, method, ndims};
+        let params = el.getAttribute('params');
+        params = cleanSortParams(params);
+        ordDetails[ordId] = {dmId, method, ndims, params};
 
         if (dmId in dm2ords) {
             dm2ords[dmId].push(ordId);
@@ -50,15 +53,39 @@ const readHiddenData = function () {
     $('#hidden-data').remove();
 };
 
+/**
+ * Assert the 'params' value is correctly formatted
+ * @param params
+ * @returns {*} a sorted, comma separated param string in case the params value is correct
+ *              otherwise the original string is returned
+ */
+function cleanSortParams(params) {
+    try {
+        let dict = JSON.parse(`x = {${params}`);
+        let paramNames = Object.keys(dict);
+        paramNames.sort();
+        let paramStrings = [];
+        $.each(paramNames, function (i, paramName) {
+            paramStrings.push(`${paramName}=${dict[paramName]}`);
+        });
+        return paramStrings.join(',');
+    }
+    catch (e) {
+        return params
+    }
+}
+
 const initMethodNDims = function () {
     const detectOrdination = function() {
         let method_ = methodSectionEl.find('input:checked')[0].value;
         let ndims_ = ndimsSectionEl.val();
+        let params_ = paramsSectionEl.val();
         let dmId_ = dataMatrixSelectizeHandler.getValue();
+        params_ = cleanSortParams(params_);
 
         let ordId_;
-        $.each(ordDetails, function (ordId, {dmId, method, ndims}) {
-            if (dmId_ == dmId && method_ === method && ndims_ === ndims) {
+        $.each(ordDetails, function (ordId, {dmId, method, ndims, params}) {
+            if (dmId_ == dmId && method_ === method && ndims_ === ndims && params_ === params) {
                 ordId_ = ordId;
                 return false;
             }
@@ -77,6 +104,7 @@ const initMethodNDims = function () {
 
     methodSectionEl.find('input').change(detectOrdination);
     ndimsSectionEl.change(detectOrdination);
+    paramsSectionEl.change(detectOrdination);
 };
 
 const initSelectize = function () {
@@ -110,11 +138,12 @@ const initSelectize = function () {
 
     ordinationSelectEl.change(function () {
         let ordId = ordinationSelectEl.val();
-        let {dmId, method, ndims} = ordDetails[ordId];
+        let {dmId, method, ndims, params} = ordDetails[ordId];
         dataMatrixSelectizeHandler.setValue(dmId, true);
         methodSectionEl.find('input').prop('checked', false);
         methodSectionEl.find(`input[value=${method}]`).prop('checked', true);
         ndimsSectionEl.val(ndims);
+        paramsSectionEl.val(params);
         scheduleBtn.prop('disabled', true);
     });
 };

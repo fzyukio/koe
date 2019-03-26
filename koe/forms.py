@@ -87,6 +87,8 @@ class OrdinationExtractionForm(ErrorMixin, forms.Form):
         })
     )
 
+    params = forms.CharField(required=False)
+
 
 class SimilarityExtractionForm(ErrorMixin, forms.Form):
     data_matrix = forms.CharField(widget=forms.Select, required=False)

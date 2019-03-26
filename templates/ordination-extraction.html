@@ -11,11 +11,11 @@
     <div id="hidden-data" style="display: none;">
         <div name="ords">
             {% for ord in completed_ords %}
-                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" completed="true"></div>
+                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" params="{{ ord.params }}" completed="true"></div>
             {% endfor %}
-            {% for ord in incomplete_ords %}
-                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" completed="false"></div>
-            {% endfor %}
+{#            {% for ord in incomplete_ords %}#}
+{#                <div type="entry" key="{{ ord.id }}" dm="{{ ord.dm.id }}" method="{{ ord.method }}" ndims="{{ ord.ndims }}" params="{{ ord.params }}" completed="false"></div>#}
+{#            {% endfor %}#}
         </div>
     </div>
 
