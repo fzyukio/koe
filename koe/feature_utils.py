@@ -6,7 +6,9 @@ from logging import warning
 import csv
 import numpy as np
 from django.conf import settings
+from django.db.models import Case
 from django.db.models import F
+from django.db.models import When
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform, pdist
 from scipy.stats import zscore
@@ -87,8 +89,10 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature):
 
 # # @profile
 def extract_segment_features_for_segments(task, sids, features, f2bs):
-    segments = Segment.objects.filter(id__in=sids)
+    preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
+    segments = Segment.objects.filter(id__in=sids).order_by(preserved)
     tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
+
     vals = list(segments.order_by('audio_file', 'start_time_ms')
                 .values_list('audio_file__name', 'tid', 'start_time_ms', 'end_time_ms'))
 
