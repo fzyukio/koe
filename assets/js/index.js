@@ -296,44 +296,6 @@ const subMenuOpenRight = function () {
     });
 };
 
-
-// /**
-//  * When user clicks on the "create new database" button from the drop down menu, show a dialog
-//  * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
-//  * repeat this process. Only dismiss the dialog if a new database is created.
-//  * @param errorMessage to be shown if not undefined
-//  */
-// function showCreateDatabaseDialog(errorMessage) {
-//     dialogModalTitle.html('Creating a new database...');
-//     dialogModalBody.html('<label>Give it a name</label>');
-//     dialogModalBody.append(inputText);
-//     if (errorMessage) {
-//         dialogModalBody.append(`<p>${errorMessage}</p>`);
-//     }
-//
-//     dialogModal.modal('show');
-//
-//     dialogModalOkBtn.one('click', function () {
-//         dialogModal.modal('hide');
-//         let url = getUrl('send-request', 'koe/create-database');
-//         let databaseName = inputText.val();
-//         inputText.val('');
-//
-//         $.post(url, {name: databaseName}).done(function () {
-//             dialogModal.one('hidden.bs.modal', function () {
-//                 location.reload();
-//             });
-//             dialogModal.modal('hide');
-//         }).fail(function (response) {
-//             dialogModal.one('hidden.bs.modal', function () {
-//                 showCreateDatabaseDialog(response.responseText);
-//             });
-//             dialogModal.modal('hide');
-//         });
-//     });
-// }
-
-
 /**
  * For all selectable options that will change GET arguments and reload the page, e.g. viewas, database, ...
  * append existing arguments to their bare links.
@@ -840,6 +802,9 @@ $(document).ready(function () {
     }
     else if (pageName === '/contact-us/') {
         page = require('contact-us-page');
+    }
+    else if (pageName === '/') {
+        page = require('home-page');
     }
 
     let runPage = function () {

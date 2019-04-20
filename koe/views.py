@@ -3,7 +3,7 @@ import json
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
@@ -453,10 +453,12 @@ class ContactUsView(FormView):
 
 def get_home_page(request):
     user = request.user
-    current_database = get_user_databases(user)
-    if current_database is None:
-        return redirect('dashboard')
-    return redirect('songs')
+    if user.is_authenticated:
+        current_database = get_user_databases(user)
+        if current_database is None:
+            return redirect('dashboard')
+        return redirect('songs')
+    return render(request, 'home_page.html')
 
 
 def extra_syllables_context(request, context):

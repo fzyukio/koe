@@ -28,6 +28,15 @@ a {
   width: 100%;
   color: black;
 
+  li.link a {
+    line-height: 22px;
+
+    &:hover {
+      text-decoration: underline;
+      color: #e72510;
+    }
+  }
+
   a {
     color: black;
   }
@@ -44,7 +53,6 @@ a {
 
   .navbar-nav {
     margin: 0;
-    padding-top: 6px;
   }
 
   .navbar-collapse {
@@ -65,7 +73,7 @@ a {
     font-size: 17px;
     line-height: 18px;
     height: $navbar-height;
-    padding-left: 10px;
+    padding-left: 0px;
 
     a, span {
       color: white;
@@ -83,6 +91,11 @@ a {
         border-radius: 50%;
         border: 2px white solid;
       }
+    }
+
+    &.text {
+      margin-left: 0;
+      line-height: 22px;
     }
   }
 

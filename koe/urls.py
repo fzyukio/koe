@@ -45,5 +45,5 @@ urlpatterns += \
         path('ordination/meta/<int:ord_id>/<str:viewas>/', login_required(tensorviz.get_ordination_metadata),
              name='ordination-meta'),
         url(r'^contact-us/$', login_required(views.ContactUsView.as_view()), name='contact-us'),
-        url(r'^$', login_required(views.get_home_page), name='home_page')
+        url(r'^$', views.get_home_page, name='home_page')
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
