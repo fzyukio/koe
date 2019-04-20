@@ -3,49 +3,67 @@
 
 {% block content-wrapper %}
     <!-- Navigation -->
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div class="container">
-            <div id="navbar" class="">
-                <a href="/" class="navbar-brand brand-image">
-                    <img class="pull-left" alt="Koe's Logo" src="{% static "images/favicon/android-icon-36x36.png" %}"></a>
-                <a href="/" class="navbar-brand text">声KOE</a>
-                <ul class="nav navbar-nav navbar-right">
-                    <li class="link"><a href="https://github.com/fzyukio/koe/wiki">User Manual</a></li>
-                    <li>
-                        <a>
-                            <div class="btn-group" role="group">
-                                <button type="button" id="dialog-modal-yes-button"
-                                        class="btn btn-primary btn-hover-green btn-xs"
-                                        role="button" href="{% url 'login' %}">
-                                    Login
-                                </button>
-                            </div>
-                            <div class="btn-group" role="group">
-                                <button type="button" id="dialog-modal-no-button" class="btn btn-primary btn-xs"
-                                        data-dismiss="modal" role="button" href="{% url 'register' %}">
-                                    Register
-                                </button>
-                            </div>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {#    <nav class="navbar navbar-default navbar-fixed-top">#}
+    {#        <div class="container">#}
+    {#            <div id="navbar" class="">#}
+    {#                <a href="/" class="navbar-brand brand-image">#}
+    {#                    <img class="pull-left" alt="Koe's Logo" src="{% static "images/favicon/android-icon-36x36.png" %}"></a>#}
+    {#                <a href="/" class="navbar-brand text">声KOE</a>#}
+    {#                <ul class="nav navbar-nav navbar-right">#}
+    {#                    <li class="link"><a href="https://github.com/fzyukio/koe/wiki">User Manual</a></li>#}
+    {#                    <li>#}
+    {#                        <a>#}
+    {#                            <div class="btn-group" role="group">#}
+    {#                                <button type="button" id="dialog-modal-yes-button"#}
+    {#                                        class="btn btn-primary btn-hover-green btn-xs"#}
+    {#                                        role="button" href="{% url 'login' %}">#}
+    {#                                    Login#}
+    {#                                </button>#}
+    {#                            </div>#}
+    {#                            <div class="btn-group" role="group">#}
+    {#                                <button type="button" id="dialog-modal-no-button" class="btn btn-primary btn-xs"#}
+    {#                                        data-dismiss="modal" role="button" href="{% url 'register' %}">#}
+    {#                                    Register#}
+    {#                                </button>#}
+    {#                            </div>#}
+    {#                        </a>#}
+    {#                    </li>#}
+    {#                </ul>#}
+    {#            </div>#}
+    {#        </div>#}
+    {#    </nav>#}
 
     <div id="section">
     <div id="section-1" class="row no-margin"
          style="background-image: url('{% static "images/landing-page-section1-background.jpg" %}');">
         <div class="col-md-8 col-lg-6 col-md-offset-2 col-lg-offset-3">
-            <div id="section-1a" class="section-title">
-                <h1>Web-based software for analysing animal vocalisations</h1>
-                <h3>Open-sourced, Multi-user, Free to use, Cross-platform</h3>
+            <div id="section-1a" class="col-xs-12 section-title">
+                <img src="{% static "images/logo5.png" %}" style="width: 40%">
+                <h1>Web-based software <br>for analysing animal vocalisations</h1>
+                <h3>Open-source, Multi-user, Free, Cross-platform</h3>
+                <br>
+                <div class="btn-group" role="group">
+                    <button type="button" id="dialog-modal-yes-button"
+                            class="btn btn-primary btn-hover-green btn-lg"
+                            role="button" href="{% url 'login' %}">
+                        Login
+                    </button>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" id="dialog-modal-no-button" class="btn btn-primary btn-lg"
+                            data-dismiss="modal" role="button" href="{% url 'register' %}">
+                        Register
+                    </button>
+                </div>
+
             </div>
-            <div id="section-1b" class="section-body">
-{#                <img src="{% static "images/landing-page-section1-screenshot.jpg" %}">#}
+        </div>
+        <div class="col-md-10 col-lg-8 col-md-offset-1 col-lg-offset-2">
+            <div id="section-1b" class="col-xs-12 section-body">
                 <iframe id="youtube-clip"
                         src="https://www.youtube.com/embed/0RaLAJim_PA"
-                        frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
             </div>
         </div>
     </div>
@@ -64,7 +82,7 @@
                     <div class="panel-heading"><h4 class="panel-title">Classify units: Interactive unit tables</h4>
                     </div>
                     <div class="panel-body">
-                        <ul class="col-xs-12 col-sm-8">
+                        <ul class="col-xs-12 col-sm-6">
                             <li>Unit spectrograms, audio, and metadata all together in one place.</li>
                             <li>Compare, select, classify and annotate units rapidly.</li>
                             <li>Automatically group units by acoustic similarity to facilitate bulk
@@ -76,8 +94,8 @@
                             </li>
                             <li>Sort, filter and export data.</li>
                         </ul>
-                        <div class="col-xs-12 col-sm-4">
-                            <img src="{% static "images/feature-1.jpg" %}">
+                        <div class="col-xs-12 col-sm-6">
+                            <img src="{% static "images/feature-1-long.png" %}">
                         </div>
                     </div>
                 </div>
@@ -88,7 +106,7 @@
                         plots</h4>
                     </div>
                     <div class="panel-body">
-                        <ul class="col-xs-12 col-sm-8">
+                        <ul class="col-xs-12 col-sm-6">
                             <li>Visualise data structure based on extracted acoustic features.</li>
                             <li>Encircle groups of points on the ordination to see spectrograms, hear playback, and
                                 bulk-label groups of units.
@@ -96,8 +114,8 @@
                             <li>Toggle visibility of individual classes and zoom plot for added control.</li>
                             <li>View selections as a subset unit table.</li>
                         </ul>
-                        <div class="col-xs-12 col-sm-4">
-                            <img src="{% static "images/feature-2.jpg" %}">
+                        <div class="col-xs-12 col-sm-6">
+                            <img src="{% static "images/feature-2-long.png" %}">
                         </div>
                     </div>
                 </div>
@@ -161,7 +179,7 @@
     </div>
 
     <div id="section-3" class="row no-margin">
-        <div class="col-md-10 col-lg-8 col-md-offset-1 col-lg-offset-2">
+        <div class="col-md-10 col-lg-6 col-md-offset-1 col-lg-offset-3">
             <div id="section-3a" class="col-xs-12 section-title">
                 <h1>Compare with other software</h1>
             </div>
