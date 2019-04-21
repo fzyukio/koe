@@ -103,6 +103,8 @@
 <script src="{% static "keyboard.js" %}"></script>
 <script src="{% static "bluebird.js" %}"></script>
 
+{% block pre-main-scripts %}{% endblock %}
+
 {# Webpack rendered Javascript #}
 {% render_bundle 'main' 'js' %}
 

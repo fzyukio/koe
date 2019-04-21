@@ -242,7 +242,8 @@ if DEBUG:
         base_dir_join('node_modules/plotly.js/dist'),
         base_dir_join('node_modules/bluebird/js/browser'),
         base_dir_join('node_modules/raven-js/dist'),
-        base_dir_join('node_modules/dropzone/dist')
+        base_dir_join('node_modules/dropzone/dist'),
+        base_dir_join('node_modules/slick-carousel/slick')
     )
 
     AUTH_PASSWORD_VALIDATORS = []  # allow easy passwords only on local

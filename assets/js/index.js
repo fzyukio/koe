@@ -757,6 +757,7 @@ window.open = function (urlToOpen) {
     }
 };
 
+
 /**
  * Loading the page by URL's location, e.g localhost:8000/herd-allocation
  */

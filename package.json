@@ -68,6 +68,7 @@
         "sass-loader": "^4.0.2",
         "script-loader": "^0.7.0",
         "selectize": "git+https://git@github.com/fzyukio/selectize.js.git#v0.12.4.1",
+        "slick-carousel": "^1.8.1",
         "slickgrid": "git+https://git@github.com/fzyukio/SlickGrid.git",
         "source-map-loader": "^0.2.3",
         "style-loader": "^0.13.1",
