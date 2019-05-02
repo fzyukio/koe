@@ -3,7 +3,7 @@
 Hi, {{ user }}
 
 
-Unbfortunately, your Koe job has failed. Details follow:
+Unfortunately, your Koe job has failed. Details follow:
 {% if dm %}
     Job type: Extract feature measurements (Data matrix).
     Created at: {{ dm.task.created }}
