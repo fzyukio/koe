@@ -216,7 +216,7 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
 
 def extract_tensor_metadata(sids, annotator):
     label_levels = ['label', 'label_subfamily', 'label_family']
-    headers = ['id', 'tid'] + label_levels + ['gender']
+    headers = ['id', 'tid'] + label_levels + ['sex']
 
     metadata = {id: [str(id), str(tid)] for id, tid in Segment.objects.filter(id__in=sids).values_list('id', 'tid')}
 
