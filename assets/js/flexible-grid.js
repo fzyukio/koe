@@ -131,6 +131,11 @@ export class FlexibleGrid {
         setCache('grids', this.gridType, this);
     }
 
+    refresh() {
+        this.mainGrid = new Slick.Grid(this.mainGridSelector, [], [], this.gridOptions);
+        this.mainGrid.registerPlugin(new Slick.AutoTooltips());
+    }
+
     /**
      * Convenient way to register event handlers
      * @param eventType

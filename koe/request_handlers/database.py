@@ -22,7 +22,7 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
-           'make_tmpdb', 'change_tmpdb_name', 'delete_collections']
+           'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators']
 
 
 def import_audio_metadata(request):
@@ -290,6 +290,28 @@ def add_collaborator(request):
 
     _, rows = bulk_get_database_assignment([database_assignment], DotMap(database=database.id))
     return rows[0]
+
+
+def remove_collaborators(request):
+    you = request.user
+    dbassignments_ids = json.loads(get_or_error(request.POST, 'ids'))
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    dbassignments = DatabaseAssignment.objects.filter(id__in=dbassignments_ids, database=database)
+
+    assert_permission(you, database, DatabasePermission.ASSIGN_USER)
+
+    if len(dbassignments) != len(dbassignments_ids):
+        raise CustomAssertionError('ERROR: one or more collaborators are not assigned to this database.')
+
+    if dbassignments.filter(user=you).exists():
+        raise CustomAssertionError('ERROR: you can\'t remove yourself.')
+
+    if dbassignments.filter(permission=DatabasePermission.ASSIGN_USER).exists():
+        raise CustomAssertionError('ERROR: you can\'t remove other admins of this database.')
+
+    dbassignments.delete()
+    return True
 
 
 def copy_audio_files(request):

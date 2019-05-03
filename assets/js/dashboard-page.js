@@ -21,6 +21,7 @@ const fileUploadForm = $('#file-upload-form');
 const fileUploadBtn = fileUploadForm.find('input[type=submit]');
 const fileUploadInput = fileUploadForm.find('input[type=file]');
 const addCollaborator = $('#add-collaborator');
+const removeCollaborator = $('#remove-collaborator');
 const createDatabaseBtn = $('#create-database-btn');
 
 const selected = {
@@ -79,18 +80,30 @@ const subscribeFlexibleEvents = function () {
      */
     function onCollectionSelectionChange(e, args) {
         let grid_ = args.grid;
-        if (grid_.getSelectedRows().length == 0) {
-            deleteCollections.prop('disabled', true);
-        }
-        else {
-            deleteCollections.prop('disabled', false);
-        }
+        deleteCollections.prop('disabled', grid_.getSelectedRows().length == 0);
+    }
+
+
+    /**
+     * When collaborators are selected/deselected:
+     * enable delete button if there is at least 1 selected, and the user has admin privileges
+     * otherwise disable
+     */
+    function onCollaboratorSelectionChange(e, args) {
+        let grid_ = args.grid;
+        let canRemoveCollaborator = removeCollaborator.hasAdminPrivileges && grid_.getSelectedRows().length > 0;
+        removeCollaborator.prop('disabled', !canRemoveCollaborator);
     }
 
     collectionGrid.on('row-added', onCollectionSelectionChange);
     collectionGrid.on('rows-added', onCollectionSelectionChange);
     collectionGrid.on('row-removed', onCollectionSelectionChange);
     collectionGrid.on('rows-removed', onCollectionSelectionChange);
+
+    dbAssignmentGrid.on('row-added', onCollaboratorSelectionChange);
+    dbAssignmentGrid.on('rows-added', onCollaboratorSelectionChange);
+    dbAssignmentGrid.on('row-removed', onCollaboratorSelectionChange);
+    dbAssignmentGrid.on('rows-removed', onCollaboratorSelectionChange);
 };
 
 
@@ -280,9 +293,12 @@ export const run = function (commonElements) {
 
             backupBtns.prop('disabled', false);
 
-            if (args.item.__name_editable) {
-                addCollaborator.prop('disabled', false);
-            }
+            let hasAdminPrivileges = args.item.__name_editable;
+            addCollaborator.prop('disabled', !hasAdminPrivileges);
+            removeCollaborator.hasAdminPrivileges = hasAdminPrivileges;
+            dbAssignmentGridArgs.multiSelect = hasAdminPrivileges;
+
+            dbAssignmentGrid.refresh();
 
             return Promise.all([
                 dbAssignmentGrid.initMainGridHeader(dbAssignmentGridArgs, dbAssignmentExtraArgs),
@@ -487,7 +503,49 @@ function initDeleteCollectionsBtn() {
             ce.dialogModal.modal('hide');
             postRequest({
                 requestSlug: 'koe/delete-collections',
-                data: {ids: JSON.stringify(itemIds)},
+                data: {
+                    ids: JSON.stringify(itemIds)
+                },
+                onSuccess
+            });
+        })
+    });
+}
+
+/**
+ *
+ */
+function initRemoveCollaboratorBtn() {
+    removeCollaborator.click(function () {
+        let grid_ = dbAssignmentGrid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let dataView = grid_.getData();
+
+        let itemIds = [];
+        let itemNames = [];
+
+        $.each(selectedRows, function (idx, selectedRow) {
+            let item = dataView.getItem(selectedRow);
+            itemIds.push(item.id);
+            itemNames.push(item.username);
+        });
+
+        ce.dialogModalTitle.html(`Confirm removing ${itemIds.length} collaborator(s)`);
+        ce.dialogModalBody.html(`Are you sure you want to remove the following collaborator?<br>${itemNames.join('<br>')}`);
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.on('click', function () {
+            let onSuccess = function () {
+                dbAssignmentGrid.deleteRows(itemIds);
+            };
+            ce.dialogModal.modal('hide');
+            postRequest({
+                requestSlug: 'koe/remove-collaborators',
+                data: {
+                    ids: JSON.stringify(itemIds),
+                    database: selected.databaseId
+                },
                 onSuccess
             });
         })
@@ -498,6 +556,7 @@ export const postRun = function () {
     initCreateDatabaseButton();
     initDeleteCollectionsBtn();
     initAddCollaboratorBtn();
+    initRemoveCollaboratorBtn();
     initSaveVersionBtns();
     initApplyVersionBtn();
     initDeleteVersionBtn();
