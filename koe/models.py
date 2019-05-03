@@ -16,7 +16,7 @@ from sortedcontainers import SortedDict
 
 from koe.utils import base64_to_array, array_to_base64
 from root.exceptions import CustomAssertionError
-from root.models import SimpleModel, User, MagicChoices
+from root.models import SimpleModel, User, MagicChoices, ValidateOnUpdateQuerySet
 from root.utils import history_path, ensure_parent_folder_exists, pickle_path, wav_path, audio_path
 
 __all__ = [
@@ -121,6 +121,13 @@ class Database(SimpleModel):
             return 0
 
     @classmethod
+    def validate(cls, key_val_pairs):
+        if 'name' in key_val_pairs:
+            name = key_val_pairs['name']
+            if not re.match('^[a-zA-Z0-9_-]+$', name):
+                raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+
+    @classmethod
     def filter(cls, extras):
         user = extras.user
 
@@ -212,7 +219,7 @@ class DatabaseAssignment(SimpleModel):
 
 class ActiveManager(models.Manager):
     def get_queryset(self):
-        return super(ActiveManager, self).get_queryset().filter(active=True)
+        return ValidateOnUpdateQuerySet(self.model, using=self._db).filter(active=True)
 
 
 class AudioFile(SimpleModel):
@@ -506,6 +513,18 @@ class TemporaryDatabase(IdOrderedModel):
             return min(ps)
         else:
             return DatabasePermission.VIEW
+
+    @classmethod
+    def validate(cls, key_val_pairs):
+        if 'name' in key_val_pairs:
+            name = key_val_pairs['name']
+            if not re.match('^[a-zA-Z0-9_-]+$', name):
+                raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+
+    def save(self, *args, **kwargs):
+        if not re.match('^[a-zA-Z0-9_-]+$', self.name):
+            raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+        super(TemporaryDatabase, self).save(*args, **kwargs)
 
 
 class HistoryEntry(SimpleModel):

@@ -426,12 +426,22 @@ class AutoSetterGetterMixin:
         return lambda objs, value, extras: cls._set_extra_(objs, attr, value, extras)
 
 
+class ValidateOnUpdateQuerySet(QuerySet):
+    def update(self, **kwargs):
+        model = self.model
+        validator = getattr(model, 'validate', None)
+        if validator is not None:
+            validator(kwargs)
+        super(ValidateOnUpdateQuerySet, self).update(**kwargs)
+
+
 class SimpleModel(models.Model, AutoSetterGetterMixin):
     """
     An ID Safe Model has ID that cannot be guessed. The ID is small enough to be efficient to send in bulk over the
     wire, but safe enough to prevent injection of any kind.
     """
 
+    objects = ValidateOnUpdateQuerySet.as_manager()
     id = models.AutoField(primary_key=True, editable=False, auto_created=True, max_length=255)
 
     class Meta:

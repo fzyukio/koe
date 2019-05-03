@@ -144,8 +144,8 @@ def delete_audio_files(request):
 def create_database(request):
     user = request.user
     name = get_or_error(request.POST, 'name')
-    if not re.match("^[a-zA-Z0-9_]+$", name):
-        raise CustomAssertionError('Name must be non-empty and can only contain alphabets, numbers, and underscores')
+    if not re.match('^[a-zA-Z0-9_-]+$', name):
+        raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
 
     if Database.objects.filter(name__iexact=name).exists():
         raise CustomAssertionError('Database with name {} already exists.'.format(name))
@@ -521,6 +521,9 @@ def change_tmpdb_name(request):
     """
     old_name = get_or_error(request.POST, 'old-name')
     new_name = get_or_error(request.POST, 'new-name')
+
+    if not re.match("^[a-zA-Z0-9_-]+$", new_name):
+        raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
 
     tmpdb = get_or_error(TemporaryDatabase, dict(name=old_name, user=request.user))
     with transaction.atomic():
