@@ -7,10 +7,12 @@ const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
 
 const databaseGrid = new FlexibleGrid();
+const collectionGrid = new FlexibleGrid();
 const dbAssignmentGrid = new FlexibleGrid();
 const versionGrid = new FlexibleGrid();
 const syllableGrid = new FlexibleGrid();
 
+const deleteCollections = $('#delete-selected');
 const backupBtns = $('.back-up-data');
 const applyVersionBtn = $('#apply-version-btn');
 const deleteVersionBtn = $('#delete-version-btn');
@@ -26,12 +28,17 @@ const selected = {
 };
 
 let databaseExtraArgs = {};
+let collectionExtraArgs = {};
 let dbAssignmentExtraArgs = {};
 let versionExtraArgs = {};
 let syllableExtraArgs = {};
 
 let databaseGridArgs = {
     radioSelect: true,
+};
+
+let collectionGridArgs = {
+    multiSelect: true,
 };
 
 let dbAssignmentGridArgs = {
@@ -66,6 +73,24 @@ const subscribeFlexibleEvents = function () {
             deleteVersionBtn.prop('disabled', true);
         }
     });
+
+    /**
+     * When collections are selected/deselected, enable delete button if there is at least 1 selected, otherwise disable
+     */
+    function onCollectionSelectionChange(e, args) {
+        let grid_ = args.grid;
+        if (grid_.getSelectedRows().length == 0) {
+            deleteCollections.prop('disabled', true);
+        }
+        else {
+            deleteCollections.prop('disabled', false);
+        }
+    }
+
+    collectionGrid.on('row-added', onCollectionSelectionChange);
+    collectionGrid.on('rows-added', onCollectionSelectionChange);
+    collectionGrid.on('row-removed', onCollectionSelectionChange);
+    collectionGrid.on('rows-removed', onCollectionSelectionChange);
 };
 
 
@@ -124,7 +149,7 @@ const initDeleteVersionBtn = function () {
                 data: {'version-id': item.id},
                 onSuccess
             });
-        })
+        });
     });
 };
 
@@ -213,6 +238,13 @@ export const run = function (commonElements) {
         gridOptions
     });
 
+    collectionGrid.init({
+        'grid-name': 'collection',
+        'grid-type': 'collection-grid',
+        'default-field': 'name',
+        gridOptions
+    });
+
     dbAssignmentGrid.init({
         'grid-name': 'database-assignment',
         'grid-type': 'database-assignment-grid',
@@ -234,7 +266,12 @@ export const run = function (commonElements) {
         gridOptions
     });
 
-    return databaseGrid.initMainGridHeader(databaseGridArgs, databaseExtraArgs).then(function () {
+    let collectionPromise = collectionGrid.initMainGridHeader(collectionGridArgs, collectionExtraArgs).
+        then(function () {
+            return collectionGrid.initMainGridContent(collectionGridArgs, collectionExtraArgs);
+        });
+
+    let dbGridPromise = databaseGrid.initMainGridHeader(databaseGridArgs, databaseExtraArgs).then(function () {
         databaseGrid.on('row-added', function (e, args) {
             selected.databaseId = args.item.id;
             dbAssignmentExtraArgs.database = selected.databaseId;
@@ -263,6 +300,8 @@ export const run = function (commonElements) {
 
         return databaseGrid.initMainGridContent(databaseGridArgs, databaseExtraArgs);
     });
+
+    return Promise.all([collectionPromise, dbGridPromise]);
 };
 
 const inputText = $('<input type="text" class="form-control"/>');
@@ -418,8 +457,46 @@ function initAddCollaboratorBtn() {
     })
 }
 
+/**
+ * To delete selected collections
+ */
+function initDeleteCollectionsBtn() {
+    deleteCollections.click(function () {
+        let grid_ = collectionGrid.mainGrid;
+        let selectedRows = grid_.getSelectedRows();
+        let dataView = grid_.getData();
+
+        let itemIds = [];
+        let itemNames = [];
+
+        $.each(selectedRows, function (idx, selectedRow) {
+            let item = dataView.getItem(selectedRow);
+            itemIds.push(item.id);
+            itemNames.push(item.name);
+        });
+
+        ce.dialogModalTitle.html(`Confirm delete ${itemIds.length} collection(s)`);
+        ce.dialogModalBody.html(`Are you sure you want to delete the following collections?<br>${itemNames.join('<br>')}`);
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.on('click', function () {
+            let onSuccess = function () {
+                collectionGrid.deleteRows(itemIds);
+            };
+            ce.dialogModal.modal('hide');
+            postRequest({
+                requestSlug: 'koe/delete-collections',
+                data: {ids: JSON.stringify(itemIds)},
+                onSuccess
+            });
+        })
+    });
+}
+
 export const postRun = function () {
     initCreateDatabaseButton();
+    initDeleteCollectionsBtn();
     initAddCollaboratorBtn();
     initSaveVersionBtns();
     initApplyVersionBtn();

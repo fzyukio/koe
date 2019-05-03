@@ -17,7 +17,7 @@ from root.utils import history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
-           'bulk_get_database', 'bulk_get_database_assignment', 'bulk_get_concise_segment_info']
+           'bulk_get_database', 'bulk_get_collection', 'bulk_get_database_assignment', 'bulk_get_concise_segment_info']
 
 
 def bulk_get_concise_segment_info(segs, extras):
@@ -672,6 +672,21 @@ def bulk_get_database(databases, extras):
         idx.append(id)
         permission_str = DatabasePermission.get_name(permission)
         row = dict(id=id, name=dbname, permission=permission_str)
+        rows.append(row)
+
+    return idx, rows
+
+
+def bulk_get_collection(collections, extras):
+    user = extras.user
+    idx = []
+    rows = []
+
+    values = collections.filter(user=user).values_list('id', 'name')
+
+    for id, name in values:
+        idx.append(id)
+        row = dict(id=id, name=name)
         rows.append(row)
 
     return idx, rows

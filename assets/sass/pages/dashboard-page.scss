@@ -1,14 +1,14 @@
 @import "../variables";
 
 // In mobile mode, all four grids are full screen
-#database-grid, #database-assignment-grid, #concise-syllables-grid, #version-grid {
+#database-grid, #collection-grid, #database-assignment-grid, #concise-syllables-grid, #version-grid {
   height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);
 }
 
-// In tablet mode, they're organised in a 1x3 + 2x1 settings
+// In medium (small screen or big tablet) mode, they're organised in a 2x2 + 1x1 settings
 @media (min-width: 576px) {
-  #database-grid, #database-assignment-grid, #version-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) / 2);
+  #database-grid, #collection-grid, #database-assignment-grid, #version-grid {
+    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 6) / 2);
   }
 
   #concise-syllables-grid {
@@ -16,20 +16,9 @@
   }
 }
 
-// In monitor mode, they're now 2x2
-@media (min-width: 768px) {
-  #database-grid, #database-assignment-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 2 / 5);
-  }
-
-  #version-grid, #concise-syllables-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 3 / 5);
-  }
-}
-
-// Large devices (desktops, 992px and up), they are 3x1 + 1x1
-@media (min-width: 992px) {
-  #database-grid, #database-assignment-grid, #version-grid {
+// Large devices (desktops, 1200px and up), they are 4x1 + 1x1
+@media (min-width: 1200px) {
+  #database-grid, #collection-grid, #database-assignment-grid, #version-grid {
     height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 2 / 5);
   }
 

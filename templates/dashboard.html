@@ -6,7 +6,7 @@
 
 {% block content-grid %}
 
-    <div class="col-sm-6 col-md-3 no-padding contain-panel">
+    <div class="col-md-6 col-lg-3 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">
@@ -38,8 +38,34 @@
         </div>
     </div>
 
+    <div class="col-md-6 col-lg-3 no-padding contain-panel">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">Collections</span>
+                                <input id="database-assignment-grid-filter" type="text" class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding has-grid" id="collection-grid"></div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button id="delete-selected" disabled type="button" class="btn btn-sm btn-black">Delete selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="col-sm-6 col-md-3 no-padding contain-panel">
+
+    <div class="col-md-6 col-lg-3 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">
@@ -65,7 +91,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-md-6 no-padding contain-panel">
+    <div class="col-md-6 col-lg-3 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">
@@ -104,7 +130,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-md-12 no-padding contain-panel">
+    <div class="col-sm-12 no-padding contain-panel">
         <div class="panel panel-default">
             <div class="panel-heading no-padding">
                 <h3 class="panel-title">
@@ -140,5 +166,5 @@
 {% endblock %}
 
 {% block modal-dialog %}
-    {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Cancel' %}
+    {% include 'partials/modal.html' with order='yes-no' yes='OK' no='Cancel' %}
 {% endblock %}

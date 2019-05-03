@@ -22,7 +22,7 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
-           'make_tmpdb', 'change_tmpdb_name']
+           'make_tmpdb', 'change_tmpdb_name', 'delete_collections']
 
 
 def import_audio_metadata(request):
@@ -529,4 +529,17 @@ def change_tmpdb_name(request):
         tmpdb.name = new_name
         tmpdb.save()
 
+    return True
+
+
+def delete_collections(request):
+    ids = get_or_error(request.POST, 'ids')
+    ids = json.loads(ids)
+
+    tmpdbs = TemporaryDatabase.objects.filter(id__in=ids, user=request.user)
+
+    if len(ids) != len(tmpdbs):
+        raise CustomAssertionError('ERROR: you\'re attempting to delete collections that don\'t belong to you.')
+
+    tmpdbs.delete()
     return True

@@ -497,6 +497,22 @@ tables =\
                 }
             ]
         },
+
+        "collection-grid": {
+            "class": "koe.TemporaryDatabase",
+            "getter": "koe.bulk_get_collection",
+            "filter": True,
+            "columns": [
+                {
+                    "name": "Name",
+                    "slug": "name",
+                    "type": "SHORT_TEXT",
+                    "is_attribute": True,
+                    "editable": True,
+                }
+            ]
+        },
+
         "database-assignment-grid": {
             "class": "koe.DatabaseAssignment",
             "getter": "koe.bulk_get_database_assignment",
