@@ -13,7 +13,7 @@
                 <li class="section-head">Database</li>
                 {% for database in databases %}
                     <li class="{% if current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
-                        <a href="#" class="change-arg" key="database" replace="tmpdb" value="{{ database.name }}">
+                        <a href="#" class="change-arg" key="database" replace="tmpdb" value="{{ database.name }}" data-toggle="tooltip" data-placement="top" title="{{ database.name }}">
                             {{ database.name | truncatechars:20}}
                         </a>
                     </li>
@@ -22,7 +22,7 @@
                     <li class="section-head">Collections</li>
                     {% for database in my_tmpdbs %}
                         <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
-                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
+                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}" data-toggle="tooltip" data-placement="top" title="{{ database.name }}">
                                 {{ database.name | truncatechars:20}}
                             </a>
                         </li>
@@ -32,7 +32,7 @@
                     <li class="section-head">Other Collections</li>
                     {% for database in other_tmpdbs %}
                         <li class="{% if not current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
-                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}">
+                            <a href="#" class="change-arg" key="tmpdb" replace="database" value="{{ database.name }}" data-toggle="tooltip" data-placement="top" title="{{ database.name }}">
                                 {{ database.name | truncatechars:20}}
                             </a>
                         </li>

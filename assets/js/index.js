@@ -767,6 +767,8 @@ $(document).ready(function () {
         $('#content-wrapper').removeClass('toggled').addClass('not-toggled');
     }
 
+    $('[data-toggle="tooltip"]').tooltip();
+
     let pageName = location.pathname;
     if (pageName === '/dashboard/') {
         page = require('dashboard-page');
