@@ -153,6 +153,8 @@ const downloadDataMatrixAsCsv = function (tensorInfo) {
 
     let bytesPath = '/' + tensorInfo['bytes-path'];
     let sidsPath = '/' + tensorInfo['sids-path'];
+    let colPath = '/' + tensorInfo['cols-path'];
+
     let dbname = tensorInfo['database-name'];
     let d = new Date();
     let dateString = toJSONLocal(d);
@@ -160,18 +162,53 @@ const downloadDataMatrixAsCsv = function (tensorInfo) {
 
     let downloadSids = downloadRequest(sidsPath, Int32Array);
     let downloadBytes = downloadRequest(bytesPath, Float32Array);
+    let downloadCols = downloadRequest(colPath, null);
+
     let downloadSegmentInfo = postPromise({
         url: getUrl('send-request', 'koe/get-sid-info'),
         data: {path: sidsPath}
     });
 
-    Promise.all([downloadSegmentInfo, downloadSids, downloadBytes]).then(function (values) {
+    /**
+     * Create a list of column names to use as header of the CSV file
+     * @param ncols number of measurement columns
+     * @param columnsInfo a dictionary of features and the columns they occupy
+     * @returns {Array}
+     */
+    function createCsvHeader(ncols, columnsInfo) {
+        let headers = new Array(ncols);
+        $.each(columnsInfo, function (featureName, colIndices) {
+            let colIndBeg = colIndices[0];
+            let colIndEnd = colIndices[1];
+            if (colIndEnd - colIndBeg == 1) {
+                headers[colIndBeg] = featureName;
+            }
+            else {
+                let dimInd = 0;
+                for (let colInd = colIndBeg; colInd < colIndEnd; colInd++) {
+                    let colName = `${featureName}/${dimInd}`;
+                    dimInd++;
+                    headers[colInd] = colName;
+                }
+            }
+        });
+        return headers;
+    }
+
+    Promise.all([downloadSegmentInfo, downloadSids, downloadBytes, downloadCols]).then(function (values) {
         let segInfo = values[0][0];
         let songInfo = values[0][1];
         let sids = values[1];
         let bytes = values[2];
+        let cols = values[3];
+        let columnsInfo = JSON.parse(cols);
         let ncols = bytes.length / sids.length;
-        let csvRows = [];
+        let measurementColumnsHeader = createCsvHeader(ncols, columnsInfo);
+        let firstColumnsHeaders = ['Song name', 'Unique ID', 'Start (ms)', 'End (ms)'];
+        let csvHeader = firstColumnsHeaders.concat(measurementColumnsHeader);
+        csvHeader = csvHeader.join(',');
+
+        let csvRows = [csvHeader];
         let byteStart = 0;
         let byteEnd = ncols;
         for (let i = 0; i < sids.length; i++) {

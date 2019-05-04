@@ -32,9 +32,11 @@ def get_datamatrix_file_paths(request):
 
     bytes_path = dm.get_bytes_path()
     sids_path = dm.get_sids_path()
+    cols_path = dm.get_cols_path()
+
     if dm.database:
         database_name = dm.database.name
     else:
         database_name = dm.tmpdb.name
 
-    return {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': database_name}
+    return {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': database_name, 'cols-path': cols_path}
