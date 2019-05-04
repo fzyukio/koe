@@ -425,11 +425,6 @@ class ContactUsView(FormView):
     page_name = 'contact-us'
     form_class = ContactUsForm
 
-    def get_context_data(self, **kwargs):
-        context = super(ContactUsView, self).get_context_data(**kwargs)
-        populate_context(self, context)
-        return context
-
     def form_invalid(self, form):
         context = self.get_context_data()
         rendered = render_to_string('partials/contact-us-form.html', context=context)

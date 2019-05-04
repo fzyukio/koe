@@ -44,6 +44,6 @@ urlpatterns += \
         url(r'^tsne/(?P<tensor_name>[0-9a-z]{32})/meta/$', tensorviz.get_metadata, name='tsne-meta'),
         path('ordination/meta/<int:ord_id>/<str:viewas>/', login_required(tensorviz.get_ordination_metadata),
              name='ordination-meta'),
-        url(r'^contact-us/$', login_required(views.ContactUsView.as_view()), name='contact-us'),
+        url(r'^contact-us/$', views.ContactUsView.as_view(), name='contact-us'),
         url(r'^$', views.get_home_page, name='home_page')
     ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
