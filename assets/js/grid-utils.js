@@ -387,6 +387,7 @@ export const updateSlickGridData = function (grid, rows) {
 export const appendSlickGridData = function (grid, rows) {
     let dataView = grid.getData();
     let i, row;
+    handleUrl(rows, grid.getColumns());
     dataView.beginUpdate();
     for (i = 0; i < rows.length; i++) {
         row = rows[i];
@@ -404,6 +405,7 @@ export const appendSlickGridData = function (grid, rows) {
  */
 export const replaceSlickGridData = function (grid, rows) {
     let dataView = grid.getData();
+    handleUrl(rows, grid.getColumns());
     dataView.setItems(rows);
 };
 

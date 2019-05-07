@@ -62,50 +62,13 @@ def forget_password_handler(user):
     send_email_thread.start()
 
 
-def data_path(prefix, fullname, ext=None, for_url=False):
-    filename, _ext = os.path.splitext(str(fullname))
-    _ext = _ext[1:]
-    if ext is None:
-        ext = _ext
-    slashed_url = os.path.join(settings.MEDIA_URL, prefix, '{}.{}'.format(filename, ext))
+def data_path(prefix, fullname, for_url=False):
+    slashed_url = os.path.join(settings.MEDIA_URL, prefix, fullname)
     unslashed_url = slashed_url[1:]
     absolute_url = os.path.join(settings.BASE_DIR, unslashed_url)
     if for_url:
         return slashed_url
     return absolute_url
-
-
-def pickle_path(fullname, subdir=None, for_url=False):
-    folder = 'pickle'
-    if subdir:
-        folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'pkl', for_url)
-
-
-def wav_path(fullname, for_url=False):
-    return data_path('audio/wav', fullname, 'wav', for_url)
-
-
-def audio_path(fullname, ext, for_url=False):
-    return data_path('audio/' + ext, fullname, ext, for_url)
-
-
-def history_path(fullname, for_url=False):
-    return data_path('history', fullname, 'zip', for_url)
-
-
-def spect_fft_path(fullname, subdir=None, for_url=False):
-    folder = 'spect/fft'
-    if subdir:
-        folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'png', for_url)
-
-
-def spect_mask_path(fullname, subdir=None, for_url=False):
-    folder = 'spect/mask'
-    if subdir:
-        folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, 'png', for_url)
 
 
 def ensure_empty_file_exists(file_path):

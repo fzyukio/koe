@@ -9,7 +9,8 @@ from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
 from koe.models import AudioFile
-from root.utils import audio_path, ensure_parent_folder_exists
+from koe.utils import wav_path, audio_path
+from root.utils import ensure_parent_folder_exists
 
 
 def convert(conversion_scheme, print_stats=True):
@@ -68,15 +69,15 @@ class Command(BaseCommand):
     def handle(self, testfile, fmt, *args, **options):
 
         if testfile is None:
-            audio_file_names = AudioFile.objects.filter(original=None).values_list('name', flat=True)
+            audio_files = AudioFile.objects.filter(original=None)
 
             conversion_list = []
 
-            for name in audio_file_names:
-                wav_file_path = audio_path(name, 'wav')
+            for af in audio_files:
+                wav_file_path = wav_path(af)
                 conversion_scheme = dict(wav=wav_file_path)
 
-                target_file_path = audio_path(name, fmt)
+                target_file_path = audio_path(af, fmt)
                 conversion_scheme['other'] = (fmt, target_file_path)
 
                 conversion_list.append(conversion_scheme)
@@ -88,9 +89,8 @@ class Command(BaseCommand):
                 bar.next()
             bar.finish()
         else:
-            wav_file_path = audio_path(testfile, 'wav')
             target_file_path = '/tmp/test-compress-wav.' + fmt
-            conversion_scheme = dict(wav=wav_file_path, other=(fmt, target_file_path))
+            conversion_scheme = dict(wav=testfile, other=(fmt, target_file_path))
 
             convert(conversion_scheme)
 

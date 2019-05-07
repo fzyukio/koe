@@ -3,8 +3,7 @@ from django.core.management.base import BaseCommand
 
 from koe.management.commands.utils import import_pcm, get_dbconf
 from koe.models import AudioFile
-from koe.utils import get_wav_info
-from root.utils import wav_path
+from koe.utils import get_wav_info, wav_path
 
 
 class Command(BaseCommand):
@@ -21,7 +20,7 @@ class Command(BaseCommand):
     def handle(self, dbs, *args, **options):
         # Correct false wav info
         for af in AudioFile.objects.all():
-            wav_file_path = wav_path(af.name, 'wav')
+            wav_file_path = wav_path(af, 'wav')
             fs, length = get_wav_info(wav_file_path)
             if fs != af.fs or length != af.length:
                 print('Correct file {}, originally length={} fs={}, now length={}, fs={}'.format(

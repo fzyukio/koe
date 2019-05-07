@@ -1,16 +1,13 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
-import array
 import datetime
 import os
-import pickle
 import re
 from logging import warning
 
 import numpy as np
 import psycopg2
-import pydub
 from PIL import Image
 from PIL import ImageOps
 from django.conf import settings
@@ -18,14 +15,13 @@ from django.core.management.base import BaseCommand
 from progress.bar import Bar
 from scipy import signal
 
-from koe import wavfile as wf
 from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, str_to_bytes
+from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
 from koe.models import AudioFile, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
-from koe.utils import get_wav_info
+from koe.utils import spect_fft_path, spect_mask_path, audio_path, wav_path
 from root.models import User
-from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path, audio_path
+from root.utils import ensure_parent_folder_exists
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
@@ -46,62 +42,6 @@ interval64 = global_spect_pixel_range / 63
 
 name_regex = re.compile('(\d\d)(\d\d)(\d\d)_(.*) (\d+)(.*)wav')
 note_attr = settings.ATTRS.audio_file.note
-
-
-def import_pcm(song, cur, song_name, wav_file_path=None, compressed_url=None):
-    if wav_file_path is None:
-        wav_file_path = wav_path(song_name)
-    if compressed_url is None:
-        compressed_url = audio_path(song_name, settings.AUDIO_COMPRESSED_FORMAT)
-
-    wav_exists = True
-
-    if not os.path.isfile(wav_file_path):
-        # print('Importing {}'.format(song_name))
-        song_id = song['songid']
-        cur.execute('select wav from wavs where songid={};'.format(song_id))
-
-        data = cur.fetchone()
-        raw_pcm = str_to_bytes(data[0])
-
-        nchannels = song['stereo']
-        bitrate = int(song['ssizeinbits'])
-        fs = int(song['samplerate'])
-
-        byte_per_frame = int(bitrate / 8)
-        nframes_all_channel = int(len(raw_pcm) / byte_per_frame)
-        nframes_per_channel = int(nframes_all_channel / nchannels)
-        length = nframes_per_channel
-        ensure_parent_folder_exists(wav_file_path)
-
-        try:
-            if bitrate == 24:
-                array1 = np.frombuffer(raw_pcm, dtype=np.ubyte)
-                array2 = array1.reshape(
-                    (nframes_per_channel, nchannels, byte_per_frame)).astype(np.uint8)
-                wf.write_24b(wav_file_path, fs, array2)
-            else:
-                data = array.array('i', raw_pcm)
-                sound = pydub.AudioSegment(
-                    data=data, sample_width=byte_per_frame, frame_rate=fs, channels=nchannels)
-                sound.export(wav_file_path, 'wav')
-        except Exception:
-            fname = '/tmp/{}.pkl'.format(song_id)
-            with open(fname, 'wb') as f:
-                pickle.dump(dict(data=data, song=song),
-                            f, pickle.HIGHEST_PROTOCOL)
-            warning('Song #{} cannot be import. Raw data saved to {}'.format(
-                song_id, fname))
-            wav_exists = False
-    else:
-        fs, length = get_wav_info(wav_file_path)
-
-    if wav_exists and not os.path.isfile(compressed_url):
-        ensure_parent_folder_exists(compressed_url)
-        sound = pydub.AudioSegment.from_wav(wav_file_path)
-        sound.export(compressed_url, format=settings.AUDIO_COMPRESSED_FORMAT)
-
-    return fs, length
 
 
 def import_song_info(conn, user):
@@ -283,13 +223,16 @@ def import_songs(conn, database):
             continue
         song_name = song_id_to_name[song_id]
         audio_file = AudioFile.objects.filter(name=song_name).first()
+        if audio_file is None:
+            audio_file = AudioFile.objects.create(name=song_name, length=0, fs=0, database=database)
 
         # Import WAV data and save as WAV and MP3 files
-        fs, length = import_pcm(wav, cur, song_name)
+        fs, length = import_pcm(wav, cur, audio_file)
+        audio_file.fs = fs
+        audio_file.length = length
+        audio_file.save()
         bar.next()
-        if audio_file is None:
-            AudioFile.objects.create(
-                name=song_name, length=length, fs=fs, database=database)
+
     bar.finish()
 
 

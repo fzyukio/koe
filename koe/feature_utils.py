@@ -28,10 +28,10 @@ from koe.models import Task, DataMatrix, Ordination
 from koe.task import TaskRunner
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from koe.ts_utils import ndarray_to_bytes
-from koe.utils import get_wav_info
+from koe.utils import get_wav_info, wav_path
 from root.exceptions import CustomAssertionError
 from root.utils import ensure_parent_folder_exists
-from root.utils import wav_path, data_path, mkdirp
+from root.utils import data_path, mkdirp
 
 nfft = 512
 noverlap = nfft * 3 // 4
@@ -93,9 +93,6 @@ def extract_segment_features_for_segments(task, sids, features, f2bs):
     segments = Segment.objects.filter(id__in=sids).order_by(preserved)
     tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
 
-    vals = list(segments.order_by('audio_file', 'start_time_ms')
-                .values_list('audio_file__name', 'tid', 'start_time_ms', 'end_time_ms'))
-
     f2tid2fvals = {}
     f2af2segments = {}
     n_calculations = 0
@@ -110,11 +107,13 @@ def extract_segment_features_for_segments(task, sids, features, f2bs):
 
         af_to_segments = {}
 
-        for name, tid, start, end in vals:
+        for segment in segments.order_by('audio_file', 'start_time_ms'):
+            tid = segment.tid
+            af = segment.audio_file
             if tid in missing_tids:
-                if name not in af_to_segments:
-                    af_to_segments[name] = []
-                af_to_segments[name].append((tid, start, end))
+                if af not in af_to_segments:
+                    af_to_segments[af] = []
+                af_to_segments[af].append((tid, segment.start_time_ms, segment.end_time_ms))
 
         f2af2segments[feature] = af_to_segments
         n_calculations += len(af_to_segments)
@@ -124,8 +123,8 @@ def extract_segment_features_for_segments(task, sids, features, f2bs):
         for feature, af_to_segments in f2af2segments.items():
             _tids = []
             _fvals = []
-            for song_name, segs_info in af_to_segments.items():
-                wav_file_path = wav_path(song_name)
+            for af, segs_info in af_to_segments.items():
+                wav_file_path = wav_path(af)
                 __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
                 _tids += __tids
                 _fvals += __fvals

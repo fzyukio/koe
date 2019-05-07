@@ -3,6 +3,7 @@ General utils for the entire project.
 DO NOT import any project-related files here. NO Model, NO form, NO nothing.
 model_utils is there you can import those
 """
+import os
 import base64
 import contextlib
 import re
@@ -10,6 +11,8 @@ import wave
 from itertools import product
 
 import numpy as np
+
+from root.utils import data_path
 
 
 def array_to_base64(array):
@@ -410,3 +413,51 @@ def one_hot(labels):
     encoded = np.squeeze(one_hot_unique[enum_labels.reshape(-1)])
 
     return encoded, unique_labels, enum_labels
+
+
+def pickle_path(objid, subdir=None, for_url=False):
+    fullname = '{}.pkl'.format(objid)
+    folder = 'pickle'
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, for_url)
+
+
+def wav_path(audio_file, for_url=False):
+    if audio_file.is_original():
+        database_id = str(audio_file.database.id)
+        file_name = audio_file.name + '.wav'
+    else:
+        database_id = str(audio_file.original.database.id)
+        file_name = audio_file.original.name + '.wav'
+    return data_path('audio/wav/{}'.format(database_id), file_name, for_url)
+
+
+def audio_path(audio_file, ext, for_url=False):
+    if audio_file.is_original():
+        database_id = str(audio_file.database.id)
+        file_name = audio_file.name + '.' + ext
+    else:
+        database_id = str(audio_file.original.database.id)
+        file_name = audio_file.original.name + '.' + ext
+    return data_path('audio/{}/{}'.format(ext, database_id), file_name, for_url)
+
+
+def history_path(fullname, for_url=False):
+    return data_path('history', fullname, for_url)
+
+
+def spect_fft_path(spect_id, subdir=None, for_url=False):
+    folder = 'spect/fft'
+    fullname = '{}.png'.format(spect_id)
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, for_url)
+
+
+def spect_mask_path(spect_id, subdir=None, for_url=False):
+    folder = 'spect/mask'
+    fullname = '{}.png'.format(spect_id)
+    if subdir:
+        folder = os.path.join(folder, subdir)
+    return data_path(folder, fullname, for_url)

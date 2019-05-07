@@ -1,3 +1,4 @@
+import os
 import datetime
 import io
 import json
@@ -152,6 +153,14 @@ def create_database(request):
 
     database = Database(name=name)
     database.save()
+
+    media_dir = settings.MEDIA_URL[1:]
+    new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', str(database.id))
+    new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', settings.AUDIO_COMPRESSED_FORMAT,
+                                      str(database.id))
+
+    os.mkdir(new_wav_dir)
+    os.mkdir(new_compressed_dir)
 
     # Now assign this database to this user, and switch the working database to this new one
     da = DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)

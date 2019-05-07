@@ -17,7 +17,8 @@ from sortedcontainers import SortedDict
 from koe.utils import base64_to_array, array_to_base64
 from root.exceptions import CustomAssertionError
 from root.models import SimpleModel, User, MagicChoices, ValidateOnUpdateQuerySet
-from root.utils import history_path, ensure_parent_folder_exists, pickle_path, wav_path, audio_path
+from root.utils import ensure_parent_folder_exists
+from koe.utils import history_path, pickle_path, wav_path, audio_path
 
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
@@ -230,6 +231,7 @@ class AudioFile(SimpleModel):
     fs = models.IntegerField()
     length = models.IntegerField()
     name = models.CharField(max_length=255)
+    # file_name = models.CharField(max_length=255)
     track = models.ForeignKey(AudioTrack, null=True, blank=True, on_delete=models.SET_NULL)
     individual = models.ForeignKey(Individual, null=True, blank=True, on_delete=models.SET_NULL)
     quality = models.CharField(max_length=255, null=True, blank=True)
@@ -302,25 +304,31 @@ class AudioFile(SimpleModel):
             raise CustomAssertionError('Can\'t set the same name to more than 1 song.')
         obj = objs[0]
 
-        unique_name = name
-        is_unique = not AudioFile.objects.filter(name=unique_name).exists()
-        postfix = 0
-        while not is_unique:
-            postfix += 1
-            unique_name = '{}({}).wav'.format(name, postfix)
-            is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+        is_unique = not AudioFile.objects.filter(database=obj.database, name=name).exists()
+        if not is_unique:
+            raise CustomAssertionError('File {} already exists'.format(name))
 
-        new_name_wav = wav_path(unique_name)
-        new_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
+        # If audio file is original, change the actual audio files' names as well
+        if obj.is_original():
+            old_name = obj.name
+            old_name_wav = wav_path(obj)
+            old_name_compressed = audio_path(obj, settings.AUDIO_COMPRESSED_FORMAT)
 
-        old_name_wav = wav_path(obj.name)
-        old_name_compressed = audio_path(obj.name, settings.AUDIO_COMPRESSED_FORMAT)
+            try:
+                obj.name = name
+                obj.save()
+                new_name_wav = wav_path(obj)
+                new_name_compressed = audio_path(obj, settings.AUDIO_COMPRESSED_FORMAT)
 
-        os.rename(old_name_wav, new_name_wav)
-        os.rename(old_name_compressed, new_name_compressed)
-
-        obj.name = name
-        obj.save()
+                os.rename(old_name_wav, new_name_wav)
+                os.rename(old_name_compressed, new_name_compressed)
+            except Exception as e:
+                obj.name = old_name
+                obj.save()
+                raise CustomAssertionError('Error changing name')
+        else:
+            obj.name = name
+            obj.save()
 
     @classmethod
     def get_table_editability(cls, *args, **kwargs):

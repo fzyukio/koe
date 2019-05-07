@@ -12,7 +12,8 @@ from django.conf import settings
 from koe import wavfile
 from koe import wavfile as wf
 from koe.utils import get_wav_info
-from root.utils import wav_path, ensure_parent_folder_exists, audio_path
+from root.utils import ensure_parent_folder_exists
+from koe.utils import wav_path, audio_path
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -73,11 +74,11 @@ def wav_2_mono(file, **kwargs):
     return fs, data
 
 
-def import_pcm(song, cur, song_name, wav_file_path=None, compressed_url=None):
+def import_pcm(song, cur, audio_file, wav_file_path=None, compressed_url=None):
     if wav_file_path is None:
-        wav_file_path = wav_path(song_name)
+        wav_file_path = wav_path(audio_file)
     if compressed_url is None:
-        compressed_url = audio_path(song_name, settings.AUDIO_COMPRESSED_FORMAT)
+        compressed_url = audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT)
 
     if not os.path.isfile(wav_file_path):
         # print('Importing {}'.format(song_name))

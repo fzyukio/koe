@@ -1,20 +1,21 @@
 import io
 import json
-import os
 
 import pydub
 from django.conf import settings
 from django.core.files import File
 from django.http import HttpResponse
-from memoize import memoize
 
 from koe import wavfile
 from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, \
     get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
+from koe.utils import audio_path
+from memoize import memoize
+from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
-from root.utils import ensure_parent_folder_exists, wav_path, audio_path
+from root.utils import ensure_parent_folder_exists, data_path
 
 __all__ = ['get_segment_audio_data', 'import_audio_files', 'get_audio_file_url', 'import_audio_file',
            'get_audio_files_urls']
@@ -34,8 +35,8 @@ def _match_target_amplitude(sound, loudness=-10):
 
 
 @memoize(timeout=None)
-def _cached_get_segment_audio_data(audio_file_name, fs, start, end):
-    wav_file_path = wav_path(audio_file_name)
+def _cached_get_segment_audio_data(audio_file_name, database_id, fs, start, end):
+    wav_file_path = data_path('audio/wav/{}'.format(database_id), '{}.wav'.format(audio_file_name))
     chunk = wavfile.read_segment(wav_file_path, start, end, normalised=False, mono=True)
 
     audio_segment = pydub.AudioSegment(
@@ -75,7 +76,14 @@ def get_segment_audio_data(request):
     start = segment.start_time_ms
     end = segment.end_time_ms
 
-    return _cached_get_segment_audio_data(audio_file.name, audio_file.fs, start, end)
+    if audio_file.is_original():
+        database_id = audio_file.database.id
+        audio_file_name = audio_file.name
+    else:
+        database_id = audio_file.original.database.id
+        audio_file_name = audio_file.original.name
+
+    return _cached_get_segment_audio_data(audio_file_name, database_id, audio_file.fs, start, end)
 
 
 def import_audio_files(request):
@@ -92,40 +100,52 @@ def import_audio_files(request):
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
     added_files = []
+    not_importable_filenames = []
+    importable_files = []
 
     for f in files:
         file = File(file=f)
-        fullname = file.name
-        name, ext = os.path.splitext(fullname)
-        if ext:
-            ext = ext.lower()
+        name = file.name
+        if name.lower().endswith('.wav'):
+            name = name[:-4]
 
-        unique_name = fullname
-        is_unique = not AudioFile.objects.filter(name=unique_name).exists()
-        postfix = 0
-        while not is_unique:
-            postfix += 1
-            unique_name = '{}({}){}'.format(name, postfix, ext)
-            is_unique = not AudioFile.objects.filter(name=unique_name).exists()
+        is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
 
-        unique_name_wav = wav_path(unique_name)
-        unique_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
+        if not is_unique:
+            not_importable_filenames.append(name)
+        else:
+            importable_files.append(file)
 
-        with open(unique_name_wav, 'wb') as wav_file:
-            wav_file.write(file.read())
+    if len(not_importable_filenames) > 0:
+        raise CustomAssertionError('Error: No files were imported because the following files already exist: {}'
+                                   .format(', '.join(not_importable_filenames)))
+    else:
+        for file in importable_files:
+            name = file.name
+            if name.lower().endswith('.wav'):
+                name = name[:-4]
 
-        audio = pydub.AudioSegment.from_file(unique_name_wav)
+            name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
+            name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
+                                        '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
 
-        ensure_parent_folder_exists(unique_name_compressed)
-        audio.export(unique_name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
+            with open(name_wav, 'wb') as wav_file:
+                wav_file.write(file.read())
 
-        fs = audio.frame_rate
-        length = audio.raw_data.__len__() // audio.frame_width
-        audio_file = AudioFile.objects.create(name=unique_name, length=length, fs=fs, database=database)
-        added_files.append(audio_file)
+            audio = pydub.AudioSegment.from_file(name_wav)
 
-    _, rows = get_sequence_info_empty_songs(added_files)
-    return rows
+            ensure_parent_folder_exists(name_compressed)
+            audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
+
+            fs = audio.frame_rate
+            length = audio.raw_data.__len__() // audio.frame_width
+            audio_file = AudioFile(name=name, length=length, fs=fs, database=database)
+            added_files.append(audio_file)
+
+        AudioFile.objects.bulk_create(added_files)
+        added_files = AudioFile.objects.filter(database=database, name__in=[x.name for x in added_files])
+        _, rows = get_sequence_info_empty_songs(added_files)
+        return rows
 
 
 def import_audio_file(request):
@@ -150,8 +170,9 @@ def import_audio_file(request):
     song_id = item['id']
 
     file = File(file=f)
-    fullname = file.name
-    name, ext = os.path.splitext(fullname)
+    name = file.name
+    if name.lower().endswith('.wav'):
+        name = name[:-4]
 
     audio_file = None
     need_unique_name = True
@@ -161,35 +182,29 @@ def import_audio_file(request):
             need_unique_name = False
 
     if need_unique_name:
-        unique_name = name
-        is_unique = not AudioFile.objects.filter(name=unique_name).exists()
-        postfix = 0
-        while not is_unique:
-            postfix += 1
-            unique_name = '{}({})'.format(name, postfix)
-            is_unique = not AudioFile.objects.filter(name=unique_name).exists()
-    else:
-        unique_name = name
+        is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
+        if not is_unique:
+            raise CustomAssertionError('File {} already exists'.format(name))
 
-    unique_name_wav = wav_path(unique_name)
-    unique_name_compressed = audio_path(unique_name, settings.AUDIO_COMPRESSED_FORMAT)
+    name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
+    name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
+                                '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
 
-    with open(unique_name_wav, 'wb') as wav_file:
+    with open(name_wav, 'wb') as wav_file:
         wav_file.write(file.read())
 
-    audio = pydub.AudioSegment.from_file(unique_name_wav)
+    audio = pydub.AudioSegment.from_file(name_wav)
 
-    ensure_parent_folder_exists(unique_name_compressed)
-    audio.export(unique_name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
+    ensure_parent_folder_exists(name_compressed)
+    audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
     fs = audio.frame_rate
     length = audio.raw_data.__len__() // audio.frame_width
 
     if audio_file is None:
-        audio_file = AudioFile(name=unique_name, length=length, fs=fs, database=database, track=track, start=start,
-                               end=end)
+        audio_file = AudioFile(name=name, length=length, fs=fs, database=database, track=track, start=start, end=end)
     else:
-        if audio_file.name != unique_name:
-            AudioFile.set_name([audio_file], unique_name)
+        if audio_file.name != name:
+            AudioFile.set_name([audio_file], name)
         audio_file.start = start
         audio_file.end = end
         audio_file.length = length
@@ -234,11 +249,7 @@ def get_audio_file_url(request):
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
-    audio_file_name = audio_file.name
-    if not audio_file_name.lower().endswith('.wav'):
-        audio_file_name += '.wav'
-
-    return audio_path(audio_file_name, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
+    return audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
 
 
 def get_audio_files_urls(request):
@@ -248,17 +259,14 @@ def get_audio_files_urls(request):
     file_ids = json.loads(file_ids)
     format = request.POST.get('format', settings.AUDIO_COMPRESSED_FORMAT)
     audio_files = AudioFile.objects.filter(id__in=file_ids)
-    audio_files_names = audio_files.values_list('name', flat=True)
     database_ids = audio_files.values_list('database', flat=True).distinct()
     databases = Database.objects.filter(id__in=database_ids)
     for database in databases:
         assert_permission(user, database, DatabasePermission.VIEW)
 
-    wav_file_paths = []
-    for audio_file_name in audio_files_names:
-        if not audio_file_name.lower().endswith('.wav'):
-            audio_file_name += '.wav'
-        wav_file_path = audio_path(audio_file_name, format, for_url=True)
-        wav_file_paths.append(wav_file_path)
+    file_paths = []
+    for audio_file in audio_files:
+        file_path = audio_path(audio_file, format, for_url=True)
+        file_paths.append(file_path)
 
-    return wav_file_paths
+    return file_paths

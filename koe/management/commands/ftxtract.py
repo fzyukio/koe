@@ -6,7 +6,7 @@ from scipy import interpolate
 
 from koe import wavfile
 from koe.management.commands.chirp_generator import amp_profile_names, f0_profile_names, generate_chirp
-from root.utils import wav_path
+from koe.utils import wav_path
 
 window_size_relative = 0.2  # Of the largest window
 
@@ -116,15 +116,12 @@ def extract_xfcc(segments, config, is_pattern=False, method_name='mfcc'):
 
     else:
         mfccs = []
-        segments_info = segments.values_list('audio_file__name', 'audio_file__fs',
-                                             'start_time_ms', 'end_time_ms', 'id')
-
         segment_data = {}
 
-        for file_name, fs, start, end, id in segments_info:
-            file_url = wav_path(file_name)
-            sig = wavfile.read_segment(file_url, start, end, mono=True)
-
+        for segment in segments:
+            fs = segment.audio_file.fs
+            file_url = wav_path(segment.audio_file)
+            sig = wavfile.read_segment(file_url, segment.start_time_ms, segment.end_time_ms, mono=True)
             mfcc_fts = _extract_xfcc(sig, fs, method, xtrargs, ndelta)
 
             segment_data['s' + str(id)] = dict(sig=sig, fs=fs, ft=mfcc_fts)

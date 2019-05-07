@@ -14,7 +14,8 @@ from koe.models import DistanceMatrix, Segment, DatabaseAssignment, Database, Da
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
-from root.utils import spect_fft_path, wav_path, ensure_parent_folder_exists, audio_path
+from root.utils import ensure_parent_folder_exists
+from koe.utils import spect_fft_path, wav_path, audio_path
 
 window_size = 256
 noverlap = 256 * 0.75
@@ -248,10 +249,7 @@ def extract_spectrogram(audio_file_id):
             missing_segs_info.append((seg_spect_path, start, end))
 
     if len(missing_segs_info) > 0:
-
-        song_name = audio_file.name
-
-        filepath = wav_path(song_name)
+        filepath = wav_path(audio_file)
 
         fs, sig = wav_2_mono(filepath)
         duration_ms = len(sig) * 1000 / fs
@@ -379,16 +377,27 @@ def delete_audio_files_async():
         if af.original is None:
             clones = AudioFile.objects.filter(original=af).order_by('id')
             first_clone = clones.first()
+
+            # If there are clones, make the first clone original of the remaining
+            # Also move the real audio file to the database's folder of the clone
             if first_clone:
+                old_wav_file = wav_path(af)
+                old_mp4_file = audio_path(af, settings.AUDIO_COMPRESSED_FORMAT)
+
                 clones.update(original=first_clone)
                 first_clone.original = None
                 first_clone.save()
+
+                new_wav_file = wav_path(first_clone)
+                new_mp4_file = audio_path(first_clone, settings.AUDIO_COMPRESSED_FORMAT)
+
+                os.rename(old_wav_file, new_wav_file)
+                os.rename(old_mp4_file, new_mp4_file)
+
+            # Otherwise, delete the audio files too
             else:
-                af_name = af.name
-                if not af_name.lower().endswith('.wav'):
-                    af_name += '.wav'
-                wav = wav_path(af_name)
-                mp4 = audio_path(af_name, settings.AUDIO_COMPRESSED_FORMAT)
+                wav = wav_path(af)
+                mp4 = audio_path(af, settings.AUDIO_COMPRESSED_FORMAT)
                 if os.path.isfile(wav):
                     os.remove(wav)
                 if os.path.isfile(mp4):

@@ -14,7 +14,8 @@ from koe.model_utils import assert_permission, \
 from koe.models import Segment, HistoryEntry, Database, DatabasePermission, AudioFile
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr
-from root.utils import history_path, ensure_parent_folder_exists
+from root.utils import ensure_parent_folder_exists
+from koe.utils import history_path
 
 __all__ = ['save_history', 'import_history', 'delete_history']
 

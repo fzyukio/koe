@@ -13,7 +13,7 @@ from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermissio
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttr, ExtraAttrValue
-from root.utils import history_path
+from koe.utils import history_path
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',

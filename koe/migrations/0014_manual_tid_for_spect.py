@@ -5,7 +5,7 @@ from shutil import copyfile
 
 from django.db import migrations
 
-from root.utils import spect_fft_path
+from koe.utils import spect_fft_path
 
 
 def change_spectrogram_to_use_tid(apps, schema_editor):

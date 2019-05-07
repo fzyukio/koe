@@ -20,6 +20,7 @@ class Command(BaseCommand):
     def handle(self, commit, *args, **options):
         segment_ids = frozenset(Segment.objects.values_list('id', flat=True))
         mask_path = os.path.join(settings.MEDIA_URL, 'spect', 'mask')[1:]
+        compressed_format = settings.AUDIO_COMPRESSED_FORMAT
 
         existing_masks = os.listdir(mask_path)
 
@@ -28,7 +29,7 @@ class Command(BaseCommand):
                 existing_mask_id = int(existing_mask[:-4])
                 if existing_mask_id not in segment_ids:
                     filepath = '{}/{}'.format(mask_path, existing_mask)
-                    print('File {} is a ghost'.format(filepath))
+                    print('Mask file {} is a ghost'.format(filepath))
                     if commit:
                         os.remove(filepath)
             except ValueError:
@@ -43,7 +44,7 @@ class Command(BaseCommand):
                 existing_spect_id = int(existing_spect[:-4])
                 if existing_spect_id not in segment_ids:
                     filepath = '{}/{}'.format(spect_path, existing_spect)
-                    print('File {} is a ghost'.format(filepath))
+                    print('Spect file {} is a ghost'.format(filepath))
                     if commit:
                         os.remove(filepath)
             except ValueError:
@@ -51,38 +52,40 @@ class Command(BaseCommand):
 
         audio_file_names = AudioFile.objects.values_list('name', flat=True)
         audio_file_names_wav = []
-        audio_file_names_mp4 = []
-        mp4_ext = '.{}'.format(settings.AUDIO_COMPRESSED_FORMAT)
+        audio_file_names_compressed = []
+        compressed_ext = '.{}'.format(compressed_format)
         for audio_file_name in audio_file_names:
             if audio_file_name.lower().endswith('.wav'):
                 clean_name = audio_file_name[:-4]
             else:
                 clean_name = audio_file_name
             audio_file_names_wav.append(clean_name + '.wav')
-            audio_file_names_mp4.append(clean_name + mp4_ext)
+            audio_file_names_compressed.append(clean_name + compressed_ext)
 
         audio_file_names_wav = frozenset(audio_file_names_wav)
-        audio_file_names_mp4 = frozenset(audio_file_names_mp4)
+        audio_file_names_compressed = frozenset(audio_file_names_compressed)
 
         wav_path = os.path.join(settings.MEDIA_URL, 'audio', 'wav')[1:]
-        mp4_path = os.path.join(settings.MEDIA_URL, 'audio', settings.AUDIO_COMPRESSED_FORMAT)[1:]
+        compressed_path = os.path.join(settings.MEDIA_URL, 'audio', compressed_format)[1:]
         existing_wavs = os.listdir(wav_path)
-        existing_mp4s = os.listdir(mp4_path)
+        existing_compressed_files = os.listdir(compressed_path)
 
         ghost_wavs = [x for x in existing_wavs if x not in audio_file_names_wav]
-        ghost_mp4s = [x for x in existing_mp4s if x not in audio_file_names_mp4]
+        ghost_compressed_files = [x for x in existing_compressed_files if x not in audio_file_names_compressed]
 
         for wav in ghost_wavs:
             filepath = '{}/{}'.format(wav_path, wav)
-            print('File {} is a ghost'.format(filepath))
-            if commit:
-                os.remove(filepath)
+            if os.path.isfile(filepath):
+                print('Wav file {} is a ghost'.format(filepath))
+                if commit:
+                    os.remove(filepath)
 
-        for mp4 in ghost_mp4s:
-            filepath = '{}/{}'.format(mp4_path, mp4)
-            print('File {} is a ghost'.format(filepath))
-            if commit:
-                os.remove(filepath)
+        for compressed in ghost_compressed_files:
+            filepath = '{}/{}'.format(compressed_path, compressed)
+            if os.path.isfile(filepath):
+                print('Compressed file {} is a ghost'.format(filepath))
+                if commit:
+                    os.remove(filepath)
 
         attr_values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__).exclude(owner_id__in=segment_ids)
         print('Found {} ghost ExtraAttrValue of Segment'.format(attr_values.count()))

@@ -47,6 +47,9 @@ const deleteSongsBtn = $('#delete-songs-btn');
 const copySongsBtn = $('#copy-songs-btn');
 
 const uploadSongsModal = $('#upload-songs-modal');
+let clashedList = uploadSongsModal.find('#clashed-list');
+let clashAlert = uploadSongsModal.find('.alert');
+
 const downloadSongsModal = $('#download-songs-modal');
 const downloadProgressBar = downloadSongsModal.find('.progress-bar');
 
@@ -238,8 +241,12 @@ const focusOnGridOnInit = function () {
  */
 const initUploadSongsBtn = function () {
     uploadSongsBtn.click(function () {
-        $('#previews').children().remove();
+        setupSongsUpload();
         uploadSongsModal.modal('show');
+    });
+
+    uploadSongsModal.on('hidden.bs.modal', function () {
+        dropzone.removeAllFiles(true);
     });
 };
 
@@ -319,25 +326,6 @@ const initDownloadSongsBtn = function () {
             },
             immediate: true,
         });
-
-
-        // downloadSongsModal.modal('show');
-        // for (let i = 0; i < numRows; i++) {
-        //     let song = dataView.getItem(selectedRows[i]);
-        //     postRequest({
-        //         requestSlug: 'koe/get-audio-file-url',
-        //         data: {'file-id': song.id},
-        //         onSuccess: function (url) {
-        //
-        //
-        //             let percentLoaded = (i+1.0) / numRows;
-        //             downloadProgressBar.css('width', `${percentLoaded}%`);
-        //             downloadProgressBar.attr('aria-valuenow', percentLoaded);
-        //             downloadProgressBar.html(`${percentLoaded}%`);
-        //         },
-        //         immediate: true,
-        //     });
-        // }
     });
 };
 
@@ -458,10 +446,13 @@ let gridArgs = {
     multiSelect: true
 };
 
+let existingFiles;
+let dropzone;
+
 /**
  * Initialise the dropzone
  */
-function setupSongsUpload() {
+function setupDropZone() {
     let maxFiles = 100;
     let maxFilesize = 50;
 
@@ -472,7 +463,7 @@ function setupSongsUpload() {
     let previewTemplate = previewNode.parentNode.innerHTML;
     previewNode.parentNode.removeChild(previewNode);
 
-    const myDropzone = new Dropzone(dropzoneSelector, {
+    dropzone = new Dropzone(dropzoneSelector, {
         url: getUrl('send-request', 'koe/import-audio-files'),
         maxFilesize,
         addRemoveLinks: false,
@@ -487,6 +478,10 @@ function setupSongsUpload() {
         previewTemplate,
         previewsContainer: '#previews',
         autoQueue: false,
+        duplicateMessageGenerator(file) {
+            return `File ${file.name} already exists in the upload list`;
+        },
+        preventDuplicates: true,
         init () {
             let self = this;
 
@@ -499,27 +494,52 @@ function setupSongsUpload() {
                 self.removeFile(file);
             });
 
+            self.on('addedfile', function (file) {
+                let filename = file.name;
+
+                // Remove the ".wav" part from file name
+                filename = filename.substr(0, filename.length - 4).toLowerCase();
+                if (existingFiles.includes(filename)) {
+                    self.removeFile(file);
+                    clashedList.append(`<li>${file.name}</li>`);
+                    clashAlert.show();
+                }
+            });
+
             self.on('successmultiple', function(file, response) {
                 let rows = JSON.parse(response).message;
                 let lastRow = rows[rows.length - 1];
                 grid.appendRows(rows);
                 grid.mainGrid.gotoCell(lastRow.id, 0);
                 grid.mainGrid.scrollCellIntoView(lastRow.id, 0);
+                self.removeAllFiles(true);
             });
         }
     });
 
     uploadSongsModal.find('.start').click(function() {
-        myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));
+        dropzone.enqueueFiles(dropzone.getFilesWithStatus(Dropzone.ADDED));
     });
 
     uploadSongsModal.find('.removel-all').click(function() {
-        myDropzone.removeAllFiles(true);
+        dropzone.removeAllFiles(true);
     });
 
     uploadSongsModal.find('.cancel').click(function() {
         uploadSongsModal.modal('hide');
     });
+}
+
+
+/**
+ * Clean up the dropzone
+ */
+function setupSongsUpload() {
+    let items = grid.mainGrid.getData().getItems();
+    existingFiles = $.map(items, (item) => item.filename.toLowerCase());
+    clashedList.children().remove();
+    clashAlert.hide();
+    $('#previews').children().remove();
 }
 
 
@@ -536,10 +556,6 @@ export const run = function (commonElements) {
     ce = commonElements;
     let argDict = ce.argDict;
 
-    setupSongsUpload();
-    initUploadSongsBtn();
-    initDownloadSongsBtn();
-
     grid.init(granularity);
 
     return new Promise(function(resolve) {
@@ -552,6 +568,11 @@ export const run = function (commonElements) {
                 if (argDict.__action === 'upload') {
                     uploadSongsBtn.click();
                 }
+
+                setupDropZone();
+                initUploadSongsBtn();
+                initDownloadSongsBtn();
+
                 resolve();
             });
         });

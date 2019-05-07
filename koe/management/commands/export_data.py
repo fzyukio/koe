@@ -17,7 +17,8 @@ from progress.bar import Bar
 
 import csv
 from koe.models import Segment
-from root.utils import wav_path, mkdirp
+from koe.utils import wav_path
+from root.utils import mkdirp
 
 
 class Command(BaseCommand):
@@ -54,15 +55,15 @@ class Command(BaseCommand):
             sid_to_label = {int(row['id']): row[primary_label_level] for row in reader}
 
         sids = sid_to_label.keys()
-        segs = Segment.objects.filter(id__in=sids).values_list('id', 'start_time_ms', 'end_time_ms', 'audio_file__name')
         audio_file_dict = {}
-        for id, st, ed, af in segs:
+        for segment in Segment.objects.filter(id__in=sids):
+            af = segment.audio_file
             if af in audio_file_dict:
                 info = audio_file_dict[af]
             else:
                 info = []
                 audio_file_dict[af] = info
-            info.append((id, st, ed))
+            info.append((segment.id, segment.start_time_ms, segment.end_time_ms))
 
         bar = Bar('Exporting segments ...', max=len(sid_to_label))
         for af, info in audio_file_dict.items():

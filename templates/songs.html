@@ -37,9 +37,9 @@
     </div>
 
     <div class="has-grid" id="songs-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"
-        {% if current_database is not None %}
-            {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
-         {% endif %}>
+            {% if current_database is not None %}
+         {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+            {% endif %}>
     </div>
 
     <div id="spectrogram-details-tooltip" class="hidden">
@@ -62,5 +62,51 @@
     {% endif %}
     <script>
         Dropzone.autoDiscover = false;
+
+        /* Make Dropzone reject files with the same name
+           (occurs if user drop two files of the same name in two drags and drops)
+           Credit: https://stackoverflow.com/a/41790941/1302520
+        */
+        Dropzone.prototype.isFileExist = function (file) {
+            var i;
+            if (this.files.length > 0) {
+                for (i = 0; i < this.files.length; i++) {
+                    if (this.files[i].name === file.name) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        Dropzone.prototype.addFile = function (file) {
+            file.upload = {
+                progress: 0,
+                total: file.size,
+                bytesSent: 0
+            };
+            if (this.options.preventDuplicates && this.isFileExist(file)) {
+                alert(this.options.duplicateMessageGenerator(file));
+                return;
+            }
+            this.files.push(file);
+            file.status = Dropzone.ADDED;
+            this.emit("addedfile", file);
+            this._enqueueThumbnail(file);
+            return this.accept(file, (function (_this) {
+                return function (error) {
+                    if (error) {
+                        file.accepted = false;
+                        _this._errorProcessing([file], error);
+                    } else {
+                        file.accepted = true;
+                        if (_this.options.autoQueue) {
+                            _this.enqueueFile(file);
+                        }
+                    }
+                    return _this._updateMaxFilesReachedClass();
+                };
+            })(this));
+        };
     </script>
 {% endblock %}

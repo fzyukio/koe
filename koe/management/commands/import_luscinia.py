@@ -19,7 +19,8 @@ from koe.management.commands import utils
 from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
 from koe.models import AudioFile, Segment, AudioTrack, Individual, Database, DatabaseAssignment, DatabasePermission
 from root.models import ExtraAttrValue, User
-from root.utils import wav_path, ensure_parent_folder_exists, spect_fft_path, spect_mask_path
+from root.utils import ensure_parent_folder_exists
+from koe.utils import wav_path, spect_fft_path, spect_mask_path
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]
@@ -178,13 +179,15 @@ def import_songs(conn, database):
     for song in songs:
         song_name = song['name']
         audio_file = AudioFile.objects.filter(name=song_name).first()
-
+        if audio_file is None:
+            audio_file = AudioFile.objects.create(name=song_name, length=0, fs=0, database=database)
         # Import WAV data and save as WAV and MP3 files
-        fs, length = import_pcm(song, cur, song_name)
+        fs, length = import_pcm(song, cur, audio_file)
+        audio_file.fs = fs
+        audio_file.length = length
+        audio_file.save()
         bar.song_name = song_name
         bar.next()
-        if audio_file is None:
-            AudioFile.objects.create(name=song_name, length=length, fs=fs, database=database)
     bar.finish()
 
 
@@ -331,20 +334,18 @@ def extract_spectrogram():
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia)
     :return:
     """
-    values_list = Segment.objects.values_list(
-        'id', 'audio_file__id', 'audio_file__name', 'start_time_ms', 'end_time_ms')
     audio_to_segs = {}
-    for id, song_id, song_name, start, end in values_list:
-        key = (song_name, song_id)
-        if key not in audio_to_segs:
-            audio_to_segs[key] = [(id, start, end)]
+    for segment in Segment.objects.all():
+        audio_file = segment.audio_file
+        if audio_file not in audio_to_segs:
+            audio_to_segs[audio_file] = [(segment.id, segment.start_time_ms, segment.end_time_ms)]
         else:
-            audio_to_segs[key].append((id, start, end))
+            audio_to_segs[audio_file].append((segment.id, segment.start_time_ms, segment.end_time_ms))
 
     n = len(audio_to_segs)
     bar = Bar('Exporting spects ...', max=n)
 
-    for (song_name, song_id), seg_list in audio_to_segs.items():
+    for audio_file, seg_list in audio_to_segs.items():
         count = 0
         for seg_id, start, end in seg_list:
             seg_spect_path = spect_fft_path(seg_id, 'syllable')
@@ -354,7 +355,7 @@ def extract_spectrogram():
             bar.next()
             continue
 
-        filepath = wav_path(song_name)
+        filepath = wav_path(audio_file)
 
         fs, sig = wav_2_mono(filepath)
         duration_ms = len(sig) * 1000 / fs
@@ -384,7 +385,7 @@ def extract_spectrogram():
                 (height, width)) * 255
 
             file_spect_img = Image.fromarray(file_spect_rgb)
-            file_spect_path = spect_fft_path(song_id, 'song')
+            file_spect_path = spect_fft_path(audio_file.id, 'song')
             ensure_parent_folder_exists(file_spect_path)
             if not os.path.isfile(file_spect_path):
                 file_spect_img.save(file_spect_path, format='PNG')
@@ -402,7 +403,7 @@ def extract_spectrogram():
                     seg_spect_img.save(seg_spect_path, format='PNG')
 
         except Exception as e:
-            warning('Error occured at song id: {}'.format(song_id))
+            warning('Error occured at song id: {}'.format(audio_file.id))
             raise e
 
         bar.next()
