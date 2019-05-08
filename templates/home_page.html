@@ -73,7 +73,7 @@
                                data-fallback-class="u-width-max-full">
                             <source type="video/mp4" src="{% static "images/koe-intro.mp4" %}">
                         </video>
-                        <div class="intro-video-toggle">
+                        <div class="intro-video-toggle" style="display: none;">
                             <div class="btn-group" role="group">
                                 <button type="button" id="dialog-modal-yes-button"
                                         class="btn btn-primary btn-hover-green" role="button">
@@ -95,11 +95,7 @@
                         </div>
                     </div>
                     <div class="popup-content">
-                        <iframe id="youtube-clip" src="https://www.youtube.com/embed/0RaLAJim_PA"
-                                width="1280" height="650"
-                                frameborder="0"
-                                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
+                        <div id="player"></div>
                     </div>
                 </div>
             </div>
