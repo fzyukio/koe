@@ -32,8 +32,6 @@
                                         role="button" href="{% url 'login' %}">
                                     Login
                                 </button>
-                            </div>
-                            <div class="btn-group" role="group">
                                 <button type="button" id="dialog-modal-no-button" class="btn btn-primary btn-md"
                                         data-dismiss="modal" role="button" href="{% url 'register' %}">
                                     Register
@@ -54,15 +52,19 @@
                      style="background-image: url('{% static "images/header-bottom.svg" %}')" ;></div>
                 <div class="content">
                     <div class="textbox"><h1>Web-based software <br>for analysing animal vocalisations</h1>
-{#                        <p>Open-source, Multi-user, Free, Cross-platform.</p>#}
                         <p>Visualising, segmenting, measuring, classifying, filtering and exporting acoustic units, and
-                        analysing sequence structure (syntax).<p>
+                            analysing sequence structure (syntax).
+                        <p>
                         <div class="btn-group" role="group">
-                                <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
-                                        data-dismiss="modal" role="button" href="https://github.com/fzyukio/koe/wiki">
-                                    User Manual
-                                </button>
-                            </div>
+                            <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
+                                    data-dismiss="modal" role="button" href="https://github.com/fzyukio/koe/wiki">
+                                User Manual
+                            </button>
+                            <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
+                                    data-dismiss="modal" role="button" href="{% url "contact-us" %}">
+                                Contact us
+                            </button>
+                        </div>
 
                     </div>
                     <div class="intro-video">
@@ -200,110 +202,6 @@
             </div>
 
         </div>
-
-{#        <div id="section-2-alternative" class="row no-margin section">#}
-{#            <div class="col-md-8 col-lg-6 col-md-offset-2 col-lg-offset-3">#}
-{#                <div id="section-2a" class="row section-title">#}
-{#                    <h1>Key features</h1>#}
-{#                    <h3>Visualising, segmenting, measuring, classifying, filtering and exporting acoustic units, and#}
-{#                        analysing sequence structure (syntax). Suitable for animal species with distinct acoustic#}
-{#                        units.#}
-{#                    </h3>#}
-{#                </div>#}
-{#                <div id="section-2b" class="row section-body">#}
-{#                    <div class="row no-margin">#}
-{#                        <div class="col-xs-12 col-sm-7 feature-description">#}
-{#                            <h2>Classify units: Interactive unit tables</h2>#}
-{#                            <ul>#}
-{#                                <li>Unit spectrograms, audio, and metadata all together in one place.</li>#}
-{#                                <li>Compare, select, classify and annotate units rapidly.</li>#}
-{#                                <li>Automatically group units by acoustic similarity to facilitate#}
-{#                                    bulkclassification.#}
-{#                                </li>#}
-{#                                <li>Classify at multiple levels of granularity: fine, medium and broad, for#}
-{#                                    different#}
-{#                                    scales of analysis.#}
-{#                                </li>#}
-{#                                <li>Sort, filter and export data.</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                        <div class="col-xs-12 col-sm-5 image">#}
-{#                            <img src="{% static "images/feature-1-long.png" %}">#}
-{#                        </div>#}
-{#                    </div>#}
-{##}
-{#                    <div class="row no-margin">#}
-{#                        <div class="col-xs-12 col-sm-5 image">#}
-{#                            <img src="{% static "images/feature-2-long.png" %}">#}
-{#                        </div>#}
-{##}
-{#                        <div class="col-xs-12 col-sm-7 feature-description">#}
-{#                            <h2>Classify units: Interactive ordination plots</h2>#}
-{#                            <ul>#}
-{#                                <li>Visualise data structure based on extracted acoustic features.</li>#}
-{#                                <li>Encircle groups of points on the ordination to see spectrograms, hear playback,#}
-{#                                    and#}
-{#                                    bulk-label groups of units.#}
-{#                                </li>#}
-{#                                <li>Toggle visibility of individual classes and zoom plot for added control.</li>#}
-{#                                <li>View selections as a subset unit table.</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                    </div>#}
-{##}
-{#                    <div class="row no-margin">#}
-{#                        <div class="col-xs-12 col-sm-7 feature-description">#}
-{#                            <h2>Catalogue unit classes</h2>#}
-{#                            <ul>#}
-{#                                <li>Catalogue generated dynamically as you classify units, as a useful reference#}
-{#                                </li>#}
-{#                                <li>Displays up to 10 randomly-selected exemplars for each class to represent#}
-{#                                    within-class variability#}
-{#                                </li>#}
-{#                                <li>Class counts, exemplar spectrograms and audio playback</li>#}
-{#                                <li>Sort, filter and export class list and counts</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                        <div class="col-xs-12 col-sm-5 image">#}
-{#                            <img src="{% static "images/feature-1-long.png" %}">#}
-{#                        </div>#}
-{#                    </div>#}
-{##}
-{#                    <div class="row no-margin">#}
-{#                        <div class="col-xs-12 col-sm-5 image">#}
-{#                            <img src="{% static "images/feature-2-long.png" %}">#}
-{#                        </div>#}
-{##}
-{#                        <div class="col-xs-12 col-sm-7 feature-description">#}
-{#                            <h2>View songs as sequences</h2>#}
-{#                            <ul>#}
-{#                                <li>Compare songs based on audio and sequence structure</li>#}
-{#                                <li>Sort, select, annotate and classify songs</li>#}
-{#                                <li>Filter by sequence structure to find shared sequences</li>#}
-{#                                <li>Export song audio and metadata</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                    </div>#}
-{##}
-{#                    <div class="row no-margin">#}
-{#                        <div class="col-xs-12 col-sm-7 feature-description">#}
-{#                            <h2>Mine sequence structure</h2>#}
-{#                            <ul>#}
-{#                                <li>Find the strength of syntactical association between unit classes across a group#}
-{#                                    of#}
-{#                                    songs#}
-{#                                </li>#}
-{#                                <li>View two-unit associations as an interactive network</li>#}
-{#                                <li>Filter network based on association strength/prevalence</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                        <div class="col-xs-12 col-sm-5 image">#}
-{#                            <img src="{% static "images/feature-1-long.png" %}">#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
-{#        </div>#}
 
         <div id="section-3" class="row no-margin section">
             <div class="col-md-10 col-lg-8 col-xl-6 col-md-offset-1 col-lg-offset-2 col-xl-offset-3">
@@ -522,31 +420,8 @@
                     <div class="col-sm-4 col-sm-offset-4 logo">
                         <img src="{% static "images/mu-full.svg" %}">
                     </div>
-{#                    <div class="col-sm-7">#}
-{#                        <div class="credit">#}
-{#                            <p><strong>Development team:</strong></p>#}
-{#                            <ul>#}
-{#                                <li>Fukuzawa Yukio (Computer Scientist)</li>#}
-{#                                <li>Wesley Webb (Biologist)</li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                        <div class="social">#}
-{#                            <a href="//gitlab.com/yukio/koe">#}
-{#                                <i class="fa fa-2x fa-gitlab"></i>#}
-{#                            </a>#}
-{#                            <a href="//github.com/fzyukio">#}
-{#                                <i class="fa fa-2x fa-github"></i>#}
-{#                            </a>#}
-{#                            <a href="#">#}
-{#                                <i class="fa fa-2x fa-facebook"></i>#}
-{#                            </a>#}
-{#                            <a href="#">#}
-{#                                <i class="fa fa-2x fa-youtube"></i>#}
-{#                            </a>#}
-{#                        </div>#}
-{#                    </div>#}
                     <div class="copyright col-xs-12">
-                        Copyright Ⓒ2017-2019 Yukio Fukuzawa. All rights reserved.
+                        <p>Copyright Ⓒ2017-2019 Yukio Fukuzawa and Wesley Webb. All rights reserved.</p>
                     </div>
                 </div>
             </div>
