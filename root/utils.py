@@ -101,3 +101,13 @@ def mkdirp(dir):
         except OSError as exc:  # Guard against race condition
             if exc.errno != errno.EEXIST:
                 raise
+
+
+def get_referer_pathname(request):
+    full_url = request.META.get('HTTP_REFERER', None)
+    if full_url is None:
+        return '/'
+    http_host = request.META.get('HTTP_HOST')
+    referer_url_starts = full_url.find(http_host) + len(http_host)
+    referer_url = full_url[referer_url_starts:]
+    return referer_url

@@ -719,6 +719,7 @@ const _postRun = function () {
     });
 
     initUploadCsv();
+    initButtonBehaviour();
     countDown();
 };
 
@@ -736,6 +737,20 @@ const showErrorDialog = function (errMsg) {
         dialogModalCancelBtn.html('No');
     });
 };
+
+
+/**
+ * Make <button>s function like <a>s
+ */
+function initButtonBehaviour() {
+    $('button[href]').click(function (e) {
+        e.preventDefault();
+        let url = this.getAttribute('href');
+        if (url) {
+            window.location = url;
+        }
+    });
+}
 
 
 const openNewWindow = window.open;

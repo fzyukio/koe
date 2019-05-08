@@ -3,19 +3,6 @@ require('slick-carousel');
 require('../vendor/iframe_api');
 
 /**
- * Make <button>s function like <a>s
- */
-function initButtonBehaviour() {
-    $('button[href]').click(function (e) {
-        e.preventDefault();
-        let url = this.getAttribute('href');
-        if (url) {
-            window.location = url;
-        }
-    });
-}
-
-/**
  * Make the features section display slide
  */
 function initCarousel() {

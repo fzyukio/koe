@@ -16,7 +16,7 @@ from koe.models import AudioFile, AudioTrack,\
     DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination, SimilarityIndex
 from koe.request_handlers.templates import populate_context
 from root.models import User, ExtraAttrValue
-from root.utils import SendEmailThread
+from root.utils import SendEmailThread, get_referer_pathname
 
 
 class SegmentationView(TemplateView):
@@ -80,6 +80,7 @@ class SongPartitionView(FormView):
         return dict(track_id=track_id)
 
     def get_context_data(self, **kwargs):
+        referer_pathname = get_referer_pathname(self.request)
         context = super(SongPartitionView, self).get_context_data(**kwargs)
 
         # Note: in FormView, url params exist in self.kwargs, not **kwargs.
@@ -87,6 +88,7 @@ class SongPartitionView(FormView):
         if AudioTrack.objects.filter(id=track_id).exists():
             context['valid'] = True
         context['track_id'] = track_id
+        context['referer_pathname'] = referer_pathname
         populate_context(self, context)
 
         return context
