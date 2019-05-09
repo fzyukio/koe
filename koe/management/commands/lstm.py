@@ -9,7 +9,7 @@ from pymlfunc import tictoc
 
 from koe import binstorage
 from koe.storage_utils import get_sids_tids, get_binstorage_locations
-from koe.model_utils import get_or_error
+from koe.model_utils import get_or_error, get_labels_by_sids, exclude_no_labels
 from koe.models import Database, Feature
 from koe.rnn_models import DataProvider
 from koe.rnn_train import train
@@ -39,40 +39,6 @@ def extract_rawdata(f2bs, ids, features):
         data.append(feature_values)
 
     return data
-
-
-def get_labels_by_sids(sids, label_level, annotator, min_occur):
-    sid2lbl = {
-        x: y.lower() for x, y in ExtraAttrValue.objects
-        .filter(attr__name=label_level, owner_id__in=sids, user=annotator)
-        .values_list('owner_id', 'value')
-    }
-
-    occurs = Counter(sid2lbl.values())
-
-    segment_to_labels = {}
-    for segid, label in sid2lbl.items():
-        if occurs[label] >= min_occur:
-            segment_to_labels[segid] = label
-
-    labels = []
-    no_label_ids = []
-    for id in sids:
-        label = segment_to_labels.get(id, None)
-        if label is None:
-            no_label_ids.append(id)
-        labels.append(label)
-
-    return np.array(labels), np.array(no_label_ids, dtype=np.int32)
-
-
-def exclude_no_labels(sids, tids, labels, no_label_ids):
-    no_label_inds = np.searchsorted(sids, no_label_ids)
-
-    sids_mask = np.full((len(sids),), True, dtype=np.bool)
-    sids_mask[no_label_inds] = False
-
-    return sids[sids_mask], tids[sids_mask], labels[sids_mask]
 
 
 class Command(BaseCommand):

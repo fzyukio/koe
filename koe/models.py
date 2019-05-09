@@ -703,7 +703,7 @@ class Ordination(SimpleModel, BinaryStoredMixin):
         return '{}_{}_{}'.format(self.dm, self.method, self.ndims)
 
     def get_name(self):
-        return self.__str__()
+        return '{}_{}_{}'.format(self.dm.name, self.method, self.ndims)
 
     @classmethod
     def clean_params(cls, params):

@@ -44,6 +44,7 @@ feature_whereabout = {
         ('average_frame_power', False, True),
         ('max_frame_power', False, True),
         ('dominant_frequency', False, True),
+        ('s2a_autoencoded', True, False),
     ]
 }
 
@@ -54,7 +55,7 @@ def init():
             feature = Feature.objects.get_or_create(name=feature_name, is_fixed_length=is_fixed_length,
                                                     is_one_dimensional=is_one_dimensional)[0]
 
-            extractor = getattr(module, feature_name)
+            extractor = getattr(module, feature_name, None)
             feature_extractors[feature_name] = extractor
             features.append(feature)
             feature_map[feature_name] = feature

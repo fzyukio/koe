@@ -1,4 +1,6 @@
 import os
+from collections import Counter
+
 import numpy as np
 from PIL import Image
 from django.conf import settings
@@ -9,13 +11,14 @@ from scipy.cluster.hierarchy import linkage
 from koe.celery import app
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands.utils import wav_2_mono
-from koe.models import DistanceMatrix, Segment, DatabaseAssignment, Database, DatabasePermission, TemporaryDatabase,\
+from koe.models import Database
+from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
     AudioFile
+from koe.utils import spect_fft_path, wav_path, audio_path
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
-from koe.utils import spect_fft_path, wav_path, audio_path
 
 window_size = 256
 noverlap = 256 * 0.75
@@ -403,3 +406,69 @@ def delete_audio_files_async():
                 if os.path.isfile(mp4):
                     os.remove(mp4)
         af.delete()
+
+
+def get_labels_by_sids(sids, label_level, annotator, min_occur):
+    sid2lbl = {
+        x: y.lower() for x, y in ExtraAttrValue.objects
+        .filter(attr__name=label_level, owner_id__in=sids, user=annotator)
+        .values_list('owner_id', 'value')
+    }
+
+    occurs = Counter(sid2lbl.values())
+
+    segment_to_labels = {}
+    for segid, label in sid2lbl.items():
+        if occurs[label] >= min_occur:
+            segment_to_labels[segid] = label
+
+    labels = []
+    no_label_ids = []
+    for id in sids:
+        label = segment_to_labels.get(id, None)
+        if label is None:
+            no_label_ids.append(id)
+        labels.append(label)
+
+    return np.array(labels), np.array(no_label_ids, dtype=np.int32)
+
+
+def exclude_no_labels(sids, tids, labels, no_label_ids):
+    no_label_inds = np.searchsorted(sids, no_label_ids)
+
+    sids_mask = np.full((len(sids),), True, dtype=np.bool)
+    sids_mask[no_label_inds] = False
+
+    if tids:
+        return sids[sids_mask], tids[sids_mask], labels[sids_mask]
+    else:
+        return sids[sids_mask], tids, labels[sids_mask]
+
+
+def select_instances(sids, tids, labels, num_instances):
+    label_sorted_indices = np.argsort(labels)
+    sorted_labels = labels[label_sorted_indices]
+
+    uniques, counts = np.unique(sorted_labels, return_counts=True)
+
+    if np.any(counts < num_instances):
+        raise ValueError('Value of num_instances={} is too big - there are classes that have less than {} instances'
+                         .format(num_instances, num_instances))
+
+    nclasses = len(uniques)
+    indices_to_add = []
+
+    for i in range(nclasses):
+        label = uniques[i]
+        instance_indices = np.where(labels == label)[0]
+        np.random.shuffle(instance_indices)
+
+        indices_to_add_i = instance_indices[:num_instances]
+        indices_to_add.append(indices_to_add_i)
+
+    indices_to_add = np.concatenate(indices_to_add)
+
+    if tids:
+        return sids[indices_to_add], tids[indices_to_add], labels[indices_to_add]
+    else:
+        return sids[indices_to_add], tids, labels[indices_to_add]

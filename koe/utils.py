@@ -285,6 +285,56 @@ def split_classwise(labels, test_ratio):
     return train, test
 
 
+def get_kfold_indices(labels, k):
+    """
+    Create a training set indices and test set indices such that the k-ratio is preserved for all classes
+    This function is better suited for unbalanced data, e.g. some classes only have very few instances, such that
+     the normal way (randomised then split k-ways) might end up having some instances having no instances in the
+     training or test set
+    :param labels: 1-D array (int) contains enumerated labels
+    :param k:
+    :return: k-item array. Each element is a dict(test=test_indices, train=train_indices). The indices are randomised
+    """
+    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
+
+    label_sorted_indices = np.argsort(labels)
+    sorted_labels = labels[label_sorted_indices]
+
+    uniques, counts = np.unique(sorted_labels, return_counts=True)
+
+    if np.any(counts < k):
+        raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'.format(k, k))
+
+    nclasses = len(uniques)
+
+    fold_indices = np.ndarray((len(labels), ), dtype=np.int32)
+
+    grant_added = 0
+
+    for i in range(nclasses):
+        ninstances = counts[i]
+        nremainings = ninstances
+        label = uniques[i]
+        instance_indices = np.where(labels == label)[0]
+        np.random.shuffle(instance_indices)
+        test_ind_start = 0
+
+        added = 0
+
+        for k_ in range(k):
+            ntests = nremainings // (k - k_)
+            nremainings -= ntests
+
+            kth_fold_instance_indices = instance_indices[test_ind_start: test_ind_start + ntests]
+
+            added += len(kth_fold_instance_indices)
+            fold_indices[kth_fold_instance_indices] = k_
+            test_ind_start += ntests
+
+        grant_added += added
+    return fold_indices
+
+
 def split_kfold_classwise(labels, k):
     """
     Create a training set indices and test set indices such that the k-ratio is preserved for all classes
