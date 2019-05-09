@@ -218,7 +218,7 @@ def get_user_databases(user):
         else:
             current_database_id = current_database_value
 
-        current_database = db_class.objects.get(pk=current_database_id)
+        current_database = db_class.objects.filter(pk=current_database_id).first()
 
     else:
         databases = get_user_accessible_databases(user)
