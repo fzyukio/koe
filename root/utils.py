@@ -103,7 +103,7 @@ def mkdirp(dir):
                 raise
 
 
-def get_referer_pathname(request):
+def get_referrer_pathname(request):
     full_url = request.META.get('HTTP_REFERER', None)
     if full_url is None:
         return '/'
