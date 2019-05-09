@@ -13,7 +13,7 @@ from django.db.models.query import QuerySet
 from django_bulk_update.helper import bulk_update
 
 __all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
-           'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel', 'InvitationCode',
+           'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel',
            'value_setter', 'value_getter', 'get_bulk_id', 'has_field']
 
 
@@ -448,25 +448,12 @@ class SimpleModel(models.Model, AutoSetterGetterMixin):
         abstract = True
 
 
-class InvitationCode(SimpleModel):
-    """
-    Tie a user to an invitation code for managing purpose
-    """
-
-    code = models.CharField(max_length=255, unique=True)
-    expiry = models.DateTimeField()
-
-    def __str__(self):
-        return 'Code: {} expiry {}'.format(self.code, self.expiry)
-
-
 class User(AbstractUser, SimpleModel):
     """
     A simple User model that uses safe ID
     """
 
     id = models.AutoField(primary_key=True, editable=False, auto_created=True)
-    invitation_code = models.ForeignKey(InvitationCode, on_delete=models.SET_NULL, null=True, blank=True)
 
 
 class ColumnActionValue(SimpleModel):

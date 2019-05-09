@@ -7,7 +7,6 @@ import {queryAndPlayAudio} from './audio-handler';
 import {isNull, getCache, setCache, deepCopy, getUrl} from './utils';
 import {
     appendSlickGridData,
-    replaceSlickGridData,
     renderSlickGrid,
     initFilter,
     updateSlickGridData, findColumn
@@ -368,17 +367,23 @@ export class FlexibleGrid {
      * @param row
      */
     appendRowAndHighlight(row) {
-        this.mainGrid.getData().addItem(row);
-        this.mainGrid.gotoCell(row.id, 0);
-        this.mainGrid.scrollCellIntoView(row.id, 0);
+        let dataView = this.mainGrid.getData();
+        dataView.addItem(row);
+        let rowIdx = dataView.getIdxById(row.id);
+        this.mainGrid.gotoCell(rowIdx, 0);
+        this.mainGrid.scrollCellIntoView(rowIdx, 0);
     }
 
     /**
      *
      * @param rows
      */
-    replaceRows(rows) {
-        replaceSlickGridData(this.mainGrid, rows);
+    updateRowAndHighlight(row) {
+        let dataView = this.mainGrid.getData();
+        let rowIdx = dataView.getIdxById(row.id);
+        dataView.updateItem(row.id, row);
+        this.mainGrid.gotoCell(rowIdx, 0);
+        this.mainGrid.scrollCellIntoView(rowIdx, 0);
     }
 
     /**

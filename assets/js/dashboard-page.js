@@ -23,6 +23,7 @@ const fileUploadInput = fileUploadForm.find('input[type=file]');
 const addCollaborator = $('#add-collaborator');
 const removeCollaborator = $('#remove-collaborator');
 const createDatabaseBtn = $('#create-database-btn');
+const enterInvitationCodeBtn = $('#enter-invitation-code-btn');
 
 const selected = {
     databaseId: undefined
@@ -380,6 +381,58 @@ function initCreateDatabaseButton() {
 }
 
 
+const initEnterInvitationCodeBtn = function () {
+
+    /**
+     * Repeat showing the dialog until the invitation code is valid
+     * param error to be shown in the modal if not undefined
+     */
+    function showDialog(error) {
+        dialogModalTitle.html('So you got invited to a database...');
+        dialogModalBody.html('<label>Enter your code (case sensitive)</label>');
+        dialogModalBody.append(inputText);
+        if (error) {
+            dialogModalBody.append(`<p>${error.message}</p>`);
+        }
+
+        dialogModal.modal('show');
+
+        dialogModalOkBtn.one('click', function () {
+            dialogModal.modal('hide');
+            let url = getUrl('send-request', 'koe/redeem-invitation-code');
+            let invitationCode = inputText.val();
+            inputText.val('');
+
+            $.post(url, {code: invitationCode}).done(function (data) {
+                data = JSON.parse(data);
+                let row = data.message;
+                dialogModal.one('hidden.bs.modal', function () {
+                    let existedItem = databaseGrid.mainGrid.getData().getItemById(row.id);
+                    if (existedItem) {
+                        databaseGrid.updateRowAndHighlight(row);
+                    }
+                    else {
+                        databaseGrid.appendRowAndHighlight(row);
+                    }
+                });
+                replaceSidebar(viewPortChangeHandler);
+                dialogModal.modal('hide');
+            }).fail(function (response) {
+                dialogModal.one('hidden.bs.modal', function () {
+                    let errorMessage = JSON.parse(response.responseText);
+                    showDialog(errorMessage);
+                });
+                dialogModal.modal('hide');
+            });
+        });
+    }
+
+    enterInvitationCodeBtn.click(function (e) {
+        e.preventDefault();
+        showDialog();
+    });
+};
+
 const initSaveVersionBtns = function () {
     backupBtns.click(function () {
         let backUpType = $(this).data('backup-type');
@@ -554,6 +607,7 @@ function initRemoveCollaboratorBtn() {
 
 export const postRun = function () {
     initCreateDatabaseButton();
+    initEnterInvitationCodeBtn();
     initDeleteCollectionsBtn();
     initAddCollaboratorBtn();
     initRemoveCollaboratorBtn();

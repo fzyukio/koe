@@ -1,6 +1,5 @@
 import re
 
-from django.utils import timezone
 from django.contrib import auth
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -8,7 +7,7 @@ from django.views.generic import FormView
 from django.views.generic.edit import ProcessFormView
 
 from root.forms import UserSignInForm, UserRegistrationForm, UserResetPasswordForm, UserForgetPasswordForm
-from root.models import User, InvitationCode
+from root.models import User
 from root.utils import forget_password_handler
 
 
@@ -56,11 +55,6 @@ class UserSignInView(FormView, RedirectIfAuthenticated):
                 context['form'] = form
                 return self.render_to_response(context)
 
-        now = timezone.now()
-        if user.invitation_code and user.invitation_code.expiry <= now:
-            user.is_active = False
-            user.save()
-
         if not user.is_active:
             form.add_error('acc_or_email', 'Your account has expired. Should you wish to continue using this website, '
                                            'please contact us.')
@@ -90,9 +84,7 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
     def form_valid(self, form):
         form_data = form.cleaned_data
         has_error = False
-        now = timezone.now()
 
-        code = form_data['code']
         email = form_data['email']
         password = form_data['password']
         re_password = form_data['re_password']
@@ -100,12 +92,6 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
         last_name = form_data['last_name']
         first_name = form_data['first_name']
 
-        invitation_code = None
-        if code != '':
-            invitation_code = InvitationCode.objects.filter(code=code, expiry__gte=now).first()
-            if invitation_code is None:
-                form.add_error('code', 'Invitation code doesn\'t exist or has expired')
-                has_error = True
         duplicate_email = User.objects.filter(email__iexact=email).exists()
         duplicate_username = User.objects.filter(username__iexact=username).exists()
 
@@ -133,8 +119,7 @@ class UserRegistrationView(FormView, RedirectIfAuthenticated):
             context['form'] = form
             return self.render_to_response(context)
 
-        user = User.objects.create_user(username, email, password, invitation_code=invitation_code,
-                                        first_name=first_name, last_name=last_name)
+        user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name)
 
         authenticated_user = auth.authenticate(username=user.username, password=password)
         auth.login(self.request, authenticated_user)

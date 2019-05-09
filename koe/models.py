@@ -23,7 +23,7 @@ from koe.utils import history_path, pickle_path, wav_path, audio_path
 __all__ = [
     'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
     'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
-    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'Preference'
+    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'Preference', 'InvitationCode'
 ]
 
 
@@ -168,6 +168,7 @@ class DatabaseAssignment(SimpleModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     database = models.ForeignKey(Database, on_delete=models.CASCADE)
     permission = models.IntegerField(choices=DatabasePermission.as_choices())
+    expiry = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return 'Database {} assigned to user {} with {} permission'.format(
@@ -783,6 +784,20 @@ class Preference(SimpleModel):
 
     class Meta:
         unique_together = ['user', 'key']
+
+
+class InvitationCode(SimpleModel):
+    """
+    Tie a user to an invitation code for managing purpose
+    """
+
+    code = models.CharField(max_length=255, unique=True)
+    database = models.ForeignKey(Database, on_delete=models.CASCADE)
+    permission = models.IntegerField(choices=DatabasePermission.as_choices())
+    expiry = models.DateTimeField()
+
+    def __str__(self):
+        return 'Code: {} expiry {}'.format(self.code, self.expiry)
 
 
 @receiver(post_delete, sender=HistoryEntry)

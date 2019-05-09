@@ -15,7 +15,6 @@ from shutil import copyfile
 __all__ = ['config']
 
 fixture_list = [
-    'root.invitationcode',
     'root.user',
     'root.extraattr',
     'root.columnactionvalue',
@@ -31,6 +30,7 @@ fixture_list = [
     'koe.audiotrack',
     'koe.audiofile',
     'koe.segment',
+    'koe.invitationcode',
     'root.extraattrvalue',
 ]
 

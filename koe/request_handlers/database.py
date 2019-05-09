@@ -11,19 +11,21 @@ from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Count
 from django.db.models import Q
+from django.utils import timezone
 from dotmap import DotMap
 
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error, delete_audio_files_async,\
     delete_segments_async
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
-    DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel
+    DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel,\
+    InvitationCode
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
-           'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators']
+           'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code']
 
 
 def import_audio_metadata(request):
@@ -168,6 +170,37 @@ def create_database(request):
 
     permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
     return dict(id=database.id, name=name, permission=permission_str)
+
+
+def redeem_invitation_code(request):
+    user = request.user
+    code = get_or_error(request.POST, 'code')
+
+    now = timezone.now()
+    invitation_code = InvitationCode.objects.filter(code=code, expiry__gt=now).first()
+    if invitation_code is None:
+        raise CustomAssertionError('This code does not exist or has expired')
+
+    database = invitation_code.database
+    expiry = invitation_code.expiry
+    permission = invitation_code.permission
+
+    da = DatabaseAssignment.objects.filter(user=user, database=database).first()
+    if da is not None:
+        if da.permission >= permission:
+            raise CustomAssertionError(
+                'You have already been granted access to database {} with equal or greater permission'
+                    .format(database.name))
+        else:
+            da.permission = permission
+            da.expiry = expiry
+            da.save()
+    else:
+        DatabaseAssignment.objects.create(user=user, database=database, permission=permission, expiry=expiry)
+
+    editable = permission == DatabasePermission.ASSIGN_USER
+    permission_str = DatabasePermission.get_name(permission)
+    return dict(id=database.id, name=database.name, permission=permission_str, __editable=editable)
 
 
 def save_segmentation(request):
