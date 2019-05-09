@@ -10,7 +10,7 @@
                 <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">
-                <li class="section-head">Database</li>
+                <li class="section-head">Databases</li>
                 {% for database in databases %}
                     <li class="{% if current_database.is_real and current_database.id == database.id %}active{% else %}not-active{% endif %}">
                         <a href="#" class="change-arg" key="database" replace="tmpdb" value="{{ database.name }}" data-toggle="tooltip" data-placement="top" title="{{ database.name }}">

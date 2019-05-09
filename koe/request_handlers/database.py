@@ -190,7 +190,7 @@ def redeem_invitation_code(request):
         if da.permission >= permission:
             raise CustomAssertionError(
                 'You have already been granted access to database {} with equal or greater permission'
-                    .format(database.name))
+                .format(database.name))
         else:
             da.permission = permission
             da.expiry = expiry
