@@ -103,7 +103,7 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
  */
 export const stopAudio = function () {
     if (!isNull(audioContext) && audioContext.state === 'running') {
-        audioContext.suspend();
+        audioContext.close();
     }
 };
 
