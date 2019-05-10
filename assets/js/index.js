@@ -18,12 +18,14 @@ Promise.config({
 window.Promise = Promise;
 
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams,
-    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError, uuid4, toJSONLocal
+    createTable, extractHeader, convertRawUrl, showAlert, isEmpty, getCache, logError, uuid4, toJSONLocal,
+    attachEventOnce
 } from './utils';
 import {postRequest} from './ajax-handler';
 import {queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
 import {findColumn} from 'grid-utils';
+import {IsoDateValidator} from './slick-grid-addons';
 const Papa = require('papaparse');
 require('no-going-back');
 
@@ -39,6 +41,18 @@ const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 const dialogModalCancelBtn = dialogModal.find('#dialog-modal-no-button');
 const alertSuccess = $('.alert-success');
 const alertFailure = $('.alert-danger');
+
+let $modal = $('#upload-csv-modal');
+let uploadCsvBtn = $modal.find('#upload-csv-btn');
+let processCsvBtn = $modal.find('#process-csv-btn');
+let uploadForm = $modal.find('#file-upload-form');
+let uploadInput = uploadForm.find('input[type=file]');
+let modalAlertFailure = $modal.find('.alert-danger');
+let modalAlertWarning = $modal.find('.alert-warning');
+let modalAlertSuccess = $modal.find('.alert-success');
+
+let $importableTableWrapper = $modal.find('#importable-table-wrapper');
+let $unimportableTableWrapper = $modal.find('#unimportable-table-wrapper');
 
 let argDict = getGetParams();
 
@@ -438,12 +452,27 @@ function matchColumns(header, permittedCols, importKey) {
  * @param matched
  * @param permittedCols
  * @param importKey
- * @returns {{rows: Array, info: string}}
+ * @param columns SlickGrid's columns
+ * @returns {{allValid: boolean, rows: *, info: *}}
  */
-function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey) {
-    let rows = [];
+function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey, columns) {
+    let validRows = [];
+    let invalidRows = [];
+    let rows;
     let idMatchCount = 0;
     let totalRowCount = csvRows.length;
+    let columnValidators = {};
+    $.each(columns, function (index, column) {
+        if (column._formatter == 'Date') {
+            columnValidators[column.field] = IsoDateValidator;
+        }
+        else {
+            columnValidators[column.field] = function() {
+                return {valid: true, msg: null};
+            };
+        }
+        return true;
+    });
     $.each(csvRows, function (_i, csvRow) {
         let rowKey = csvRow[matched[0]];
         let rowIdx = rowKeys.indexOf(rowKey);
@@ -452,6 +481,8 @@ function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCol
             let item = items[rowIdx];
             let itemId = item.id;
             let changed = false;
+            let valid = true;
+            let errors = [];
 
             // We skip the key column (let permittedCol = 1 instead of 0), so we add it before the loop.
             let row = [rowKey];
@@ -460,37 +491,62 @@ function getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCol
                 let csvCol = matched[permittedCol];
                 if (undefined === csvCol) {
                     row.push(null);
+                    continue;
                 }
-                else {
-                    let csvCellVal = csvRow[csvCol];
-                    let itemFieldVal = item[field];
 
+                let csvCellVal = csvRow[csvCol];
+                let itemFieldVal = item[field];
+                let validator = columnValidators[field];
+
+                let validationResult = validator(csvCellVal);
+                if (validationResult.valid) {
                     if ((!isEmpty(itemFieldVal) || !isEmpty(csvCellVal)) && csvCellVal !== itemFieldVal) {
                         changed = true;
                     }
                     row.push(csvCellVal);
                 }
+                else {
+                    valid = false;
+                    errors.push(validationResult.msg);
+                    row.push(validationResult.msg)
+                }
             }
 
-            // Only add rows that differ from the corresponding grid item
-            if (changed) {
+            if (!valid) {
                 // Always put the ID last so that it will not be rendered to the table which the user can see.
                 row.push(itemId);
-                rows.push(row);
+                invalidRows.push(row)
+            }
+            // Only add rows that differ from the corresponding grid item
+            else if (changed) {
+                // Always put the ID last so that it will not be rendered to the table which the user can see.
+                row.push(itemId);
+                validRows.push(row);
             }
         }
     });
-    let changedCount = rows.length;
-    if (changedCount === 0) {
-        throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
-    }
+    let allValid = invalidRows.length == 0;
+    let info;
 
-    let info = `You CSV contains <strong>${totalRowCount}</strong> rows. 
+    if (allValid) {
+        let changedCount = validRows.length;
+        if (changedCount === 0) {
+            throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
+        }
+        info = `You CSV contains <strong>${totalRowCount}</strong> rows. 
                 <strong>${idMatchCount}</strong> rows have matching <strong>${importKey}</strong>.
                 <strong>${changedCount}</strong> rows differ from table value. 
                 The table will be updated based on these <strong>${changedCount}</strong> rows.`;
+        rows = validRows;
+    }
+    else {
+        info = `You CSV contains <strong>${totalRowCount}</strong> rows.
+                <strong>${invalidRows.length}</strong> rows have invalid values. 
+                Please fix these problem and try again.`;
+        rows = invalidRows;
+    }
 
-    return {rows, info};
+    return {allValid, rows, info};
 }
 
 /**
@@ -526,8 +582,8 @@ function processCsv(csvText, permittedCols, importKey, columns, items) {
                 complete() {
                     let header = csvRows.splice(0, 1)[0];
                     let {matched} = matchColumns(header, permittedCols, importKey);
-                    let {rows, info} = getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey);
-                    resolve({rows, info, matched});
+                    let {allValid, rows, info} = getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, importKey, columns);
+                    resolve({allValid, rows, info, matched});
                 }
             });
         }
@@ -600,6 +656,23 @@ function reduceData({rows, permittedCols, matched}) {
 
 
 /**
+ * Refresh CSV upload modal before appending new data.
+ */
+function resetModal() {
+    $importableTableWrapper.hide();
+    $unimportableTableWrapper.hide();
+
+    modalAlertFailure.find('.message').html('');
+    modalAlertSuccess.find('.message').html('');
+    modalAlertWarning.find('.message').html('');
+    modalAlertFailure.hide();
+    modalAlertSuccess.hide();
+    modalAlertWarning.hide();
+    processCsvBtn.prop('disabled', true);
+}
+
+
+/**
  * Allow user to upload songs
  */
 const initUploadCsv = function () {
@@ -608,21 +681,12 @@ const initUploadCsv = function () {
         let importKey = page.grid.importKey;
         let gridType = page.grid.gridType;
 
-        let $modal = $('#upload-csv-modal');
-        let uploadCsvBtn = $modal.find('#upload-csv-btn');
-        let processCsvBtn = $modal.find('#process-csv-btn');
-        let uploadForm = $modal.find('#file-upload-form');
-        let uploadInput = uploadForm.find('input[type=file]');
-        let modalAlertFailure = $modal.find('.alert-danger');
-        let modalAlertWarning = $modal.find('.alert-warning');
-        let modalAlertSuccess = $modal.find('.alert-success');
-
-        let $table = $modal.find('table');
         let columns = grid.getColumns();
         let permittedCols = extractHeader(columns, 'importable', importKey);
         let items = grid.getData().getItems();
 
         uploadCsvBtn.on('click', function () {
+            resetModal();
             uploadInput.click();
         });
 
@@ -634,41 +698,57 @@ const initUploadCsv = function () {
             reader.onload = function () {
                 uploadInput.val(null);
                 processCsv(reader.result, permittedCols, importKey, columns, items).
-                    then(function ({rows, info, matched}) {
-                        if (info) {
-                            showAlert(modalAlertSuccess, info, -1);
+                    then(function ({allValid, rows, info, matched}) {
+                        let $tableWrapper;
+                        if (allValid) {
+                            if (info) {
+                                showAlert(modalAlertSuccess, info, -1);
+                            }
+                            $tableWrapper = $importableTableWrapper;
                         }
+                        else {
+                            if (info) {
+                                showAlert(modalAlertFailure, info, -1);
+                            }
+                            $tableWrapper = $unimportableTableWrapper;
+                        }
+                        let $table = $tableWrapper.find('table');
 
                         $table.children().remove();
-
                         createTable($table, permittedCols, rows, true);
-                        processCsvBtn.prop('disabled', false);
+                        $tableWrapper.show();
+                        processCsvBtn.prop('disabled', !allValid);
 
-                        let reduced = reduceData({rows, permittedCols, matched});
-                        rows = reduced.rows;
-                        permittedCols = reduced.permittedCols;
-                        let warning = reduced.warning;
-                        let missingCols = reduced.missingCols;
+                        if (allValid) {
+                            let reduced = reduceData({rows, permittedCols, matched});
+                            rows = reduced.rows;
+                            let permittedColsNoKey = reduced.permittedCols;
+                            let warning = reduced.warning;
+                            let missingCols = reduced.missingCols;
 
-                        if (warning) {
-                            showAlert(modalAlertWarning, warning, -1);
-                        }
+                            if (warning) {
+                                showAlert(modalAlertWarning, warning, -1);
+                            }
 
-                        processCsvBtn.on('click', function() {
-                            uploadCsvToServer(rows, permittedCols, missingCols, gridType).
-                                then(function() {
-                                    processCsvBtn.prop('disabled', true);
-                                    uploadCsvBtn.prop('disabled', true);
-                                    processCsvBtn.off('click');
-                                    let msg = 'Data imported successfully. Page will reload';
-                                    showAlert(modalAlertSuccess, msg, 1500).then(function() {
-                                        window.location.reload();
+                            attachEventOnce({
+                                element: processCsvBtn,
+                                eventType: 'click',
+                                func() {
+                                    uploadCsvToServer(rows, permittedColsNoKey, missingCols, gridType).then(function () {
+                                        processCsvBtn.prop('disabled', true);
+                                        uploadCsvBtn.prop('disabled', true);
+                                        processCsvBtn.off('click');
+                                        let msg = 'Data imported successfully. Page will reload';
+                                        showAlert(modalAlertSuccess, msg, 1500).then(function () {
+                                            window.location.reload();
+                                        });
+                                    }).catch(function (err) {
+                                        showAlert(modalAlertFailure, err, -1);
                                     });
-                                }).
-                                catch(function(err) {
-                                    showAlert(modalAlertFailure, err, -1);
-                                });
-                        });
+                                },
+                                funcName: 'uploadCsvToServer'
+                            });
+                        }
 
                     }).catch(function (err) {
                         logError(err);
@@ -681,9 +761,7 @@ const initUploadCsv = function () {
 
         $('#open-upload-csv-modal').click(function () {
             $modal.find('.import-key').html(importKey);
-            $table.children().remove();
-            processCsvBtn.prop('disabled', true);
-            createTable($table, permittedCols);
+            resetModal();
             $modal.modal('show');
         });
     }

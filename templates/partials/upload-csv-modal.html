@@ -21,16 +21,32 @@
                         <li>Rows that have the same values as current in the database will also be ignored</li>
                         <li>The best approach is to export this table as CSV, make changes and then upload</li>
                         <li>Mind you, most columns are exportable - only editable columns are importable.</li>
+                        <li>IMPORTANT: Date field must be exported in the YYYY-MM-DD format</li>
                     </ul>
 
-                    <h4>These are the columns that can be imported if present in your CSV</h4>
-                    <ul>
-                        <li>Importable data from you CSV file will be appended to the table below after upload for your review.</li>
-                        <li>If everything looks fine, click "Process" after upload your CSV</li>
-                    </ul>
-                    <div class="table-wrapper">
-                        <table class="table table-bordered table-condensed table-striped table-hover">
-                        </table>
+                    <div id="importable-table-wrapper">
+                        <h4>These are the columns that can be imported if present in your CSV</h4>
+                        <ul>
+                            <li>Importable data from you CSV file will be appended to the table below after upload for
+                                your review.
+                            </li>
+                            <li>If everything looks fine, click "Process" after upload your CSV</li>
+                        </ul>
+                        <div class="table-wrapper">
+                            <table class="table table-bordered table-condensed table-striped table-hover">
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="unimportable-table-wrapper">
+                        <h4>These are columns with invalid values</h4>
+                        <ul>
+                            <li>Please fix these problems and try again</li>
+                        </ul>
+                        <div class="table-wrapper">
+                            <table class="table table-bordered table-condensed table-striped table-hover">
+                            </table>
+                        </div>
                     </div>
 
                     <div class="alert alert-danger">

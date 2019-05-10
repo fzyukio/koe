@@ -733,3 +733,24 @@ export function toJSONLocal (date) {
     let timeStr = formatted.slice(11, 19).replace(/:/g, '-');
     return `${dateStr}_${timeStr}`;
 }
+
+/**
+ * Convenient function to ensure same event is attached once to the same event-type of the same element
+ * @param element a Jquery element
+ * @param eventType e.g. 'click', etc...
+ * @param func the function
+ * @param funcName name of the function, must given if function is anonymous. Otherwise func.name will be used
+ */
+export function attachEventOnce({element, eventType, func, funcName}) {
+    if (isNull(funcName)) {
+        funcName = func.name;
+        if (isNull(funcName)) {
+            throw Error('Function name must be provided for anonymous function')
+        }
+    }
+
+    let key = `attached-${eventType}-${funcName}`;
+    if (element.attr(key) === undefined) {
+        element.on(eventType, func)
+    }
+}

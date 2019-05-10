@@ -416,7 +416,7 @@ const NonBlankValidator = function (value) {
  * @source: https://stackoverflow.com/a/35413963/1302520
  * @param dateString
  */
-const IsoDateValidator = function (dateString) {
+export const IsoDateValidator = function (dateString) {
     let regEx = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateString.match(regEx)) return {
         valid: false,
