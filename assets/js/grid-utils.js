@@ -715,12 +715,9 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
                     return value1 ? value2 ? 0 : sign : value2 ? -sign : 0;
                 }
                 else {
-                    let value1 = dataRow1[field],
-                        value2 = dataRow2[field];
-                    let result = (value1 === value2 ? 0 : (value1 > value2 ? 1 : -1)) * sign;
-                    if (result !== 0) {
-                        return result;
-                    }
+                    let value1 = dataRow1[field] || '',
+                        value2 = dataRow2[field] || '';
+                    return (value1 === value2 ? 0 : (value1 > value2 ? 1 : -1)) * sign;
                 }
             }
             return 0;
