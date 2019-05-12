@@ -37,6 +37,7 @@ services:
     volumes:
       - ./user_data:/code/user_data
       - ./backups:/code/backups
+      - ./notebooks:/code/notebooks
   cache:
     image: redis
     container_name: ${CONTAINER_CACHE_NAME}

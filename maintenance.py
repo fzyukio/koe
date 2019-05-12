@@ -12,7 +12,6 @@ import yaml
 import zipfile
 from shutil import copyfile
 
-__all__ = ['config']
 
 fixture_list = [
     'root.user',

@@ -24,13 +24,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends vim mysql-clien
 COPY requirements.txt /
 
 ## Install any needed packages specified in requirements.txt
-RUN pip install Cython numpy && pip install -r requirements.txt --no-cache-dir
-
-COPY requirements-dev.txt /
-RUN pwd && ls -l / && pip install -r /requirements-dev.txt --no-cache-dir
-
-COPY requirements-upgrade.txt /
-RUN pip install -r /requirements-upgrade.txt --no-cache-dir
+RUN pip uninstall -y numpy scipy
+RUN pip install Cython numpy==1.16.3 scipy==1.2.1
+RUN pip install -r requirements.txt --no-cache-dir
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

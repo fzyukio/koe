@@ -1,4 +1,6 @@
-from maintenance import config as envconf
+from maintenance import get_config
+
+envconf = get_config()
 # Configuration file for jupyter-notebook.
 
 #------------------------------------------------------------------------------

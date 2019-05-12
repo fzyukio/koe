@@ -25,13 +25,9 @@ RUN rm -f /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 COPY requirements.txt /
 
 ## Install any needed packages specified in requirements.txt
-RUN pwd && ls -l / && pip install Cython numpy && pip install -r /requirements.txt --no-cache-dir
-
-COPY requirements-dev.txt /
-RUN pwd && ls -l / && pip install -r /requirements-dev.txt --no-cache-dir
-
-COPY requirements-upgrade.txt /
-RUN pip install -r /requirements-upgrade.txt --no-cache-dir
+RUN pip uninstall -y numpy scipy
+RUN pip install Cython numpy==1.16.3 scipy==1.2.1
+RUN pip install -r requirements.txt --no-cache-dir
 
 RUN python -m ipykernel.kernelspec
 
