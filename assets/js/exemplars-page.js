@@ -212,6 +212,10 @@ const subscribeSlickEvents = function () {
 
 const showBigSpectrogram = function ($img) {
     // exemplar-view
+
+    // Remove the old image first to avoid showing the previous spectrogram
+    tooltipImg.attr('src', '');
+    // Then insert the new spectrogram
     tooltipImg.attr('src', $img.attr('src'));
     tooltip.removeClass('hidden');
 

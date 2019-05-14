@@ -119,6 +119,7 @@ const resetStatus = function (e, args) {
 
 /**
  * Subscribe to this instance of Flexible Grid. This must be called only once when the page loads
+ * BLAH123
  */
 const subscribeFlexibleEvents = function () {
     debug('subscribeFlexibleEvents called from songs-pages');
@@ -183,6 +184,10 @@ const showBigSpectrogram = function (e, args) {
     if (isSyllable.length == 1) {
         const imgSrc = isSyllable.attr('imgsrc');
         if (imgSrc) {
+
+            // Remove the old image first to avoid showing the previous spectrogram
+            tooltipImg.attr('src', '');
+            // Then insert the new spectrogram
             tooltipImg.attr('src', imgSrc);
             tooltip.removeClass('hidden');
 

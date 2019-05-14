@@ -139,6 +139,9 @@ const showBigSpectrogram = function (e, args) {
     if (hasImage.length == 1) {
         const originalImage = hasImage.find('img');
 
+        // Remove the old image first to avoid showing the previous spectrogram
+        tooltipImg.attr('src', '');
+        // Then insert the new spectrogram
         tooltipImg.attr('src', originalImage.attr('src'));
         tooltip.removeClass('hidden');
 
