@@ -3,7 +3,7 @@ require('bootstrap-slider/dist/bootstrap-slider.js');
 require('jquery.scrollintoview/jquery.scrollintoview.js');
 
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
-import {getUrl, getCache, setCache, isEmpty} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError, showAlert} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -559,7 +559,13 @@ export const run = function (commonElements) {
     else {
         spinner = createSpinner();
         spinner.start();
-        downloadTensorData().then(initCategorySelection);
+        downloadTensorData().
+            then(initCategorySelection).
+            catch(function (e) {
+                spinner.clear();
+                logError(e);
+                showAlert(ce.modalAlertFailure, e, -1);
+            });
         initClickHandlers();
     }
     return Promise.resolve();
@@ -663,7 +669,7 @@ export const postRun = function () {
      * Query database for all existing labels of all granularities
      * Construct selectable options to facilitate selectize's dropdown display
      */
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
         postRequest({
             requestSlug: 'koe/get-label-options',
             data: {'database-id': databaseId, 'tmpdb-id': tmpDbId},

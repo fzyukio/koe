@@ -8,6 +8,7 @@ from koe.model_utils import get_or_error
 from koe.models import DatabaseAssignment, Segment, Database, DerivedTensorData, DataMatrix, Ordination
 from koe.ts_utils import extract_tensor_metadata, write_metadata,\
     bytes_to_ndarray
+from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['get_annotators_and_presets', 'get_data_matrix_config', 'get_tensor_data_file_paths']
@@ -96,7 +97,13 @@ def get_ordination_metadata(request, ord_id, viewas):
 
     viewas = get_or_error(User, dict(username=viewas))
 
-    metadata, headers = extract_tensor_metadata(sids, viewas)
+    try:
+        metadata, headers = extract_tensor_metadata(sids, viewas)
+    except KeyError as e:
+        err_message = 'Syllable #{} has been deleted from the database since the creation of this ordination and ' \
+                      'thus renders it invalid. Please choose another one.'.format(str(e))
+        raise CustomAssertionError(err_message)
+
     content = write_metadata(metadata, sids, headers)
 
     response = HttpResponse()

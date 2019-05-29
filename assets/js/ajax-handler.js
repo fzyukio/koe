@@ -57,7 +57,7 @@ export const postPromise = function (args) {
  * @returns {Promise}
  */
 export const downloadRequest = function (url, ArrayClass = null) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         let req = new XMLHttpRequest();
         req.open('GET', url, true);
         if (ArrayClass) {
@@ -71,6 +71,15 @@ export const downloadRequest = function (url, ArrayClass = null) {
             }
             else {
                 resolve(req.response);
+            }
+        };
+
+        req.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                if (this.status !== 200) {
+                    let errorMessage = this.statusText;
+                    reject(new Error(errorMessage));
+                }
             }
         };
 
