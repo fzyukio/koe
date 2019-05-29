@@ -685,7 +685,7 @@ class DataMatrix(SimpleModel, BinaryStoredMixin):
     database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=True)
     tmpdb = models.ForeignKey(TemporaryDatabase, on_delete=models.SET_NULL, null=True, blank=True)
     features_hash = models.CharField(max_length=255)
-    aggregations_hash = models.CharField(max_length=255)
+    aggregations_hash = models.CharField(max_length=255, null=True, blank=True)
     ndims = models.IntegerField()
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
 

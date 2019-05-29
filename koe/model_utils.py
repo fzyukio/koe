@@ -439,7 +439,7 @@ def exclude_no_labels(sids, tids, labels, no_label_ids):
     sids_mask = np.full((len(sids),), True, dtype=np.bool)
     sids_mask[no_label_inds] = False
 
-    if tids:
+    if tids is not None:
         return sids[sids_mask], tids[sids_mask], labels[sids_mask]
     else:
         return sids[sids_mask], tids, labels[sids_mask]
@@ -468,7 +468,7 @@ def select_instances(sids, tids, labels, num_instances):
 
     indices_to_add = np.concatenate(indices_to_add)
 
-    if tids:
+    if tids is not None:
         return sids[indices_to_add], tids[indices_to_add], labels[indices_to_add]
     else:
         return sids[indices_to_add], tids, labels[indices_to_add]

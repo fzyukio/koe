@@ -73,6 +73,8 @@ class Command(BaseCommand):
 
         parser.add_argument('--profile', dest='profile', action='store', required=False)
 
+        parser.add_argument('--dm-name', dest='dm_name', action='store', required=False)
+
     def handle(self, *args, **options):
         clsf_type = options['clsf_type']
         database_name = options['database_name']
@@ -83,7 +85,9 @@ class Command(BaseCommand):
         ipc = options['ipc']
         ratio_ = options['ratio']
         niters = options['niters']
-        profile = options.get('profile', None)
+        profile = options['profile']
+        dm_name = options['dm_name']
+
         tsv_file = profile + '.tsv'
         trials_file = profile + '.trials'
         if ipc is not None:
@@ -104,22 +108,38 @@ class Command(BaseCommand):
         database = get_or_error(Database, dict(name__iexact=database_name))
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
 
-        features = Feature.objects.all().order_by('id')
-        aggregations = Aggregation.objects.filter(enabled=True).order_by('id')
-        aggregators = [aggregator_map[x.name] for x in aggregations]
+        if dm_name is None:
+            features = Feature.objects.all().order_by('id')
+            aggregations = Aggregation.objects.filter(enabled=True).order_by('id')
+            aggregators = [aggregator_map[x.name] for x in aggregations]
 
-        enabled_features = []
-        for f in features:
-            if f.name in feature_map:
-                enabled_features.append(f)
+            enabled_features = []
+            for f in features:
+                if f.name in feature_map:
+                    enabled_features.append(f)
 
-        features_hash = '-'.join(list(map(str, [x.id for x in enabled_features])))
-        aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
+            features_hash = '-'.join(list(map(str, [x.id for x in enabled_features])))
+            aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
 
-        dm = DataMatrix.objects.filter(database=database, features_hash=features_hash,
-                                       aggregations_hash=aggregations_hash).last()
-        if dm is None:
-            raise Exception('No full data matrix for database {}'.format(database_name))
+            dm = DataMatrix.objects.filter(database=database, features_hash=features_hash,
+                                           aggregations_hash=aggregations_hash).last()
+            if dm is None:
+                raise Exception('No full data matrix for database {}'.format(database_name))
+        else:
+            dm = DataMatrix.objects.filter(database=database, name=dm_name).first()
+            if dm is None:
+                raise Exception('No such matrix {} for database {}'.format(dm_name, database_name))
+
+            if dm.aggregations_hash:
+                aggregations_list = dm.aggregations_hash.split('-')
+                aggregators = [aggregator_map[x] for x in aggregations_list]
+            else:
+                aggregators = []
+
+
+            ftgroup_names = {
+                'custom': dm.features_hash.split('-')
+            }
 
         dm_sids_path = dm.get_sids_path()
         dm_tids_path = dm.get_tids_path()

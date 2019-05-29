@@ -62,7 +62,7 @@ feature_whereabout = {
         ('average_frame_power', False, True),
         ('max_frame_power', False, True),
         ('dominant_frequency', False, True),
-        ('s2a_autoencoded', True, False),
+        ('s2s_autoencoded', True, False),
     ]
 }
 

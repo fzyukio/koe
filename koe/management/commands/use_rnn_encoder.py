@@ -192,6 +192,8 @@ def read_variables(save_to):
 
 def encode_into_datamatrix(variables, encoder, session, database_name):
     dm_name = variables['dm_name']
+    ndims = encoder.kernel_size
+
     database = get_or_error(Database, dict(name__iexact=database_name))
     segments = Segment.objects.filter(audio_file__database=database)
 
@@ -209,7 +211,7 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
 
     dm = DataMatrix(database=database)
     dm.name = dm_name
-    dm.ndims = encoder.n_outputs
+    dm.ndims = ndims
     dm.features_hash = 's2s_autoencoded'
     dm.aggregations_hash = ''
     dm.save()
@@ -218,7 +220,7 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
     full_tids_path = dm.get_tids_path()
     full_bytes_path = dm.get_bytes_path()
     full_cols_path = dm.get_cols_path()
-    col_inds = {'s2s_autoencoded': [0, encoder.n_outputs]}
+    col_inds = {'s2s_autoencoded': [0, ndims]}
 
     ndarray_to_bytes(features, full_bytes_path)
     ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
