@@ -10,19 +10,32 @@ e.g:
       all segments that are labelled 'Click' or 'Stutter', save to file /tmp/bellbirds.csv
 """
 import os
-import numpy as np
+import pickle
 
+import numpy as np
 import pydub
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
+from koe.features.utils import get_spectrogram
 from koe.model_utils import exclude_no_labels, get_or_error, select_instances
 from koe.model_utils import get_labels_by_sids
 from koe.models import *
+from koe.utils import wav_path, get_kfold_indices
 from root.models import User
-
 from root.utils import ensure_parent_folder_exists
-from koe.utils import wav_path, split_kfold_classwise, get_kfold_indices
+
+nfft = 512
+noverlap = nfft // 2
+win_length = nfft
+stepsize = nfft - noverlap
+
+
+def extract_spect(wav_file_path, fs, start, end, spect_path):
+    psd = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
+                          center=False)
+    with open(spect_path, 'wb') as f:
+        pickle.dump(psd, f)
 
 
 class Command(BaseCommand):
@@ -75,7 +88,7 @@ class Command(BaseCommand):
         fold_indices = get_kfold_indices(enum_labels, 10)
 
         segments_info = {sid: (label, label_enum, fold_ind) for sid, label, label_enum, fold_ind
-                         in zip(sids, labels, enum_labels, fold_indices)}
+            in zip(sids, labels, enum_labels, fold_indices)}
 
         segs = Segment.objects.filter(id__in=sids)
 
@@ -108,8 +121,12 @@ class Command(BaseCommand):
                 filepath = os.path.join(save_to, filename)
                 ensure_parent_folder_exists(filepath)
 
-                with open(filepath, 'wb') as f:
-                    audio_segment.export(f, format=format)
+                if format == 'spect':
+                    if not os.path.isfile(filepath):
+                        extract_spect(wav_file_path, af.fs, start, end, filepath)
+                else:
+                    with open(filepath, 'wb') as f:
+                        audio_segment.export(f, format=format)
 
                 audio_info.append(
                     (id, filename, label, label_enum, fold_ind)
