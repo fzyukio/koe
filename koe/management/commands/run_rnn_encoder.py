@@ -165,7 +165,7 @@ def read_variables(save_to):
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
+        parser.add_argument('--database-name', action='store', dest='database_name', required=False, type=str,
                             help='E.g Bellbird, Whale, ..., case insensitive', )
         parser.add_argument('--spect-dir', action='store', dest='spect_dir', required=True, type=str,
                             help='Path to the directory where audio segments reside', )
@@ -179,11 +179,12 @@ class Command(BaseCommand):
         if not save_to.lower().endswith('.zip'):
             save_to += '.zip'
 
-        if os.path.isdir(spect_dir):
-            warning('{} already exists as a folder. It\'s better to extract to a new folder'.format(spect_dir))
-        else:
-            mkdirp(spect_dir)
-        extract_syllables(database_name, spect_dir)
+        if database_name is not None:
+            if os.path.isdir(spect_dir):
+                warning('{} already exists as a folder. It\'s better to extract to a new folder'.format(spect_dir))
+            else:
+                mkdirp(spect_dir)
+            extract_syllables(database_name, spect_dir)
 
         if os.path.isfile(save_to):
             info('===========CONTINUING===========')

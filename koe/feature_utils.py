@@ -426,7 +426,8 @@ def ica(data, ndims, **kwargs):
 def tsne(data, ndims, **kwargs):
     assert 2 <= ndims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
     pca_dims = min(50, data.shape[1])
-    data = pca(data, pca_dims)
+    if pca_dims < data.shape[1]:
+        data = pca(data, pca_dims)
 
     params = dict(n_components=ndims, verbose=1, perplexity=10, n_iter=4000)
     params.update(kwargs)
