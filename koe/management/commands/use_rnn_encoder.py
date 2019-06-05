@@ -15,9 +15,12 @@ from django.db.models import Case
 from django.db.models import When
 from progress.bar import Bar
 
+from koe import wavfile
 from koe.colourmap import cm_green
 from koe.colourmap import cm_red, cm_blue
+from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
+from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.ml.variable_length_s2s_autoencoder import VLS2SAutoEncoderFactory
 from koe.model_utils import get_or_error
 from koe.models import Segment, Database, DataMatrix
@@ -65,20 +68,32 @@ def spd2img(spd, imgpath):
     img.save(imgpath, format='PNG')
 
 
-def spect_from_seg(seg):
+def extract_spect(wav_file_path, fs, start, end):
+    return get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
+                           center=False)
+
+
+def extract_mfcc(wav_file_path, fs, start, end):
+    sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
+    args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=fs, wav_file_path=None, start=0, end=None,
+                sig=sig, center=True)
+    return mfcc(args)
+
+
+def spect_from_seg(seg, extractor):
     af = seg.audio_file
     wav_file_path = wav_path(af)
     fs = af.fs
     start = seg.start_time_ms
     end = seg.end_time_ms
-    return get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
-                           center=False)
+    return extractor(wav_file_path, fs=fs, start=start, end=end)
 
 
 def encode_syllables(variables, encoder, session, segs):
     num_segs = len(segs)
     batch_size = 200
     max_length = variables['max_length']
+    extractor = variables['extractor']
 
     num_batches = num_segs // batch_size
     if num_segs / batch_size > num_batches:
@@ -104,7 +119,7 @@ def encode_syllables(variables, encoder, session, segs):
             seg_idx += 1
             seg = segs[seg_idx]
             batch_segs.append(seg)
-            spect = spect_from_seg(seg)
+            spect = spect_from_seg(seg, extractor)
 
             dims, length = spect.shape
             spect_padded = np.zeros((dims, max_length), dtype=spect.dtype)
@@ -119,7 +134,7 @@ def encode_syllables(variables, encoder, session, segs):
             lengths.append(length)
             bar.next()
 
-        encoded = encoder.encode(sequences[:batch_size], lengths, session=session)
+        encoded = encoder.encode(sequences[:batch_size], lengths, mask, session=session)
 
         for encod, seg, length in zip(encoded, batch_segs, lengths):
             encoding_result[seg.id] = encod
@@ -131,6 +146,7 @@ def encode_syllables(variables, encoder, session, segs):
 def reconstruct_syllables(variables, encoder, session, segs):
     tmp_dir = variables['tmp_dir']
     max_length = variables['max_length']
+    extractor = variables['extractor']
     num_segs = len(segs)
     batch_size = 200
 
@@ -156,7 +172,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
             seg_idx += 1
             seg = segs[seg_idx]
             batch_segs.append(seg)
-            spect = spect_from_seg(seg)
+            spect = spect_from_seg(seg, extractor)
 
             dims, length = spect.shape
             spect_padded = np.zeros((dims, max_length), dtype=spect.dtype)
@@ -169,7 +185,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
             mask[idx, :length] = 1
             lengths.append(length)
 
-        reconstructed = encoder.predict(sequences[:batch_size], lengths, session=session)
+        reconstructed = encoder.predict(sequences[:batch_size], lengths, mask, session=session)
 
         for spect, recon, seg, length in zip(sequences[:batch_size], reconstructed, batch_segs, lengths):
             sid = seg.id
@@ -192,7 +208,7 @@ def read_variables(save_to):
 
 def encode_into_datamatrix(variables, encoder, session, database_name):
     dm_name = variables['dm_name']
-    ndims = encoder.kernel_size
+    ndims = encoder.latent_dims
 
     database = get_or_error(Database, dict(name__iexact=database_name))
     segments = Segment.objects.filter(audio_file__database=database)
@@ -203,7 +219,7 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
 
     sid_sorted_inds = np.argsort(sids)
     sids = sids[sid_sorted_inds]
-    features = features[sid_sorted_inds, :]
+    features = features[sid_sorted_inds]
 
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
     segments = Segment.objects.filter(id__in=sids).order_by(preserved)
@@ -278,6 +294,7 @@ class Command(BaseCommand):
         parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str)
         parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
         parser.add_argument('--dm-name', action='store', dest='dm_name', required=False, type=str)
+        parser.add_argument('--format', action='store', dest='format', default='spect', type=str)
 
     def handle(self, *args, **options):
         mode = options['mode']
@@ -285,6 +302,12 @@ class Command(BaseCommand):
         load_from = options['load_from']
         tmp_dir = options['tmp_dir']
         dm_name = options['dm_name']
+        format = options['format']
+
+        if format == 'spect':
+            extractor = extract_spect
+        else:
+            extractor = extract_mfcc
 
         if mode not in ['showcase', 'dm']:
             raise Exception('--mode can only be "showcase" or "dm"')
@@ -306,8 +329,9 @@ class Command(BaseCommand):
         variables = read_variables(load_from)
         variables['tmp_dir'] = tmp_dir
         variables['dm_name'] = dm_name
+        variables['extractor'] = extractor
 
-        factory = VLS2SAutoEncoderFactory()
+        factory = NDS2SAEFactory()
         encoder = factory.build(load_from)
         session = encoder.recreate_session()
 

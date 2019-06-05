@@ -25,13 +25,11 @@ def extract_saved(tmp_folder, filepath):
 
 class VLS2SAutoEncoderFactory:
     def __init__(self):
-        self.encode_layer_sizes = []
+        self.layer_sizes = []
         self.kernel_size = 0
-        self.decode_layer_sizes = []
-        self.n_outputs = 1
-        self.n_inputs = 1
+        self.output_dim = 1
+        self.input_dim = 1
         self.max_seq_len = 30
-        self.min_seq_len = 20
         self.learning_rate = 0.001
         self.tmp_folder = None
         self.uuid_code = None
@@ -76,15 +74,14 @@ class _VLS2SAutoEncoder:
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
         self.learning_rate = factory.learning_rate
         self.max_seq_len = factory.max_seq_len
-        self.n_inputs = factory.n_inputs
-        self.n_outputs = factory.n_outputs
-        self.encode_layer_sizes = factory.encode_layer_sizes
+        self.input_dim = factory.input_dim
+        self.output_dim = factory.output_dim
+        self.layer_sizes = factory.layer_sizes
         self.kernel_size = factory.kernel_size
-        self.decode_layer_sizes = factory.decode_layer_sizes
         self.learning_rate = factory.learning_rate
         self.tmp_folder = factory.tmp_folder
         self.uuid_code = factory.uuid_code
-        self.kernel_layer_idx = len(self.encode_layer_sizes)
+        self.kernel_layer_idx = len(self.layer_sizes)
 
         self.outputs = None
         self.states = None
@@ -121,13 +118,13 @@ class _VLS2SAutoEncoder:
 
     def construct(self):
         self.saved_session_name = os.path.join(self.tmp_folder, self.uuid_code)
-        self.X = tf.placeholder(tf.float32, [None, self.max_seq_len, self.n_inputs])
-        self.y = tf.placeholder(tf.float32, [None, self.max_seq_len, self.n_outputs])
+        self.X = tf.placeholder(tf.float32, [None, self.max_seq_len, self.input_dim])
+        self.y = tf.placeholder(tf.float32, [None, self.max_seq_len, self.output_dim])
         self.sequence_length = tf.placeholder(tf.int32, [None])
         self.mask = tf.placeholder(tf.float32, [None, self.max_seq_len])
 
         encode_layer_cells = []
-        for encode_layer_size in self.encode_layer_sizes:
+        for encode_layer_size in self.layer_sizes:
             encode_layer_cells.append(
                 tf.contrib.rnn.GRUCell(
                     num_units=encode_layer_size,
@@ -142,7 +139,7 @@ class _VLS2SAutoEncoder:
         ]
 
         decode_layer_cells = []
-        for decode_layer_size in self.decode_layer_sizes:
+        for decode_layer_size in self.layer_sizes:
             decode_layer_cells.append(
                 tf.contrib.rnn.GRUCell(
                     num_units=decode_layer_size,
@@ -152,7 +149,7 @@ class _VLS2SAutoEncoder:
 
         cells = encode_layer_cells + kernel_cell + decode_layer_cells
         cells = tf.contrib.rnn.MultiRNNCell(cells)
-        cell = tf.contrib.rnn.OutputProjectionWrapper(cells, output_size=self.n_outputs)
+        cell = tf.contrib.rnn.OutputProjectionWrapper(cells, output_size=self.output_dim)
         self.outputs, self.states = tf.nn.dynamic_rnn(cell, self.X, dtype=tf.float32,
                                                       sequence_length=self.sequence_length)
 

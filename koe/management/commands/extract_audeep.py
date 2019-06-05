@@ -17,6 +17,8 @@ import pydub
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
+from koe import wavfile
+from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 from koe.model_utils import exclude_no_labels, get_or_error, select_instances
 from koe.model_utils import get_labels_by_sids
@@ -36,6 +38,15 @@ def extract_spect(wav_file_path, fs, start, end, spect_path):
                           center=False)
     with open(spect_path, 'wb') as f:
         pickle.dump(psd, f)
+
+
+def extract_mfcc(wav_file_path, fs, start, end, filepath):
+    sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
+    args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=fs, wav_file_path=None, start=0, end=None,
+                sig=sig, center=True)
+    mfcc_value = mfcc(args)
+    with open(filepath, 'wb') as f:
+        pickle.dump(mfcc_value, f)
 
 
 class Command(BaseCommand):
@@ -124,6 +135,9 @@ class Command(BaseCommand):
                 if format == 'spect':
                     if not os.path.isfile(filepath):
                         extract_spect(wav_file_path, af.fs, start, end, filepath)
+                elif format == 'mfcc':
+                    if not os.path.isfile(filepath):
+                        extract_mfcc(wav_file_path, af.fs, start, end, filepath)
                 else:
                     with open(filepath, 'wb') as f:
                         audio_segment.export(f, format=format)
