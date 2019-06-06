@@ -98,8 +98,8 @@ class Command(BaseCommand):
         unique_labels, enum_labels = np.unique(labels, return_inverse=True)
         fold_indices = get_kfold_indices(enum_labels, 10)
 
-        segments_info = {sid: (label, label_enum, fold_ind) for sid, label, label_enum, fold_ind
-            in zip(sids, labels, enum_labels, fold_indices)}
+        segments_info = {sid: (label, label_enum, fold_ind) for sid, label, label_enum, fold_ind in
+                         zip(sids, labels, enum_labels, fold_indices)}
 
         segs = Segment.objects.filter(id__in=sids)
 

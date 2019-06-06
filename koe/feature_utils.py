@@ -91,7 +91,7 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **
 
 
 # # @profile
-def extract_segment_features_for_segments(task, sids, features, f2bs):
+def extract_segment_features_for_segments(task, sids, features, f2bs, force=False):
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
     segments = Segment.objects.filter(id__in=sids).order_by(preserved)
     tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
@@ -118,7 +118,7 @@ def extract_segment_features_for_segments(task, sids, features, f2bs):
         for segment in segments.order_by('audio_file', 'start_time_ms'):
             tid = segment.tid
             af = segment.audio_file
-            if tid in missing_tids:
+            if tid in tids_target:
                 if af not in af_to_segments:
                     af_to_segments[af] = []
                 af_to_segments[af].append((tid, segment.start_time_ms, segment.end_time_ms))

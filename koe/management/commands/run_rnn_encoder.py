@@ -11,7 +11,6 @@ import zipfile
 from logging import warning, info
 
 import numpy as np
-
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
@@ -19,7 +18,6 @@ from koe import wavfile
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
-from koe.ml.variable_length_s2s_autoencoder import VLS2SAutoEncoderFactory
 from koe.model_utils import get_or_error
 from koe.models import Database, Segment
 from koe.utils import wav_path
@@ -171,8 +169,11 @@ def train(variables, save_to):
         sequences = np.array(spects).transpose(0, 2, 1)
         return sequences, sequences, lengths, mask
 
-    train_batch_gen = lambda x: get_batch(x, 'train')
-    test_batch_gen = lambda x: get_batch(x, 'test')
+    def train_batch_gen(x):
+        return get_batch(x, 'train')
+
+    def test_batch_gen(x):
+        return get_batch(x, 'test')
 
     factory = NDS2SAEFactory()
     factory.max_seq_len = variables['max_length']

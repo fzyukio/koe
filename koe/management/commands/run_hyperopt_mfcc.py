@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 
@@ -9,17 +8,13 @@ from hyperopt import fmin, tpe, hp
 from scipy.stats import zscore
 
 from koe.aggregator import aggregator_map
-from koe.feature_utils import pca_optimal
-from koe.features.feature_extract import feature_map, ftgroup_names
 from koe.management.commands.extract_mfcc_multiparams import extract_mfcc_multiparams
 from koe.management.commands.lstm import get_labels_by_sids, exclude_no_labels
 from koe.ml_utils import classifiers, get_ratios
 from koe.model_utils import get_or_error
-from koe.models import Database, DataMatrix, Feature, Aggregation
+from koe.models import Database, Aggregation
 from koe.rnn_models import EnumDataProvider
-from koe.storage_utils import get_tids, get_sids_tids
-from koe.ts_utils import bytes_to_ndarray
-from koe.ts_utils import get_rawdata_from_binary
+from koe.storage_utils import get_sids_tids
 from koe.utils import split_classwise
 from root.models import User
 
@@ -55,9 +50,6 @@ class Command(BaseCommand):
         parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str,
                             help='E.g Bellbird, Whale, ..., case insensitive', )
 
-        parser.add_argument('--source', action='store', dest='source', required=True, type=str,
-                            help='Can be full, pca', )
-
         parser.add_argument('--annotator-name', action='store', dest='annotator_name', default='superuser', type=str,
                             help='Name of the person who owns this database, case insensitive', )
 
@@ -72,8 +64,6 @@ class Command(BaseCommand):
 
         parser.add_argument('--ratio', action='store', dest='ratio', required=False, default='80:10:10', type=str)
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=10, type=int)
-
         parser.add_argument('--profile', dest='profile', action='store', required=False)
 
         parser.add_argument('--load-dir', dest='load_dir', action='store', required=True)
@@ -81,13 +71,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         clsf_type = options['clsf_type']
         database_name = options['database_name']
-        source = options['source']
         annotator_name = options['annotator_name']
         label_level = options['label_level']
         min_occur = options['min_occur']
         ipc = options['ipc']
         ratio_ = options['ratio']
-        niters = options['niters']
         profile = options.get('profile', None)
         load_dir = options['load_dir']
 
@@ -104,7 +92,7 @@ class Command(BaseCommand):
 
         train_ratio, valid_ratio, test_ratio = get_ratios(ratio_)
 
-        open_mode = 'w'
+        variables = dict(open_mode='w')
 
         assert clsf_type in classifiers.keys(), 'Unknown _classify: {}'.format(clsf_type)
         classifier = classifiers[clsf_type]
@@ -120,13 +108,11 @@ class Command(BaseCommand):
             _sids, _tids, _labels = exclude_no_labels(_sids, _tids, _labels, no_label_ids)
 
         unique_labels, enum_labels = np.unique(_labels, return_inverse=True)
-        fold = split_classwise(enum_labels, ratio=test_ratio, limits=(min_occur, int(np.floor(min_occur * 1.5))),
-                               nfolds=1, balanced=True)
+        fold = split_classwise(enum_labels, ratio=test_ratio, limits=(ipc_min, ipc_max), nfolds=1, balanced=True)
         train = fold[0]['train']
         test = fold[0]['test']
         all_indices = np.concatenate((train, test))
 
-        sids = _sids[all_indices]
         tids = _tids[all_indices]
         labels = _labels[all_indices]
 
@@ -151,10 +137,6 @@ class Command(BaseCommand):
             _fmin = mfcc_args['fmin']
             _fmax = mfcc_args['fmax']
             _ncep = mfcc_args['ncep']
-
-            # _fmin = 100
-            # _fmax = 18000
-            # _ncep = 48
 
             extract_mfcc_multiparams(database_name, load_dir, _ncep, _fmin, _fmax)
 
@@ -282,10 +264,10 @@ class Command(BaseCommand):
                     # val = choice[choice_idx]
                     model_args_values[arg_name].append(val)
 
-        with open(tsv_file, open_mode, encoding='utf-8') as f:
+        with open(tsv_file, variables['open_mode'], encoding='utf-8') as f:
             for arg in model_args:
                 values = model_args_values[arg]
                 f.write('{}\t'.format(arg))
                 f.write('\t'.join(map(str, values)))
                 f.write('\n')
-            open_mode = 'a'
+            variables['open_mode'] = 'a'

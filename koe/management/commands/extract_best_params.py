@@ -9,6 +9,7 @@ import plotly.plotly as py
 import plotly.io as pio
 from django.core.management.base import BaseCommand
 from scipy import stats
+import colorlover as cl
 
 plotly.tools.set_credentials_file(username='wBIr68ns', api_key='LAK0vePuQsXlQQFYaKJv')
 
@@ -60,7 +61,6 @@ def read_csv(filepath, classifier, dimensionality):
 
 
 plotlyMarkerSymbols = ['circle', 'cross', 'square', 'diamond', 'triangle-up', 'star']
-import colorlover as cl
 nCategoricalColours = 11
 # categoricalColourScale = list(cl.scales['11']['div']['Spectral'])
 # nCategoricalColours = len(categoricalColourScale)
@@ -206,13 +206,13 @@ def visualise(datum):
                     name=group.strip(),
                     mode='lines',
                     marker=dict(
-                    #     symbol=thisSymbol,
-                    #     size=10,
+                        #     symbol=thisSymbol,
+                        #     size=10,
                         color=thisColour,
-                    #     line=dict(
-                    #         width=0.5
-                    #     ),
-                    #     opacity=1
+                        #     line=dict(
+                        #         width=0.5
+                        #     ),
+                        #     opacity=1
                     ),
                     x=x,
                     y=line

@@ -86,8 +86,6 @@ class Command(BaseCommand):
 
         parser.add_argument('--ratio', action='store', dest='ratio', required=False, default='80:10:10', type=str)
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=10, type=int)
-
         parser.add_argument('--profile', dest='profile', action='store', required=False)
 
         parser.add_argument('--load-dir', dest='load_dir', action='store', required=True)
@@ -101,7 +99,6 @@ class Command(BaseCommand):
         min_occur = options['min_occur']
         ipc = options['ipc']
         ratio_ = options['ratio']
-        niters = options['niters']
         profile = options.get('profile', None)
         load_dir = options['load_dir']
 
@@ -140,7 +137,6 @@ class Command(BaseCommand):
         test = fold[0]['test']
         all_indices = np.concatenate((train, test))
 
-        sids = _sids[all_indices]
         tids = _tids[all_indices]
         labels = _labels[all_indices]
 

@@ -79,7 +79,6 @@ class Command(BaseCommand):
         niters = options['niters']
         profile = options.get('profile', None)
         tsv_file = profile + '.tsv'
-        trials_file = profile + '.trials'
         if ipc is not None:
             assert ipc <= min_occur, 'Instances per class cannot exceed as min-occur'
             ipc_min = ipc

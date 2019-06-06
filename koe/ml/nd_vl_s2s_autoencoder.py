@@ -238,34 +238,37 @@ class _NDS2SAE:
                 actual_start_tokens = np.full((batch_size, self.output_dim), self.go_token, dtype=np.float32)
                 actual_go_tokens = np.full((batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
 
+                feed_dict = {
+                    self.input_data: X_batch,
+                    self.output_data: y_batch,
+                    self.mask: len_mask,
+                    self.start_tokens: actual_start_tokens,
+                    self.go_tokens: actual_go_tokens,
+                    self.target_sequence_length: sequence_lens,
+                    self.source_sequence_length: sequence_lens
+                }
+
                 # Training step
-                _, loss = sess.run([self.train_op, self.cost],
-                                   {
-                                       self.input_data: X_batch,
-                                       self.output_data: y_batch,
-                                       self.mask: len_mask,
-                                       self.start_tokens: actual_start_tokens,
-                                       self.go_tokens: actual_go_tokens,
-                                       self.target_sequence_length: sequence_lens,
-                                       self.source_sequence_length: sequence_lens
-                                   })
+                _, loss = sess.run([self.train_op, self.cost], feed_dict)
 
                 # Debug message updating us on the status of the training
                 if iteration % display_step == 0 and iteration > 0:
                     X_batch, y_batch, sequence_lens, len_mask = valid_gen(batch_size)
                     actual_start_tokens = np.full((batch_size, self.output_dim), self.go_token, dtype=np.float32)
                     actual_go_tokens = np.full((batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
+
+                    feed_dict = {
+                        self.input_data: X_batch,
+                        self.output_data: y_batch,
+                        self.mask: len_mask,
+                        self.start_tokens: actual_start_tokens,
+                        self.go_tokens: actual_go_tokens,
+                        self.target_sequence_length: sequence_lens,
+                        self.source_sequence_length: sequence_lens
+                    }
+
                     # Calculate validation cost
-                    validation_loss = sess.run(self.cost,
-                                               {
-                                                   self.input_data: X_batch,
-                                                   self.output_data: y_batch,
-                                                   self.mask: len_mask,
-                                                   self.start_tokens: actual_start_tokens,
-                                                   self.go_tokens: actual_go_tokens,
-                                                   self.target_sequence_length: sequence_lens,
-                                                   self.source_sequence_length: sequence_lens
-                                               })
+                    validation_loss = sess.run(self.cost, feed_dict)
 
                     print('Epoch {:>3}/{} - Loss: {:>6.3f}  - Validation loss: {:>6.3f}'
                           .format(iteration, n_iterations, loss, validation_loss))

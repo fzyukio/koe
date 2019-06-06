@@ -18,9 +18,11 @@ from koe.models import DataMatrix, Aggregation
 from koe.models import Database, Feature
 from koe.storage_utils import get_tids
 from koe.ts_utils import bytes_to_ndarray
-from koe.ts_utils import get_rawdata_from_binary
 from root.models import ExtraAttrValue, User
+import colorlover as cl
 
+nCategoricalColours = 11
+rgb_pattern = re.compile('rgb\((\d+), *(\d+), *(\d+)\)')
 plotly.tools.set_credentials_file(username='wBIr68ns', api_key='LAK0vePuQsXlQQFYaKJv')
 
 
@@ -92,9 +94,6 @@ def ttest_compare_feature_groups(classifier_test_suitss, classifier, dimensional
 
 
 def ttest_compare_num_instances(classifier_test_suitss, classifier, dimensionality, base_ninstances, deriv_ninstances):
-    t_values = {}
-    p_values = {}
-
     base = {}
     deriv = {}
 
@@ -110,7 +109,6 @@ def ttest_compare_num_instances(classifier_test_suitss, classifier, dimensionali
                 else:
                     deriv[classifier_test_suits.classifier] = suit
                 break
-    x = 0
 
 
 def extract_accuracies_by_ninstances(classifier_test_suitss, classifier, dimensionality, ninstances):
@@ -131,12 +129,6 @@ def extract_accuracies_by_ninstances(classifier_test_suitss, classifier, dimensi
             stdevs[suit.feature_group] = stdev
             averages[suit.feature_group] = mean
     return averagess, stdevss
-
-
-import colorlover as cl
-nCategoricalColours = 11
-
-rgb_pattern = re.compile('rgb\((\d+), *(\d+), *(\d+)\)')
 
 
 def add_alpha(rgb, alpha):
@@ -337,7 +329,6 @@ class Command(BaseCommand):
 
         x = list(occurs.values())
         x_min = np.min(x)
-        x_max = np.max(x)
         data = [go.Histogram(
             x=x,
             xbins=dict(
@@ -353,6 +344,3 @@ class Command(BaseCommand):
 
         print(plot.resource)
         pio.write_image(fig, 'histogram.pdf')
-
-
-

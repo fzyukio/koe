@@ -320,7 +320,7 @@ def split_classwise(labels, ratio, nfolds, balanced=False, limits=None):
         if limits:
             raise ValueError(
                 'Lower limit of range[{},{}] is too big - there are classes that have less than {} instances'
-                    .format(lolimit, uplimit, lolimit))
+                .format(lolimit, uplimit, lolimit))
         else:
             raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'
                              .format(nfolds, nfolds))

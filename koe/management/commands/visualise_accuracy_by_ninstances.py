@@ -1,5 +1,6 @@
 import os
 import re
+import plotly
 import plotly.graph_objs as go
 import plotly.io as pio
 
@@ -10,7 +11,8 @@ import plotly.plotly as py
 from django.core.management.base import BaseCommand
 from scipy.stats import ttest_ind
 
-import plotly
+import colorlover as cl
+
 plotly.tools.set_credentials_file(username='wBIr68ns', api_key='LAK0vePuQsXlQQFYaKJv')
 
 
@@ -82,9 +84,6 @@ def ttest_compare_feature_groups(classifier_test_suitss, classifier, dimensional
 
 
 def ttest_compare_num_instances(classifier_test_suitss, classifier, dimensionality, base_ninstances, deriv_ninstances):
-    t_values = {}
-    p_values = {}
-
     base = {}
     deriv = {}
 
@@ -100,7 +99,6 @@ def ttest_compare_num_instances(classifier_test_suitss, classifier, dimensionali
                 else:
                     deriv[classifier_test_suits.classifier] = suit
                 break
-    x = 0
 
 
 def extract_accuracies_by_ninstances(classifier_test_suitss, classifier, dimensionality, ninstances):
@@ -123,7 +121,6 @@ def extract_accuracies_by_ninstances(classifier_test_suitss, classifier, dimensi
     return averagess, stdevss
 
 
-import colorlover as cl
 nCategoricalColours = 11
 
 rgb_pattern = re.compile('rgb\((\d+), *(\d+), *(\d+)\)')

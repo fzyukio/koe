@@ -21,7 +21,6 @@ from koe.colourmap import cm_red, cm_blue
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
-from koe.ml.variable_length_s2s_autoencoder import VLS2SAutoEncoderFactory
 from koe.model_utils import get_or_error
 from koe.models import Segment, Database, DataMatrix
 from koe.ts_utils import ndarray_to_bytes

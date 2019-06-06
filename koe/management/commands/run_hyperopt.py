@@ -9,7 +9,7 @@ from scipy.stats import zscore
 
 from koe.aggregator import aggregator_map
 from koe.feature_utils import pca_optimal
-from koe.features.feature_extract import feature_map, ftgroup_names
+from koe.features.feature_extract import feature_map
 from koe.management.commands.lstm import get_labels_by_sids, exclude_no_labels
 from koe.ml_utils import classifiers, get_ratios
 from koe.model_utils import get_or_error
@@ -69,8 +69,6 @@ class Command(BaseCommand):
 
         parser.add_argument('--ratio', action='store', dest='ratio', required=False, default='80:10:10', type=str)
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=10, type=int)
-
         parser.add_argument('--profile', dest='profile', action='store', required=False)
 
         parser.add_argument('--dm-name', dest='dm_name', action='store', required=False)
@@ -84,7 +82,6 @@ class Command(BaseCommand):
         min_occur = options['min_occur']
         ipc = options['ipc']
         ratio_ = options['ratio']
-        niters = options['niters']
         profile = options['profile']
         dm_name = options['dm_name']
 
@@ -135,7 +132,6 @@ class Command(BaseCommand):
                 aggregators = [aggregator_map[x] for x in aggregations_list]
             else:
                 aggregators = []
-
 
             ftgroup_names = {
                 'custom': dm.features_hash.split('-')
@@ -200,7 +196,7 @@ class Command(BaseCommand):
                 pca_dims = data.shape[1]
 
             dp = EnumDataProvider(data, labels, balanced=True)
-            trainvalidset, testset = dp.split(test_ratio, limits=(min_occur, int(np.floor(min_occur * 1.5))))
+            trainvalidset, testset = dp.split(test_ratio, limits=(ipc_min, ipc_max))
 
             v2t_ratio = valid_ratio / (train_ratio + valid_ratio)
             nfolds = int(np.floor(1. / v2t_ratio + 0.01))

@@ -36,6 +36,7 @@ class Command(BaseCommand):
 
         parser.add_argument('--dm-name', action='store', dest='dm_name', required=True, type=str,
                             help='E.g Bellbird, Whale, ..., case insensitive', )
+
     def handle(self, *args, **options):
         path = options['path']
         if not os.path.isfile(path):
@@ -76,5 +77,3 @@ class Command(BaseCommand):
 
         with open(full_cols_path, 'w', encoding='utf-8') as f:
             json.dump(col_inds, f)
-
-

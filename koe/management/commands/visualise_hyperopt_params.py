@@ -64,15 +64,7 @@ def main():
                 trace1 = scatterClass(
                     name=group.strip(),
                     mode='lines',
-                    # marker=dict(
-                    #     symbol=thisSymbol,
-                    #     size=10,
-                        color=thisColour,
-                    #     line=dict(
-                    #         width=0.5
-                    #     ),
-                    #     opacity=1
-                    # ),
+                    color=thisColour,
                     x=x,
                     y=line
                 )
