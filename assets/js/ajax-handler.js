@@ -77,8 +77,9 @@ export const downloadRequest = function (url, ArrayClass = null) {
         req.onreadystatechange = function () {
             if (this.readyState === 4) {
                 if (this.status !== 200) {
-                    let errorMessage = this.statusText;
-                    reject(new Error(errorMessage));
+                    let responseJson = JSON.parse(this.response);
+                    let responseMessage = responseJson.message;
+                    reject(new Error(responseMessage));
                 }
             }
         };

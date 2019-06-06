@@ -1,6 +1,6 @@
 require('../vendor/AudioContextMonkeyPatch');
 const bufferToWav = require('audiobuffer-to-wav');
-import {isNull, noop} from './utils';
+import {isNull, noop, logError} from './utils';
 import {handleResponse, postRequest, createSpinner} from './ajax-handler';
 
 /**
@@ -90,6 +90,11 @@ const playAudio = function ({beginSec = 'start', endSec = 'end', onStartCallback
     source.start(0, beginSec, endSec - beginSec);
     source.onended = function () {
         audioContext.close().then(function () {
+            if (typeof onEndedCallback === 'function') {
+                onEndedCallback();
+            }
+        }).catch(function (err) {
+            logError(err);
             if (typeof onEndedCallback === 'function') {
                 onEndedCallback();
             }

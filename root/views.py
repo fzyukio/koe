@@ -528,6 +528,30 @@ values_grid_action_handlers = {
 }
 
 
+def exception_handler(function, request, *args, **kwargs):
+    try:
+        return function(request, *args, **kwargs)
+    except Exception as e:
+        error_id = error_tracker.captureException()
+        if isinstance(e, IntegrityError):
+            message = e.args[1]
+        else:
+            message = str(e)
+
+        if isinstance(e, CustomAssertionError):
+            return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=message)))
+        return HttpResponseServerError(json.dumps(dict(errid=error_id, message=message)))
+
+
+def can_have_exception(function):
+    def wrap(request, *args, **kwargs):
+        return exception_handler(function, request, *args, **kwargs)
+
+    wrap.__doc__ = function.__doc__
+    wrap.__name__ = function.__name__
+    return wrap
+
+
 @csrf_exempt
 def send_request(request, *args, **kwargs):
     """
@@ -544,23 +568,12 @@ def send_request(request, *args, **kwargs):
         if module is not None:
             func_name = module + '.' + func_name
         function = globals().get(func_name, None)
+
         if function:
-            try:
-                response = function(request)
-                if isinstance(response, HttpResponse):
-                    return response
-                return HttpResponse(json.dumps(dict(message=response)))
-            except Exception as e:
-                error_id = error_tracker.captureException()
-                if isinstance(e, IntegrityError):
-                    message = e.args[1]
-                else:
-                    message = str(e)
-
-                if isinstance(e, CustomAssertionError):
-                    return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=message)))
-
-                return HttpResponseServerError(json.dumps(dict(errid=error_id, message=message)))
+            response = exception_handler(function, request)
+            if isinstance(response, HttpResponse):
+                return response
+            return HttpResponse(json.dumps(dict(message=response)))
 
     return HttpResponseNotFound()
 

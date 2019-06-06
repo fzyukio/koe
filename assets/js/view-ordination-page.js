@@ -3,7 +3,7 @@ require('bootstrap-slider/dist/bootstrap-slider.js');
 require('jquery.scrollintoview/jquery.scrollintoview.js');
 
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
-import {getUrl, getCache, setCache, isEmpty, logError, showAlert} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -533,11 +533,11 @@ function handleSelected(eventData) {
 }
 
 
-const showNonDataReason = function () {
-    ce.dialogModalTitle.html('This database has no ordination');
+const showError = function (title, body) {
+    ce.dialogModalTitle.html(title);
 
     ce.dialogModalBody.children().remove();
-    ce.dialogModalBody.append('<div>You need to extract an ordination first</div>');
+    ce.dialogModalBody.append(`<div>${body}</div>`);
     ce.dialogModal.modal('show');
 
     ce.dialogModalCancelBtn.html('Dismiss');
@@ -554,7 +554,7 @@ export const run = function (commonElements) {
     initSlider();
 
     if (isEmpty(metaPath) || isEmpty(bytesPath)) {
-        showNonDataReason();
+        showError('This database has no ordination', 'You need to extract an ordination first');
     }
     else {
         spinner = createSpinner();
@@ -564,7 +564,7 @@ export const run = function (commonElements) {
             catch(function (e) {
                 spinner.clear();
                 logError(e);
-                showAlert(ce.modalAlertFailure, e, -1);
+                showError('Error loading ordination', e);
             });
         initClickHandlers();
     }

@@ -10,6 +10,7 @@ from koe.ts_utils import extract_tensor_metadata, write_metadata,\
     bytes_to_ndarray
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
+from root.views import can_have_exception
 
 __all__ = ['get_annotators_and_presets', 'get_data_matrix_config', 'get_tensor_data_file_paths']
 
@@ -89,6 +90,7 @@ def get_metadata(request, tensor_name):
     return response
 
 
+@can_have_exception
 def get_ordination_metadata(request, ord_id, viewas):
     ord = get_or_error(Ordination, dict(id=ord_id))
 
