@@ -17,6 +17,7 @@ from koe.models import AudioFile, AudioTrack,\
 from koe.request_handlers.templates import populate_context
 from root.models import User, ExtraAttrValue
 from root.utils import SendEmailThread, get_referrer_pathname
+from root.views import can_have_exception
 
 
 class SegmentationView(TemplateView):
@@ -556,5 +557,9 @@ def get_view(name):
                 extra_context_func(self.request, context)
 
             return context
+
+        @can_have_exception
+        def get(self, request, *args, **kwargs):
+            return super(View, self).get(request, *args, **kwargs)
 
     return View.as_view()
