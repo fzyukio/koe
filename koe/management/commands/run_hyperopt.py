@@ -133,8 +133,9 @@ class Command(BaseCommand):
             else:
                 aggregators = []
 
+            features = Feature.objects.filter(id__in=dm.features_hash.split('-'))
             ftgroup_names = {
-                'custom': dm.features_hash.split('-')
+                'custom': list(features.values_list('name', flat=True))
             }
 
         dm_sids_path = dm.get_sids_path()
@@ -226,6 +227,7 @@ class Command(BaseCommand):
             gamma_choices = hp.uniform('gamma', auto_gamma / 10, auto_gamma * 10)
             c_choices = hp.uniform('C', -1, 2)
             hidden_layer_size_choices = hp.uniform('hidden_layer_sizes', 100, 5000)
+            n_neighbors_choices = hp.uniform('n_neighbors', 1, 10)
 
             choices = {
                 'rf': {
@@ -242,6 +244,9 @@ class Command(BaseCommand):
                 },
                 'nnet': {
                     'hidden_layer_sizes': (lambda x: (int(np.round(x)),), hidden_layer_size_choices)
+                },
+                'knn': {
+                    'n_neighbors': (lambda x: int(np.round(x)), n_neighbors_choices)
                 }
             }
 

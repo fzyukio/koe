@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.manifold import TSNE
 from sklearn.metrics import confusion_matrix
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
@@ -131,6 +132,14 @@ def cnn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
     return retval
 
 
+def knn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    model = KNeighborsClassifier(**kwargs)
+    retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
+    fake_importances = np.zeros((train_x.shape[1],))
+    retval = list(retval) + [fake_importances]
+    return retval
+
+
 classifiers = {
     'rf': random_forest,
     'svm_linear': svm_linear,
@@ -139,7 +148,8 @@ classifiers = {
     'lda': lda,
     'qda': qda,
     'nnet': nnet,
-    'dummy': dummy
+    'dummy': dummy,
+    'knn': knn
 }
 
 
