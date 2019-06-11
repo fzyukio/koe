@@ -12,18 +12,20 @@ import numpy as np
 from PIL import Image
 from django.core.management.base import BaseCommand
 from django.db.models import Case
+from django.db.models import F
 from django.db.models import When
 from progress.bar import Bar
 
 from koe import wavfile
 from koe.colourmap import cm_green
 from koe.colourmap import cm_red, cm_blue
+from koe.features.feature_extract import feature_map
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.model_utils import get_or_error
 from koe.models import Segment, Database, DataMatrix
-from koe.ts_utils import ndarray_to_bytes
+from koe.ts_utils import ndarray_to_bytes, bytes_to_ndarray, get_rawdata_from_binary
 from koe.utils import wav_path
 from root.utils import mkdirp
 
@@ -206,6 +208,7 @@ def read_variables(save_to):
 
 
 def encode_into_datamatrix(variables, encoder, session, database_name):
+    with_duration = variables['with_duration']
     dm_name = variables['dm_name']
     ndims = encoder.latent_dims
 
@@ -213,21 +216,34 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
     segments = Segment.objects.filter(audio_file__database=database)
 
     encoding_result = encode_syllables(variables, encoder, session, segments)
-    features = np.array(list(encoding_result.values()))
+    features_value = np.array(list(encoding_result.values()))
     sids = np.array(list(encoding_result.keys()), dtype=np.int32)
 
     sid_sorted_inds = np.argsort(sids)
     sids = sids[sid_sorted_inds]
-    features = features[sid_sorted_inds]
+    features_value = features_value[sid_sorted_inds]
 
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
-    segments = Segment.objects.filter(id__in=sids).order_by(preserved)
+    segments = segments.order_by(preserved)
     tids = segments.values_list('tid', flat=True)
+
+    features = [feature_map['s2s_autoencoded']]
+    col_inds = {'s2s_autoencoded': [0, ndims]}
+    if with_duration:
+        features.append(feature_map['duration'])
+        col_inds['duration'] = [ndims, ndims + 1]
+        durations = list(segments.annotate(duration=F('end_time_ms') - F('start_time_ms'))
+                         .values_list('duration', flat=True))
+        durations = np.array(durations)
+        assert len(durations) == len(sids)
+        features_value = np.concatenate((features_value, durations.reshape(-1, 1)), axis=1)
+
+    features_value = features_value.astype(np.float32)
 
     dm = DataMatrix(database=database)
     dm.name = dm_name
     dm.ndims = ndims
-    dm.features_hash = 's2s_autoencoded'
+    dm.features_hash = '-'.join([str(x.id) for x in features])
     dm.aggregations_hash = ''
     dm.save()
 
@@ -235,9 +251,8 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
     full_tids_path = dm.get_tids_path()
     full_bytes_path = dm.get_bytes_path()
     full_cols_path = dm.get_cols_path()
-    col_inds = {'s2s_autoencoded': [0, ndims]}
 
-    ndarray_to_bytes(features, full_bytes_path)
+    ndarray_to_bytes(features_value, full_bytes_path)
     ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
     ndarray_to_bytes(np.array(tids, dtype=np.int32), full_tids_path)
 
@@ -294,6 +309,7 @@ class Command(BaseCommand):
         parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
         parser.add_argument('--dm-name', action='store', dest='dm_name', required=False, type=str)
         parser.add_argument('--format', action='store', dest='format', default='spect', type=str)
+        parser.add_argument('--with-duration', action='store_true', dest='with_duration', default=False)
 
     def handle(self, *args, **options):
         mode = options['mode']
@@ -302,6 +318,7 @@ class Command(BaseCommand):
         tmp_dir = options['tmp_dir']
         dm_name = options['dm_name']
         format = options['format']
+        with_duration = options['with_duration']
 
         if format == 'spect':
             extractor = extract_spect
@@ -329,6 +346,7 @@ class Command(BaseCommand):
         variables['tmp_dir'] = tmp_dir
         variables['dm_name'] = dm_name
         variables['extractor'] = extractor
+        variables['with_duration'] = with_duration
 
         factory = NDS2SAEFactory()
         encoder = factory.build(load_from)
