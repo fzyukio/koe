@@ -24,8 +24,8 @@ from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.model_utils import get_or_error
-from koe.models import Segment, Database, DataMatrix
-from koe.ts_utils import ndarray_to_bytes, bytes_to_ndarray, get_rawdata_from_binary
+from koe.models import Segment, Database, DataMatrix, AudioFile
+from koe.ts_utils import ndarray_to_bytes
 from koe.utils import wav_path
 from root.utils import mkdirp
 
@@ -93,7 +93,6 @@ def spect_from_seg(seg, extractor):
 def encode_syllables(variables, encoder, session, segs):
     num_segs = len(segs)
     batch_size = 200
-    max_length = variables['max_length']
     extractor = variables['extractor']
 
     num_batches = num_segs // batch_size
@@ -102,9 +101,6 @@ def encode_syllables(variables, encoder, session, segs):
 
     seg_idx = -1
     encoding_result = {}
-
-    sequences = np.zeros((batch_size, max_length, variables['dims']))
-    mask = np.zeros((batch_size, max_length), dtype=np.float32)
 
     bar = Bar('', max=num_segs)
 
@@ -116,6 +112,7 @@ def encode_syllables(variables, encoder, session, segs):
 
         lengths = []
         batch_segs = []
+        spects = []
         for idx in range(batch_size):
             seg_idx += 1
             seg = segs[seg_idx]
@@ -123,19 +120,10 @@ def encode_syllables(variables, encoder, session, segs):
             spect = spect_from_seg(seg, extractor)
 
             dims, length = spect.shape
-            spect_padded = np.zeros((dims, max_length), dtype=spect.dtype)
-
-            if length > max_length:
-                length = max_length
-            spect_padded[:, :length] = spect[:, :length]
-
-            sequences[idx, :, :] = spect_padded.T
-            mask[idx, :] = 0
-            mask[idx, :length] = 1
             lengths.append(length)
+            spects.append(spect.T)
             bar.next()
-
-        encoded = encoder.encode(sequences[:batch_size], lengths, mask, session=session)
+        encoded = encoder.encode(spects, session=session)
 
         for encod, seg, length in zip(encoded, batch_segs, lengths):
             encoding_result[seg.id] = encod
@@ -146,7 +134,6 @@ def encode_syllables(variables, encoder, session, segs):
 
 def reconstruct_syllables(variables, encoder, session, segs):
     tmp_dir = variables['tmp_dir']
-    max_length = variables['max_length']
     extractor = variables['extractor']
     num_segs = len(segs)
     batch_size = 200
@@ -158,9 +145,6 @@ def reconstruct_syllables(variables, encoder, session, segs):
     seg_idx = -1
     reconstruction_result = {}
 
-    sequences = np.zeros((batch_size, max_length, variables['dims']))
-    mask = np.zeros((batch_size, max_length), dtype=np.float32)
-
     for batch_idx in range(num_batches):
         if batch_idx == num_batches - 1:
             batch_size = num_segs - (batch_size * batch_idx)
@@ -169,6 +153,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
 
         lengths = []
         batch_segs = []
+        spects = []
         for idx in range(batch_size):
             seg_idx += 1
             seg = segs[seg_idx]
@@ -176,19 +161,12 @@ def reconstruct_syllables(variables, encoder, session, segs):
             spect = spect_from_seg(seg, extractor)
 
             dims, length = spect.shape
-            spect_padded = np.zeros((dims, max_length), dtype=spect.dtype)
-
-            if length > max_length:
-                length = max_length
-            spect_padded[:, :length] = spect[:, :length]
-            sequences[idx, :, :] = spect_padded.T
-            mask[idx, :] = 0
-            mask[idx, :length] = 1
             lengths.append(length)
+            spects.append(spect.T)
 
-        reconstructed = encoder.predict(sequences[:batch_size], lengths, mask, session=session)
+        reconstructed = encoder.predict(spects, session=session)
 
-        for spect, recon, seg, length in zip(sequences[:batch_size], reconstructed, batch_segs, lengths):
+        for spect, recon, seg, length in zip(spects, reconstructed, batch_segs, lengths):
             sid = seg.id
             spect = spect[:length, :].T
             recon = recon[:length, :].T
@@ -213,7 +191,8 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
     ndims = encoder.latent_dims
 
     database = get_or_error(Database, dict(name__iexact=database_name))
-    segments = Segment.objects.filter(audio_file__database=database)
+    audio_files = AudioFile.objects.filter(database=database)
+    segments = Segment.objects.filter(audio_file__in=audio_files)
 
     encoding_result = encode_syllables(variables, encoder, session, segments)
     features_value = np.array(list(encoding_result.values()))

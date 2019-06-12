@@ -81,9 +81,7 @@ def extract_syllables(database_name, spect_dir, format):
 
 
 def read_spect_dir(spect_dir, format):
-    ii32 = np.iinfo(np.int32)
-    variables = dict(current_batch_index=dict(train=0, test=0), min_length=ii32.max, max_length=ii32.min, dims=None,
-                     spect_dir=spect_dir)
+    variables = dict(current_batch_index=dict(train=0, test=0), dims=None, spect_dir=spect_dir)
     sids = []
     ext_length = len(format) + 1
     for filename in os.listdir(spect_dir):
@@ -97,8 +95,6 @@ def read_spect_dir(spect_dir, format):
 
                 if variables['dims'] is None:
                     variables['dims'] = dims
-                variables['min_length'] = min(variables['min_length'], length)
-                variables['max_length'] = max(variables['max_length'], length)
     variables['sids'] = sids
     return variables
 
@@ -151,23 +147,14 @@ def train(variables, save_to):
         variables['current_batch_index'][data_type] = next_batch_index
 
         spects = []
-        lengths = []
-
-        mask = np.zeros((batch_size, variables['max_length']), dtype=np.float32)
 
         for i, sid in enumerate(batch_ids):
             spect_path = os.path.join(spect_dir, '{}.{}'.format(sid, format))
             with open(spect_path, 'rb') as f:
                 spect = pickle.load(f)
-                dims, length = spect.shape
-                spect_padded = np.zeros((dims, variables['max_length']), dtype=spect.dtype)
-                spect_padded[:, :length] = spect
-                spects.append(spect_padded)
-                lengths.append(length)
-                mask[i, :length] = 1
+                spects.append(spect.transpose(1, 0))
 
-        sequences = np.array(spects).transpose(0, 2, 1)
-        return sequences, sequences, lengths, mask
+        return spects, spects
 
     def train_batch_gen(x):
         return get_batch(x, 'train')
@@ -176,12 +163,16 @@ def train(variables, save_to):
         return get_batch(x, 'test')
 
     factory = NDS2SAEFactory()
-    factory.max_seq_len = variables['max_length']
     factory.input_dim = variables['dims']
     factory.output_dim = variables['dims']
+    factory.keep_prob = None
+    factory.stop_pad_length = 5
+    factory.pad_token = 0.1
+    factory.go_token = -0.1
+    factory.learning_rate = 0.001
     factory.layer_sizes = infer_topology(topology, variables['dims'])
     encoder = factory.build(save_to)
-    encoder.train(train_batch_gen, test_batch_gen, batch_size=batch_size, n_iterations=10000)
+    encoder.train(train_batch_gen, test_batch_gen, batch_size=batch_size, n_iterations=10000, display_step=20)
 
 
 def read_variables(save_to):
