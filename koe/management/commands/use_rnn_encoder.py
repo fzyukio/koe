@@ -6,79 +6,24 @@ Make it playable too
 """
 import json
 import os
-import zipfile
+from collections import OrderedDict
 
 import numpy as np
-from PIL import Image
 from django.core.management.base import BaseCommand
 from django.db.models import Case
 from django.db.models import F
 from django.db.models import When
 from progress.bar import Bar
 
-from koe import wavfile
-from koe.colourmap import cm_green
-from koe.colourmap import cm_red, cm_blue
 from koe.features.feature_extract import feature_map
-from koe.features.scaled_freq_features import mfcc
-from koe.features.utils import get_spectrogram
+from koe.management.commands.run_rnn_encoder import read_variables
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.model_utils import get_or_error
 from koe.models import Segment, Database, DataMatrix, AudioFile
+from koe.spect_utils import extractors, psd2img, load_global_min_max
 from koe.ts_utils import ndarray_to_bytes
 from koe.utils import wav_path
 from root.utils import mkdirp
-
-nfft = 512
-noverlap = nfft // 2
-win_length = nfft
-stepsize = nfft - noverlap
-
-
-def spd2img(spd, imgpath):
-    """
-    Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
-    :param audio_file:
-    :return:
-    """
-    height, width = np.shape(spd)
-    spd = np.flipud(spd)
-
-    eps = 1e-3
-    # find maximum
-    spd_max = abs(spd).max()
-    # compute 20*log magnitude, scaled to the max
-    spd = 20.0 * np.log10(abs(spd) / spd_max + eps)
-
-    min_spect_pixel = spd.min()
-    max_spect_pixel = spd.max()
-    spect_pixel_range = max_spect_pixel - min_spect_pixel
-    interval64 = spect_pixel_range / 63
-
-    spd = ((spd - min_spect_pixel) / interval64)
-    spd[np.isinf(spd)] = 0
-    spd = spd.astype(np.int)
-
-    spd = spd.reshape((width * height,), order='C')
-    spd[spd >= 64] = 63
-    spd_rgb = np.empty((height, width, 3), dtype=np.uint8)
-    spd_rgb[:, :, 0] = cm_red[spd].reshape((height, width)) * 255
-    spd_rgb[:, :, 1] = cm_green[spd].reshape((height, width)) * 255
-    spd_rgb[:, :, 2] = cm_blue[spd].reshape((height, width)) * 255
-    img = Image.fromarray(spd_rgb)
-    img.save(imgpath, format='PNG')
-
-
-def extract_spect(wav_file_path, fs, start, end):
-    return get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
-                           center=False)
-
-
-def extract_mfcc(wav_file_path, fs, start, end):
-    sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
-    args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=fs, wav_file_path=None, start=0, end=None,
-                sig=sig, center=True)
-    return mfcc(args)
 
 
 def spect_from_seg(seg, extractor):
@@ -94,6 +39,10 @@ def encode_syllables(variables, encoder, session, segs):
     num_segs = len(segs)
     batch_size = 200
     extractor = variables['extractor']
+    denormalised = variables['denormalised']
+    global_max = variables.get('global_max', None)
+    global_min = variables.get('global_min', None)
+    global_range = global_max - global_min
 
     num_batches = num_segs // batch_size
     if num_segs / batch_size > num_batches:
@@ -118,6 +67,8 @@ def encode_syllables(variables, encoder, session, segs):
             seg = segs[seg_idx]
             batch_segs.append(seg)
             spect = spect_from_seg(seg, extractor)
+            if denormalised:
+                spect = (spect - global_min) / global_range
 
             dims, length = spect.shape
             lengths.append(length)
@@ -135,8 +86,14 @@ def encode_syllables(variables, encoder, session, segs):
 def reconstruct_syllables(variables, encoder, session, segs):
     tmp_dir = variables['tmp_dir']
     extractor = variables['extractor']
+    denormalised = variables['denormalised']
+    global_max = variables.get('global_max', None)
+    global_min = variables.get('global_min', None)
+    global_range = global_max - global_min
     num_segs = len(segs)
     batch_size = 200
+
+    is_log_psd = variables['is_log_psd']
 
     num_batches = num_segs // batch_size
     if num_segs / batch_size > num_batches:
@@ -159,6 +116,8 @@ def reconstruct_syllables(variables, encoder, session, segs):
             seg = segs[seg_idx]
             batch_segs.append(seg)
             spect = spect_from_seg(seg, extractor)
+            if denormalised:
+                spect = (spect - global_min) / global_range
 
             dims, length = spect.shape
             lengths.append(length)
@@ -170,19 +129,18 @@ def reconstruct_syllables(variables, encoder, session, segs):
             sid = seg.id
             spect = spect[:length, :].T
             recon = recon[:length, :].T
+
+            if denormalised:
+                recon = recon * global_range + global_min
+                spect = spect * global_range + global_min
+
             origi_path = os.path.join(tmp_dir, '{}-origi.png'.format(sid))
             recon_path = os.path.join(tmp_dir, '{}-recon.png'.format(sid))
-            spd2img(spect, origi_path)
-            spd2img(recon, recon_path)
+            psd2img(spect, origi_path, is_log_psd)
+            psd2img(recon, recon_path, is_log_psd)
 
-            reconstruction_result[sid] = (origi_path, recon_path)
+            reconstruction_result[sid] = ('{}-origi.png'.format(sid), '{}-recon.png'.format(sid))
     return reconstruction_result
-
-
-def read_variables(save_to):
-    with zipfile.ZipFile(save_to, 'r', zipfile.ZIP_BZIP2, False) as zip_file:
-        variables = json.loads(zip_file.read('variables'))
-    return variables
 
 
 def encode_into_datamatrix(variables, encoder, session, database_name):
@@ -266,17 +224,41 @@ def reconstruction_html(reconstruction_result):
     return html
 
 
-def showcase_reconstruct(variables, encoder, session, database_name):
+def showcase_reconstruct(variables, encoder, session, database_name=None, database_only=False):
     tmp_dir = variables['tmp_dir']
+    sids_for_training = variables['sids_for_training']
+    sids_for_testing = variables['sids_for_testing']
+    segments_for_training = Segment.objects.filter(id__in=sids_for_training)
+    segments_for_testing = Segment.objects.filter(id__in=sids_for_testing)
 
-    database = get_or_error(Database, dict(name__iexact=database_name))
-    segments = Segment.objects.filter(audio_file__database=database)
+    constructions = OrderedDict()
 
-    reconstruction_result = reconstruct_syllables(variables, encoder, session, segments)
-    html = reconstruction_html(reconstruction_result)
+    if database_name:
+        database = get_or_error(Database, dict(name__iexact=database_name))
+        segments = Segment.objects.filter(audio_file__database=database)
+
+        if database_only:
+            constructions['Syllables in database {}'.format(database_name)] = segments
+        else:
+            constructions['Syllables used to train'] = segments_for_training
+            constructions['Syllables used to test'] = segments_for_testing
+
+            other_segments = segments.exclude(id__in=sids_for_training + sids_for_testing)
+            constructions['Other syllables in database {}'.format(database_name)] = other_segments
+    else:
+        constructions['Syllables used to train'] = segments_for_training
+        constructions['Syllables used to test'] = segments_for_testing
+
+    htmls = {}
+    for name, sids in constructions.items():
+        reconstruction_result = reconstruct_syllables(variables, encoder, session, sids)
+        html = reconstruction_html(reconstruction_result)
+        htmls[name] = html
 
     with open(os.path.join(tmp_dir, 'reconstruction_result.html'), 'w') as f:
-        f.write(html)
+        for name, html in htmls.items():
+            f.write('<h1>Reconstruction of: {}</h1>'.format(name))
+            f.write(html)
 
 
 class Command(BaseCommand):
@@ -284,25 +266,34 @@ class Command(BaseCommand):
         parser.add_argument('--mode', action='store', dest='mode', default='showcase', type=str)
         parser.add_argument('--load-from', action='store', dest='load_from', required=True, type=str)
 
-        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str)
+        parser.add_argument('--database-name', action='store', dest='database_name', required=False, type=str)
+        parser.add_argument('--database-only', action='store_true', dest='database_only', default=False)
         parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
         parser.add_argument('--dm-name', action='store', dest='dm_name', required=False, type=str)
         parser.add_argument('--format', action='store', dest='format', default='spect', type=str)
         parser.add_argument('--with-duration', action='store_true', dest='with_duration', default=False)
+        parser.add_argument('--denormalised', action='store_true', dest='denormalised', default=False)
+        parser.add_argument('--min-max-loc', action='store', dest='min_max_loc', default=False)
 
     def handle(self, *args, **options):
         mode = options['mode']
         database_name = options['database_name']
+        database_only = options['database_only']
         load_from = options['load_from']
         tmp_dir = options['tmp_dir']
         dm_name = options['dm_name']
         format = options['format']
         with_duration = options['with_duration']
+        min_max_loc = options['min_max_loc']
+        denormalised = options['denormalised']
 
-        if format == 'spect':
-            extractor = extract_spect
-        else:
-            extractor = extract_mfcc
+        extractor = extractors[format]
+
+        if database_name is None and database_only:
+            raise Exception('only_database must be True when database_name is provided')
+
+        if denormalised and min_max_loc is None:
+            raise Exception('If data is denomalised, --min-max-loc must be provided')
 
         if mode not in ['showcase', 'dm']:
             raise Exception('--mode can only be "showcase" or "dm"')
@@ -314,6 +305,8 @@ class Command(BaseCommand):
         else:
             if dm_name is None:
                 raise Exception('Must provide --dm-name argument in dm mode')
+            if database_name is None:
+                raise Exception('database-name is required in dm mode')
 
         if not load_from.lower().endswith('.zip'):
             load_from += '.zip'
@@ -326,12 +319,23 @@ class Command(BaseCommand):
         variables['dm_name'] = dm_name
         variables['extractor'] = extractor
         variables['with_duration'] = with_duration
+        variables['denormalised'] = denormalised
+
+        if denormalised:
+            global_min, global_max = load_global_min_max(min_max_loc)
+            variables['global_min'] = global_min
+            variables['global_max'] = global_max
+
+        variables['is_log_psd'] = format.startswith('log_')
 
         factory = NDS2SAEFactory()
+        factory.load(load_from)
+        factory.learning_rate = None
+        factory.learning_rate_func = None
         encoder = factory.build(load_from)
         session = encoder.recreate_session()
 
         if mode == 'showcase':
-            showcase_reconstruct(variables, encoder, session, database_name)
+            showcase_reconstruct(variables, encoder, session, database_name, database_only)
         else:
             encode_into_datamatrix(variables, encoder, session, database_name)

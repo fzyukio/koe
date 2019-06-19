@@ -10,15 +10,23 @@ import numpy as np
 from tensorboard.compat.tensorflow_stub import dtypes
 from tensorflow.contrib.seq2seq import dynamic_decode, TrainingHelper, InferenceHelper, BasicDecoder
 from tensorflow.nn import dynamic_rnn, relu
+
+from koe.ml.learning_rate_funcs import lrfunc_classes
 from root.utils import mkdirp
+
+
+regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
 
 def make_cell(layer_sizes, keep_prob=None):
     cells = []
     for layer_size in layer_sizes:
         cell = tf.contrib.rnn.GRUCell(layer_size,
+                                      # bias_initializer=tf.initializers.he_normal(),
+                                      # kernel_initializer=tf.initializers.he_normal(),
                                       bias_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
                                       kernel_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
+                                      # kernel_regularizer=regularizer,
                                       activation=relu)
         cells.append(cell)
 
@@ -48,24 +56,32 @@ class NDS2SAEFactory:
         self.layer_sizes = []
         self.output_dim = 1
         self.input_dim = 1
-        self.learning_rate = 0.01
         self.tmp_folder = None
         self.uuid_code = None
         self.stop_pad_length = 5
         self.stop_pad_token = 0
         self.pad_token = 100
         self.go_token = -100.
-        self.keep_prob = 1
+        self.keep_prob = None
         self.symmetric = True
+        self.lrtype = 'constant'
+        self.lrargs = dict(lr=0.001)
+        self.write_summary = False
 
-    def build(self, save_to):
-        if os.path.isfile(save_to):
-            with zipfile.ZipFile(save_to, 'r') as zip_file:
+    def load(self, filename):
+        if os.path.isfile(filename):
+            with zipfile.ZipFile(filename, 'r') as zip_file:
                 namelist = zip_file.namelist()
                 if 'meta.json' in namelist:
-                    meta = json.loads(zip_file.read('meta.json'))
+                    meta = json.loads(str(zip_file.read('meta.json'), 'utf-8'))
                     for k, v in list(meta.items()):
-                        setattr(self, k, v)
+                        if not callable(v):
+                            setattr(self, k, v)
+        else:
+            raise Exception('File {} does not exist'.format(filename))
+
+    def build(self, save_to):
+        assert self.lrtype in lrfunc_classes.keys()
 
         if self.uuid_code is None:
             self.uuid_code = uuid4().hex
@@ -81,12 +97,15 @@ class NDS2SAEFactory:
             has_saved_checkpoint = extract_saved(self.tmp_folder, save_to)
             build_anew = not has_saved_checkpoint
 
-        params = vars(self)
+        params = {v: k for v, k in vars(self).items() if not callable(k)}
         meta_file = os.path.join(self.tmp_folder, 'meta.json')
         with open(meta_file, 'w') as f:
             json.dump(params, f)
 
+        lrfunc_class = lrfunc_classes[self.lrtype]
+
         retval = _NDS2SAE(self)
+        retval.learning_rate_func = lrfunc_class(**self.lrargs).get_lr
         retval.save_to = save_to
         retval.build_anew = build_anew
         retval.construct()
@@ -99,7 +118,7 @@ class _NDS2SAE:
         self.input_dim = factory.input_dim
         self.output_dim = factory.output_dim
         self.layer_sizes = factory.layer_sizes
-        self.starter_learning_rate = factory.learning_rate
+
         self.tmp_folder = factory.tmp_folder
         self.uuid_code = factory.uuid_code
         self.latent_dims = sum(self.layer_sizes)
@@ -109,6 +128,7 @@ class _NDS2SAE:
         self.stop_pad_length = factory.stop_pad_length
         self.keep_prob = factory.keep_prob
         self.symmetric = factory.symmetric
+        self.write_summary = factory.write_summary
 
         self.input_data = None
         self.output_data = None
@@ -135,6 +155,9 @@ class _NDS2SAE:
         self.y_stopping = None
         self.predictions = None
         self.learning_rate = None
+        self.batch_size = None
+        self.target_sequence_length_padded = None
+        self.source_sequence_length_padded = None
 
         def cleanup(*args):
             self.cleanup()
@@ -176,8 +199,8 @@ class _NDS2SAE:
         self.source_sequence_length = tf.placeholder(tf.int32, (None,), name='source_sequence_length')
         self.x_stopping = np.full((self.stop_pad_length, self.input_dim), self.stop_pad_token, dtype=np.float32)
         self.y_stopping = np.full((self.stop_pad_length, self.output_dim), self.stop_pad_token, dtype=np.float32)
-        self.learning_rate = tf.train.exponential_decay(self.starter_learning_rate, self.global_step, 100000, 0.96,
-                                                        staircase=True)
+        self.learning_rate = tf.placeholder(tf.float32)
+        self.batch_size = tf.placeholder(tf.float32)
 
         enc_cell = make_cell(self.layer_sizes, self.keep_prob)
 
@@ -186,12 +209,12 @@ class _NDS2SAE:
         # logic: the encoder will learn that the stopping token is the signal that the input is finished
         #        the decoder will learn to produce the stopping token to match the expected output
         #        the inferer will learn to produce the stopping token for us to recognise that and stop inferring
-        source_sequence_length_padded = self.source_sequence_length + self.stop_pad_length
-        target_sequence_length_padded = self.target_sequence_length + self.stop_pad_length
+        self.source_sequence_length_padded = self.source_sequence_length + self.stop_pad_length
+        self.target_sequence_length_padded = self.target_sequence_length + self.stop_pad_length
         max_target_sequence_length_padded = self.max_target_sequence_length + self.stop_pad_length
 
-        _, self.enc_state = dynamic_rnn(enc_cell, self.input_data, sequence_length=source_sequence_length_padded,
-                                        dtype=tf.float32, time_major=False)
+        _, self.enc_state = dynamic_rnn(enc_cell, self.input_data, sequence_length=self.source_sequence_length_padded,
+                                        dtype=tf.float32, time_major=False, swap_memory=True)
         if self.symmetric:
             self.enc_state = self.enc_state[::-1]
             dec_cell = make_cell(self.layer_sizes[::-1], self.keep_prob)
@@ -201,6 +224,8 @@ class _NDS2SAE:
         # 3. Dense layer to translate the decoder's output at each time
         # step into a choice from the target vocabulary
         projection_layer = tf.layers.Dense(units=self.output_dim,
+                                           # kernel_initializer=tf.initializers.he_normal(),
+                                           # kernel_regularizer=regularizer,
                                            kernel_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.1))
 
         # 4. Set up a training decoder and an inference decoder
@@ -210,7 +235,7 @@ class _NDS2SAE:
             # Helper for the training process. Used by BasicDecoder to read inputs.
             dec_input = tf.concat([self.go_tokens, self.output_data], 1)
             training_helper = TrainingHelper(inputs=dec_input,
-                                             sequence_length=target_sequence_length_padded,
+                                             sequence_length=self.target_sequence_length_padded,
                                              time_major=False)
 
             # Basic decoder
@@ -254,23 +279,6 @@ class _NDS2SAE:
                 impute_finished=True,
                 maximum_iterations=max_target_sequence_length_padded)[0]
 
-        self.predictions = self.training_decoder_output.rnn_output
-        diff = self.output_data - self.predictions
-        diff = tf.reduce_sum(tf.square(diff), 2)
-        diff *= self.mask
-
-        cross_entropy = tf.reduce_sum(diff, 1)
-        cross_entropy /= tf.cast(self.target_sequence_length, dtypes.float32)  # tf.reduce_sum(self.mask, 1)
-        self.cost = tf.reduce_mean(cross_entropy)
-
-        # Optimizer
-        optimizer = tf.train.AdamOptimizer(self.learning_rate)
-
-        # Gradient Clipping
-        gradients = optimizer.compute_gradients(self.cost)
-        capped_gradients = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in gradients if grad is not None]
-        self.train_op = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
-
     def proprocess_samples(self, xs, ys=None):
         batch_size = len(xs)
 
@@ -307,6 +315,7 @@ class _NDS2SAE:
         return padded_xs, source_sequence_lens, target_sequence_lens
 
     def debug(self, xs, ys):
+        self.construct_loss_function()
         saver = tf.train.Saver(max_to_keep=1)
         batch_size = len(xs)
         with tf.Session() as sess:
@@ -329,6 +338,8 @@ class _NDS2SAE:
                     self.predictions
                 ],
                 {
+                    self.batch_size: batch_size,
+                    self.learning_rate: 0,
                     self.input_data: X_batch,
                     self.output_data: y_batch,
                     self.mask: len_mask,
@@ -355,43 +366,72 @@ class _NDS2SAE:
             assert np.allclose(true_cost, cost), 'Cost = {}, tru cost = {}'.format(cost, true_cost)
             print(('Lost = {}'.format(cost)))
 
-    def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1):
+    def construct_loss_function(self):
+        if self.train_op is None:
+            self.predictions = self.training_decoder_output.rnn_output
+
+            target_sequence_length_padded_float32 = tf.cast(self.target_sequence_length_padded, dtypes.float32)
+
+            # first take square difference. diff_sq.shaeoe = [batch_size, length, output_dim]
+            diff = self.output_data - self.predictions
+            diff_sq = tf.square(diff)
+
+            # To avoid nan, instead of sum and divide, we divide and then sum
+            # After this, we get squared difference normalised by the actual lengths of the sequences
+            diff_sq_div_len = tf.math.divide(diff_sq, tf.reshape(target_sequence_length_padded_float32, (-1, 1, 1)))
+
+            # Now, remove the elements that are padded
+            diff_sq_div_len_masked = diff_sq_div_len * tf.expand_dims(self.mask, -1)
+
+            # The cost is sum along dimension 2 (output dimension), then dimension 1 (time-axis), then
+            # take the mean of the batch
+            sum_diff_sq_div_len_masked = tf.reduce_sum(tf.reduce_sum(diff_sq_div_len_masked, axis=2), axis=1)
+            self.cost = tf.reduce_sum(sum_diff_sq_div_len_masked / self.batch_size)
+
+            # Optimizer
+            optimizer = tf.train.AdamOptimizer(self.learning_rate)
+
+            # Gradient Clipping
+            gradients = optimizer.compute_gradients(self.cost)
+            capped_gradients = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in gradients if grad is not None]
+            self.train_op = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
+
+    # @profile
+    def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
+        self.construct_loss_function()
+
+        with tf.name_scope('summaries'):
+            tf.summary.scalar('learning_rate', self.learning_rate)
+            tf.summary.scalar('cost', self.cost)
+
         saver = tf.train.Saver(max_to_keep=1)
         with tf.Session() as sess:
+            # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+            if self.write_summary:
+                summary_merged = tf.summary.merge_all()
+                train_writer = tf.summary.FileWriter(self.tmp_folder + '/train', graph=sess.graph)
+                test_writer = tf.summary.FileWriter(self.tmp_folder + '/test')
             init = tf.global_variables_initializer()
             init.run()
             if not self.build_anew:
                 saver.restore(sess, tf.train.latest_checkpoint(self.tmp_folder))
             current_iteration = self.global_step.eval()
             for iteration in range(current_iteration, n_iterations):
-
-                xs, ys = training_gen(batch_size)
-                X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
-                    = self.proprocess_samples(xs, ys)
-
-                actual_start_tokens = np.full((batch_size, self.output_dim), self.go_token, dtype=np.float32)
-                actual_go_tokens = np.full((batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
-
-                # Training step
-                feed_dict = {
-                    self.input_data: X_batch,
-                    self.output_data: y_batch,
-                    self.mask: len_mask,
-                    self.start_tokens: actual_start_tokens,
-                    self.go_tokens: actual_go_tokens,
-                    self.target_sequence_length: target_sequence_lens,
-                    self.source_sequence_length: source_sequence_lens
-                }
-                _, loss = sess.run([self.train_op, self.cost], feed_dict)
-
-                # Debug message updating us on the status of the training
-                if iteration % display_step == 0 or iteration == n_iterations - 1:
-                    xs, ys = valid_gen(batch_size)
+                final_batch = False
+                current_lr = self.learning_rate_func(global_step=iteration)
+                while not final_batch:
+                    xs, ys, final_batch = training_gen(batch_size)
+                    actual_batch_size = len(xs)
                     X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
                         = self.proprocess_samples(xs, ys)
 
-                    # Calculate validation cost
+                    actual_start_tokens = np.full((actual_batch_size, self.output_dim), self.go_token, dtype=np.float32)
+                    actual_go_tokens = np.full((actual_batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
+
+                    # Training step
                     feed_dict = {
+                        self.batch_size: actual_batch_size,
+                        self.learning_rate: current_lr,
                         self.input_data: X_batch,
                         self.output_data: y_batch,
                         self.mask: len_mask,
@@ -400,11 +440,46 @@ class _NDS2SAE:
                         self.target_sequence_length: target_sequence_lens,
                         self.source_sequence_length: source_sequence_lens
                     }
-                    validation_loss = sess.run(self.cost, feed_dict)
 
-                    print(('Epoch {:>3}/{} - Loss: {:>6.3f}  - Validation loss: {:>6.3f}'.
-                           format(iteration, n_iterations, loss, validation_loss)))
+                    if final_batch and self.write_summary:
+                        _, loss, current_lr, summary = \
+                            sess.run([self.train_op, self.cost, self.learning_rate, summary_merged], feed_dict)
+                        train_writer.add_summary(summary, iteration)
+                    else:
+                        _, loss, current_lr = sess.run([self.train_op, self.cost, self.learning_rate], feed_dict)
 
+                # Debug message updating us on the status of the training
+                if iteration % display_step == 0 or iteration == n_iterations - 1:
+                    xs, ys, _ = valid_gen(batch_size=None)
+                    actual_batch_size = len(xs)
+                    X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
+                        = self.proprocess_samples(xs, ys)
+                    actual_start_tokens = np.full((actual_batch_size, self.output_dim), self.go_token, dtype=np.float32)
+                    actual_go_tokens = np.full((actual_batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
+
+                    # Calculate validation cost
+                    feed_dict = {
+                        self.batch_size: actual_batch_size,
+                        self.learning_rate: current_lr,
+                        self.input_data: X_batch,
+                        self.output_data: y_batch,
+                        self.mask: len_mask,
+                        self.start_tokens: actual_start_tokens,
+                        self.go_tokens: actual_go_tokens,
+                        self.target_sequence_length: target_sequence_lens,
+                        self.source_sequence_length: source_sequence_lens
+                    }
+
+                    if self.write_summary:
+                        validation_loss, summary = sess.run([self.cost, summary_merged], feed_dict)
+                        test_writer.add_summary(summary, iteration)
+                    else:
+                        validation_loss = sess.run(self.cost, feed_dict)
+
+                    print(('Epoch {:>3}/{} - Loss: {:>6.3f}  - Validation loss: {:>6.3f} - Learning rate: {:>8.7f}'.
+                           format(iteration, n_iterations, loss, validation_loss, current_lr)))
+
+                if iteration % save_step == 0 or iteration == n_iterations - 1:
                     saver.save(sess, self.saved_session_name, global_step=self.global_step)
                     self.copy_saved_to_zip()
 

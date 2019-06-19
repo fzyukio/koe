@@ -10,43 +10,19 @@ e.g:
       all segments that are labelled 'Click' or 'Stutter', save to file /tmp/bellbirds.csv
 """
 import os
-import pickle
 
 import numpy as np
 import pydub
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
-from koe import wavfile
-from koe.features.scaled_freq_features import mfcc
-from koe.features.utils import get_spectrogram
 from koe.model_utils import exclude_no_labels, get_or_error, select_instances
 from koe.model_utils import get_labels_by_sids
 from koe.models import *
+from koe.spect_utils import extractors, normalise_all, extract_global_min_max, save_global_min_max
 from koe.utils import wav_path, get_kfold_indices
 from root.models import User
-from root.utils import ensure_parent_folder_exists
-
-nfft = 512
-noverlap = nfft // 2
-win_length = nfft
-stepsize = nfft - noverlap
-
-
-def extract_spect(wav_file_path, fs, start, end, spect_path):
-    psd = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
-                          center=False)
-    with open(spect_path, 'wb') as f:
-        pickle.dump(psd, f)
-
-
-def extract_mfcc(wav_file_path, fs, start, end, filepath):
-    sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
-    args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=fs, wav_file_path=None, start=0, end=None,
-                sig=sig, center=True)
-    mfcc_value = mfcc(args)
-    with open(filepath, 'wb') as f:
-        pickle.dump(mfcc_value, f)
+from root.utils import ensure_parent_folder_exists, mkdirp
 
 
 class Command(BaseCommand):
@@ -70,6 +46,8 @@ class Command(BaseCommand):
 
         parser.add_argument('--format', action='store', dest='format', default='wav', type=str, )
 
+        parser.add_argument('--normalised', action='store_true', dest='normalised', default=False)
+
     def handle(self, *args, **options):
         database_name = options['database_name']
         annotator_name = options['annotator_name']
@@ -78,6 +56,7 @@ class Command(BaseCommand):
         format = options['format']
         min_occur = options['min_occur']
         num_instances = options['num_instances']
+        normalised = options['normalised']
 
         if num_instances is not None:
             assert num_instances >= min_occur, 'num_instances must be >= min_occur'
@@ -96,7 +75,7 @@ class Command(BaseCommand):
             sids, _, labels = select_instances(sids, None, labels, num_instances)
 
         unique_labels, enum_labels = np.unique(labels, return_inverse=True)
-        fold_indices = get_kfold_indices(enum_labels, 10)
+        fold_indices = get_kfold_indices(enum_labels, min_occur)
 
         segments_info = {sid: (label, label_enum, fold_ind) for sid, label, label_enum, fold_ind in
                          zip(sids, labels, enum_labels, fold_indices)}
@@ -118,6 +97,8 @@ class Command(BaseCommand):
         bar = Bar('Exporting segments ...', max=len(segs))
         metadata_file_path = os.path.join(save_to, 'metadata.tsv')
 
+        extractor = extractors.get(format, None)
+
         for af, info in audio_file_dict.items():
             wav_file_path = wav_path(af)
             fullwav = pydub.AudioSegment.from_wav(wav_file_path)
@@ -132,15 +113,12 @@ class Command(BaseCommand):
                 filepath = os.path.join(save_to, filename)
                 ensure_parent_folder_exists(filepath)
 
-                if format == 'spect':
-                    if not os.path.isfile(filepath):
-                        extract_spect(wav_file_path, af.fs, start, end, filepath)
-                elif format == 'mfcc':
-                    if not os.path.isfile(filepath):
-                        extract_mfcc(wav_file_path, af.fs, start, end, filepath)
-                else:
-                    with open(filepath, 'wb') as f:
-                        audio_segment.export(f, format=format)
+                if not os.path.isfile(filepath):
+                    if extractor is not None:
+                        extractor(wav_file_path, af.fs, start, end, filepath)
+                    else:
+                        with open(filepath, 'wb') as f:
+                            audio_segment.export(f, format=format)
 
                 audio_info.append(
                     (id, filename, label, label_enum, fold_ind)
@@ -154,3 +132,10 @@ class Command(BaseCommand):
                 f.write('{}\t{}\t{}\t{}\t{}\n'.format(id, filename, label, label_enum, fold_ind))
 
         bar.finish()
+
+        if normalised:
+            norm_folder = os.path.join(save_to, 'normalised')
+            mkdirp(norm_folder)
+            global_min, global_max = extract_global_min_max(save_to, format)
+            save_global_min_max(norm_folder, global_min, global_max)
+            normalise_all(save_to, norm_folder, format, global_min, global_max)
