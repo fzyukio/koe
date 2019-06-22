@@ -35,7 +35,7 @@ def spect_from_seg(seg, extractor):
     return extractor(wav_file_path, fs=fs, start=start, end=end)
 
 
-def encode_syllables(variables, encoder, session, segs):
+def encode_syllables(variables, encoder, session, segs, kernel_only):
     num_segs = len(segs)
     batch_size = 200
     extractor = variables['extractor']
@@ -74,7 +74,7 @@ def encode_syllables(variables, encoder, session, segs):
             lengths.append(length)
             spects.append(spect.T)
             bar.next()
-        encoded = encoder.encode(spects, session=session)
+        encoded = encoder.encode(spects, session=session, kernel_only=kernel_only)
 
         for encod, seg, length in zip(encoded, batch_segs, lengths):
             encoding_result[seg.id] = encod
@@ -143,7 +143,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
     return reconstruction_result
 
 
-def encode_into_datamatrix(variables, encoder, session, database_name):
+def encode_into_datamatrix(variables, encoder, session, database_name, kernel_only):
     with_duration = variables['with_duration']
     dm_name = variables['dm_name']
     ndims = encoder.latent_dims
@@ -152,7 +152,7 @@ def encode_into_datamatrix(variables, encoder, session, database_name):
     audio_files = AudioFile.objects.filter(database=database)
     segments = Segment.objects.filter(audio_file__in=audio_files)
 
-    encoding_result = encode_syllables(variables, encoder, session, segments)
+    encoding_result = encode_syllables(variables, encoder, session, segments, kernel_only)
     features_value = np.array(list(encoding_result.values()))
     sids = np.array(list(encoding_result.keys()), dtype=np.int32)
 
@@ -268,6 +268,7 @@ class Command(BaseCommand):
 
         parser.add_argument('--database-name', action='store', dest='database_name', required=False, type=str)
         parser.add_argument('--database-only', action='store_true', dest='database_only', default=False)
+        parser.add_argument('--kernel-only', action='store_true', dest='kernel_only', default=False)
         parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
         parser.add_argument('--dm-name', action='store', dest='dm_name', required=False, type=str)
         parser.add_argument('--format', action='store', dest='format', default='spect', type=str)
@@ -279,6 +280,7 @@ class Command(BaseCommand):
         mode = options['mode']
         database_name = options['database_name']
         database_only = options['database_only']
+        kernel_only = options['kernel_only']
         load_from = options['load_from']
         tmp_dir = options['tmp_dir']
         dm_name = options['dm_name']
@@ -338,4 +340,6 @@ class Command(BaseCommand):
         if mode == 'showcase':
             showcase_reconstruct(variables, encoder, session, database_name, database_only)
         else:
-            encode_into_datamatrix(variables, encoder, session, database_name)
+            encode_into_datamatrix(variables, encoder, session, database_name, kernel_only)
+
+        session.close()

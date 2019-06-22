@@ -147,6 +147,7 @@ class _NDS2SAE:
         self.build_anew = True
         self.train_op = None
         self.enc_state = None
+        self.enc_state_centre = None
         self.go_tokens = None
         self.training_decoder_output = None
         self.cost = None
@@ -215,6 +216,8 @@ class _NDS2SAE:
 
         _, self.enc_state = dynamic_rnn(enc_cell, self.input_data, sequence_length=self.source_sequence_length_padded,
                                         dtype=tf.float32, time_major=False, swap_memory=True)
+        self.enc_state_centre = self.enc_state[-1]
+
         if self.symmetric:
             self.enc_state = self.enc_state[::-1]
             dec_cell = make_cell(self.layer_sizes[::-1], self.keep_prob)
@@ -494,8 +497,10 @@ class _NDS2SAE:
     def _predict_or_encode(self, mode, test_seq, session=None):
         if mode == 'predict':
             ops = self.inference_decoder_output
-        else:
+        elif mode == 'encode':
             ops = self.enc_state
+        else:
+            ops = self.enc_state_centre
 
         batch_size = len(test_seq)
         X_batch, source_sequence_lens, target_sequence_lens = self.proprocess_samples(test_seq)
@@ -530,6 +535,10 @@ class _NDS2SAE:
             retval.append(y[:leny])
         return retval
 
-    def encode(self, test_seq, session=None):
-        states = self._predict_or_encode('encode', test_seq, session)
-        return np.concatenate(states, axis=1)
+    def encode(self, test_seq, session=None, kernel_only=False):
+        if kernel_only:
+            states = self._predict_or_encode('encode-centre', test_seq, session)
+            return states
+        else:
+            states = self._predict_or_encode('encode', test_seq, session)
+            return np.concatenate(states, axis=1)
