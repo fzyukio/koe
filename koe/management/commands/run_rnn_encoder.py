@@ -112,6 +112,7 @@ def train(variables, save_to):
     topology = variables['topology']
     batch_size = variables['batch_size']
     n_iterations = variables['n_iterations']
+    keep_prob = variables['keep_prob']
 
     batch_index_limits = dict(train=n_train, test=n_test)
     sids_collections = dict(train=sids_for_training, test=sids_for_testing)
@@ -161,7 +162,7 @@ def train(variables, save_to):
     factory.lrargs = variables['lrargs']
     factory.input_dim = variables['dims']
     factory.output_dim = variables['dims']
-    factory.keep_prob = None
+    factory.keep_prob = keep_prob
     factory.stop_pad_length = 5
     factory.stop_pad_token = 0
     factory.pad_token = -2
@@ -207,6 +208,7 @@ class Command(BaseCommand):
         parser.add_argument('--n-iterations', action='store', dest='n_iterations', required=True, type=int)
         parser.add_argument('--lrtype', action='store', dest='lrtype', default='constant', type=str)
         parser.add_argument('--lrargs', action='store', dest='lrargs', default='{"lr": 0.001}', type=str)
+        parser.add_argument('--keep-prob', action='store', dest='keep_prob', default=None, type=float)
         parser.add_argument('--topology', action='store', dest='topology', default='1', type=str,
                             help='Network topology of the encoder, can be a single number or comma-separated list.'
                                  'A float (e.g. 0.5, 1.5) corresponds to the ratio of number of neurons to input size'
@@ -225,6 +227,7 @@ class Command(BaseCommand):
         n_iterations = options['n_iterations']
         lrtype = options['lrtype']
         lrargs = json.loads(options['lrargs'])
+        keep_prob = options['keep_prob']
         topology = infer_topology(options['topology'])
 
         if not save_to.lower().endswith('.zip'):
@@ -249,4 +252,5 @@ class Command(BaseCommand):
         variables['n_iterations'] = n_iterations
         variables['lrtype'] = lrtype
         variables['lrargs'] = lrargs
+        variables['keep_prob'] = keep_prob
         train(variables, save_to)
