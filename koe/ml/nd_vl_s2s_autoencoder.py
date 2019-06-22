@@ -400,8 +400,9 @@ class _NDS2SAE:
 
             # Gradient Clipping
             gradients = optimizer.compute_gradients(self.cost)
-            capped_gradients = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in gradients if grad is not None]
-            self.train_op = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
+            capped_gradients = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gradients if grad is not None]
+            self.train_op = optimizer.apply_gradients(capped_gradients)
+            self.train_op_eob = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
 
     # @profile
     def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
@@ -448,12 +449,17 @@ class _NDS2SAE:
                         self.source_sequence_length: source_sequence_lens
                     }
 
-                    if final_batch and self.write_summary:
+                    if final_batch:
+                        train_op = self.train_op_eob
+                    else:
+                        train_op = self.train_op
+
+                    if self.write_summary:
                         _, loss, current_lr, summary = \
-                            sess.run([self.train_op, self.cost, self.learning_rate, summary_merged], feed_dict)
+                            sess.run([train_op, self.cost, self.learning_rate, summary_merged], feed_dict)
                         train_writer.add_summary(summary, iteration)
                     else:
-                        _, loss, current_lr = sess.run([self.train_op, self.cost, self.learning_rate], feed_dict)
+                        _, loss, current_lr = sess.run([train_op, self.cost, self.learning_rate], feed_dict)
 
                 # Debug message updating us on the status of the training
                 if iteration % display_step == 0 or iteration == n_iterations - 1:
