@@ -69,6 +69,7 @@ class NDS2SAEFactory:
         self.write_summary = False
 
     def load(self, filename):
+        self.load_from = filename
         if os.path.isfile(filename):
             with zipfile.ZipFile(filename, 'r') as zip_file:
                 namelist = zip_file.namelist()
@@ -80,7 +81,13 @@ class NDS2SAEFactory:
         else:
             raise Exception('File {} does not exist'.format(filename))
 
-    def build(self, save_to):
+    def build(self, save_to=None):
+        if save_to is None:
+            if hasattr(self, 'load_from'):
+                save_to = self.load_from
+            else:
+                raise Exception('save_to is mandatory if load() has not been called')
+
         assert self.lrtype in lrfunc_classes.keys()
 
         if self.uuid_code is None:
@@ -353,9 +360,6 @@ class _NDS2SAE:
                 })
             cost = evaled[1]
             predictions = evaled[2]
-            max_target_sequence_length = evaled[3]
-
-            assert max_target_sequence_length == max(target_sequence_lens)
 
             diff = y_batch - predictions
             diff[np.isinf(diff)] = 0
@@ -363,7 +367,7 @@ class _NDS2SAE:
             diff *= len_mask
 
             cross_entropy = np.sum(diff, 1)
-            cross_entropy /= target_sequence_lens
+            cross_entropy /= (target_sequence_lens + self.stop_pad_length)
             true_cost = np.mean(cross_entropy)
 
             assert np.allclose(true_cost, cost), 'Cost = {}, tru cost = {}'.format(cost, true_cost)
