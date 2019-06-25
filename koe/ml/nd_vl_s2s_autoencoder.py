@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import tensorflow as tf
 import numpy as np
+import time
 from tensorboard.compat.tensorflow_stub import dtypes
 from tensorflow.contrib.seq2seq import dynamic_decode, TrainingHelper, InferenceHelper, BasicDecoder
 from tensorflow.nn import dynamic_rnn, relu
@@ -425,6 +426,8 @@ class _NDS2SAE:
             if not self.build_anew:
                 saver.restore(sess, tf.train.latest_checkpoint(self.tmp_folder))
             current_iteration = self.global_step.eval()
+            start_time = int(round(time.time() * 1000))
+            start_iteration = current_iteration
             for iteration in range(current_iteration, n_iterations):
                 final_batch = False
                 current_lr = self.learning_rate_func(global_step=iteration)
@@ -490,12 +493,22 @@ class _NDS2SAE:
                     else:
                         validation_loss = sess.run(self.cost, feed_dict)
 
-                    print(('Epoch {:>3}/{} - Loss: {:>6.3f}  - Validation loss: {:>6.3f} - Learning rate: {:>8.7f}'.
-                           format(iteration, n_iterations, loss, validation_loss, current_lr)))
+                    end_time = int(round(time.time() * 1000))
+                    duration = end_time - start_time
+                    mean_duration = duration / (iteration - start_iteration)
+
+                    start_time = end_time
+                    start_iteration = iteration
+
+                    print(('Ep {:>4}/{} | Losses: {:>7.5f}/{:>7.5f} | LR: {:>6.5f} | Speed: {:>6.1f} ms/Ep'.
+                           format(iteration, n_iterations, loss, validation_loss, current_lr, mean_duration)))
 
                 if iteration % save_step == 0 or iteration == n_iterations - 1:
+                    start_time_save = int(round(time.time() * 1000))
                     saver.save(sess, self.saved_session_name, global_step=self.global_step)
                     self.copy_saved_to_zip()
+                    duration_save = int(round(time.time() * 1000)) - start_time_save
+                    print('Saved. Elapsed: {:>6.3f} ms'.format(duration_save))
 
     def recreate_session(self):
         saver = tf.train.Saver()
