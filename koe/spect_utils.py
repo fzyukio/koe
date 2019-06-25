@@ -59,7 +59,7 @@ def extract_log_spect(wav_file_path, fs, start, end, filepath=None):
 eps = 1e-3
 
 
-def psd2img(psd, imgpath, islog=False):
+def psd2img(psd, imgpath=None, islog=False):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
     :param audio_file:
@@ -90,8 +90,13 @@ def psd2img(psd, imgpath, islog=False):
     psd_rgb[:, :, 0] = cm_red[psd].reshape((height, width)) * 255
     psd_rgb[:, :, 1] = cm_green[psd].reshape((height, width)) * 255
     psd_rgb[:, :, 2] = cm_blue[psd].reshape((height, width)) * 255
-    img = Image.fromarray(psd_rgb)
-    img.save(imgpath, format='PNG')
+
+    if imgpath:
+        img = Image.fromarray(psd_rgb)
+        img.save(imgpath, format='PNG')
+        return None
+    else:
+        return psd_rgb
 
 
 def extract_global_min_max(folder, format):
