@@ -1,4 +1,3 @@
-import sys
 import datetime
 import os
 import traceback
@@ -275,17 +274,6 @@ if DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
     JS_REVERSE_JS_MINIFY = False
-
-    PY3 = sys.version_info[0] == 3
-    if PY3:
-        import builtins
-    else:
-        import __builtin__ as builtins
-
-    try:
-        builtins.profile
-    except AttributeError:
-        builtins.profile = lambda x: x
 
     class ConsoleErrorTracker():
         def captureException(self):

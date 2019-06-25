@@ -398,11 +398,11 @@ class _NDS2SAE:
 
             # Gradient Clipping
             gradients = optimizer.compute_gradients(self.cost)
-            capped_gradients = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gradients if grad is not None]
+            capped_gradients = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in gradients if grad is not None]
             self.train_op = optimizer.apply_gradients(capped_gradients)
             self.train_op_eob = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
 
-    # @profile
+    @profile  # noqa F821
     def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
         self.construct_loss_function()
 
