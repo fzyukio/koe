@@ -69,28 +69,24 @@ class NDS2SAEFactory:
         self.lrtype = 'constant'
         self.lrargs = dict(lr=0.001)
         self.write_summary = False
+        self._save_to = None
 
-    def load(self, filename):
-        self.load_from = filename
+    def set_output(self, filename):
+        self._save_to = filename
         if os.path.isfile(filename):
             with zipfile.ZipFile(filename, 'r') as zip_file:
                 namelist = zip_file.namelist()
                 if 'meta.json' in namelist:
                     meta = json.loads(str(zip_file.read('meta.json'), 'utf-8'))
                     for k, v in list(meta.items()):
-                        if not callable(v):
+                        if not callable(v) and not k.startswith('_'):
                             setattr(self, k, v)
-        else:
-            raise Exception('File {} does not exist'.format(filename))
 
-    def build(self, save_to=None):
-        if save_to is None:
-            if hasattr(self, 'load_from'):
-                save_to = self.load_from
-            else:
-                raise Exception('save_to is mandatory if load() has not been called')
+    def build(self):
+        if self._save_to is None:
+            raise Exception('Must call set_output(_save_to=...) first')
 
-        assert self.lrtype in lrfunc_classes.keys()
+        assert self.lrtype in list(lrfunc_classes.keys())
 
         if self.uuid_code is None:
             self.uuid_code = uuid4().hex
@@ -102,11 +98,11 @@ class NDS2SAEFactory:
         mkdirp(self.tmp_folder)
 
         build_anew = True
-        if os.path.isfile(save_to):
-            has_saved_checkpoint = extract_saved(self.tmp_folder, save_to)
+        if os.path.isfile(self._save_to):
+            has_saved_checkpoint = extract_saved(self.tmp_folder, self._save_to)
             build_anew = not has_saved_checkpoint
 
-        params = {v: k for v, k in vars(self).items() if not callable(k)}
+        params = {v: k for v, k in list(vars(self).items()) if not callable(k)}
         meta_file = os.path.join(self.tmp_folder, 'meta.json')
         with open(meta_file, 'w') as f:
             json.dump(params, f)
@@ -115,7 +111,7 @@ class NDS2SAEFactory:
 
         retval = _NDS2SAE(self)
         retval.learning_rate_func = lrfunc_class(**self.lrargs).get_lr
-        retval.save_to = save_to
+        retval._save_to = self._save_to
         retval.build_anew = build_anew
         retval.construct()
         return retval
@@ -152,7 +148,7 @@ class _NDS2SAE:
         self.loss = None
         self.optimizer = None
         self.training_op = None
-        self.save_to = None
+        self._save_to = None
         self.build_anew = True
         self.train_op = None
         self.enc_state = None
@@ -181,8 +177,8 @@ class _NDS2SAE:
             shutil.rmtree(self.tmp_folder)
 
     def copy_saved_to_zip(self):
-        save_to_bak = self.save_to + '.bak'
-        save_to_bak2 = self.save_to + '.bak2'
+        save_to_bak = self._save_to + '.bak'
+        save_to_bak2 = self._save_to + '.bak2'
 
         with zipfile.ZipFile(save_to_bak, 'w', zipfile.ZIP_BZIP2, False) as zip_file:
             for root, dirs, files in os.walk(self.tmp_folder):
@@ -190,9 +186,9 @@ class _NDS2SAE:
                     with open(os.path.join(root, file), 'rb') as f:
                         zip_file.writestr(file, f.read())
 
-        if os.path.isfile(self.save_to):
-            os.rename(self.save_to, save_to_bak2)
-        os.rename(save_to_bak, self.save_to)
+        if os.path.isfile(self._save_to):
+            os.rename(self._save_to, save_to_bak2)
+        os.rename(save_to_bak, self._save_to)
         if os.path.isfile(save_to_bak2):
             os.remove(save_to_bak2)
 
