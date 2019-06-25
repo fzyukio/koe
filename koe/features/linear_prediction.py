@@ -3,7 +3,7 @@ from scipy.signal import freqz
 
 import spectrum
 from koe.features.utils import get_sig, unroll_args, _cached_get_window
-from koe.utils import segments
+from koe.utils import split_segments
 
 
 def lpc_spectrum_frame(sig, order, nfft):
@@ -21,7 +21,7 @@ def lpc_spectrum(args):
     window = unroll_args(args, [('window', hann_window)])
 
     siglen = len(sig)
-    nsegs, segs = segments(siglen, win_length, noverlap, incltail=False)
+    nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
     lpcs = np.zeros((nfft, nsegs), dtype=np.complex64)
     for i in range(nsegs):
@@ -58,7 +58,7 @@ def lpc_cepstrum(args):
     window = unroll_args(args, [('window', hann_window)])
 
     siglen = len(sig)
-    nsegs, segs = segments(siglen, win_length, noverlap, incltail=False)
+    nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
     lpcs = np.zeros((order, nsegs), dtype=np.float32)
 
@@ -82,7 +82,7 @@ def lp_coefficients(args):
     window = unroll_args(args, [('window', hann_window)])
 
     siglen = len(sig)
-    nsegs, segs = segments(siglen, win_length, noverlap, incltail=False)
+    nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
     lp_coeffs = np.zeros((order, nsegs), dtype=np.complex64)
     for i in range(nsegs):

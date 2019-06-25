@@ -4,7 +4,7 @@ from scipy.stats import skew, kurtosis
 
 from koe.features.utils import get_sig
 from koe.features.utils import unroll_args, get_psd, get_psddb
-from koe.utils import segments
+from koe.utils import split_segments
 from memoize import memoize
 
 eps = 0.00000001
@@ -123,7 +123,7 @@ def _harmonic_and_pitch(args):
     sig = get_sig(args)
     fs, noverlap, win_length = unroll_args(args, ['fs', 'noverlap', 'win_length'])
     siglen = len(sig)
-    nsegs, segs = segments(siglen, win_length, noverlap, incltail=False)
+    nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
     HRs = []
     F0s = []

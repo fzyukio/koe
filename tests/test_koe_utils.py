@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.commands.utils import wav_2_mono
-from koe.utils import segments, split_classwise, divide_conquer, one_hot
+from koe.utils import split_segments, split_classwise, divide_conquer, one_hot
 
 
 @memoize(timeout=60)
@@ -28,7 +28,7 @@ def one_randint(limit=10):
 
 class KoeUtilsTest(TestCase):
     def test_segments_with_tail(self):
-        nsegs, segs = segments(86, 32, 16, incltail=True)
+        nsegs, segs = split_segments(86, 32, 16, incltail=True)
         correct_segs = np.array([[0, 32], [16, 48], [32, 64], [48, 80], [64, 86]])
         correct_nsegs = len(correct_segs)
 
@@ -36,7 +36,7 @@ class KoeUtilsTest(TestCase):
         self.assertTrue((segs == correct_segs).all())
 
     def test_segments_without_tail(self):
-        nsegs, segs = segments(86, 32, 16, incltail=False)
+        nsegs, segs = split_segments(86, 32, 16, incltail=False)
         correct_segs = np.array([[0, 32], [16, 48], [32, 64], [48, 80]])
         correct_nsegs = len(correct_segs)
 

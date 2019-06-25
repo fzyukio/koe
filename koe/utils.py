@@ -81,7 +81,7 @@ def get_wav_info(audio_file):
     return rate, nframes
 
 
-def segments(siglen, window, noverlap, incltail=False):
+def split_segments(siglen, window, noverlap, incltail=False):
     """
     Calculate how many segments can be extracted from a signal given
     the window size and overlap size
@@ -128,7 +128,7 @@ def segments(siglen, window, noverlap, incltail=False):
     segs[:, 0] = idx1[:nsegs]
     segs[:, 1] = idx2[:nsegs]
 
-    return nsegs, segs
+    return nsegs, segs.tolist()
 
 
 def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):

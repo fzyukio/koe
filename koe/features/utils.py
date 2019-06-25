@@ -3,7 +3,7 @@ from librosa import stft
 from scipy import signal, fft
 
 from koe import wavfile
-from koe.utils import segments
+from koe.utils import split_segments
 from memoize import memoize
 from spectrum import dpss
 
@@ -105,7 +105,7 @@ def my_stft(sig, fs, window, noverlap, nfft):
     siglen = len(sig)
     freq_range = nfft // 2 + 1
     window_size = len(window)
-    nsegs, segs = segments(siglen, window_size, noverlap, incltail=False)
+    nsegs, segs = split_segments(siglen, window_size, noverlap, incltail=False)
     mat = np.ndarray((freq_range, nsegs), dtype=np.complex128)
     for i in range(nsegs):
         seg = segs[i, :]

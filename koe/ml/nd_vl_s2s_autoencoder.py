@@ -15,6 +15,7 @@ from koe.ml.learning_rate_funcs import lrfunc_classes
 from root.utils import mkdirp
 
 
+tf.logging.set_verbosity(tf.logging.ERROR)
 regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 
 
