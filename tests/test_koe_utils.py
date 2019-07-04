@@ -5,7 +5,7 @@ from memoize import memoize
 from scipy.stats import zscore
 
 from koe import wavfile
-from koe.management.commands.utils import wav_2_mono
+from koe.management.utils.luscinia_utils import wav_2_mono
 from koe.utils import split_segments, split_classwise, divide_conquer, one_hot
 
 

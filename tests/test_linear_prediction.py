@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from scipy.io import loadmat
 
 from koe.features.linear_prediction import lpc_cepstrum, lpc_spectrum, lp_coefficients
-from koe.management.commands.utils import wav_2_mono
+from koe.management.utils.luscinia_utils import wav_2_mono
 
 nfft = 512
 noverlap = nfft * 3 // 4

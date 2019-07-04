@@ -5,7 +5,7 @@ from scipy.io import loadmat
 from scipy.io import savemat
 
 from koe.features.freq_domain import harmonic_ratio
-from koe.management.commands.utils import wav_2_mono
+from koe.management.utils.luscinia_utils import wav_2_mono
 
 
 # nfft = 512

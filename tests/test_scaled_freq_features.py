@@ -2,7 +2,7 @@ import numpy as np
 from django.test import TestCase
 
 from koe.features.scaled_freq_features import mfcc_delta2
-from koe.management.commands.utils import wav_2_mono
+from koe.management.utils.luscinia_utils import wav_2_mono
 
 nfft = 512
 noverlap = nfft * 3 // 4

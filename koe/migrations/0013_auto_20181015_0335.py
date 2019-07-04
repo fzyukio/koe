@@ -38,7 +38,7 @@ def consolidate_individual(apps, schema_editor):
             indi.name = new_name
             indi.save()
 
-    del name2vals['_']
+        del name2vals['_']
 
     name2chosen = {}
     for name, vals in name2vals.items():

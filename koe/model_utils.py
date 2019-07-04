@@ -10,7 +10,7 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.celery import app
 from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.management.commands.utils import wav_2_mono
+from koe.management.utils.luscinia_utils import wav_2_mono
 from koe.models import Database
 from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
     AudioFile
@@ -314,7 +314,7 @@ def assert_values(value, value_range):
         raise CustomAssertionError('Invalid value {}'.format(value))
 
 
-def get_or_error(obj, key):
+def get_or_error(obj, key, errmsg=None):
     """
     Get key or filter Model for given attributes. If None found, error
     :param obj: can be dict, Model class name, or a generic object
@@ -328,13 +328,15 @@ def get_or_error(obj, key):
     else:
         value = getattr(obj, key, None)
     if value is None:
-        if isinstance(key, dict):
-            error = 'No {} with {} exists'.format(
-                obj.__name__.lower(), ', '.join(['{}={}'.format(k, v) for k, v in key.items()])
-            )
-            raise CustomAssertionError(error)
-        raise CustomAssertionError('{} doesn\'t exist'.format(key))
+        if errmsg is None:
+            if isinstance(key, dict):
+                errmsg = 'No {} with {} exists'.format(
+                    obj.__name__.lower(), ', '.join(['{}={}'.format(k, v) for k, v in key.items()])
+                )
 
+            else:
+                errmsg = '{} doesn\'t exist'.format(key)
+        raise CustomAssertionError(errmsg)
     return value
 
 
@@ -408,29 +410,39 @@ def delete_audio_files_async():
         af.delete()
 
 
-def get_labels_by_sids(sids, label_level, annotator, min_occur):
+def get_labels_by_sids(sids, label_level, annotator, min_occur=None):
     sid2lbl = {
         x: y.lower() for x, y in ExtraAttrValue.objects
         .filter(attr__name=label_level, owner_id__in=sids, user=annotator)
         .values_list('owner_id', 'value')
     }
 
-    occurs = Counter(sid2lbl.values())
-
-    segment_to_labels = {}
-    for segid, label in sid2lbl.items():
-        if occurs[label] >= min_occur:
-            segment_to_labels[segid] = label
-
     labels = []
     no_label_ids = []
-    for id in sids:
-        label = segment_to_labels.get(id, None)
-        if label is None:
-            no_label_ids.append(id)
-        labels.append(label)
 
-    return np.array(labels), np.array(no_label_ids, dtype=np.int32)
+    if min_occur is not None:
+        occurs = Counter(sid2lbl.values())
+
+        segment_to_labels = {}
+        for segid, label in sid2lbl.items():
+            if occurs[label] >= min_occur:
+                segment_to_labels[segid] = label
+        for id in sids:
+            label = segment_to_labels.get(id, None)
+            if label is None:
+                no_label_ids.append(id)
+            labels.append(label)
+        return np.array(labels), np.array(no_label_ids, dtype=np.int32)
+    else:
+        segment_to_labels = {}
+        for segid, label in sid2lbl.items():
+            segment_to_labels[segid] = label
+        for id in sids:
+            label = segment_to_labels.get(id, None)
+            if label is None:
+                no_label_ids.append(id)
+            labels.append(label)
+        return np.array(labels), np.array(no_label_ids, dtype=np.int32)
 
 
 def exclude_no_labels(sids, tids, labels, no_label_ids):

@@ -535,6 +535,18 @@ def construct_ordination(task_id):
         runner.error(e)
 
 
+def _calculate_similarity(sids_path, source_bytes_path, return_tree=False):
+    sids = bytes_to_ndarray(sids_path, np.int32)
+    coordinates = get_rawdata_from_binary(source_bytes_path, len(sids))
+
+    tree = linkage(coordinates, method='average')
+    order = natural_order(tree)
+    sorted_order = np.argsort(order).astype(np.int32)
+    if return_tree:
+        return sids, sorted_order, tree
+    return sids, sorted_order
+
+
 @app.task(bind=False)
 def calculate_similarity(task_id):
     task = get_or_wait(task_id)
@@ -562,12 +574,7 @@ def calculate_similarity(task_id):
 
         runner.start()
 
-        sids = bytes_to_ndarray(sids_path, np.int32)
-        coordinates = get_rawdata_from_binary(source_bytes_path, len(sids))
-
-        tree = linkage(coordinates, method='average')
-        order = natural_order(tree)
-        sorted_order = np.argsort(order).astype(np.int32)
+        sids, sorted_order = _calculate_similarity(sids_path, source_bytes_path)
 
         runner.wrapping_up()
 
