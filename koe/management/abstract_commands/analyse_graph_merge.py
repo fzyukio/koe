@@ -6,17 +6,15 @@ import os
 import pickle
 from abc import abstractmethod
 
-import networkx as nx
 import numpy as np
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
 from scipy.cluster.hierarchy import cut_tree
 
 from koe.cluster_analysis_utils import merge_labels, NameMerger
-from koe.graph_utils import extract_graph_properties, resolve_meas
+from koe.graph_utils import resolve_meas, extract_graph_feature
 from koe.management.utils.parser_utils import read_cluster_range
 from koe.models import AudioFile, Database
-from koe.sequence_utils import songs_to_syl_seqs
 
 
 class AnalyseGraphMergeCommand(BaseCommand):
@@ -92,22 +90,9 @@ class AnalyseGraphMergeCommand(BaseCommand):
             clustering = suitable_clusters[:, i]
             ncluster = np.max(clustering) + 1
             sid_to_cluster, merged_enum2label = merge_labels(clustering, classes_info, sids, enum2label, merge_func)
-            song_sequences = songs_to_syl_seqs(songs, sid_to_cluster, merged_enum2label)
 
-            edges, node_dict = extract_graph_properties(song_sequences, merged_enum2label)
-            nodes = sorted(list(node_dict.keys()))
-
-            graph = nx.Graph()
-            graph.add_nodes_from(nodes)
-            graph.add_edges_from(edges)
-
-            digraph = nx.DiGraph()
-            digraph.add_nodes_from(nodes)
-            digraph.add_edges_from(edges)
-
-            measurements_values = {}
-            for func in measurements_order:
-                func(graph, digraph, measurements_values, **extra_args)
+            measurements_values = extract_graph_feature(songs, sid_to_cluster, merged_enum2label, measurements_order,
+                                                        **extra_args)
 
             with open(tsv_filename, 'a') as f:
                 extractable_values = [measurements_values[x] for x in measurements_output]

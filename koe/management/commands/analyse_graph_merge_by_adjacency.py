@@ -4,18 +4,15 @@ At each step, produce sequences, construct a graph and extract features from the
 """
 import pickle
 
-import numpy as np
 from scipy.cluster.hierarchy import linkage
 
-from koe.cluster_analysis_utils import SimpleNameMerger, NameMerger,\
-    get_clustering_based_on_user_annotation
+from koe.cluster_analysis_utils import SimpleNameMerger, NameMerger, get_syllable_labels
 from koe.management.abstract_commands.analyse_graph_merge import AnalyseGraphMergeCommand
 from koe.management.utils.prompt_utils import prompt_for_object
-from koe.model_utils import get_or_error, natural_order
+from koe.model_utils import get_or_error
 from koe.models import Database
 from koe.sequence_utils import calc_class_ajacency, calc_class_dist_by_adjacency
 from koe.storage_utils import get_sids_tids
-from koe.utils import mat2triu
 from root.models import User
 
 
@@ -36,23 +33,21 @@ class Command(AnalyseGraphMergeCommand):
         annotator_name = options['annotator_name']
 
         database = get_database(dbid)
-
         sids, tids = get_sids_tids(database)
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
-        unique_labels, enum_labels = get_clustering_based_on_user_annotation(annotator, label_level, sids)
-        nlabels = len(unique_labels)
 
-        adjacency_mat, classes_info = calc_class_ajacency(database, label_level, annotator_name, enum_labels, nlabels)
-        distmat = calc_class_dist_by_adjacency(adjacency_mat)
+        label_arr, syl_label_enum_arr = get_syllable_labels(annotator, label_level, sids)
 
-        dist_triu = mat2triu(distmat)
+        enum2label = {enum: label for enum, label in enumerate(label_arr)}
+        sid2enumlabel = {sid: enum_label for sid, enum_label in zip(sids, syl_label_enum_arr)}
 
+        adjacency_mat, classes_info = calc_class_ajacency(database, syl_label_enum_arr, enum2label, sid2enumlabel,
+                                                          symmetric=False, count_circular=False)
+
+        dist_triu = calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=True)
         tree = linkage(dist_triu, method='average')
-        order = natural_order(tree)
-        sorted_order = np.argsort(order).astype(np.int32)
 
-        saved_dict = dict(tree=tree, sorted_order=sorted_order, distmat=distmat, dbid=database.id,
-                          sids=sids, unique_labels=unique_labels, classes_info=classes_info)
+        saved_dict = dict(tree=tree, dbid=database.id, sids=sids, unique_labels=label_arr, classes_info=classes_info)
 
         with open(pkl_filename, 'wb') as f:
             pickle.dump(saved_dict, f)

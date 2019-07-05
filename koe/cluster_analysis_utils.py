@@ -95,7 +95,7 @@ def merge_labels(clusters, classes_info, sids, enum2label, class_name_merge_func
     return sid_to_cluster_base_1, merged_enum2label_base1
 
 
-def get_clustering_based_on_user_annotation(annotator, label_level, sids):
+def get_syllable_labels(annotator, label_level, sids):
     if label_level is None:
         label_level = 'label'
     labels, no_label_ids = get_labels_by_sids(sids, label_level, annotator, min_occur=None)

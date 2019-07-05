@@ -5,6 +5,7 @@ import numpy as np
 from networkx.algorithms import centrality, approximation, assortativity, vitality
 from nltk.util import ngrams
 
+from koe.sequence_utils import songs_to_syl_seqs
 from root.exceptions import CustomAssertionError
 
 
@@ -401,3 +402,24 @@ def resolve_meas(measurements_str):
     for name in measurements_names:
         resolve_one(name)
     return list(measurements_order.values()), measurements_outputs
+
+
+def extract_graph_feature(songs, sid_to_cluster, enum2label, measurements_order, **extra_args):
+    song_sequences = songs_to_syl_seqs(songs, sid_to_cluster, enum2label, use_pseudo=False)
+
+    edges, node_dict = extract_graph_properties(song_sequences, enum2label)
+    nodes = sorted(list(node_dict.keys()))
+
+    graph = nx.Graph()
+    graph.add_nodes_from(nodes)
+    graph.add_edges_from(edges)
+
+    digraph = nx.DiGraph()
+    digraph.add_nodes_from(nodes)
+    digraph.add_edges_from(edges)
+
+    measurements_values = {}
+    for func in measurements_order:
+        func(graph, digraph, measurements_values, **extra_args)
+
+    return measurements_values

@@ -9,11 +9,10 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial import distance
 from scipy.stats import zscore
 
-from koe.cluster_analysis_utils import SimpleNameMerger, Md5NameMerger,\
-    get_clustering_based_on_user_annotation
+from koe.cluster_analysis_utils import SimpleNameMerger, Md5NameMerger, get_syllable_labels
 from koe.management.abstract_commands.analyse_graph_merge import AnalyseGraphMergeCommand
 from koe.management.utils.prompt_utils import prompt_for_object
-from koe.model_utils import get_or_error, natural_order
+from koe.model_utils import get_or_error
 from koe.models import DataMatrix, Database
 from koe.sequence_utils import calc_class_dist_by_syllable_features
 from koe.ts_utils import bytes_to_ndarray
@@ -78,26 +77,24 @@ class Command(AnalyseGraphMergeCommand):
 
         if annotator_name is not None:
             annotator = get_or_error(User, dict(username__iexact=annotator_name))
-            unique_labels, enum_labels = get_clustering_based_on_user_annotation(annotator, label_level, sids)
-            nlabels = len(unique_labels)
-            distmat, classes_info = calc_class_dist_by_syllable_features(enum_labels, nlabels, distmat, method)
+            label_arr, syl_label_enum_arr = get_syllable_labels(annotator, label_level, sids)
+            nlabels = len(label_arr)
+            distmat, classes_info = calc_class_dist_by_syllable_features(syl_label_enum_arr, nlabels, distmat, method)
             dist_triu = mat2triu(distmat)
         else:
-            unique_labels = []
-            enum_labels = []
+            label_arr = []
+            syl_label_enum_arr = []
             classes_info = []
             for sind, sid in enumerate(sids):
                 label = str(sind)
-                unique_labels.append(label)
-                enum_labels.append(sind)
+                label_arr.append(label)
+                syl_label_enum_arr.append(sind)
                 classes_info.append([sind])
 
         tree = linkage(dist_triu, method='average')
-        order = natural_order(tree)
-        sorted_order = np.argsort(order).astype(np.int32)
 
-        saved_dict = dict(tree=tree, sorted_order=sorted_order, distmat=distmat, dbid=dm.database.id,
-                          sids=sids, coordinates=coordinates, unique_labels=unique_labels, classes_info=classes_info)
+        saved_dict = dict(tree=tree, dbid=dm.database.id, sids=sids, unique_labels=label_arr, classes_info=classes_info)
+
         with open(pkl_filename, 'wb') as f:
             pickle.dump(saved_dict, f)
 
