@@ -100,7 +100,9 @@ def songs_to_syl_seqs(songs, sid2label, enums2labels, use_pseudo=True):
     return song_sequences
 
 
-def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, symmetric=True, count_circular=True):
+def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, count_style='symmetric',
+                        count_circular=True):
+    assert count_style in ['symmetric', 'asymmetric', 'separate']
     nlabels = len(enum2label)
     classes_info = [[] for _ in range(nlabels)]
     for sidx, enum_label in enumerate(syl_label_enum_arr):
@@ -108,18 +110,22 @@ def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, 
 
     songs = AudioFile.objects.filter(database=database)
     sequences = songs_to_syl_seqs(songs, id2enumlabel, enum2label, use_pseudo=False)
-    distmat = np.zeros((nlabels, nlabels), dtype=np.int32)
+    adjacency_mat = np.zeros((nlabels, nlabels), dtype=np.int32)
 
     for sequence in sequences.values():
         grams = ngrams(sequence, 2)
         for x, y in grams:
-            distmat[x, y] += 1
-            if symmetric:
-                distmat[y, x] += 1
+            adjacency_mat[x, y] += 1
 
     if not count_circular:
-        np.fill_diagonal(distmat, 0)
-    return distmat, classes_info
+        np.fill_diagonal(adjacency_mat, 0)
+
+    if count_style == 'symmetric':
+        adjacency_mat += adjacency_mat.T
+    elif count_style == 'separate':
+        adjacency_mat = np.concatenate((adjacency_mat, adjacency_mat.T), axis=1)
+
+    return adjacency_mat, classes_info
 
 
 def calc_class_dist_by_syllable_features(syl_label_enum_arr, nlabels, distmat, method=np.mean):
