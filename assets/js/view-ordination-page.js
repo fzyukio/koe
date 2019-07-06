@@ -256,11 +256,22 @@ function calcLayout() {
  */
 function relayout() {
     let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
+    let plotDiv = $('#' + plotId)[0];
+    let xaxisRange = plotDiv.layout.xaxis.range;
+    let yaxisRange = plotDiv.layout.xaxis.range;
 
     let layout = {
         width: plotWidth,
         height: plotHeight,
         margin: {l, r, b, t},
+        xaxis: {
+            range: xaxisRange,
+            autorange: false,
+        },
+        yaxis: {
+            range: yaxisRange,
+            autorange: false,
+        },
     };
     Plotly.relayout(plotId, layout);
 }
