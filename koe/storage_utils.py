@@ -34,9 +34,9 @@ def get_sids_tids(database, population_name=None):
     return sids, tids
 
 
-def get_tids(database, sids):
+def get_tids(sids):
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
-    tids = Segment.objects.filter(audio_file__database=database, id__in=sids).order_by(preserved).values_list('tid')
+    tids = Segment.objects.filter(id__in=sids).order_by(preserved).values_list('tid', flat=True)
     return np.array(tids, dtype=np.int32)
 
 

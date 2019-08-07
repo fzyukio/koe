@@ -1,8 +1,6 @@
-from logging import warning
-
-import numpy as np
 import hashlib
 from abc import abstractmethod
+from logging import warning
 
 from koe.model_utils import get_labels_by_sids
 
@@ -105,6 +103,4 @@ def get_syllable_labels(annotator, label_level, sids):
         continue_option = input('Continue with this warning in mind? Y/n')
         if continue_option != 'Y':
             exit(0)
-
-    unique_labels, enum_labels = np.unique(labels, return_inverse=True)
-    return unique_labels, enum_labels
+    return labels

@@ -97,7 +97,7 @@ class Command(BaseCommand):
             _tids = bytes_to_ndarray(dm_tids_path, np.int32)
             _tids = _tids[sort_order]
         except FileNotFoundError:
-            _tids = get_tids(database, _sids)
+            _tids = get_tids(_sids)
 
         full_data = get_rawdata_from_binary(dm_bytes_path, len(_sids))
         full_data = full_data[sort_order, :]

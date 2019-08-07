@@ -271,7 +271,7 @@ def extract_and_store_stats(base, values, meas):
         meas[base + '_' + stat] = func(values)
 
 
-def make_func(name, func_desc, is_global=False):
+def make_func(name, func_desc, return_stats=True):
     nxfunc = func_desc['func']
     weighted = func_desc['weighted']
     is_global = func_desc['is_global']
@@ -289,8 +289,11 @@ def make_func(name, func_desc, is_global=False):
             if is_global:
                 meas[name] = node_values
             else:
-                values = list(node_values.values())
-                extract_and_store_stats(name, values, meas)
+                if return_stats:
+                    values = list(node_values.values())
+                    extract_and_store_stats(name, values, meas)
+                else:
+                    meas[name] = node_values
         except Exception as e:
             raise Exception('Error running function {}: {}'.format(name, str(e)))
 
@@ -311,6 +314,8 @@ meas_funcs_and_outputs = {
     # Disable for now because it's very slow
     # 'small_world_measures': (_get_small_world_measures, ['Omega', 'Sigma']),
 }
+
+node_funcs_and_outputs = {}
 
 func_map = {
     'degree_centrality': dict(func=centrality.degree_centrality, weighted=False, directed=True, is_global=False),
@@ -340,8 +345,8 @@ func_map = {
     'clustering': dict(func=nx.clustering, weighted=True, directed=True, is_global=False),
     'average_neighbor_degree': dict(func=assortativity.average_neighbor_degree, weighted=True, directed=True,
                                     is_global=False),
-    'average_degree_connectivity': dict(func=assortativity.average_degree_connectivity, weighted=True, directed=True,
-                                        is_global=False),
+    # 'average_degree_connectivity': dict(func=assortativity.average_degree_connectivity, weighted=True, directed=True,
+    #                                     is_global=False),
 
     # Must be strongly connected
     # 'eccentricity': dict(func=distance_measures.eccentricity, weighted=False, directed=False, is_global=False),
@@ -375,19 +380,32 @@ for func_name, func_desc in func_map.items():
     meas_funcs_and_outputs[func_name] = (func, output)
 
 
+for func_name, func_desc in func_map.items():
+    if not func_desc['is_global']:
+        func = make_func(func_name, func_desc, return_stats=False)
+        output = [func_name]
+        node_funcs_and_outputs[func_name] = (func, output)
+
+
 def resolve_meas(measurements_str):
+    funcs_and_outputs = meas_funcs_and_outputs
     if measurements_str == 'all':
         measurements_str = ','.join(list(func_map.keys()))
+    if measurements_str == 'node-meas':
+        funcs = [x for x, y in func_map.items() if not y['is_global']]
+        measurements_str = ','.join(funcs)
+        funcs_and_outputs = node_funcs_and_outputs
+
     measurements_names = measurements_str.split(',')
     measurements_order = OrderedDict()
     measurements_outputs = []
 
     def resolve_one(name):
-        if name not in meas_funcs_and_outputs:
+        if name not in funcs_and_outputs:
             raise CustomAssertionError('Unknown measurement {}'.format(name))
         dependencies = meas_dependencies.get(name, [])
-        output_names = meas_funcs_and_outputs[name][1]
-        func = meas_funcs_and_outputs[name][0]
+        output_names = funcs_and_outputs[name][1]
+        func = funcs_and_outputs[name][0]
         if len(dependencies) == 0:
             if name not in measurements_order:
                 measurements_order[name] = func

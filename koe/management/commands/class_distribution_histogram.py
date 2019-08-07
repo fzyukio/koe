@@ -305,7 +305,7 @@ class Command(BaseCommand):
             _tids = bytes_to_ndarray(dm_tids_path, np.int32)
             _tids = _tids[sort_order]
         except FileNotFoundError:
-            _tids = get_tids(database, _sids)
+            _tids = get_tids(_sids)
 
         labels, no_label_ids = get_labels_by_sids(_sids, label_level, annotator, min_occur)
 

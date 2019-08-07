@@ -128,7 +128,7 @@ def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, 
     return adjacency_mat, classes_info
 
 
-def calc_class_dist_by_syllable_features(syl_label_enum_arr, nlabels, distmat, method=np.mean):
+def calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, ftvalues, method=np.mean):
     classes_info = [[] for _ in range(nlabels)]
     for sidx, enum_label in enumerate(syl_label_enum_arr):
         classes_info[enum_label].append(sidx)
@@ -138,8 +138,12 @@ def calc_class_dist_by_syllable_features(syl_label_enum_arr, nlabels, distmat, m
         this_class_ids = classes_info[class_idx]
         for next_class_idx in range(class_idx + 1, nlabels):
             next_class_ids = classes_info[next_class_idx]
-            sub_distmat = distmat[this_class_ids, :][:, next_class_ids]
-            sub_distance = method(sub_distmat)
+            this_class_ftv = ftvalues[this_class_ids]
+            next_class_ftv = ftvalues[next_class_ids]
+
+            this_class_representative = method(this_class_ftv, axis=0)
+            next_class_representative = method(next_class_ftv, axis=0)
+            sub_distance = np.linalg.norm(this_class_representative - next_class_representative)
             class_dist[class_idx, next_class_idx] = class_dist[next_class_idx, class_idx] = sub_distance
     return class_dist, classes_info
 

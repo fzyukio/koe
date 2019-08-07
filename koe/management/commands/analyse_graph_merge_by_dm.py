@@ -10,14 +10,15 @@ from scipy.spatial import distance
 from scipy.stats import zscore
 
 from koe.cluster_analysis_utils import SimpleNameMerger, Md5NameMerger, get_syllable_labels
+from koe.feature_utils import drop_useless_columns
 from koe.management.abstract_commands.analyse_graph_merge import AnalyseGraphMergeCommand
 from koe.management.utils.prompt_utils import prompt_for_object
 from koe.model_utils import get_or_error
 from koe.models import DataMatrix, Database
-from koe.sequence_utils import calc_class_dist_by_syllable_features
+from koe.sequence_utils import calc_class_dist_by_syl_features
 from koe.ts_utils import bytes_to_ndarray
 from koe.ts_utils import get_rawdata_from_binary
-from koe.utils import triu2mat, mat2triu
+from koe.utils import mat2triu
 from root.models import User
 
 
@@ -33,15 +34,6 @@ def get_dm(dmid):
     else:
         dm = get_or_error(DataMatrix, dict(id=dmid))
     return dm
-
-
-def drop_useless_columns(mat):
-    colmin = np.min(mat, axis=0)
-    colmax = np.max(mat, axis=0)
-
-    useful_col_ind = np.where(np.logical_not(np.isclose(colmin, colmax, atol=1e-04)))[0]
-    mat = mat[:, useful_col_ind]
-    return mat
 
 
 class Command(AnalyseGraphMergeCommand):
@@ -72,16 +64,14 @@ class Command(AnalyseGraphMergeCommand):
         coordinates[np.where(np.isinf(coordinates))] = 0
         coordinates[np.where(np.isnan(coordinates))] = 0
 
-        dist_triu = distance.pdist(coordinates, 'euclidean')
-        distmat = triu2mat(dist_triu)
-
         if annotator_name is not None:
             annotator = get_or_error(User, dict(username__iexact=annotator_name))
             label_arr, syl_label_enum_arr = get_syllable_labels(annotator, label_level, sids)
             nlabels = len(label_arr)
-            distmat, classes_info = calc_class_dist_by_syllable_features(syl_label_enum_arr, nlabels, distmat, method)
+            distmat, classes_info = calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, coordinates, method)
             dist_triu = mat2triu(distmat)
         else:
+            dist_triu = distance.pdist(coordinates, 'euclidean')
             label_arr = []
             syl_label_enum_arr = []
             classes_info = []

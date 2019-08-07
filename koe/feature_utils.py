@@ -441,7 +441,7 @@ def ica(data, ndims, **kwargs):
     return dim_reduce_func.fit_transform(data)
 
 
-def pca_optimal(data, max_ndims, min_explained):
+def pca_optimal(data, max_ndims, min_explained, min_ndims=2):
     """
     Incrementally increase the dimensions of PCA until sum explained reached a threshold
     :param data: 2D ndarray
@@ -449,7 +449,7 @@ def pca_optimal(data, max_ndims, min_explained):
     :param min_explained: The minimum explained threshold. Might not reached.
     :return: sum explained and the PCA result.
     """
-    for ndim in range(2, max_ndims):
+    for ndim in range(min_ndims, max_ndims):
         dim_reduce_func = PCA(n_components=ndim)
         retval = dim_reduce_func.fit_transform(data)
         explained = np.sum(dim_reduce_func.explained_variance_ratio_)
@@ -587,3 +587,27 @@ def calculate_similarity(task_id):
         runner.complete()
     except Exception as e:
         runner.error(e)
+
+
+def drop_useless_columns(mat):
+    colmin = np.min(mat, axis=0)
+    colmax = np.max(mat, axis=0)
+
+    useful_col_ind = np.where(np.logical_not(np.isclose(colmin, colmax, atol=1e-04)))[0]
+    mat = mat[:, useful_col_ind]
+    return mat
+
+
+def aggregate_class_features(syl_label_enum_arr, nlabels, ftvalues, method=np.mean):
+    classes_info = [[] for _ in range(nlabels)]
+    for sidx, enum_label in enumerate(syl_label_enum_arr):
+        classes_info[enum_label].append(sidx)
+
+    n_features = ftvalues.shape[1]
+    class_measures = np.zeros((nlabels, n_features))
+    for class_idx in range(nlabels):
+        this_class_ids = classes_info[class_idx]
+        this_class_ftv = ftvalues[this_class_ids]
+        class_measures[class_idx, :] = method(this_class_ftv, axis=0)
+
+    return class_measures, classes_info
