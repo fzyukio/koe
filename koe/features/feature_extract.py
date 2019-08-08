@@ -24,12 +24,12 @@ feature_whereabout = {
         ('harmonic_ratio', False, True),
         ('fundamental_frequency', False, True),
         ('spectrum', False, False),
-        # ('total_energy', True, True),
-        # ('aggregate_entropy', True, True),
-        # ('average_entropy', True, True),
-        # ('average_power', True, True),
-        # ('max_power', True, True),
-        # ('max_frequency', True, True),
+        ('total_energy', True, True),
+        ('aggregate_entropy', True, True),
+        ('average_entropy', True, True),
+        ('average_power', True, True),
+        ('max_power', True, True),
+        ('max_frequency', True, True),
         ('dominant_frequency', False, True),
     ],
     scaled_freq_features: [
@@ -61,8 +61,7 @@ feature_whereabout = {
         ('frame_entropy', False, True),
         ('average_frame_power', False, True),
         ('max_frame_power', False, True),
-        ('dominant_frequency', False, True),
-        ('s2s_autoencoded', True, False),
+        # ('s2s_autoencoded', True, False),
     ]
 }
 
@@ -101,7 +100,7 @@ def init():
             feature.is_one_dimensional = is_one_dimensional
             feature.save()
 
-            extractor = getattr(module, feature_name, None)
+            extractor = getattr(module, feature_name)
             feature_extractors[feature_name] = extractor
             features.append(feature)
             feature_map[feature_name] = feature
