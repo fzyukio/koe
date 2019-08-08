@@ -256,9 +256,9 @@ function calcLayout() {
  */
 function relayout() {
     let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
-    let plotDiv = $('#' + plotId)[0];
-    let xaxisRange = plotDiv.layout.xaxis.range;
-    let yaxisRange = plotDiv.layout.xaxis.range;
+    let plotDivLayout = $('#' + plotId)[0].layout;
+    let xaxisRange = plotDivLayout.xaxis.range;
+    let yaxisRange = plotDivLayout.xaxis.range;
 
     let layout = {
         width: plotWidth,
