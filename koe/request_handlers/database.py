@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from dotmap import DotMap
 
+from koe.celery import delay_in_production
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error, delete_audio_files_async,\
     delete_segments_async
@@ -139,8 +140,9 @@ def delete_audio_files(request):
     segments.update(active=False)
     audio_files.update(active=False)
 
-    delete_segments_async.delay()
-    delete_audio_files_async.delay()
+    delay_in_production(delete_segments_async)
+    delay_in_production(delete_audio_files_async)
+
     return True
 
 
@@ -279,8 +281,8 @@ def save_segmentation(request):
     segments = Segment.objects.filter(audio_file=audio_file)
     _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id, user=user))
 
-    extract_spectrogram.delay(audio_file.id)
-    delete_segments_async.delay()
+    delay_in_production(extract_spectrogram, audio_file.id)
+    delay_in_production(delete_segments_async)
 
     return rows
 
@@ -493,7 +495,8 @@ def delete_segments(request):
 
     segments = Segment.objects.filter(id__in=ids, audio_file__database=database)
     segments.update(active=False)
-    delete_segments_async.delay()
+
+    delay_in_production(delete_segments_async)
 
     return True
 

@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
+from koe.celery import delay_in_production
 from koe.feature_utils import extract_database_measurements, construct_ordination, calculate_similarity
 from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm, OrdinationExtractionForm,\
     SimilarityExtractionForm
@@ -251,7 +252,7 @@ class FeatureExtrationView(FormView):
         dm.task = task
         dm.save()
 
-        extract_database_measurements.delay(task.id)
+        delay_in_production(extract_database_measurements, task.id)
 
         context = self.get_context_data()
         context['task'] = task
@@ -330,7 +331,7 @@ class OrdinationExtrationView(FormView):
         ord.task = task
         ord.save()
 
-        construct_ordination.delay(task.id)
+        delay_in_production(construct_ordination, task.id)
 
         context = self.get_context_data()
         context['task'] = task
@@ -415,7 +416,7 @@ class SimilarityExtrationView(FormView):
         si.task = task
         si.save()
 
-        calculate_similarity.delay(task.id)
+        delay_in_production(calculate_similarity, task.id)
 
         context = self.get_context_data()
         context['task'] = task
