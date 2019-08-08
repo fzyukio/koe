@@ -32,6 +32,9 @@ RUN pip install -r requirements.txt --no-cache-dir
 COPY requirements-tensorflow.txt /
 RUN pip install -r requirements-tensorflow.txt --no-cache-dir
 
+COPY requirements-production.txt /
+RUN pip install -r requirements-production.txt --no-cache-dir
+
 RUN python -m ipykernel.kernelspec
 
 WORKDIR /code

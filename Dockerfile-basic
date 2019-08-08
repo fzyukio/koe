@@ -31,6 +31,9 @@ RUN pip install -r requirements.txt --no-cache-dir
 COPY requirements-basic.txt /
 RUN pip install -r requirements-basic.txt --no-cache-dir
 
+COPY requirements-production.txt /
+RUN pip install -r requirements-production.txt --no-cache-dir
+
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
