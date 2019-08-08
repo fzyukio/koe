@@ -5,7 +5,9 @@ import {toJSONLocal, downloadBlob, getUrl} from './utils';
 let dataMatrixSelectEl;
 let featuresSectionEl = $('#id_features');
 let aggregationsSectionEl = $('#id_aggregations');
+let nameSectionEl = $('#id_name');
 let scheduleBtn = $('#schedule-btn');
+let recreateBtn = $('#recreate-btn');
 let downloadBtn = $('#download-btn');
 
 let dataMatrixSelectizeHandler;
@@ -15,6 +17,27 @@ let database = form.attr('database');
 let tmpdb = form.attr('tmpdb');
 
 const dms = {};
+
+const switchRecreateSubmitBtns = function (dmExists) {
+    // If dm already exists, the submit button is hidden and recreate button shown
+    // Otherwise, reverse
+    if (dmExists) {
+        scheduleBtn.parent().hide();
+        recreateBtn.parent().show();
+
+        scheduleBtn.prop('disabled', true);
+        recreateBtn.prop('disabled', false);
+        downloadBtn.prop('disabled', false);
+    }
+    else {
+        scheduleBtn.parent().show();
+        recreateBtn.parent().hide();
+
+        scheduleBtn.prop('disabled', false);
+        recreateBtn.prop('disabled', true);
+        downloadBtn.prop('disabled', true);
+    }
+};
 
 export const run = function () {
     readHiddenData();
@@ -29,7 +52,8 @@ const readHiddenData = function () {
         let key = el.getAttribute('key');
         let fts = el.getAttribute('fts');
         let ags = el.getAttribute('ags');
-        dms[key] = {fts, ags}
+        let name = el.getAttribute('name');
+        dms[key] = {fts, ags, name}
     });
     $('#hidden-data').remove();
 };
@@ -45,6 +69,7 @@ const removeDisabledData = function () {
     });
     $.each(Object.keys(dms), function (idx, id) {
         let dm = dms[id];
+        let name = dm.name;
         let fts = dm.fts.split('-').map(function (x) {
             return parseInt(x);
         });
@@ -66,7 +91,7 @@ const removeDisabledData = function () {
             return a - b;
         });
 
-        dms[id] = {fts: fts.join('-'), ags: ags.join('-')};
+        dms[id] = {fts: fts.join('-'), ags: ags.join('-'), name};
     });
 };
 
@@ -100,13 +125,11 @@ const initCheckboxes = function () {
 
         if (dm) {
             dataMatrixSelectizeHandler.setValue(dm, true);
-            scheduleBtn.prop('disabled', true);
-            downloadBtn.prop('disabled', false);
+            switchRecreateSubmitBtns(true);
         }
         else {
             dataMatrixSelectizeHandler.setValue(null, true);
-            scheduleBtn.prop('disabled', false);
-            downloadBtn.prop('disabled', true);
+            switchRecreateSubmitBtns(false);
         }
     };
 
@@ -124,6 +147,7 @@ const initSelectize = function () {
         let dm = dms[dmId];
         let features = dm.fts.split('-');
         let aggregations = dm.ags.split('-');
+        let name = dm.name;
 
         featuresSectionEl.find('input').prop('checked', false);
         aggregationsSectionEl.find('input').prop('checked', false);
@@ -137,7 +161,9 @@ const initSelectize = function () {
             let aggregation = aggregations[i];
             aggregationsSectionEl.find(`input[value=${aggregation}]`).prop('checked', true);
         }
-        downloadBtn.prop('disabled', false);
+
+        nameSectionEl.val(name);
+        switchRecreateSubmitBtns(true);
     });
 };
 
@@ -237,6 +263,9 @@ export const postRun = function () {
     scheduleBtn.click(function () {
         form.submit();
     });
+    recreateBtn.click(function () {
+        form.submit();
+    });
     downloadBtn.click(function () {
         let dmId = dataMatrixSelectEl.val();
         postRequest({
@@ -275,5 +304,6 @@ export const postRun = function () {
         });
         return false;
     });
+    switchRecreateSubmitBtns(false);
     return Promise.resolve();
 };

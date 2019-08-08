@@ -12,11 +12,11 @@
         <div name="dms">
             {% for dm in completed_dms %}
                 <div type="entry" key="{{ dm.id }}" fts="{{ dm.features_hash }}"
-                     ags="{{ dm.aggregations_hash }}" completed="true"></div>
+                     ags="{{ dm.aggregations_hash }}" name="{{ dm.name }}" completed="true"></div>
             {% endfor %}
             {% for dm in incomplete_dms %}
                 <div type="entry" key="{{ dm.id }}" fts="{{ dm.features_hash }}"
-                     ags="{{ dm.aggregations_hash }}" completed="false"></div>
+                     ags="{{ dm.aggregations_hash }}" name="{{ dm.name }}" completed="false"></div>
             {% endfor %}
         </div>
     </div>
@@ -47,6 +47,11 @@
                     <div class="btn-group" role="group">
                         <button type="submit" disabled id="schedule-btn" class="btn btn-primary btn-block">
                             Submit
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="submit" disabled id="recreate-btn" class="btn btn-primary btn-block">
+                            Recreate
                         </button>
                     </div>
                 </div>
