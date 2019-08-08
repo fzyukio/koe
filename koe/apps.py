@@ -53,7 +53,9 @@ class KoeConfig(AppConfig):
 
         :return: None
         """
-        if os.environ.get('RUN_MAIN', None) == 'true':
+        run_main = os.environ.get('RUN_MAIN', None) == 'true'
+        in_production = not settings.DEBUG
+        if in_production or run_main:
             is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
 
             if not is_importing_fixture:

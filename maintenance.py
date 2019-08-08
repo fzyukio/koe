@@ -130,7 +130,6 @@ def backup_mysql():
     """
     # generic command to log in mysql
     cmd = ['mysqldump',
-           '--column-statistics=0',
            '--user={}'.format(db_user),
            '--password={}'.format(db_pass),
            '--host={}'.format(db_host),

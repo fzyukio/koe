@@ -29,6 +29,9 @@ RUN pip uninstall -y numpy scipy
 RUN pip install Cython numpy==1.16.3 scipy==1.2.1
 RUN pip install -r requirements.txt --no-cache-dir
 
+COPY requirements-tensorflow.txt /
+RUN pip install -r requirements-tensorflow.txt --no-cache-dir
+
 RUN python -m ipykernel.kernelspec
 
 WORKDIR /code
