@@ -2,8 +2,6 @@ import os
 
 from django.apps import AppConfig
 from django.conf import settings
-from django.db import OperationalError
-from django.db import ProgrammingError
 from dotmap import DotMap
 
 
@@ -55,10 +53,10 @@ class KoeConfig(AppConfig):
 
         :return: None
         """
-        is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
+        if os.environ.get('RUN_MAIN', None) == 'true':
+            is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
 
-        if not is_importing_fixture:
-            try:
+            if not is_importing_fixture:
                 from root.models import User
                 from root.views import register_app_modules, init_tables
                 from koe.aggregator import init as init_aggregators
@@ -84,5 +82,3 @@ class KoeConfig(AppConfig):
                     init_features()
 
                 import koe.signals  # noqa: F401  Must include this for the signals to work
-            except (ProgrammingError, OperationalError):
-                pass
