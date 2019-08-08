@@ -4,6 +4,8 @@ from django.conf import settings
 from koe.models import Feature, Aggregation
 from root.forms import ErrorMixin
 
+cached = {}
+
 
 class SongPartitionForm(ErrorMixin, forms.Form):
     track_id = forms.CharField(
@@ -56,12 +58,29 @@ class FeatureExtrationForm(ErrorMixin, forms.Form):
 
     aggregations = forms.ModelMultipleChoiceField(
         to_field_name='id',
-        queryset=Aggregation.objects.filter(enabled=True),
+        queryset=Aggregation.objects.all(),
         widget=forms.CheckboxSelectMultiple(),
         error_messages={
             'required': 'At least one aggregation method must be chosen'
         }
     )
+
+    def __init__(self, *args, **kwargs):
+        super(FeatureExtrationForm, self).__init__(*args, **kwargs)
+        if 'feature_choices' in cached:
+            feature_choices = cached['feature_choices']
+        else:
+            from koe.features.feature_extract import features
+            feature_choices = Feature.objects.filter(id__in=[x.id for x in features])
+            cached['feature_choices'] = feature_choices
+        self.fields['features'].queryset = feature_choices
+
+        if 'aggregation_choices' in cached:
+            aggregation_choices = cached['aggregation_choices']
+        else:
+            aggregation_choices = Aggregation.objects.filter(enabled=True)
+            cached['aggregation_choices'] = aggregation_choices
+        self.fields['aggregations'].queryset = aggregation_choices
 
 
 class OrdinationExtractionForm(ErrorMixin, forms.Form):
