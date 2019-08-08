@@ -499,12 +499,12 @@ class TemporaryDatabase(IdOrderedModel):
     To store the upper triangle (triu) of a distance matrix
     """
 
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, unique=False)
     _databases = models.CharField(max_length=255, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('chksum', 'user')
+        unique_together = [('chksum', 'user'), ('user', 'name')]
         attrs = ('ids',)
 
     def get_databases(self):
