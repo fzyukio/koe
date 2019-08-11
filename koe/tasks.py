@@ -1,6 +1,6 @@
 from time import sleep
 
-from koe.celery import app
+from koe.celery_init import app
 from koe.models import Task
 from koe.task import TaskRunner
 

@@ -93,14 +93,17 @@ def merge_labels(clusters, classes_info, sids, enum2label, class_name_merge_func
     return sid_to_cluster_base_1, merged_enum2label_base1
 
 
-def get_syllable_labels(annotator, label_level, sids):
+def get_syllable_labels(annotator, label_level, sids, on_no_label='warning'):
     if label_level is None:
         label_level = 'label'
     labels, no_label_ids = get_labels_by_sids(sids, label_level, annotator, min_occur=None)
     if len(no_label_ids) > 0:
-        warning('Syllables with no labels found!. These will be given label "__NONE__" but this will affect the'
-                ' accuracy of the network graph')
-        continue_option = input('Continue with this warning in mind? Y/n')
-        if continue_option != 'Y':
-            exit(0)
+        if on_no_label == 'warning':
+            warning('Syllables with no labels found!. These will be given label "__NONE__" but this will affect the'
+                    ' accuracy of the network graph')
+            continue_option = input('Continue with this warning in mind? Y/n')
+            if continue_option != 'Y':
+                exit(0)
+        elif on_no_label == 'error':
+            raise Exception('Syllables with no labels found')
     return labels

@@ -584,6 +584,28 @@ tables =\
                     "type": "SHORT_TEXT"
                 },
             ]
+        },
+        "syntax-grid": {
+            "class": "koe.AudioFile",
+            "getter": "koe.get_syntactically_similar_pairs",
+            "filter": True,
+            "columns": [
+                {
+                    "name": "Class 1",
+                    "slug": "class-1-name",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Class 2",
+                    "slug": "class-2-name",
+                    "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Distance",
+                    "slug": "distance",
+                    "type": "FLOAT"
+                }
+            ]
         }
     }
 

@@ -1,0 +1,196 @@
+@import "../variables";
+
+#plotly-plot {
+  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top - #{$controller-wrapper-height} - #{$panel-border} * 4});
+
+  .svg-container {
+    float: right;
+  }
+
+  .js-plotly-plot .plotly .modebar {
+    float: left;
+    position: relative;
+  }
+}
+
+#syntax-grid {
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 2);
+}
+
+#class-1-syl-spects, #class-2-syl-spects {
+  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 4);
+  overflow: hidden;
+  .panel-leftheading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 42px;
+    border-right: 1px solid transparent;
+    border-bottom: 1px solid transparent;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+  }
+
+  .panel-lefttitle {
+    text-align: center;
+    position: absolute;
+    font-size: 12px;
+    color: inherit;
+    left: 50%;
+    top: 50%;
+    transform: rotate(-90deg) translate(-50%, -50%);
+    transform-origin: left top;
+    white-space: nowrap;
+  }
+
+  .titleWrapper span,
+  .titleWrapper i {
+    display: inline-flex;
+  }
+
+  .panel-rightbody {
+    overflow: auto;
+    margin-left: 50px;
+    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 4);
+  }
+
+  .mainTitle {
+    display: block;
+    font-style: bold;
+    font-size: 14px;
+    line-height: 14px;
+    margin: 0;
+  }
+
+  .subTitle {
+    font-style: italic;
+    font-size: 12px;
+    line-height: 14px;
+    margin: 0;
+  }
+
+  .titleWrapper {
+    text-align: center;
+  }
+
+  .panel {
+    position: relative;
+  }
+
+  .panel-default > .panel-leftheading {
+    color: #333;
+    background-color: #f5f5f5;
+    border-color: #ddd;
+  }
+
+  .panel-primary > .panel-leftheading {
+    color: #fff;
+    background-color: #428bca;
+    border-color: #428bca;
+  }
+
+  .panel-success > .panel-leftheading {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+  }
+
+  .panel-info > .panel-leftheading {
+    color: #31708f;
+    background-color: #d9edf7;
+    border-color: #bce8f1;
+  }
+
+  .panel-warning > .panel-leftheading {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+  }
+
+  .panel-danger > .panel-leftheading {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+  }
+
+  .syl-spect {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    border: black solid 1px;
+    -webkit-box-shadow: 0 10px 6px -6px #777;
+    -moz-box-shadow: 0 10px 6px -6px #777;
+    box-shadow: 0 10px 6px -6px #777;
+    background: #ccc;
+    text-align: left;
+    float: left;
+
+    img {
+      display: block;
+      height: 64px;
+      width: auto;
+    }
+
+    .syl-details {
+      background: white;
+      white-space: nowrap;
+    }
+
+    &.active {
+      -webkit-animation: glowing 1500ms infinite;
+      -moz-animation: glowing 1500ms infinite;
+      -o-animation: glowing 1500ms infinite;
+      animation: glowing 1500ms infinite;
+    }
+  }
+
+}
+
+@-webkit-keyframes glowing {
+  0% {
+    -webkit-box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    -webkit-box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    -webkit-box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@-moz-keyframes glowing {
+  0% {
+    -moz-box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    -moz-box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    -moz-box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@-o-keyframes glowing {
+  0% {
+    box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    box-shadow: 0 0 3px #B20000;
+  }
+}
+
+@keyframes glowing {
+  0% {
+    box-shadow: 0 0 3px #B20000;
+  }
+  50% {
+    box-shadow: 0 0 40px #FF0000;
+  }
+  100% {
+    box-shadow: 0 0 3px #B20000;
+  }
+}

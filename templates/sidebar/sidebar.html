@@ -44,6 +44,13 @@
                             <span>Upload songs</span>
                         </a>
                     </div>
+
+                    <div class="menu-item" page="songs">
+                        <a class="appendable" href="{% url 'songs' %}">
+                            <span>View all songs</span>
+                        </a>
+                    </div>
+
                     {% endif %}
                     <div class="menu-item" page="segmentation">
                         <a href="#" data-toggle="modal" data-target="#go-to-songs-modal">
@@ -103,17 +110,28 @@
                         </div>
                     </div>
 
-                    <div class="menu-item" page="songs">
-                        <a class="appendable" href="{% url 'songs' %}">
-                            <span>View all songs</span>
+                    <div class="menu-item-expandable">
+                        <a href="#">
+                            <span>Syntax analysis</span>
                         </a>
+                        <div class="menu-submenu">
+                            <ul>
+                                <li page="sequence-mining">
+                                    <a class="appendable" href="{% url 'sequence-mining' %}">
+                                        <span>Mine sequence structure</span>
+                                    </a>
+                                </li>
+
+                                <li page="syntax">
+                                    <a class="appendable" href="{% url 'syntax' %}">
+                                        <span>Syntax-aided categorisation</span>
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </div>
                     </div>
 
-                    <div class="menu-item" page="sequence-mining">
-                        <a class="appendable" href="{% url 'sequence-mining' %}">
-                            <span>Mine sequence structure</span>
-                        </a>
-                    </div>
                 </li>
 
                 <li class="menu-section">

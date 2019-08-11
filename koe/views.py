@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
-from koe.celery import delay_in_production
+from koe.celery_init import delay_in_production
 from koe.feature_utils import extract_database_measurements, construct_ordination, calculate_similarity
 from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm, OrdinationExtractionForm,\
     SimilarityExtractionForm
@@ -533,9 +533,40 @@ def extra_view_ordination_context(request, context):
     return context
 
 
+def extra_syntax_context(request, context):
+    database = context['current_database']
+    viewas = context['viewas']
+
+    if isinstance(database, Database):
+        q = Q(dm__database=database)
+        context['db_type'] = 'Database'
+    else:
+        q = Q(dm__tmpdb=database)
+        context['db_type'] = 'Collection'
+
+    ordinations = Ordination.objects.filter(q & (Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED)))
+    ord_id = request.GET.get('ordination', None)
+    if ord_id is None:
+        current_ordination = ordinations.first()
+    else:
+        current_ordination = get_or_error(Ordination, dict(id=ord_id))
+    context['current_ordination'] = current_ordination
+    context['ordinations'] = ordinations
+
+    if current_ordination:
+        bytes_path = current_ordination.get_bytes_path()
+        metadata_path = reverse('ordination-meta',
+                                kwargs={'ord_id': current_ordination.id, 'viewas': viewas.username})
+
+        context['metadata_path'] = metadata_path
+        context['bytes_path'] = '/' + bytes_path
+    return context
+
+
 extra_context = {
     'syllables': extra_syllables_context,
-    'view-ordination': extra_view_ordination_context
+    'view-ordination': extra_view_ordination_context,
+    'syntax': extra_syntax_context
 }
 
 
@@ -545,6 +576,7 @@ def get_view(name):
     :param name: name of the view. A `name`.html must exist in the template folder
     :return:
     """
+
     class View(TemplateView):
         page_name = name
         template_name = name + '.html'

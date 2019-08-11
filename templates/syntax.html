@@ -1,0 +1,133 @@
+{% extends 'base-with-sidebar.html' %}
+{% load widget_tweaks %}
+{% load staticfiles %}
+{% load custom_tags %}
+
+{% block title %}Syntax-aided categorisation{% endblock %}
+
+{% block content-center %}
+    <div class="col-sm-6 col-md-3 col-lg-2 no-padding contain-panel">
+        <div class="panel panel-default" id="class-1-panel">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div id="menu-opener">
+                            <div class="input-group">
+                                <i class="fa fa-bars input-group-addon left siderbar-toggler" aria-hidden="true"></i>
+                            </div>
+                        </div>
+
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                <span class="input-group-addon left">Class</span>
+                                <input id="syntax-grid-filter" type="text" class="grid-filter form-control middle">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="has-grid" id="syntax-grid" granularity="{{ granularity }}"
+                         viewas="{{ viewas.username }}"
+                            {% if current_database is not None %}
+                         {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                            {% endif %}>
+                    </div>
+                </h3>
+            </div>
+            <div class="panel-body no-padding" id="class1n2-syl-spects">
+                <div id="class-1-syl-spects">
+
+                    <div class="panel panel-default">
+                        <div class="panel-leftheading">
+                            <div class="panel-lefttitle">
+                                <h3 class="mainTitle"><span>Class 1</span></h3>
+                                <h3 class="subTitle">Subtitle</h3>
+                            </div>
+                        </div>
+                        <div class="panel-rightbody">
+                            <div class="display"></div>
+                        </div>
+                        <div class="clearfix">
+                        </div>
+                    </div>
+
+                </div>
+                <div id="class-2-syl-spects">
+                    <div class="panel panel-default">
+                        <div class="panel-leftheading">
+                            <div class="panel-lefttitle">
+                                <h3 class="mainTitle"><span>Class 2</span></h3>
+                                <h3 class="subTitle">Subtitle</h3>
+                            </div>
+                        </div>
+                        <div class="panel-rightbody">
+                            <div class="display"></div>
+                        </div>
+                        <div class="clearfix">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer no-padding">
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                    <div class="btn-group" role="group">
+                        <button id="merge-btn" type="button" class="btn btn-sm btn-primary">
+                            Merge
+                        </button>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button id="save-btn" type="button" class="btn btn-sm btn-primary">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-md-9 col-lg-10 no-padding contain-panel">
+        <div class="panel panel-default">
+            <div class="panel-heading no-padding">
+                <h3 class="panel-title">
+                    <div class="controller-wrapper">
+                        <div class="grid-controller no-status">
+                            <div class="input-group">
+                                Ordination of {{ db_type }}
+
+                                {% if current_ordination.dm.database %}
+                                    {{ current_ordination.dm.database.name }}
+                                {% else %}
+                                    {{ current_ordination.dm.tmpdb.name }}
+                                {% endif %}
+
+                                using {{ current_ordination.method }} annotated by {{ viewas.username }},
+                            </div>
+                        </div>
+                    </div>
+                </h3>
+            </div>
+
+            <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
+                    {% if current_database is not None %}
+                 {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                    {% endif %}>
+            </div>
+        </div>
+
+
+    </div>
+{% endblock %}
+
+{% block modal-dialog %}
+    {% include 'partials/modal.html' with order='yes-no' yes='Set' no='Dismiss' %}
+{% endblock %}
+
+
+{% block scripts %}
+    {% debug_mode as is_in_debug_mode %}
+    {% if is_in_debug_mode %}
+        <script src="{% static "d3.js" %}"></script>
+        <script src="{% static "plotly.js" %}"></script>
+    {% else %}
+        <script src="//d3js.org/d3.v5.min.js"></script>
+        <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    {% endif %}
+{% endblock %}

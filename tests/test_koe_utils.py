@@ -6,7 +6,7 @@ from scipy.stats import zscore
 
 from koe import wavfile
 from koe.management.utils.luscinia_utils import wav_2_mono
-from koe.utils import split_segments, split_classwise, divide_conquer, one_hot
+from koe.utils import split_segments, split_classwise, divide_conquer, one_hot, get_closest_neighbours
 
 
 @memoize(timeout=60)
@@ -167,3 +167,14 @@ class KoeUtilsTest(TestCase):
 
         encoded_labels, _ = one_hot(labels)
         self.assertTrue(np.allclose(correct, encoded_labels))
+
+    def test_get_closest_neighbours(self):
+        distmat = np.array([
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        ]) / 10.
+
+        labels = np.array(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'])
+
+        nearest = get_closest_neighbours(distmat, labels)
+        x = 0

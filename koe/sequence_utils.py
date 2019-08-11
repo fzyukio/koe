@@ -101,8 +101,8 @@ def songs_to_syl_seqs(songs, sid2label, enums2labels, use_pseudo=True):
 
 
 def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, count_style='symmetric',
-                        count_circular=True):
-    assert count_style in ['symmetric', 'asymmetric', 'separate']
+                        self_count='ignore'):
+    assert count_style in ['symmetric', 'forward', 'separate', 'backward']
     nlabels = len(enum2label)
     classes_info = [[] for _ in range(nlabels)]
     for sidx, enum_label in enumerate(syl_label_enum_arr):
@@ -117,15 +117,25 @@ def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, 
         for x, y in grams:
             adjacency_mat[x, y] += 1
 
-    if not count_circular:
-        np.fill_diagonal(adjacency_mat, 0)
+    diagonal_indices = np.diag_indices(nlabels)
+    diagonal_values = adjacency_mat[diagonal_indices]
 
-    if count_style == 'symmetric':
-        adjacency_mat += adjacency_mat.T
-    elif count_style == 'separate':
-        adjacency_mat = np.concatenate((adjacency_mat, adjacency_mat.T), axis=1)
+    if self_count != 'keep':
+        adjacency_mat[diagonal_indices] = 0
 
-    return adjacency_mat, classes_info
+    if count_style == 'forward':
+        returned_mat = adjacency_mat
+    elif count_style == 'backward':
+        returned_mat = adjacency_mat.T
+    elif count_style == 'symmetric':
+        returned_mat = adjacency_mat + adjacency_mat.T
+    else:
+        returned_mat = np.concatenate((adjacency_mat, adjacency_mat.T), axis=1)
+
+    if self_count == 'append':
+        returned_mat = np.concatenate((returned_mat, diagonal_values), axis=1)
+
+    return returned_mat, classes_info
 
 
 def calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, ftvalues, method=np.mean):
@@ -148,7 +158,7 @@ def calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, ftvalues, metho
     return class_dist, classes_info
 
 
-def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False):
+def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False, metric='euclidean'):
     # currently this distmat contains reversed distance, e.g a pair (A,B) has high "distance" if they're found adjacent
     # to each other often -- so we need to reverse this.
 
@@ -161,16 +171,27 @@ def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=
     # distmat = max_distance - distmat
     # distmat[np.where(np.isinf(distmat))] = max_distance + 1
 
+    # x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    # y = np.array([1, 1, 1])
+    #
+    # z = x / y[:, None]
+    # dist_triu = distance.pdist(z, metric)
+    #
+    # print(dist_triu)
+
+
     counter = Counter(syl_label_enum_arr)
     nlabels = len(counter)
     frequencies = np.array([counter[i] for i in range(nlabels)])
 
     adjacency_mat_fw_norm = adjacency_mat / frequencies[:, None]
-    adjacency_mat_bw_norm = adjacency_mat / frequencies
 
-    coordinates = np.concatenate((adjacency_mat_fw_norm, adjacency_mat_bw_norm), axis=1)
+    # adjacency_mat_bw_norm = adjacency_mat / frequencies
 
-    dist_triu = distance.pdist(coordinates, 'euclidean')
+    # coordinates = np.concatenate((adjacency_mat_fw_norm, adjacency_mat_bw_norm), axis=1)
+
+    coordinates = adjacency_mat_fw_norm
+    dist_triu = distance.pdist(coordinates, metric)
     if return_triu:
         return dist_triu
 

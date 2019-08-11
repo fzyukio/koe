@@ -485,3 +485,30 @@ def spect_mask_path(spect_id, subdir=None, for_url=False):
     if subdir:
         folder = os.path.join(folder, subdir)
     return data_path(folder, fullname, for_url)
+
+
+def get_closest_neighbours(distmat, labels, nneighbours=3):
+    # To discount each element as its nearest neighbour (distance to itself is 0), we first
+    # set the diagonal value to more than current max distance. Later we'll restore it
+    diagonal_value_replacement = distmat.max() + 1
+    diagonal_indices = np.diag_indices(len(distmat))
+    distmat[diagonal_indices] = diagonal_value_replacement
+
+    num_data_points = len(distmat)
+    sorted_inds = np.argsort(distmat)
+    neighbour_inds = sorted_inds[:, :nneighbours]
+
+    distance_to_nearest_neighbours = []
+    label_of_nearest_neighbours = []
+    for i in range(num_data_points):
+        this_neighbour_inds = neighbour_inds[i, :]
+        this_distance_row = distmat[i, :]
+        distance_to_nearest_neighbours.append(
+            this_distance_row[this_neighbour_inds]
+        )
+        label_of_nearest_neighbours.append(
+            labels[this_neighbour_inds]
+        )
+
+    distmat[diagonal_indices] = 0
+    return np.array(label_of_nearest_neighbours), np.array(distance_to_nearest_neighbours)

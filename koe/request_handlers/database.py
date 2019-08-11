@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from dotmap import DotMap
 
-from koe.celery import delay_in_production
+from koe.celery_init import delay_in_production
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error, delete_audio_files_async,\
     delete_segments_async
@@ -26,7 +26,8 @@ from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
-           'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code']
+           'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
+           'bulk_merge_classes']
 
 
 def import_audio_metadata(request):
@@ -612,4 +613,15 @@ def delete_collections(request):
         raise CustomAssertionError('ERROR: you\'re attempting to delete collections that don\'t belong to you.')
 
     tmpdbs.delete()
+    return True
+
+
+def bulk_merge_classes(request):
+    new_classes = json.loads(request.POST['new-classes'])
+    user = request.user
+    label_attr = settings.ATTRS.segment.label
+    with transaction.atomic():
+        for new_class, sids in new_classes.items():
+            ExtraAttrValue.objects.filter(user=user, owner_id__in=sids, attr=label_attr).update(value=new_class)
+
     return True

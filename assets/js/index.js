@@ -896,6 +896,9 @@ $(document).ready(function () {
     else if (pageName.startsWith('/view-ordination/')) {
         page = require('view-ordination-page')
     }
+    else if (pageName.startsWith('/syntax/')) {
+        page = require('syntax-page')
+    }
     else if (pageName === '/contact-us/') {
         page = require('contact-us-page');
     }

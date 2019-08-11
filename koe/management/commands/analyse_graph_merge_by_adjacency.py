@@ -3,6 +3,7 @@ Start with all syllables belonging to one class, then split them by distance unt
 At each step, produce sequences, construct a graph and extract features from the graph
 """
 import pickle
+import numpy as np
 
 from scipy.cluster.hierarchy import linkage
 
@@ -36,13 +37,14 @@ class Command(AnalyseGraphMergeCommand):
         sids, tids = get_sids_tids(database)
         annotator = get_or_error(User, dict(username__iexact=annotator_name))
 
-        label_arr, syl_label_enum_arr = get_syllable_labels(annotator, label_level, sids)
+        label_arr = get_syllable_labels(annotator, label_level, sids)
+        cls_labels, syl_label_enum_arr = np.unique(label_arr, return_inverse=True)
 
-        enum2label = {enum: label for enum, label in enumerate(label_arr)}
+        enum2label = {enum: label for enum, label in enumerate(cls_labels)}
         sid2enumlabel = {sid: enum_label for sid, enum_label in zip(sids, syl_label_enum_arr)}
 
         adjacency_mat, classes_info = calc_class_ajacency(database, syl_label_enum_arr, enum2label, sid2enumlabel,
-                                                          symmetric=False, count_circular=False)
+                                                          count_style='symmetric', count_circular=False)
 
         dist_triu = calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=True)
         tree = linkage(dist_triu, method='average')

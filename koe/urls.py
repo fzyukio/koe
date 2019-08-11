@@ -22,7 +22,8 @@ def handler500(request):
     return HttpResponseServerError(render(request, '500.html'))
 
 
-page_names = ['syllables', 'songs', 'sequence-mining', 'exemplars', 'view-ordination', 'dashboard', 'help']
+page_names = ['syllables', 'songs', 'sequence-mining', 'exemplars', 'view-ordination', 'syntax', 'dashboard',
+              'help']
 
 for page_name in page_names:
     urlpatterns.append(

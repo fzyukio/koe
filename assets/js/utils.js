@@ -4,6 +4,10 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 require('devtools-detect');
+const nj = require('numjs');
+const math = require('mathjs');
+const euclidean = require( 'compute-euclidean-distance');
+const kldivergence = math.kldivergence;
 
 const JSZip = require('jszip/dist/jszip.min.js');
 const filesaver = require('file-saver/dist/FileSaver.min.js');
@@ -753,4 +757,59 @@ export function attachEventOnce({element, eventType, func, funcName}) {
     if (element.attr(key) === undefined) {
         element.on(eventType, func)
     }
+}
+
+
+export function pdist(mat, metric = 'euclidean') {
+    let distfunc;
+    if (metric == 'euclidean') {
+        distfunc = euclidean;
+    }
+    else if (metric == 'kldivergence') {
+        distfunc = kldivergence;
+    }
+    else {
+        throw Error(`Unsupported metric: ${metric}`)
+    }
+    let nobs = mat.length;
+    let i, j, val;
+    let distmat = [];
+
+    for (i = 0; i < nobs; i++) {
+        distmat.push(new Array(nobs))
+    }
+
+    for (i = 0; i < nobs; i++) {
+        for (j = i + 1; j < nobs; j++) {
+            try {
+                val = distfunc(mat[i], mat[j]);
+                distmat[i][j] = val;
+                distmat[j][i] = val;
+            }
+            catch (e) {
+                debug(e);
+                nj.array(mat).toString();
+            }
+        }
+    }
+    return distmat;
+}
+
+
+export function argsort(array) {
+    const arrayObject = array.map((value, idx) => {
+        return {value, idx};
+    });
+    arrayObject.sort((a, b) => {
+        if (a.value < b.value) {
+            return -1;
+        }
+        if (a.value > b.value) {
+            return 1;
+        }
+        return 0;
+    });
+    return arrayObject.map(data => {
+        return data.idx;
+    });
 }

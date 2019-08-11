@@ -341,7 +341,7 @@ body.loading #loading-spinner-modal {
 .grid-filter {
   border: 0;
   padding: 0 !important;
-  box-shadow: none;
+  box-shadow: none !important;
   background-color: inherit;
   border-bottom: 1px solid;
   border-bottom-color: red;

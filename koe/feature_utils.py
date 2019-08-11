@@ -19,7 +19,7 @@ from sklearn.manifold import TSNE
 
 from koe import binstorage
 from koe.aggregator import aggregator_map
-from koe.celery import app
+from koe.celery_init import app
 from koe.features.feature_extract import feature_extractors
 from koe.model_utils import natural_order
 from koe.models import Feature, Aggregation, SimilarityIndex
