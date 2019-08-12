@@ -175,6 +175,4 @@ class KoeUtilsTest(TestCase):
         ]) / 10.
 
         labels = np.array(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'])
-
-        nearest = get_closest_neighbours(distmat, labels)
-        x = 0
+        get_closest_neighbours(distmat, labels)

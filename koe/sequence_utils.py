@@ -133,7 +133,7 @@ def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, 
         returned_mat = np.concatenate((adjacency_mat, adjacency_mat.T), axis=1)
 
     if self_count == 'append':
-        returned_mat = np.concatenate((returned_mat, diagonal_values), axis=1)
+        returned_mat = np.concatenate((returned_mat, diagonal_values.reshape(nlabels, 1)), axis=1)
 
     return returned_mat, classes_info
 
@@ -159,35 +159,29 @@ def calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, ftvalues, metho
 
 
 def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False, metric='euclidean'):
-    # currently this distmat contains reversed distance, e.g a pair (A,B) has high "distance" if they're found adjacent
-    # to each other often -- so we need to reverse this.
+    """
+    Currently this distmat contains reversed distance, e.g a pair (A,B) has high "distance" if they're found adjacent
+    to each other often -- so we need to reverse this.
+    :param adjacency_mat:
+    :param syl_label_enum_arr:
+    :param return_triu:
+    :param metric:
+    :return:
+    """
+    max_distance = np.max(adjacency_mat)
+    adjacency_mat = max_distance - adjacency_mat
+    adjacency_mat[np.where(np.isinf(adjacency_mat))] = max_distance + 1
 
     # To avoid overwhelming the entire distance matrix by having some highly repeated pair, we convert the distance to
-    # logarithmic scale, then reverse it
-
-    # distmat = np.log10(distmat)
-    #
-    # max_distance = np.max(distmat)
-    # distmat = max_distance - distmat
-    # distmat[np.where(np.isinf(distmat))] = max_distance + 1
-
-    # x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    # y = np.array([1, 1, 1])
-    #
-    # z = x / y[:, None]
-    # dist_triu = distance.pdist(z, metric)
-    #
-    # print(dist_triu)
-
+    # logarithmic scale
+    adjacency_mat = np.log10(adjacency_mat)
 
     counter = Counter(syl_label_enum_arr)
     nlabels = len(counter)
     frequencies = np.array([counter[i] for i in range(nlabels)])
 
     adjacency_mat_fw_norm = adjacency_mat / frequencies[:, None]
-
     # adjacency_mat_bw_norm = adjacency_mat / frequencies
-
     # coordinates = np.concatenate((adjacency_mat_fw_norm, adjacency_mat_bw_norm), axis=1)
 
     coordinates = adjacency_mat_fw_norm

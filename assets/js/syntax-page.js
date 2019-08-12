@@ -1,12 +1,12 @@
-/* global Plotly, d3 */
+/* global Plotly */
 require('bootstrap-slider/dist/bootstrap-slider.js');
 require('jquery.scrollintoview/jquery.scrollintoview.js');
 const nj = require('numjs');
 const ResizeSensor = require('css-element-queries/src/ResizeSensor');
 
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
-import {updateSlickGridData} from "./grid-utils";
-import {FlexibleGrid, defaultGridOptions} from "./flexible-grid";
+import {updateSlickGridData} from './grid-utils';
+import {FlexibleGrid, defaultGridOptions} from './flexible-grid';
 import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
@@ -48,9 +48,7 @@ let spinner;
 
 const syntaxData = {};
 const rowIdxNewClass = {};
-const newClassMap = {};
 let class1Name, class2Name;
-
 
 const plotlyOptions = {
     modeBarButtonsToRemove: [
@@ -171,6 +169,13 @@ function calcLayout1() {
     let newLW = Math.max(minLeftWidth, lW + offset);
     offset = newLW - lW;
 
+    /**
+     * Jquery's resizing functions don't have callback. We make them promiseable by
+     * using ResizeSensor to detect action completed
+     * @param element
+     * @param args
+     * @returns {Promise}
+     */
     function makeResizePromise(element, args) {
         return new Promise(function (resolve) {
             new ResizeSensor(leftPanel, function () {
@@ -186,9 +191,8 @@ function calcLayout1() {
         makeResizePromise(rightPanel, plotWidth - 2),
         makeResizePromise(rightContainer, rightContainer.innerWidth() - offset - 2),
     ]).then(function () {
-        console.log('All resized');
         return new Promise(function (resolve) {
-            resolve ({l, r, t, b, plotWidth, plotHeight});
+            resolve({l, r, t, b, plotWidth, plotHeight});
         })
     });
 }
@@ -221,7 +225,7 @@ function relayout() {
 
 const classToTraceInd = {};
 
-const plot = function (highlights=[], markers=[]) {
+const plot = function (highlights = [], markers = []) {
     let traces = [];
     let classToRowIdx = labelDatum[classType];
     let ncols = dataMatrix[0].length;
@@ -391,11 +395,8 @@ const showError = function (title, body) {
 
 
 const divideRowWise = function (x, y) {
-    // x = nj.array(x);
-    // y = nj.array(y);
-    let ncols = x.length;
-    let nrows = x[0].length;
-    // let yT = y.reshape(nrows, 1);
+    let nrows = x.length;
+    let ncols = x[0].length;
 
     let z = [];
     for (let i = 0; i < nrows; i++) {
@@ -408,41 +409,36 @@ const divideRowWise = function (x, y) {
         z.push(zrow);
     }
     return z;
-
-    // let yrepmat = [];
-    // for (let i = 0; i < ncols; i++) {
-    //     yrepmat.push(yT);
-    // }
-    //
-    // yrepmat = nj.concatenate(yrepmat).reshape(nrows, ncols);
-    // return x.divide(yrepmat);
 };
 
 
 const calcClassDistByAdjacency = function (adjMat, freqs) {
     let adjMatNorm = divideRowWise(adjMat, freqs);
-    return pdist(adjMatNorm, 'euclidean');
+    return pdist(adjMatNorm, 'cosine');
 };
 
 
+/**
+ * Given a distance matrix, find n nearest neighbours and return their distances + names
+ *
+ * @param distmat
+ * @param classLabels
+ * @param nNeighbours must be less than or equal to the number of neighbours.
+ *                    So this value can change and will be returned
+ * @returns {{nearestNeigbours: Array, nearestDistances: Array, nNeighbours: number}}
+ */
 function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
-    // distmat = nj.array(distmat);
-    // To discount each element as its nearest neighbour (distance to itself is 0), we first
-    // set the diagonal value to more than current max distance. Later we'll restore it
-    // let diagonal_value_replacement = distmat.max() + 1;
-    // let diagonal_indices = nj.diag(distmat)
-    // distmat[diagonal_indices] = diagonal_value_replacement
     let numObservers = distmat.length;
-    nNeighbours = Math.min(nNeighbours, numObservers-1);
+    nNeighbours = Math.min(nNeighbours, numObservers - 1);
     let nearestDistances = [];
     let nearestNeigbours = [];
 
-    for (let i=0; i<numObservers; i++) {
+    for (let i = 0; i < numObservers; i++) {
         let distRow = distmat[i];
         let sortedInds = argsort(distRow);
         let thisNearestDistances = [];
         let thisNearestNeigbours = [];
-        for (let j=0; j<nNeighbours; j++) {
+        for (let j = 0; j < nNeighbours; j++) {
             let neighbourInd = sortedInds[j];
             thisNearestDistances.push(distRow[neighbourInd]);
             thisNearestNeigbours.push(classLabels[neighbourInd]);
@@ -455,6 +451,10 @@ function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
 }
 
 
+/**
+ * Given the neighbours' distances and labels, create rows data for the table
+ * @returns {Array}
+ */
 function calcGridData() {
     let {adjMat, freqs, classLabels} = syntaxData;
     let distmat = calcClassDistByAdjacency(adjMat, freqs);
@@ -476,12 +476,11 @@ function calcGridData() {
             let distance = class1Distances[j];
             if (existingPairs.indexOf(`${class1}-${neighbour}`) == -1) {
                 let pairId = `${neighbour}-${class1}`;
-                rows.push({'id': pairId, 'class-1-name': class1, 'class-2-name': neighbour, 'distance': distance});
+                rows.push({'id': pairId, 'class-1-name': class1, 'class-2-name': neighbour, distance});
                 existingPairs.push(pairId);
             }
         }
     }
-
     return rows;
 }
 
@@ -575,12 +574,12 @@ export const run = function (commonElements) {
     // let adjMat = [[0, 10, 20, 30], [1, 0, 5, 7], [3, 2, 0, 10], [0, 0, 1, 0]];
     // let freqs = [100, 20, 10, 10];
     // let classLabels = ['A', 'B', 'C', 'D'];
-    // let syntaxData1 = {
+    // let syntaxData = {
     //     adjMat, freqs, classLabels
     // };
-    // mergeClasses('A', 'B', 'AB', syntaxData1);
+    // mergeClasses('A', 'B', 'AB', syntaxData);
     //
-    // console.log(syntaxData1);
+    // console.log(syntaxData);
 
     ce = commonElements;
     initSlider();
@@ -722,9 +721,12 @@ export const postRun = function () {
     });
 };
 
-
-function mergeClasses(class1Name, class2Name, newClassName, syntaxData1) {
-    let {adjMat, freqs, classLabels} = syntaxData1;
+/**
+ * Merge classes on client side and change the syntax data for the table, accordingly
+ * @param newClassName
+ */
+function mergeClasses(newClassName) {
+    let {adjMat, freqs, classLabels} = syntaxData;
     let class1Ind = classLabels.indexOf(class1Name);
     let class2Ind = classLabels.indexOf(class2Name);
 
@@ -742,16 +744,16 @@ function mergeClasses(class1Name, class2Name, newClassName, syntaxData1) {
 
     let mergedClassAdjRow = nj.array(adjMat[class1Ind]).add(nj.array(adjMat[class2Ind])).tolist();
 
-    for (let i=0; i<class1Ind; i++) {
+    for (let i = 0; i < class1Ind; i++) {
         let currentAdjRow = adjMat[i];
         adjMatRowMerged.push(currentAdjRow);
     }
     adjMatRowMerged.push(mergedClassAdjRow);
-    for (let i=class1Ind+1; i<class2Ind; i++) {
+    for (let i = class1Ind + 1; i < class2Ind; i++) {
         let currentAdjRow = adjMat[i];
         adjMatRowMerged.push(currentAdjRow);
     }
-    for (let i=class2Ind+1; i<nClasses; i++) {
+    for (let i = class2Ind + 1; i < nClasses; i++) {
         let currentAdjRow = adjMat[i];
         adjMatRowMerged.push(currentAdjRow);
     }
@@ -760,43 +762,47 @@ function mergeClasses(class1Name, class2Name, newClassName, syntaxData1) {
 
     let mergedClassAdjRowCol = nj.array(adjMatRowMerged[class1Ind]).add(nj.array(adjMatRowMerged[class2Ind])).tolist();
 
-    for (let i=0; i<class1Ind; i++) {
+    for (let i = 0; i < class1Ind; i++) {
         let currentAdjRow = adjMatRowMerged[i];
         newAdjMat.push(currentAdjRow);
     }
     newAdjMat.push(mergedClassAdjRowCol);
-    for (let i=class1Ind+1; i<class2Ind; i++) {
+    for (let i = class1Ind + 1; i < class2Ind; i++) {
         let currentAdjRow = adjMatRowMerged[i];
         newAdjMat.push(currentAdjRow);
     }
-    for (let i=class2Ind+1; i<nClasses; i++) {
+    for (let i = class2Ind + 1; i < nClasses; i++) {
         let currentAdjRow = adjMatRowMerged[i];
         newAdjMat.push(currentAdjRow);
     }
 
     newAdjMat = nj.array(newAdjMat).T.tolist();
 
-    for (let i=0; i<class2Ind; i++) {
+    for (let i = 0; i < class2Ind; i++) {
         newFreqs.push(freqs[i]);
         newClassLabels.push(classLabels[i]);
     }
     newClassLabels[class1Ind] = newClassName;
     newFreqs[class1Ind] = freqs[class1Ind] + freqs[class2Ind];
-    for (let i=class2Ind+1; i<nClasses; i++) {
+    for (let i = class2Ind + 1; i < nClasses; i++) {
         newFreqs.push(freqs[i]);
         newClassLabels.push(classLabels[i]);
     }
 
     newAdjMat[class1Ind][class1Ind] = 0;
 
-    syntaxData1.adjMat = newAdjMat;
-    syntaxData1.freqs = newFreqs;
-    syntaxData1.classLabels = newClassLabels;
+    syntaxData.adjMat = newAdjMat;
+    syntaxData.freqs = newFreqs;
+    syntaxData.classLabels = newClassLabels;
 }
 
 
-function mergeSyllableLabels(class1Name, class2Name, newClassName, labelDatum1) {
-    let classToRowIdx = labelDatum1[classType];
+/**
+ * Merge classes on client side and change the syllable labels for the plot, accordingly
+ * @param newClassName
+ */
+function mergeClassesChangeSyllableLabels(newClassName) {
+    let classToRowIdx = labelDatum[classType];
     let class1RowIdx = classToRowIdx[class1Name];
     let class2RowIdx = classToRowIdx[class2Name];
     let mergedRowInx = class1RowIdx.concat(class2RowIdx);
@@ -807,14 +813,13 @@ function mergeSyllableLabels(class1Name, class2Name, newClassName, labelDatum1) 
     if (class1Name in rowIdxNewClass) delete rowIdxNewClass[class1Name];
     if (class2Name in rowIdxNewClass) delete rowIdxNewClass[class2Name];
     rowIdxNewClass[newClassName] = mergedRowInx;
-    console.log(rowIdxNewClass);
 }
 
 
 const handleMergeBtn = function () {
     let selectedSyls = Object.keys(highlighted);
     let numRows = selectedSyls.length;
-    // if (numRows > 0) {
+    if (numRows > 0) {
         ce.dialogModalTitle.html(`Merge class ${class1Name} and ${class2Name}`);
 
         let selectableColumns = getCache('selectableOptions');
@@ -850,18 +855,21 @@ const handleMergeBtn = function () {
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
             }
-            mergeClasses(class1Name, class2Name, value, syntaxData);
-            mergeSyllableLabels(class1Name, class2Name, value, labelDatum);
+            mergeClasses(value);
+            mergeClassesChangeSyllableLabels(value);
 
             let rows = calcGridData();
             grid.rows = rows;
             updateSlickGridData(grid.mainGrid, rows);
             ce.dialogModal.modal('hide');
         });
-    // }
+    }
 };
 
 
+/**
+ * When user clicks save, send the syllables that have label changed as the result of merging to the server
+ */
 function handleSaveBtn() {
     let sylNewClass = {};
     $.each(rowIdxNewClass, function (className, rowIdxs) {
@@ -876,6 +884,11 @@ function handleSaveBtn() {
     postRequest({
         requestSlug: 'koe/bulk-merge-classes',
         data: {'new-classes': JSON.stringify(sylNewClass)},
+        msgGen(isSuccess, response) {
+            return isSuccess ?
+                `Successfully merged class ${class1Name} and ${class2Name}.` :
+                `Something's wrong. The server says ${response}. Files might have been deleted.`;
+        }
     });
 }
 
@@ -926,8 +939,6 @@ const subscribeFlexibleEvents = function () {
         let grid_ = grid.mainGrid;
         let dataView = grid_.getData();
         let item = dataView.getItemById(rowId);
-
-        console.log(item);
 
         class1Name = item['class-1-name'];
         class2Name = item['class-2-name'];

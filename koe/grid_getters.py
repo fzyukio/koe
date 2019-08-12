@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 from collections import Counter
 
 import numpy as np
@@ -14,12 +13,12 @@ from koe.cluster_analysis_utils import get_syllable_labels
 from koe.model_utils import get_user_databases, get_or_error
 from koe.models import AudioFile, Segment, DatabaseAssignment, DatabasePermission, Database, TemporaryDatabase,\
     SimilarityIndex
+from koe.sequence_utils import calc_class_ajacency
+from koe.storage_utils import get_sids_tids
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
+from koe.utils import history_path
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttr, ExtraAttrValue
-from koe.utils import history_path, get_closest_neighbours
-from koe.sequence_utils import calc_class_ajacency, calc_class_dist_by_adjacency
-from koe.storage_utils import get_sids_tids
 
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
@@ -745,55 +744,9 @@ def get_syntactically_similar_pairs(request):
     sid2enumlabel = {sid: enum_label for sid, enum_label in zip(sids, syl_label_enum_arr)}
 
     adjacency_mat, classes_info = calc_class_ajacency(database, syl_label_enum_arr, enum2label, sid2enumlabel,
-                                                      count_style='forward', self_count='none')
+                                                      count_style='forward', self_count='append')
     counter = Counter(syl_label_enum_arr)
     nlabels = len(counter)
     frequencies = np.array([counter[i] for i in range(nlabels)])
 
     return adjacency_mat.tolist(), frequencies.tolist(), cls_labels.tolist()
-
-    # adjMat = [[0, 10, 20, 30], [1, 0, 5, 7], [3, 2, 0, 10], [0, 0, 1, 0]]
-    # freqs = [100, 20, 10, 10]
-    # classLabels = ['A', 'B', 'C', 'D']
-    #
-    # return adjMat, freqs, classLabels
-
-
-    # if os.path.isfile('/tmp/rows.pkl'):
-    #     with open('/tmp/rows.pkl', 'rb') as f:
-    #         rows = pickle.load(f)
-    # else:
-    #     granularity = extras.granularity
-    #     user = extras.user
-    #     database = get_user_databases(user)
-    #     permission = database.get_assigned_permission(extras.user)
-    #     if permission < DatabasePermission.ANNOTATE:
-    #         raise CustomAssertionError('You don\'t have permission to annotate this database')
-    #
-    #     sids, tids = get_sids_tids(database)
-    #
-    #     label_arr = get_syllable_labels(user, granularity, sids, on_no_label='none')
-    #     cls_labels, syl_label_enum_arr = np.unique(label_arr, return_inverse=True)
-    #
-    #     enum2label = {enum: label for enum, label in enumerate(cls_labels)}
-    #     sid2enumlabel = {sid: enum_label for sid, enum_label in zip(sids, syl_label_enum_arr)}
-    #
-    #     adjacency_mat, classes_info = calc_class_ajacency(database, syl_label_enum_arr, enum2label, sid2enumlabel,
-    #                                                       count_style='forward', count_circular=False)
-    #
-    #     dist_mat = calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False)
-    #
-    #     nearest_neigbours, nearest_distances = get_closest_neighbours(dist_mat, cls_labels)
-    #
-    #     rows = []
-    #     existing_pairs = []
-    #     for class1, class1_neigbours, class1_neigbour_distances in zip(cls_labels, nearest_neigbours, nearest_distances):
-    #         for neighbour, distance in zip(class1_neigbours, class1_neigbour_distances):
-    #             if (neighbour, class1) not in existing_pairs:
-    #                 rows.append({'class-1-name': class1, 'class-2-name': neighbour, 'distance': distance})
-    #                 existing_pairs.append((class1, neighbour))
-    #
-    #     with open('/tmp/rows.pkl', 'wb') as f:
-    #         pickle.dump(rows, f)
-    # idx = range(len(rows))
-    # return idx, rows

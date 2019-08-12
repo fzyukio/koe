@@ -4,10 +4,10 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 require('devtools-detect');
-const nj = require('numjs');
-const math = require('mathjs');
-const euclidean = require( 'compute-euclidean-distance');
-const kldivergence = math.kldivergence;
+// const nj = require('numjs');
+// const math = require('mathjs');
+// const euclidean = require( 'compute-euclidean-distance');
+// const kldivergence = math.kldivergence;
 
 const JSZip = require('jszip/dist/jszip.min.js');
 const filesaver = require('file-saver/dist/FileSaver.min.js');
@@ -56,8 +56,8 @@ export const logError = function(err) {
     console.log(err);
 };
 
-export const isNumber = function (str) {
-    return !isNaN(str);
+export const isNumber = function (obj) {
+    return obj !== null && obj !== undefined && !isNaN(obj) && isFinite(obj);
 };
 
 
@@ -759,18 +759,138 @@ export function attachEventOnce({element, eventType, func, funcName}) {
     }
 }
 
+/**
+ * Assert two arrays are equal
+ * @param x
+ * @param y
+ */
+function assertEqualLength(x, y) {
+    let len = x.length;
+    if (len !== y.length) {
+        throw Error('Two arrays must have the same length');
+    }
+    return len;
+}
 
+/**
+ * 1D convolution - same effect as 'valid'
+ * @param x
+ * @param y
+ * @returns {number}
+ */
+function convolve(x, y) {
+    let len = assertEqualLength(x, y);
+    let retval = 0;
+    for (let i = 0; i < len; i++) {
+        retval += x[i] * y[i];
+    }
+    return retval;
+}
+
+/**
+ * Kullback-Leibler Divergence
+ * @param p
+ * @param q
+ * @returns {number}
+ */
+function kldivergence(p, q) {
+    let len = assertEqualLength(p, q);
+    let retval = 0,
+        pi, qi;
+    for (let i = 0; i < len; i++) {
+        pi = p[i];
+        qi = q[i];
+        if (pi !== 0 && qi !== 0) {
+            retval += pi * Math.log(pi / qi);
+        }
+    }
+    return retval;
+}
+
+/**
+ * Jensen-Shannon divergence. We don't reuse KLDivergence for performance purpose
+ * @param p
+ * @param q
+ * @returns {number}
+ */
+function jsdivergence(p, q) {
+    let len = assertEqualLength(p, q);
+    let klp = 0,
+        klq = 0,
+        pi, qi, mi;
+    let isCalculable = false;
+    for (let i = 0; i < len; i++) {
+        pi = p[i];
+        qi = q[i];
+        mi = (pi + qi) / 2;
+        if (pi !== 0 && qi !== 0) {
+            isCalculable = true;
+            klp += pi * Math.log2(pi / mi);
+            klq += qi * Math.log2(qi / mi);
+        }
+    }
+    if (isCalculable) return (klp + klq) / 2;
+    else return 1;
+}
+
+/**
+ * Euclidean distance
+ * @param x
+ * @param y
+ * @returns {number}
+ */
+function euclidean(x, y) {
+    let len = assertEqualLength(x, y);
+    let retval = 0,
+        diff;
+    for (let i = 0; i < len; i++) {
+        diff = x[i] - y[i];
+        retval += diff * diff;
+    }
+    return retval;
+}
+
+/**
+ * Cosine distance
+ * @param A
+ * @param B
+ * @returns {number}
+ */
+function cosine(A, B) {
+    let dotproduct = 0;
+    let mA = 0;
+    let mB = 0;
+    let i, ai, bi;
+    for (i = 0; i < A.length; i++) {
+        ai = A[i];
+        bi = B[i];
+        dotproduct += ai * bi;
+        mA += ai * ai;
+        mB += bi * bi;
+    }
+    mA = Math.sqrt(mA);
+    mB = Math.sqrt(mB);
+    let similarity = (dotproduct) / ((mA) * (mB));
+    return isNull(similarity) ? similarity : 1 - similarity;
+}
+
+
+const distfuncMap = {euclidean, kldivergence, cosine, jsdivergence, convolve};
+
+
+/**
+ * Similar to scipy.spatial.distance.pdist
+ * @param mat
+ * @param metric
+ * @returns {Array}
+ */
 export function pdist(mat, metric = 'euclidean') {
-    let distfunc;
-    if (metric == 'euclidean') {
-        distfunc = euclidean;
-    }
-    else if (metric == 'kldivergence') {
-        distfunc = kldivergence;
-    }
-    else {
+    let distfunc = distfuncMap[metric];
+
+    if (distfunc === undefined) {
         throw Error(`Unsupported metric: ${metric}`)
     }
+
     let nobs = mat.length;
     let i, j, val;
     let distmat = [];
@@ -783,23 +903,28 @@ export function pdist(mat, metric = 'euclidean') {
         for (j = i + 1; j < nobs; j++) {
             try {
                 val = distfunc(mat[i], mat[j]);
-                distmat[i][j] = val;
-                distmat[j][i] = val;
+                if (isNumber(val)) {
+                    distmat[i][j] = val;
+                    distmat[j][i] = val;
+                }
             }
             catch (e) {
-                debug(e);
-                nj.array(mat).toString();
+                // Do nothing there. The value that should be filled in will stay 'empty'
+                // Which is very nice because that will exclude them from any calculation
             }
         }
     }
+
     return distmat;
 }
 
 
+/**
+ * Equivalent to numpy.argsort
+ * @param array
+ */
 export function argsort(array) {
-    const arrayObject = array.map((value, idx) => {
-        return {value, idx};
-    });
+    const arrayObject = array.map((value, idx) => ({value, idx}));
     arrayObject.sort((a, b) => {
         if (a.value < b.value) {
             return -1;
@@ -809,7 +934,5 @@ export function argsort(array) {
         }
         return 0;
     });
-    return arrayObject.map(data => {
-        return data.idx;
-    });
+    return arrayObject.map((data) => data.idx);
 }

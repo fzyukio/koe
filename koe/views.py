@@ -576,7 +576,6 @@ def get_view(name):
     :param name: name of the view. A `name`.html must exist in the template folder
     :return:
     """
-
     class View(TemplateView):
         page_name = name
         template_name = name + '.html'
