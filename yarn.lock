@@ -1487,10 +1487,6 @@ compare-oriented-cell@^1.0.1:
     cell-orientation "^1.0.1"
     compare-cell "^1.0.0"
 
-complex.js@2.0.11:
-  version "2.0.11"
-  resolved "https://registry.yarnpkg.com/complex.js/-/complex.js-2.0.11.tgz#09a873fbf15ffd8c18c9c2201ccef425c32b8bf1"
-
 components-font-awesome@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/components-font-awesome/-/components-font-awesome-4.7.0.tgz#a7550094b6e2cb5cd7dce49c405771c533e9cfe1"
@@ -2102,10 +2098,6 @@ decamelize@^1.0.0, decamelize@^1.1.1, decamelize@^1.1.2:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/decamelize/-/decamelize-1.2.0.tgz#f6534d15148269b20352e7bee26f501f9a191290"
 
-decimal.js@10.2.0:
-  version "10.2.0"
-  resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.2.0.tgz#39466113a9e036111d02f82489b5fd6b0b5ed231"
-
 decompress-response@^3.3.0:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/decompress-response/-/decompress-response-3.3.0.tgz#80a4dd323748384bfa248083622aedec982adff3"
@@ -2360,10 +2352,6 @@ es6-weak-map@^2.0.2:
 escape-html@~1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
-
-escape-latex@1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/escape-latex/-/escape-latex-1.2.0.tgz#07c03818cf7dac250cce517f4fda1b001ef2bca1"
 
 escape-regexp@0.0.1:
   version "0.0.1"
@@ -2769,10 +2757,6 @@ form-data@~2.3.1:
 forwarded@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.1.2.tgz#98c23dab1175657b8c0573e8ceccd91b0ff18c84"
-
-fraction.js@4.0.12:
-  version "4.0.12"
-  resolved "https://registry.yarnpkg.com/fraction.js/-/fraction.js-4.0.12.tgz#0526d47c65a5fb4854df78bc77f7bec708d7b8c3"
 
 fresh@0.5.2:
   version "0.5.2"
@@ -3952,10 +3936,6 @@ isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
 
-javascript-natural-sort@0.7.1:
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/javascript-natural-sort/-/javascript-natural-sort-0.7.1.tgz#f9e2303d4507f6d74355a73664d1440fb5a0ef59"
-
 jquery-contextmenu@^2.4.4:
   version "2.6.4"
   resolved "https://registry.yarnpkg.com/jquery-contextmenu/-/jquery-contextmenu-2.6.4.tgz#f48e56c436b1becb6935e5dd0def02e39d4e129e"
@@ -4437,19 +4417,6 @@ math-expression-evaluator@^1.2.14:
 math-log2@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/math-log2/-/math-log2-1.0.1.tgz#fb8941be5f5ebe8979e718e6273b178e58694565"
-
-mathjs@^6.0.4:
-  version "6.0.4"
-  resolved "https://registry.yarnpkg.com/mathjs/-/mathjs-6.0.4.tgz#8b26137f2acccd133bc239cbf9526aad7408822d"
-  dependencies:
-    complex.js "2.0.11"
-    decimal.js "10.2.0"
-    escape-latex "1.2.0"
-    fraction.js "4.0.12"
-    javascript-natural-sort "0.7.1"
-    seed-random "2.2.0"
-    tiny-emitter "2.1.0"
-    typed-function "1.1.0"
 
 matrix-camera-controller@^2.1.1, matrix-camera-controller@^2.1.3:
   version "2.1.3"
@@ -6423,10 +6390,6 @@ scss-tokenizer@^0.2.3:
     js-base64 "^2.1.8"
     source-map "^0.4.2"
 
-seed-random@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/seed-random/-/seed-random-2.2.0.tgz#2a9b19e250a817099231a5b99a4daf80b7fbed54"
-
 seedrandom@^2.4.2:
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/seedrandom/-/seedrandom-2.4.4.tgz#b25ea98632c73e45f58b77cfaa931678df01f9ba"
@@ -7180,10 +7143,6 @@ timers-browserify@^2.0.2:
   dependencies:
     setimmediate "^1.0.4"
 
-tiny-emitter@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/tiny-emitter/-/tiny-emitter-2.1.0.tgz#1d1a56edfc51c43e863cbb5382a72330e3555423"
-
 tiny-sdf@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/tiny-sdf/-/tiny-sdf-1.0.2.tgz#28e76985c44c4e584c4b67d8ecdd9b33a1cac28c"
@@ -7304,10 +7263,6 @@ type-is@~1.6.15, type-is@~1.6.16:
   dependencies:
     media-typer "0.3.0"
     mime-types "~2.1.18"
-
-typed-function@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/typed-function/-/typed-function-1.1.0.tgz#ea149706e0fb42aca1791c053a6d94ccd6c4fdcb"
 
 typedarray-pool@^1.0.0, typedarray-pool@^1.0.2, typedarray-pool@^1.1.0:
   version "1.1.0"

@@ -7,7 +7,7 @@ const ResizeSensor = require('css-element-queries/src/ResizeSensor');
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {updateSlickGridData} from './grid-utils';
 import {FlexibleGrid, defaultGridOptions} from './flexible-grid';
-import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort, isNumber, isNull} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -268,12 +268,16 @@ const plot = function (highlights = [], markers = []) {
         });
 
         let markerInd = highlights.indexOf(className);
-        let marker;
+        let marker, hovertext, hoverinfo;
         if (markerInd == -1) {
             marker = unhighlightedMarker;
+            hovertext = 'none';
+            hoverinfo = 'none';
         }
         else {
             marker = markers[markerInd];
+            hovertext = rowsText;
+            hoverinfo = 'text';
         }
 
         let trace = {
@@ -282,8 +286,8 @@ const plot = function (highlights = [], markers = []) {
 
             // plotly does not allow custom field here so we have no choice but to use 'text' to store metadata
             text: groupMetadata,
-            hovertext: rowsText,
-            hoverinfo: 'text',
+            hovertext,
+            hoverinfo,
             name: className,
             mode: 'markers',
             marker,
@@ -325,6 +329,7 @@ const plot = function (highlights = [], markers = []) {
 function registerPlotlyEvents() {
     plotDiv[0].
         on('plotly_click', handleClick).
+        on('plotly_hover', handleHover).
         on('plotly_afterplot', function () {
             if (spinner) {
                 spinner.clear();
@@ -358,6 +363,28 @@ const handleClick = function ({points}) {
     let sylId = parseInt(metadata.id);
     playSyl(sylId);
 };
+
+/**
+ * When mouse overs a syllable, add it to the highlighted list (if not already)
+ * Then highlight its border with glowing red
+ * @param points
+ */
+function handleHover({points}) {
+    let point = points[0];
+    let rowMetadata = point.text;
+    let label = rowMetadata[classType];
+    let container = null;
+    if (label === class1Name) {
+        container = class1SylSpectsDisplay;
+    }
+    else if (label === class2Name) {
+        container = class2SylSpectsDisplay
+    }
+    if (container) {
+        let element = addSylToHighlight(rowMetadata, container);
+        highlightSyl(element);
+    }
+}
 
 /**
  * Make the active element (mouse hovered, or spectrogram clicked) glow red at the border
@@ -440,13 +467,15 @@ function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
         let thisNearestNeigbours = [];
         for (let j = 0; j < nNeighbours; j++) {
             let neighbourInd = sortedInds[j];
-            thisNearestDistances.push(distRow[neighbourInd]);
-            thisNearestNeigbours.push(classLabels[neighbourInd]);
+            let neighbourDist = distRow[neighbourInd];
+            if (isNumber(neighbourDist)) {
+                thisNearestDistances.push(neighbourDist);
+                thisNearestNeigbours.push(classLabels[neighbourInd]);
+            }
         }
         nearestDistances.push(thisNearestDistances);
         nearestNeigbours.push(thisNearestNeigbours);
     }
-
     return {nearestNeigbours, nearestDistances, nNeighbours};
 }
 
@@ -473,11 +502,13 @@ function calcGridData() {
 
         for (let j = 0; j < nNearest; j++) {
             let neighbour = class1Neighbours[j];
-            let distance = class1Distances[j];
-            if (existingPairs.indexOf(`${class1}-${neighbour}`) == -1) {
-                let pairId = `${neighbour}-${class1}`;
-                rows.push({'id': pairId, 'class-1-name': class1, 'class-2-name': neighbour, distance});
-                existingPairs.push(pairId);
+            if (!isNull(neighbour)) {
+                let distance = class1Distances[j];
+                if (existingPairs.indexOf(`${class1}-${neighbour}`) == -1) {
+                    let pairId = `${neighbour}-${class1}`;
+                    rows.push({'id': pairId, 'class-1-name': class1, 'class-2-name': neighbour, distance});
+                    existingPairs.push(pairId);
+                }
             }
         }
     }
@@ -907,10 +938,10 @@ function clearHighlighted() {
 
 /**
  * Add a syllable to the highlighted list
- * @param rowIdx row index of the syllable in the metadata table
+ * @param rowMetadata
+ * @param container
  */
-function addSylToHighlight(rowIdx, container) {
-    let rowMetadata = rowsMetadata[rowIdx];
+function addSylToHighlight(rowMetadata, container) {
     let segId = rowMetadata.id;
     let segTid = rowMetadata.tid;
     let element = highlighted[segId];
@@ -948,6 +979,7 @@ const subscribeFlexibleEvents = function () {
         let class2RowIdx = classToRowIdx[class2Name];
 
         plot([class1Name, class2Name], [class1Marker, class2Marker]);
+        registerPlotlyEvents();
 
         class1SylSpectsName.html(class1Name);
         class2SylSpectsName.html(class2Name);
@@ -955,10 +987,12 @@ const subscribeFlexibleEvents = function () {
         clearHighlighted();
 
         $.each(class1RowIdx, function (idx, rowInd) {
-            addSylToHighlight(rowInd, class1SylSpectsDisplay);
+            let rowMetadata = rowsMetadata[rowInd];
+            addSylToHighlight(rowMetadata, class1SylSpectsDisplay);
         });
         $.each(class2RowIdx, function (idx, rowInd) {
-            addSylToHighlight(rowInd, class2SylSpectsDisplay);
+            let rowMetadata = rowsMetadata[rowInd];
+            addSylToHighlight(rowMetadata, class2SylSpectsDisplay);
         });
     });
 };
