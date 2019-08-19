@@ -108,7 +108,7 @@ def my_stft(sig, fs, window, noverlap, nfft):
     nsegs, segs = split_segments(siglen, window_size, noverlap, incltail=False)
     mat = np.ndarray((freq_range, nsegs), dtype=np.complex128)
     for i in range(nsegs):
-        seg = segs[i, :]
+        seg = segs[i]
         subsig = sig[seg[0]: seg[1]]
         spectrum = fft(subsig * window, nfft)
         mat[:, i] = spectrum[:freq_range]

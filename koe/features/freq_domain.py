@@ -129,7 +129,7 @@ def _harmonic_and_pitch(args):
     F0s = []
 
     for i in range(nsegs):
-        seg_beg, seg_end = segs[i, :]
+        seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]
 
         M = np.round(0.016 * fs) - 1

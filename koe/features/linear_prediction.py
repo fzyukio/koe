@@ -25,7 +25,7 @@ def lpc_spectrum(args):
 
     lpcs = np.zeros((nfft, nsegs), dtype=np.complex64)
     for i in range(nsegs):
-        seg_beg, seg_end = segs[i, :]
+        seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]
 
         lpcs[:, i] = lpc_spectrum_frame(frame * window, order, nfft)
@@ -63,7 +63,7 @@ def lpc_cepstrum(args):
     lpcs = np.zeros((order, nsegs), dtype=np.float32)
 
     for i in range(nsegs):
-        seg_beg, seg_end = segs[i, :]
+        seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]
 
         lpcs[:, i] = lpc_cepstrum_frame(frame * window, order)
@@ -86,7 +86,7 @@ def lp_coefficients(args):
 
     lp_coeffs = np.zeros((order, nsegs), dtype=np.complex64)
     for i in range(nsegs):
-        seg_beg, seg_end = segs[i, :]
+        seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]
 
         lp_coeffs[:, i] = lp_coefficients_frame(frame * window, order)
