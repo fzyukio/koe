@@ -15,8 +15,8 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 # backports needed to install ffmpeg
-RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
-deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
+RUN echo 'deb [check-valid-until=no] http://archive.debian.org/debian jessie-backports main non-free \n\
+deb-src [check-valid-until=no] http://archive.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
 
 # Install extra packages.
 RUN add-apt-repository -y ppa:jonathonf/ffmpeg-4 && apt-get update && apt-get install -y --no-install-recommends git vim mysql-client libmysqlclient-dev ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*

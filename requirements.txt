@@ -82,7 +82,7 @@ git+https://github.com/fzyukio/django-memoize
 raven==6.10.0
 git+https://github.com/fzyukio/spectrum
 django-extensions==2.1.6
-ipython==7.5.0
+ipython==6.5.0
 notebook==5.7.8
 pymlfunc==0.0.3
 scikit-learn==0.20.3
@@ -94,4 +94,5 @@ pycspade==0.6.2
 scikit-image==0.14.2
 sortedcontainers==2.1.0
 librosa==0.6.3
-matplotlib==3.1.0
+matplotlib==3.0.3
+
