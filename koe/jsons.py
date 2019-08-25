@@ -619,6 +619,11 @@ tables =\
                     "name": "Distance (acoustic)",
                     "slug": "acoustic-distance",
                     "type": "FLOAT"
+                },
+                {
+                    "name": "Weighted distance",
+                    "slug": "weighted-distance",
+                    "type": "FLOAT"
                 }
             ]
         }

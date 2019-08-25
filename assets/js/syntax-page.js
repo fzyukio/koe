@@ -498,8 +498,9 @@ function calcGridData() {
     let {adjMat, freqs, classLabels, classMedoids} = syntaxData;
     let adjDistMat = calcClassDistByAdjacency(adjMat, freqs);
     let acsDistMat = normalise(calcClassDistByMedoids(classMedoids));
-    let nNearest = classLabels.length-1;
-    let {nearestNeigbours, nearestStxDistances, nearestAcsDistances, nNeighbours}= getClosestNeighbours(adjDistMat, acsDistMat, nNearest);
+    let nNearest = classLabels.length - 1;
+    let {nearestNeigbours, nearestStxDistances, nearestAcsDistances, nNeighbours} =
+            getClosestNeighbours(adjDistMat, acsDistMat, nNearest);
     nNearest = nNeighbours;
 
     let rows = [];
@@ -507,7 +508,7 @@ function calcGridData() {
 
     let nClasses = classLabels.length;
     for (let i = 0; i < nClasses; i++) {
-        let class1Name = classLabels[i];
+        let class1Label = classLabels[i];
         let class1Count = freqs[i];
         let class1Neighbours = nearestNeigbours[i];
         let class1StxDistances = nearestStxDistances[i];
@@ -520,10 +521,13 @@ function calcGridData() {
             if (!isNull(neighbourInd)) {
                 let stxDistance = class1StxDistances[j];
                 let acsDistance = class1AcsDistances[j];
-                if (existingPairs.indexOf(`${class1Name}-${neighbourName}`) == -1) {
-                    let pairId = `${neighbourName}-${class1Name}`;
-                    rows.push({'id': pairId, 'class-1-name': class1Name, 'class-2-name': neighbourName,
+                let weightedDistance = (stxDistance + acsDistance) / 2;
+
+                if (existingPairs.indexOf(`${class1Label}-${neighbourName}`) == -1) {
+                    let pairId = `${neighbourName}-${class1Label}`;
+                    rows.push({'id': pairId, 'class-1-name': class1Label, 'class-2-name': neighbourName,
                         'syntax-distance': stxDistance, 'acoustic-distance': acsDistance,
+                        'weighted-distance': weightedDistance,
                         'class-1-count': class1Count, 'class-2-count': class2Count
                     });
                     existingPairs.push(pairId);
@@ -678,6 +682,10 @@ function makeMetadata(columnNames, row) {
 }
 
 
+/**
+ * Promise to query syntax data
+ * @returns {Promise}
+ */
 function promiseSyntaxData() {
     return new Promise(function (resolve) {
         let onSuccess = function (data) {
@@ -758,17 +766,17 @@ const downloadTensorData = function () {
         let classMedoids = [];
 
         for (let i = 0; i < nClasses; i++) {
-            let class1Name = classLabels[i];
-            let class1SylInds = labelData[class1Name];
-            let class1SylCount = class1SylInds.length;
-            let class1SylCoords = [];
-            for (let j=0; j<class1SylCount; j++) {
-                let sylInd = class1SylInds[j];
-                class1SylCoords.push(dataMatrix[sylInd]);
+            let className = classLabels[i];
+            let classSylInds = labelData[className];
+            let classSylCount = classSylInds.length;
+            let classSylCoords = [];
+            for (let j = 0; j < classSylCount; j++) {
+                let sylInd = classSylInds[j];
+                classSylCoords.push(dataMatrix[sylInd]);
             }
             let medoid = [];
-            for (let j=0; j<ncols; j++) {
-                medoid.push(nj.array(class1SylCoords).slice(null, [j, j+1]).mean());
+            for (let j = 0; j < ncols; j++) {
+                medoid.push(nj.array(classSylCoords).slice(null, [j, j + 1]).mean());
             }
             classMedoids.push(medoid);
         }
