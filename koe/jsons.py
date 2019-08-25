@@ -611,8 +611,13 @@ tables =\
                     "type": "INTEGER"
                 },
                 {
-                    "name": "Distance",
-                    "slug": "distance",
+                    "name": "Distance (syntax)",
+                    "slug": "syntax-distance",
+                    "type": "FLOAT"
+                },
+                {
+                    "name": "Distance (acoustic)",
+                    "slug": "acoustic-distance",
                     "type": "FLOAT"
                 }
             ]

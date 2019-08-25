@@ -7,7 +7,7 @@ const ResizeSensor = require('css-element-queries/src/ResizeSensor');
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {updateSlickGridData} from './grid-utils';
 import {FlexibleGrid, defaultGridOptions} from './flexible-grid';
-import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort, isNumber, isNull} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort, isNumber, isNull, normalise} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -445,38 +445,48 @@ const calcClassDistByAdjacency = function (adjMat, freqs) {
 };
 
 
+const calcClassDistByMedoids = function (classMedoids) {
+    return pdist(classMedoids, 'euclidean');
+};
+
 /**
  * Given a distance matrix, find n nearest neighbours and return their distances + names
  *
- * @param distmat
- * @param classLabels
+ * @param stxDistmat
+ * @param acsDistmat
  * @param nNeighbours must be less than or equal to the number of neighbours.
  *                    So this value can change and will be returned
- * @returns {{nearestNeigbours: Array, nearestDistances: Array, nNeighbours: number}}
+ * @returns {{nearestNeigbours: Array, nearestStxDistances: Array, nearestAcsDistances: Array, nNeighbours: number}}
  */
-function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
-    let numObservers = distmat.length;
+function getClosestNeighbours(stxDistmat, acsDistmat, nNeighbours = 3) {
+    let numObservers = stxDistmat.length;
     nNeighbours = Math.min(nNeighbours, numObservers - 1);
-    let nearestDistances = [];
+    let nearestStxDistances = [];
+    let nearestAcsDistances = [];
     let nearestNeigbours = [];
 
     for (let i = 0; i < numObservers; i++) {
-        let distRow = distmat[i];
-        let sortedInds = argsort(distRow);
-        let thisNearestDistances = [];
+        let stxDistRow = stxDistmat[i];
+        let acsDistRow = acsDistmat[i];
+        let sortedInds = argsort(stxDistRow);
+        let thisNearestStxDistances = [];
+        let thisNearestAcsDistances = [];
         let thisNearestNeigbours = [];
         for (let j = 0; j < nNeighbours; j++) {
             let neighbourInd = sortedInds[j];
-            let neighbourDist = distRow[neighbourInd];
-            if (isNumber(neighbourDist)) {
-                thisNearestDistances.push(neighbourDist);
+            let neighbourStxDist = stxDistRow[neighbourInd];
+            let neighbourAcsDist = acsDistRow[neighbourInd];
+            if (isNumber(neighbourStxDist)) {
+                thisNearestStxDistances.push(neighbourStxDist);
+                thisNearestAcsDistances.push(neighbourAcsDist);
                 thisNearestNeigbours.push(neighbourInd);
             }
         }
-        nearestDistances.push(thisNearestDistances);
+        nearestStxDistances.push(thisNearestStxDistances);
+        nearestAcsDistances.push(thisNearestAcsDistances);
         nearestNeigbours.push(thisNearestNeigbours);
     }
-    return {nearestNeigbours, nearestDistances, nNeighbours};
+    return {nearestNeigbours, nearestStxDistances, nearestAcsDistances, nNeighbours};
 }
 
 
@@ -485,10 +495,11 @@ function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
  * @returns {Array}
  */
 function calcGridData() {
-    let {adjMat, freqs, classLabels} = syntaxData;
-    let distmat = calcClassDistByAdjacency(adjMat, freqs);
-    let nNearest = 3;
-    let {nearestNeigbours, nearestDistances, nNeighbours} = getClosestNeighbours(distmat, classLabels, nNearest);
+    let {adjMat, freqs, classLabels, classMedoids} = syntaxData;
+    let adjDistMat = calcClassDistByAdjacency(adjMat, freqs);
+    let acsDistMat = normalise(calcClassDistByMedoids(classMedoids));
+    let nNearest = classLabels.length-1;
+    let {nearestNeigbours, nearestStxDistances, nearestAcsDistances, nNeighbours}= getClosestNeighbours(adjDistMat, acsDistMat, nNearest);
     nNearest = nNeighbours;
 
     let rows = [];
@@ -499,17 +510,20 @@ function calcGridData() {
         let class1Name = classLabels[i];
         let class1Count = freqs[i];
         let class1Neighbours = nearestNeigbours[i];
-        let class1Distances = nearestDistances[i];
+        let class1StxDistances = nearestStxDistances[i];
+        let class1AcsDistances = nearestAcsDistances[i];
 
         for (let j = 0; j < nNearest; j++) {
             let neighbourInd = class1Neighbours[j];
             let class2Count = freqs[neighbourInd];
             let neighbourName = classLabels[neighbourInd];
             if (!isNull(neighbourInd)) {
-                let distance = class1Distances[j];
+                let stxDistance = class1StxDistances[j];
+                let acsDistance = class1AcsDistances[j];
                 if (existingPairs.indexOf(`${class1Name}-${neighbourName}`) == -1) {
                     let pairId = `${neighbourName}-${class1Name}`;
-                    rows.push({'id': pairId, 'class-1-name': class1Name, 'class-2-name': neighbourName, distance,
+                    rows.push({'id': pairId, 'class-1-name': class1Name, 'class-2-name': neighbourName,
+                        'syntax-distance': stxDistance, 'acoustic-distance': acsDistance,
                         'class-1-count': class1Count, 'class-2-count': class2Count
                     });
                     existingPairs.push(pairId);
@@ -542,29 +556,31 @@ class Grid extends FlexibleGrid {
             args.extras = JSON.stringify(extraArgs);
         }
 
-        return new Promise(function (resolve) {
-            let onSuccess = function (data) {
-                let adjMat = data[0];
-                let freqs = data[1];
-                let classLabels = data[2];
+        // return new Promise(function (resolve) {
+        //     let onSuccess = function (data) {
+        //         let adjMat = data[0];
+        //         let freqs = data[1];
+        //         let classLabels = data[2];
+        //
+        //         syntaxData.adjMat = adjMat;
+        //         syntaxData.freqs = freqs;
+        //         syntaxData.classLabels = classLabels;
+        //
+        //         let rows = calcGridData();
+        //
+        //         self.rows = rows;
+        //         updateSlickGridData(self.mainGrid, rows);
+        //         resolve();
+        //     };
+        //
+        //     postRequest({
+        //         requestSlug: 'koe/get-syntactically-similar-pairs',
+        //         data: args,
+        //         onSuccess
+        //     });
+        // });
 
-                syntaxData.adjMat = adjMat;
-                syntaxData.freqs = freqs;
-                syntaxData.classLabels = classLabels;
-
-                let rows = calcGridData();
-
-                self.rows = rows;
-                updateSlickGridData(self.mainGrid, rows);
-                resolve();
-            };
-
-            postRequest({
-                requestSlug: 'koe/get-syntactically-similar-pairs',
-                data: args,
-                onSuccess
-            });
-        });
+        return Promise.resolve();
     }
 }
 
@@ -662,13 +678,38 @@ function makeMetadata(columnNames, row) {
 }
 
 
+function promiseSyntaxData() {
+    return new Promise(function (resolve) {
+        let onSuccess = function (data) {
+            let adjMat = data[0];
+            let freqs = data[1];
+            let classLabels = data[2];
+
+            let syntaxData_ = {adjMat, freqs, classLabels};
+            resolve(syntaxData_);
+        };
+
+        postRequest({
+            requestSlug: 'koe/get-syntactically-similar-pairs',
+            data: {extras: JSON.stringify(extraArgs)},
+            onSuccess
+        });
+    });
+}
+
 const downloadTensorData = function () {
     let downloadMeta = downloadRequest(metaPath, null);
     let downloadBytes = downloadRequest(bytesPath, Float32Array);
+    let downloadSyntaxData = promiseSyntaxData();
 
-    return Promise.all([downloadMeta, downloadBytes]).then(function (values) {
+    return Promise.all([downloadMeta, downloadBytes, downloadSyntaxData]).then(function (values) {
         let meta = values[0];
         let bytes = values[1];
+        let syntaxData_ = values[2];
+        let ind2label = {};
+        $.each(syntaxData_.classLabels, function (ind, label) {
+            ind2label[ind] = label;
+        });
 
         let metaRows = meta.split('\n');
         let csvHeaderRow = metaRows[0];
@@ -709,6 +750,37 @@ const downloadTensorData = function () {
             byteStart += ncols;
             byteEnd += ncols;
         }
+
+        let classLabels = syntaxData_.classLabels;
+        let nClasses = classLabels.length;
+        let labelData = labelDatum[classType];
+
+        let classMedoids = [];
+
+        for (let i = 0; i < nClasses; i++) {
+            let class1Name = classLabels[i];
+            let class1SylInds = labelData[class1Name];
+            let class1SylCount = class1SylInds.length;
+            let class1SylCoords = [];
+            for (let j=0; j<class1SylCount; j++) {
+                let sylInd = class1SylInds[j];
+                class1SylCoords.push(dataMatrix[sylInd]);
+            }
+            let medoid = [];
+            for (let j=0; j<ncols; j++) {
+                medoid.push(nj.array(class1SylCoords).slice(null, [j, j+1]).mean());
+            }
+            classMedoids.push(medoid);
+        }
+
+        syntaxData.classLabels = syntaxData_.classLabels;
+        syntaxData.adjMat = syntaxData_.adjMat;
+        syntaxData.freqs = syntaxData_.freqs;
+        syntaxData.classMedoids = classMedoids;
+
+        let rows = calcGridData();
+        grid.rows = rows;
+        updateSlickGridData(grid.mainGrid, rows);
     });
 };
 

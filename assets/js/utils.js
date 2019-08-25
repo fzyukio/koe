@@ -4,7 +4,7 @@ require('bootstrap-datepicker');
 require('jquery.browser');
 require('jquery-getscrollbarwidth');
 require('devtools-detect');
-// const nj = require('numjs');
+const nj = require('numjs');
 // const math = require('mathjs');
 // const euclidean = require( 'compute-euclidean-distance');
 // const kldivergence = math.kldivergence;
@@ -847,7 +847,7 @@ function euclidean(x, y) {
         diff = x[i] - y[i];
         retval += diff * diff;
     }
-    return retval;
+    return Math.sqrt(retval);
 }
 
 /**
@@ -935,4 +935,55 @@ export function argsort(array) {
         return 0;
     });
     return arrayObject.map((data) => data.idx);
+}
+
+
+function arrayFunc(arr, func, nonNumericFunc) {
+    if (Array.isArray(arr)) {
+        let retval = [];
+        for (let i=0; i<arr.length; i++) {
+            retval.push(arrayFunc(arr[i], func, nonNumericFunc));
+        }
+        return retval;
+    }
+    else if (isNumber(arr)) {
+        return func(arr);
+    }
+    else {
+        return nonNumericFunc(arr);
+    }
+}
+
+
+
+export function normalise(array) {
+    let min = Infinity;
+    let max = -Infinity;
+
+    function findMin(number) {
+        if (number < min) {
+             min = number;
+        }
+    }
+
+    function findMax(number) {
+        if (number > max) {
+             max = number;
+        }
+    }
+
+    function noop(x) {
+        return x;
+    }
+
+    arrayFunc(array, findMax, noop);
+    arrayFunc(array, findMin, noop);
+
+    let range = max - min;
+
+    function minusMinAndDivideRange(number) {
+        return (number - min) / range;
+    }
+
+    return arrayFunc(array, minusMinAndDivideRange, noop);
 }
