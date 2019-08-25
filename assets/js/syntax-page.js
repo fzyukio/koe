@@ -470,7 +470,7 @@ function getClosestNeighbours(distmat, classLabels, nNeighbours = 3) {
             let neighbourDist = distRow[neighbourInd];
             if (isNumber(neighbourDist)) {
                 thisNearestDistances.push(neighbourDist);
-                thisNearestNeigbours.push(classLabels[neighbourInd]);
+                thisNearestNeigbours.push(neighbourInd);
             }
         }
         nearestDistances.push(thisNearestDistances);
@@ -496,17 +496,22 @@ function calcGridData() {
 
     let nClasses = classLabels.length;
     for (let i = 0; i < nClasses; i++) {
-        let class1 = classLabels[i];
+        let class1Name = classLabels[i];
+        let class1Count = freqs[i];
         let class1Neighbours = nearestNeigbours[i];
         let class1Distances = nearestDistances[i];
 
         for (let j = 0; j < nNearest; j++) {
-            let neighbour = class1Neighbours[j];
-            if (!isNull(neighbour)) {
+            let neighbourInd = class1Neighbours[j];
+            let class2Count = freqs[neighbourInd];
+            let neighbourName = classLabels[neighbourInd];
+            if (!isNull(neighbourInd)) {
                 let distance = class1Distances[j];
-                if (existingPairs.indexOf(`${class1}-${neighbour}`) == -1) {
-                    let pairId = `${neighbour}-${class1}`;
-                    rows.push({'id': pairId, 'class-1-name': class1, 'class-2-name': neighbour, distance});
+                if (existingPairs.indexOf(`${class1Name}-${neighbourName}`) == -1) {
+                    let pairId = `${neighbourName}-${class1Name}`;
+                    rows.push({'id': pairId, 'class-1-name': class1Name, 'class-2-name': neighbourName, distance,
+                        'class-1-count': class1Count, 'class-2-count': class2Count
+                    });
                     existingPairs.push(pairId);
                 }
             }
@@ -592,26 +597,6 @@ const adjustPlotlySize = function () {
 };
 
 export const run = function (commonElements) {
-    // let x = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
-    // let y = [2, 5, 8];
-    // let l = ['A', 'B', 'C'];
-    // let z = calcClassDistByAdjacency(x, y);
-    //
-    // console.log(z);
-
-    // let {nearestNeigbours, nearestDistances} = getClosestNeighbours(z, l, 2);
-    // console.log(nearestDistances);
-    // console.log(nearestNeigbours);
-    // let adjMat = [[0, 10, 20, 30], [1, 0, 5, 7], [3, 2, 0, 10], [0, 0, 1, 0]];
-    // let freqs = [100, 20, 10, 10];
-    // let classLabels = ['A', 'B', 'C', 'D'];
-    // let syntaxData = {
-    //     adjMat, freqs, classLabels
-    // };
-    // mergeClasses('A', 'B', 'AB', syntaxData);
-    //
-    // console.log(syntaxData);
-
     ce = commonElements;
     initSlider();
     grid.init();

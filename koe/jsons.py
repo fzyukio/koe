@@ -596,9 +596,19 @@ tables =\
                     "type": "SHORT_TEXT"
                 },
                 {
+                    "name": "Class 1 count",
+                    "slug": "class-1-count",
+                    "type": "INTEGER"
+                },
+                {
                     "name": "Class 2",
                     "slug": "class-2-name",
                     "type": "SHORT_TEXT"
+                },
+                {
+                    "name": "Class 2 count",
+                    "slug": "class-2-count",
+                    "type": "INTEGER"
                 },
                 {
                     "name": "Distance",
