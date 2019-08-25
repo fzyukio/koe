@@ -509,6 +509,10 @@ function calcGridData() {
     let nClasses = classLabels.length;
     for (let i = 0; i < nClasses; i++) {
         let class1Label = classLabels[i];
+        if (isEmpty(class1Label)) {
+            continue
+        }
+
         let class1Count = freqs[i];
         let class1Neighbours = nearestNeigbours[i];
         let class1StxDistances = nearestStxDistances[i];
@@ -518,20 +522,22 @@ function calcGridData() {
             let neighbourInd = class1Neighbours[j];
             let class2Count = freqs[neighbourInd];
             let neighbourName = classLabels[neighbourInd];
-            if (!isNull(neighbourInd)) {
-                let stxDistance = class1StxDistances[j];
-                let acsDistance = class1AcsDistances[j];
-                let weightedDistance = (stxDistance + acsDistance) / 2;
 
-                if (existingPairs.indexOf(`${class1Label}-${neighbourName}`) == -1) {
-                    let pairId = `${neighbourName}-${class1Label}`;
-                    rows.push({'id': pairId, 'class-1-name': class1Label, 'class-2-name': neighbourName,
-                        'syntax-distance': stxDistance, 'acoustic-distance': acsDistance,
-                        'weighted-distance': weightedDistance,
-                        'class-1-count': class1Count, 'class-2-count': class2Count
-                    });
-                    existingPairs.push(pairId);
-                }
+            if (isEmpty(neighbourName) || isNull(neighbourInd)) {
+                continue
+            }
+            let stxDistance = class1StxDistances[j];
+            let acsDistance = class1AcsDistances[j];
+            let weightedDistance = (stxDistance + acsDistance) / 2;
+
+            if (existingPairs.indexOf(`${class1Label}-${neighbourName}`) == -1) {
+                let pairId = `${neighbourName}-${class1Label}`;
+                rows.push({'id': pairId, 'class-1-name': class1Label, 'class-2-name': neighbourName,
+                    'syntax-distance': stxDistance, 'acoustic-distance': acsDistance,
+                    'weighted-distance': weightedDistance,
+                    'class-1-count': class1Count, 'class-2-count': class2Count
+                });
+                existingPairs.push(pairId);
             }
         }
     }
