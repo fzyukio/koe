@@ -818,6 +818,12 @@ class InvitationCode(SimpleModel):
         return 'Code: {} expiry {}'.format(self.code, self.expiry)
 
 
+class MergingInfo(SimpleModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    info = models.TextField()
+
+
 @receiver(post_delete, sender=HistoryEntry)
 def _history_delete(sender, instance, **kwargs):
     """

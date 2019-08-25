@@ -566,30 +566,6 @@ class Grid extends FlexibleGrid {
             args.extras = JSON.stringify(extraArgs);
         }
 
-        // return new Promise(function (resolve) {
-        //     let onSuccess = function (data) {
-        //         let adjMat = data[0];
-        //         let freqs = data[1];
-        //         let classLabels = data[2];
-        //
-        //         syntaxData.adjMat = adjMat;
-        //         syntaxData.freqs = freqs;
-        //         syntaxData.classLabels = classLabels;
-        //
-        //         let rows = calcGridData();
-        //
-        //         self.rows = rows;
-        //         updateSlickGridData(self.mainGrid, rows);
-        //         resolve();
-        //     };
-        //
-        //     postRequest({
-        //         requestSlug: 'koe/get-syntactically-similar-pairs',
-        //         data: args,
-        //         onSuccess
-        //     });
-        // });
-
         return Promise.resolve();
     }
 }
@@ -823,6 +799,36 @@ export const postRun = function () {
     });
 };
 
+function recordMergeInfo(newClassName) {
+    let classToRowIdx = labelDatum[classType];
+    let class1RowIdx = classToRowIdx[class1Name];
+    let class2RowIdx = classToRowIdx[class2Name];
+
+    let class1RowIds = [];
+    let class2RowIds = [];
+
+    $.each(class1RowIdx, function (className, rowIdx) {
+        let rowMetadata = rowsMetadata[rowIdx];
+        class1RowIds.push(rowMetadata.id)
+    });
+
+    $.each(class2RowIdx, function (className, rowIdx) {
+        let rowMetadata = rowsMetadata[rowIdx];
+        class2RowIds.push(rowMetadata.id);
+    });
+
+    postRequest({
+        requestSlug: 'koe/record-merge-classes',
+        data: {'class1-name': class1Name, 'class2-name': class2Name, 'class1-ids': JSON.stringify(class1RowIds),
+            'class2-ids': JSON.stringify(class2RowIds), 'class1n2-name': newClassName},
+        msgGen(isSuccess, response) {
+            return isSuccess ?
+                `Successfully merged class ${class1Name} and ${class2Name}.` :
+                `Something's wrong. The server says ${response}. Files might have been deleted.`;
+        }
+    });
+}
+
 /**
  * Merge classes on client side and change the syntax data for the table, accordingly
  * @param newClassName
@@ -957,6 +963,7 @@ const handleMergeBtn = function () {
             if (selectableOptions) {
                 selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
             }
+            recordMergeInfo(value);
             mergeClasses(value);
             mergeClassesChangeSyllableLabels(value);
 

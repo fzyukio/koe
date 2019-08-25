@@ -20,14 +20,14 @@ from koe.model_utils import extract_spectrogram, assert_permission, get_or_error
     delete_segments_async
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel,\
-    InvitationCode
+    InvitationCode, MergingInfo
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
            'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
-           'bulk_merge_classes']
+           'bulk_merge_classes', 'record_merge_classes']
 
 
 def import_audio_metadata(request):
@@ -624,4 +624,19 @@ def bulk_merge_classes(request):
         for new_class, sids in new_classes.items():
             ExtraAttrValue.objects.filter(user=user, owner_id__in=sids, attr=label_attr).update(value=new_class)
 
+    return True
+
+
+def record_merge_classes(request):
+    class1_name = request.POST['class1-name']
+    class2_name = request.POST['class2-name']
+    class1n2_name = request.POST['class1n2-name']
+    class1_ids = json.loads(request.POST['class1-ids'])
+    class2_ids = json.loads(request.POST['class2-ids'])
+
+    username = request.user.username
+    info = dict(class1=dict(name=class1_name, ids=class1_ids), class2=dict(name=class2_name, ids=class2_ids),
+                merged=class1n2_name, username=username)
+
+    MergingInfo.objects.create(user=request.user, info=info)
     return True

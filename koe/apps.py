@@ -32,7 +32,7 @@ def get_builtin_attrs():
         user=DotMap(current_database=current_database_attr, database_sim_attr=database_sim_attr,
                     tmpdb_sim_attr=tmpdb_sim_attr, hold_ids_attr=hold_ids_attr),
         audio_file=DotMap(note=song_note_attr, type=type_attr),
-        segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr)
+        segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr),
     )
 
 
