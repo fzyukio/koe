@@ -44,6 +44,7 @@
                             <span>Upload songs</span>
                         </a>
                     </div>
+                    {% endif %}
 
                     <div class="menu-item" page="songs">
                         <a class="appendable" href="{% url 'songs' %}">
@@ -51,7 +52,6 @@
                         </a>
                     </div>
 
-                    {% endif %}
                     <div class="menu-item" page="segmentation">
                         <a href="#" data-toggle="modal" data-target="#go-to-songs-modal">
                             <span>Segment songs into units</span>
