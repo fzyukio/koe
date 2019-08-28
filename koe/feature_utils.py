@@ -460,7 +460,7 @@ def pca_optimal(data, max_ndims, min_explained, min_ndims=2):
 
 def tsne(data, ndims, **kwargs):
     assert 2 <= ndims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
-    pca_dims = min(50, data.shape[1])
+    pca_dims = min(50, data.shape[1], data.shape[0])
     if pca_dims < data.shape[1]:
         data = pca(data, pca_dims)
 
