@@ -799,6 +799,11 @@ export const postRun = function () {
     });
 };
 
+/**
+ * Save merge info to database
+ * @param newClassName
+ * @returns {string}
+ */
 function recordMergeInfo(newClassName) {
     let classToRowIdx = labelDatum[classType];
     let class1RowIdx = classToRowIdx[class1Name];

@@ -11,7 +11,7 @@ from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, \
     get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
-from koe.utils import audio_path
+from koe.utils import audio_path, wav_path
 from memoize import memoize
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
@@ -48,14 +48,19 @@ def _cached_get_segment_audio_data(audio_file_name, database_id, fs, start, end)
 
     audio_segment = _match_target_amplitude(audio_segment)
 
+    if fs > settings.AUDIO_COMPRESSED_FORMAT_MAX_FS:
+        audio_format = 'wav'
+    else:
+        audio_format = settings.AUDIO_COMPRESSED_FORMAT
+
     out = io.BytesIO()
-    audio_segment.export(out, format=settings.AUDIO_COMPRESSED_FORMAT)
+    audio_segment.export(out, format=audio_format)
     binary_content = out.getvalue()
     out.close()
 
     response = HttpResponse()
     response.write(binary_content)
-    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
+    response['Content-Type'] = 'audio/' + audio_format
     response['Content-Length'] = len(binary_content)
     return response
 
@@ -249,7 +254,11 @@ def get_audio_file_url(request):
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
-    return audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
+    if (audio_file.fs > settings.AUDIO_COMPRESSED_FORMAT_MAX_FS):
+        return wav_path(audio_file, for_url=True)
+
+    else:
+        return audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True)
 
 
 def get_audio_files_urls(request):

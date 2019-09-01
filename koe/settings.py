@@ -204,6 +204,7 @@ def JSONEncoder_newdefault(self, obj):
 JSONEncoder.default = JSONEncoder_newdefault
 
 AUDIO_COMPRESSED_FORMAT = 'mp4'
+AUDIO_COMPRESSED_FORMAT_MAX_FS = 48000
 
 TZ_DETECT_COUNTRIES = ('NZ', 'AU', 'GB', 'US', 'CA', 'CN', 'JP', 'FR', 'DE')
 

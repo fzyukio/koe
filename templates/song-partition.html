@@ -46,7 +46,9 @@
     {% debug_mode as is_in_debug_mode %}
     {% if is_in_debug_mode %}
         <script src="{% static "d3.js" %}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/wavefile"></script>
     {% else %}
         <script src="//d3js.org/d3.v5.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/wavefile"></script>
     {% endif %}
 {% endblock %}
