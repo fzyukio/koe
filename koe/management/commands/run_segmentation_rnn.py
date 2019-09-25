@@ -34,7 +34,7 @@ def read_variables(save_to):
     return variables
 
 
-def extract_psd(extractor, audio_file):
+def extract_psd(extractor, audio_file, normalise=True):
     """
     Extract audio file's spectrogram given its ID
     :param audio_file:
@@ -44,9 +44,13 @@ def extract_psd(extractor, audio_file):
     wav_file_path = wav_path(audio_file)
     spect = extractor(wav_file_path, audio_file.fs, 0, None)
     spect_min = np.min(spect)
-    spect_max = np.max(spect)
 
-    return (spect - spect_min) / (spect_max - spect_min)
+    if normalise:
+        spect_max = np.max(spect)
+
+        return (spect - spect_min) / (spect_max - spect_min)
+    else:
+        return spect
 
 
 def create_segment_profile(audio_file, duration_frames, filepath, window_len, step_size=1):

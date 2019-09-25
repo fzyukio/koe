@@ -66,7 +66,6 @@ def psd2img(psd, imgpath=None, islog=False):
     :return:
     """
     height, width = np.shape(psd)
-    psd = np.flipud(psd)
 
     if not islog:
         # find maximum
