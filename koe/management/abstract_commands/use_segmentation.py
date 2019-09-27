@@ -3,6 +3,7 @@ Convert audio file to spectrogram. Then use the trained segmentation encoder to 
 Then display the segmentation on a webpage
 """
 import os
+import pickle
 from abc import abstractmethod
 
 import numpy as np
@@ -243,6 +244,8 @@ def showcase_segmentation(variables, segmenter):
     html = generate_html(segmentation_results)
     with open(os.path.join(tmp_dir, 'index.html'), 'w') as f:
         f.write(html)
+    with open(os.path.join(tmp_dir, 'results.pkl'), 'wb') as f:
+        pickle.dump(segmentation_results, f)
     bar.finish()
 
 
