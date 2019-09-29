@@ -62,6 +62,7 @@ feature_whereabout = {
         ('average_frame_power', False, True),
         ('max_frame_power', False, True),
         # ('s2s_autoencoded', True, False),
+        ('mlp_autoencoded', True, True),
     ]
 }
 
@@ -100,7 +101,7 @@ def init():
             feature.is_one_dimensional = is_one_dimensional
             feature.save()
 
-            extractor = getattr(module, feature_name)
+            extractor = getattr(module, feature_name, None)
             feature_extractors[feature_name] = extractor
             features.append(feature)
             feature_map[feature_name] = feature
