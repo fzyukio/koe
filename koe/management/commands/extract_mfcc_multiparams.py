@@ -13,6 +13,7 @@ from koe.feature_utils import extract_segment_feature_for_audio_file
 from koe.model_utils import get_or_error
 from koe.models import Database, Aggregation, Segment, Feature
 from koe.storage_utils import get_sids_tids
+from root.utils import zip_equal
 from root.utils import wav_path
 
 
@@ -51,7 +52,7 @@ def extract_mfcc_multiparams(database_name, save_dir, ncep, fmin, fmax):
             wav_file_path = wav_path(song_name)
             __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **xtra_args)
             bar.next()
-            for tid, fval in zip(__tids, __fvals):
+            for tid, fval in zip_equal(__tids, __fvals):
                 tid2fval[tid] = fval
         bar.finish()
 

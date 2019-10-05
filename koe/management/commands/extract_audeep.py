@@ -22,7 +22,7 @@ from koe.models import *
 from koe.spect_utils import extractors, normalise_all, extract_global_min_max, save_global_min_max
 from koe.utils import wav_path, get_kfold_indices
 from root.models import User
-from root.utils import ensure_parent_folder_exists, mkdirp
+from root.utils import ensure_parent_folder_exists, mkdirp, zip_equal
 
 
 class Command(BaseCommand):
@@ -78,7 +78,7 @@ class Command(BaseCommand):
         fold_indices = get_kfold_indices(enum_labels, min_occur)
 
         segments_info = {sid: (label, label_enum, fold_ind) for sid, label, label_enum, fold_ind in
-                         zip(sids, labels, enum_labels, fold_indices)}
+                         zip_equal(sids, labels, enum_labels, fold_indices)}
 
         segs = Segment.objects.filter(id__in=sids)
 

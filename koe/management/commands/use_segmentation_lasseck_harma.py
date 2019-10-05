@@ -11,6 +11,7 @@ import numpy as np
 
 from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
 from koe.management.commands.use_segmentation_lasseck import get_median_clipping_mask
+from root.utils import zip_equal
 
 
 class LasseckHarmaSegmenter(Segmenter):
@@ -90,7 +91,7 @@ class LasseckHarmaSegmenter(Segmenter):
         x0s = x0s[sorted_idx]
         x1s = x1s[sorted_idx]
 
-        syllables = [[x0, x1] for x0, x1 in zip(x0s, x1s)]
+        syllables = [[x0, x1] for x0, x1 in zip_equal(x0s, x1s)]
 
         return syllables, regions
 

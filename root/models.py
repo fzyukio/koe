@@ -12,6 +12,8 @@ from django.db.models.base import ModelBase
 from django.db.models.query import QuerySet
 from django_bulk_update.helper import bulk_update
 
+from root.utils import zip_equal
+
 __all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
            'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel',
            'value_setter', 'value_getter', 'get_bulk_id', 'has_field']
@@ -324,7 +326,7 @@ class AutoSetterGetterMixin:
             objs = objs[0].__class__.objects.filter(id__in=ids).order_by(preserved)
 
         if isinstance(value, list):
-            for obj, val in zip(objs, value):
+            for obj, val in zip_equal(objs, value):
                 setattr(obj, attr, val)
             bulk_update(objs, update_fields=[attr], batch_size=10000)
         else:

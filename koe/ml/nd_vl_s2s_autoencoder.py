@@ -13,6 +13,7 @@ from tensorflow.contrib.seq2seq import dynamic_decode, TrainingHelper, Inference
 from tensorflow.nn import dynamic_rnn, relu
 
 from koe.ml.learning_rate_funcs import lrfunc_classes
+from root.utils import zip_equal
 from root.utils import mkdirp
 
 
@@ -294,7 +295,7 @@ class _NDS2SAE:
         max_x_len = max(source_sequence_lens) + self.stop_pad_length
         padded_xs = []
 
-        for x, lenx in zip(xs, source_sequence_lens):
+        for x, lenx in zip_equal(xs, source_sequence_lens):
             x_pad_length = max_x_len - lenx - self.stop_pad_length
             x_padding = np.full((x_pad_length, self.input_dim), self.pad_token, dtype=np.float32)
             padded_x = np.concatenate((x.astype(np.float32), self.x_stopping, x_padding))
@@ -308,7 +309,7 @@ class _NDS2SAE:
             padded_ys = []
             mask = np.zeros((batch_size, max_y_len), dtype=np.float32)
 
-            for y, leny, mask_ in zip(ys, target_sequence_lens, mask):
+            for y, leny, mask_ in zip_equal(ys, target_sequence_lens, mask):
                 y_pad_length = max_y_len - leny - self.stop_pad_length
                 y_padding = np.full((y_pad_length, self.output_dim), self.pad_token, dtype=np.float32)
                 padded_y = np.concatenate((y.astype(np.float32), self.y_stopping, y_padding))
@@ -551,7 +552,7 @@ class _NDS2SAE:
             return padded_output
 
         retval = []
-        for y, leny in zip(padded_output, res_len):
+        for y, leny in zip_equal(padded_output, res_len):
             retval.append(y[:leny])
         return retval
 

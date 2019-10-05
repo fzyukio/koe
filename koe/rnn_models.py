@@ -2,6 +2,7 @@ import numpy as np
 from numpy import random
 
 from koe.utils import one_hot, split_classwise
+from root.utils import zip_equal
 
 
 def inds2dataset(inds, data, labels, lens=None):
@@ -190,7 +191,7 @@ class OneHotSequenceProvider(DataProvider):
 
         # The mins and maxs are basis for normalise the data (to [0 - 1]
         self.data = []
-        for matrix, matrix_len in zip(data, self.lens):
+        for matrix, matrix_len in zip_equal(data, self.lens):
             matrix = (matrix - self.mins) / data_range
             if matrix.ndim == 1:
                 matrix = matrix.reshape((matrix.shape[0], 1))

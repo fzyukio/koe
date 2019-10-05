@@ -15,6 +15,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from koe.utils import accum
 from pymlfunc import sub2ind
+from root.utils import zip_equal
 
 
 def _calc_score(predict_y, test_y, nlabels):
@@ -207,7 +208,7 @@ class Command(BaseCommand):
                 lines.append('{},{},'.format(mean_label_prediction_scores, std_label_prediction_scores))
 
                 lines.append('ID,Label,Misclassification count')
-                for sylid, label, count in zip(sids_sorted, labels_sorted, misclassified_counts_sorted):
+                for sylid, label, count in zip_equal(sids_sorted, labels_sorted, misclassified_counts_sorted):
                     line = '{},{},{}'.format(sylid, label, count)
                     lines.append(line)
 

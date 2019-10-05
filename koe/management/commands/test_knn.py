@@ -12,6 +12,7 @@ from scipy.spatial.distance import pdist
 from scipy.stats import zscore
 
 from koe.utils import accum, triu2mat
+from root.utils import zip_equal
 
 
 def sorted_labels_by_prevalence_then_distance(neighbour_labels, neighbour_distances, distance_func):
@@ -60,8 +61,8 @@ def k_nearest(distmat, train_labels, nlabels, k, map_order):
 
     label_prediction_map_score = mapk(actual_labels, predicted_labels, map_order)
 
-    hits = np.array([1 if a in p else 0 for a, p in zip(actual_labels, predicted_labels)], dtype=np.int)
-    misses = np.array([0 if a in p else 1 for a, p in zip(actual_labels, predicted_labels)],
+    hits = np.array([1 if a in p else 0 for a, p in zip_equal(actual_labels, predicted_labels)], dtype=np.int)
+    misses = np.array([0 if a in p else 1 for a, p in zip_equal(actual_labels, predicted_labels)],
                       dtype=np.int)
 
     label_hits = np.full((nlabels,), np.nan)

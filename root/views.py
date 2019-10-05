@@ -19,6 +19,7 @@ from dotmap import DotMap
 from tz_detect.utils import offset_to_timezone
 
 from koe import jsons
+from root.utils import zip_equal
 from root.exceptions import CustomAssertionError
 from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
     ColumnActionValue, get_bulk_id, get_field
@@ -404,7 +405,7 @@ def change_properties_table(request):
             # Otherwise there is no way but to bulk set multiple objects that share the same value
             else:
                 val2bulk = {}
-                for val, obj in zip(vals, bulk):
+                for val, obj in zip_equal(vals, bulk):
                     if val not in val2bulk:
                         val2bulk[val] = [obj]
                     else:

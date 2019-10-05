@@ -30,8 +30,7 @@ from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from koe.ts_utils import ndarray_to_bytes
 from koe.utils import get_wav_info, wav_path
 from root.exceptions import CustomAssertionError
-from root.utils import ensure_parent_folder_exists
-from root.utils import data_path, mkdirp
+from root.utils import ensure_parent_folder_exists, data_path, mkdirp, zip_equal
 
 nfft = 512
 noverlap = nfft * 3 // 4
@@ -215,7 +214,7 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
 
             values = binstorage.retrieve(_tids, f_idf, f_vlf)
 
-            for tid, fs, value in zip(_tids, _fss, values):
+            for tid, fs, value in zip_equal(_tids, _fss, values):
                 args['fs'] = fs
                 result_by_agg = {}
                 result_by_tid[tid] = result_by_agg
@@ -277,7 +276,7 @@ def extract_tids_fvals(tid2fvals, features):
         for idx, val in enumerate(fvals):
             vals_per_feature[idx].append(val)
 
-    f2vals = {x: y for x, y in zip(features, vals_per_feature)}
+    f2vals = {x: y for x, y in zip_equal(features, vals_per_feature)}
     return tids, f2vals
 
 

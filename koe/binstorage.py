@@ -5,6 +5,8 @@ import os
 import numpy as np
 from shutil import copyfile
 
+from root.utils import zip_equal
+
 INDEX_FILE_NCOLS = 5
 
 
@@ -39,7 +41,7 @@ def store_anew(ids, arrs, index_filename, value_filename):
 
     begin = 0
 
-    for id, arr in zip(ids, arrs):
+    for id, arr in zip_equal(ids, arrs):
         assert np.isscalar(arr) or arr.ndim < 3, 'Only scalar, one or two dims arrays are supported'
 
         arr_len = np.size(arr)
@@ -122,7 +124,7 @@ def update_by_modification(new_ids, new_arrs, index_filename, value_filename):
 
     new_start = len(value_bin)
 
-    for new_id, new_arr in zip(new_ids, new_arrs):
+    for new_id, new_arr in zip_equal(new_ids, new_arrs):
         new_dim0, new_dim1 = get_dim(new_arr)
         if isinstance(new_arr, np.ndarray):
             new_arr = new_arr.astype(np.float32)
@@ -209,7 +211,7 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
     with open(value_filename, 'rb') as f:
         value_bin = np.fromfile(f, dtype=np.float32)
 
-    new_id2arr = {x: y for x, y in zip(new_ids, new_arrs)}
+    new_id2arr = {x: y for x, y in zip_equal(new_ids, new_arrs)}
 
     for id, start, end, dim0, dim1 in index_arr:
         if id not in new_id2arr:

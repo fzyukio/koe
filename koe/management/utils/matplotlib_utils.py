@@ -6,6 +6,8 @@ import numpy as np
 from PIL import Image
 from scipy.cluster import hierarchy
 
+from root.utils import zip_equal
+
 
 def set_size(w, h, ax=None):
     import matplotlib.pyplot as plt
@@ -48,7 +50,7 @@ def scatter_plot_with_highlighted_clusters(highlighted_cls_names, syl_cls_names,
     ax = fig.gca()
 
     syl_inds_unused = np.ones((len(syl_ids),))
-    for cls, colour in zip(highlighted_cls_names, colours[1:]):
+    for cls, colour in zip_equal(highlighted_cls_names, colours[1:]):
         syl_inds = np.where(syl_cls_names == cls)
         syl_inds_unused[syl_inds] = 0
         x = ordination_data[syl_inds, 0]
@@ -98,7 +100,7 @@ def show_highlighed_cls_syllables(highlighted_cls_names, syl_cls_names, syl_tids
         selected_syl_imgpth = [img_dir + '/{}.png'.format(tid) for tid in selected_tids]
 
         images = [Image.open(i) for i in selected_syl_imgpth]
-        widths, heights = zip(*(i.size for i in images))
+        widths, heights = zip_equal(*(i.size for i in images))
         max_height = max(heights)
         total_height = max_height
         offset = 20
@@ -184,7 +186,7 @@ def show_highlighed_syllables(highlighted_syls_name, highlighted_syl_tids, pdf=N
     selected_syl_imgpth = [img_dir + '/{}.png'.format(tid) for tid in highlighted_syl_tids]
 
     images = [Image.open(i) for i in selected_syl_imgpth]
-    widths, heights = zip(*(i.size for i in images))
+    widths, heights = zip_equal(*(i.size for i in images))
     max_height = max(heights)
     # total_height = max_height
     offset = 20

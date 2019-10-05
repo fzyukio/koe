@@ -13,6 +13,7 @@ from django.forms import models
 from openpyxl import load_workbook
 
 from koe.models import Segment, AudioFile
+from root.utils import zip_equal
 from root.models import enum, ExtraAttr, User, value_setter, ExtraAttrValue
 
 ColumnName = enum(
@@ -57,7 +58,7 @@ def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
         for i in range(len(values)):
             values[i] = val2str(values[i])
 
-    ids_2_values = {x: y for x, y in zip(ids, values)}
+    ids_2_values = {x: y for x, y in zip_equal(ids, values)}
 
     existings = ExtraAttrValue.objects.filter(
         user=user, owner_id__in=ids, attr=extra_attr)
@@ -65,7 +66,7 @@ def bulk_set_attr(cls, objs_or_ids, attr, values, is_object=True):
     nonexistings_owner_ids = [x for x in ids if x not in existings_owner_ids]
 
     with transaction.atomic():
-        for obj, objid in zip(existings, existings_owner_ids):
+        for obj, objid in zip_equal(existings, existings_owner_ids):
             value = ids_2_values[objid]
             obj.value = value
             obj.save()

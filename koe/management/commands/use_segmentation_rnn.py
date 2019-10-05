@@ -8,6 +8,7 @@ from koe.management.commands.run_rnn_encoder import read_variables
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
 from koe.utils import split_segments
+from root.utils import zip_equal
 
 
 def run_segmentation(duration_frames, psd, encoder, session, window_len, step_size=1):
@@ -21,7 +22,7 @@ def run_segmentation(duration_frames, psd, encoder, session, window_len, step_si
         windoweds.append(windowed)
 
     predicteds = encoder.predict(windoweds, session, res_len=lengths)
-    for predicted, (beg, end) in zip(predicteds, windows):
+    for predicted, (beg, end) in zip_equal(predicteds, windows):
         predicted_binary = predicted.reshape(window_len) > 0.5
         mask[beg: end] += predicted_binary
 

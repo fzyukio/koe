@@ -5,6 +5,7 @@ Then display the segmentation on a webpage
 import numpy as np
 
 from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
+from root.utils import zip_equal
 
 
 class HarmaSegmenter(Segmenter):
@@ -57,7 +58,7 @@ class HarmaSegmenter(Segmenter):
         x0s = x0s[sorted_idx]
         x1s = x1s[sorted_idx]
 
-        syllables = [[x0, x1] for x0, x1 in zip(x0s, x1s)]
+        syllables = [[x0, x1] for x0, x1 in zip_equal(x0s, x1s)]
         return syllables, None
 
 

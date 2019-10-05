@@ -17,6 +17,7 @@ from koe.sequence_utils import calc_class_ajacency
 from koe.storage_utils import get_sids_tids
 from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from koe.utils import history_path
+from root.utils import zip_equal
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttr, ExtraAttrValue
 
@@ -741,7 +742,7 @@ def get_syntactically_similar_pairs(request):
     cls_labels, syl_label_enum_arr = np.unique(label_arr, return_inverse=True)
 
     enum2label = {enum: label for enum, label in enumerate(cls_labels)}
-    sid2enumlabel = {sid: enum_label for sid, enum_label in zip(sids, syl_label_enum_arr)}
+    sid2enumlabel = {sid: enum_label for sid, enum_label in zip_equal(sids, syl_label_enum_arr)}
 
     adjacency_mat, classes_info = calc_class_ajacency(database, syl_label_enum_arr, enum2label, sid2enumlabel,
                                                       count_style='forward', self_count='append')

@@ -6,6 +6,8 @@ import threading
 import time
 
 import errno
+from itertools import zip_longest
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
@@ -111,3 +113,17 @@ def get_referrer_pathname(request):
     referer_url_starts = full_url.find(http_host) + len(http_host)
     referer_url = full_url[referer_url_starts:]
     return referer_url
+
+
+def zip_equal(*iterables):
+    """
+    Make sure all lists have the same length before zipping them.
+    Credit: https://mail.python.org/pipermail/python-ideas/2018-July/052462.html
+    :param iterables: list of iterable objects e.g. list
+    :return: same as zip_equal() or exception if lengths are unequal
+    """
+    sentinel = object()
+    for combo in zip_longest(*iterables, fillvalue=sentinel):
+        if any(sentinel is c for c in combo):
+            raise ValueError('Iterables have different lengths')
+        yield combo

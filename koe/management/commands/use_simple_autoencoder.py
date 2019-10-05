@@ -23,7 +23,7 @@ from koe.models import Segment, Database, DataMatrix, AudioFile
 from koe.spect_utils import extractors, psd2img, load_global_min_max
 from koe.ts_utils import ndarray_to_bytes
 from koe.utils import wav_path
-from root.utils import mkdirp
+from root.utils import mkdirp, zip_equal
 
 
 def spect_from_seg(seg, extractor):
@@ -79,7 +79,7 @@ def encode_syllables(variables, encoder, session, segs):
             bar.next()
         encoded = encoder.encode(spects, session=session)
 
-        for encod, seg, length in zip(encoded, batch_segs, lengths):
+        for encod, seg, length in zip_equal(encoded, batch_segs, lengths):
             encoding_result[seg.id] = encod
 
         bar.finish()
@@ -128,7 +128,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
 
         reconstructed = encoder.predict(spects, session=session)
 
-        for spect, recon, seg, length in zip(spects, reconstructed, batch_segs, lengths):
+        for spect, recon, seg, length in zip_equal(spects, reconstructed, batch_segs, lengths):
             sid = seg.id
             spect = spect[:length, :].T
 

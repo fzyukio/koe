@@ -7,6 +7,7 @@ from django.test import TestCase
 from pymlfunc import tictoc
 
 import koe.binstorage as bs
+from root.utils import zip_equal
 
 NUM_POINTS = 100
 
@@ -116,7 +117,7 @@ class BinStorageTest(TestCase):
         _, new_arrs = create_random_id_based_dataset()
         npoints = NUM_POINTS
 
-        id2arr = {x: y for x, y in zip(self.ids, self.arrs)}
+        id2arr = {x: y for x, y in zip_equal(self.ids, self.arrs)}
 
         # We want to make sure there are new ids (to be appended) and old ids (to be updated)
         while True:
@@ -127,7 +128,7 @@ class BinStorageTest(TestCase):
             if 0 < len(nnew) < npoints:
                 break
 
-        for x, y in zip(new_ids, new_arrs):
+        for x, y in zip_equal(new_ids, new_arrs):
             id2arr[x] = y
 
         self.ids = np.array(list(id2arr.keys()))
@@ -139,7 +140,7 @@ class BinStorageTest(TestCase):
             bs.store(new_ids, new_arrs, self.index_filename, self.value_filename)
 
         retrieved_arrs = bs.retrieve(self.ids, self.index_filename, self.value_filename)
-        for id, retrieved_arr in zip(self.ids, retrieved_arrs):
+        for id, retrieved_arr in zip_equal(self.ids, retrieved_arrs):
             self.assertTrue(np.allclose(id2arr[id], retrieved_arr))
 
     def _test_retrieve(self, nselected):

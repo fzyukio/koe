@@ -14,6 +14,7 @@ from koe.models import Database, Feature
 from koe.rnn_models import OneHotSequenceProvider
 from koe.rnn_train import train
 from koe.storage_utils import get_sids_tids, get_binstorage_locations
+from root.utils import zip_equal
 from root.models import User
 
 feature_whereabout = {x.__name__[len('koe.features.'):]: y for x, y in feature_whereabout.items()}
@@ -30,7 +31,7 @@ def extract_rawdata(f2bs, ids, features):
         index_filename, value_filename = f2bs[feature]
         with tictoc('{}'.format(feature.name)):
             feature_values = binstorage.retrieve(ids, index_filename, value_filename)
-            for id, feature_value in zip(ids, feature_values):
+            for id, feature_value in zip_equal(ids, feature_values):
                 data_by_id[id].append(feature_value)
 
     data = []
@@ -116,7 +117,7 @@ class Command(BaseCommand):
                 if feature_ind is not None:
                     ftgroup_col_inds.append(feature_ind)
 
-            for full_row, sid in zip(full_data, sids):
+            for full_row, sid in zip_equal(full_data, sids):
                 row = [full_row[x] for x in ftgroup_col_inds]
                 try:
                     row = np.vstack(row).T
