@@ -15,8 +15,9 @@ from progress.bar import Bar
 from scipy import signal
 
 from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
+# from koe.management.commands import utils
+# from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
+from koe.management.utils.luscinia_utils import get_syllable_end_time, import_pcm, wav_2_mono, get_dbconf
 from koe.models import AudioFile, Segment, AudioTrack, Individual, Database, DatabaseAssignment, DatabasePermission
 from root.models import ExtraAttrValue, User
 from root.utils import ensure_parent_folder_exists
@@ -133,7 +134,7 @@ def import_syllables(conn):
             continue
 
         real_syl_starttime = el_rows[0]['starttime']
-        real_syl_endtime = utils.get_syllable_end_time(el_rows)
+        real_syl_endtime = get_syllable_end_time(el_rows)
 
         syllable = (real_syl_starttime, real_syl_endtime)
 
@@ -447,7 +448,7 @@ class Command(BaseCommand):
 
         conns = None
         try:
-            conns = utils.get_dbconf(dbs)
+            conns = get_dbconf(dbs)
             for pop in conns:
                 conn = conns[pop]
                 import_songs(conn, database)

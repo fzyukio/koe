@@ -58,7 +58,7 @@ def extract_log_spect(wav_file_path, fs, start, end, filepath=None):
 eps = 1e-3
 
 
-def psd2img(psd, imgpath=None, islog=False, cm=None):
+def psd2img(psd, imgpath=None, islog=False, cm=None, flip=True):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
     :param audio_file:
@@ -73,6 +73,9 @@ def psd2img(psd, imgpath=None, islog=False, cm=None):
     cm_red = cm[:, 0]
     cm_green = cm[:, 1]
     cm_blue = cm[:, 2]
+
+    if flip:
+        psd = np.flipud(psd)
 
     if not islog:
         # find maximum
@@ -103,6 +106,21 @@ def psd2img(psd, imgpath=None, islog=False, cm=None):
         return None
     else:
         return psd_rgb
+
+
+def binary_img(img, imgpath=None, islog=False):
+    """
+    Plot binary images
+    :param img:
+    :param imgpath:
+    :param islog:
+    :return:
+    """
+    # height, width = np.shape(img)
+    img = np.asarray(img * 255, dtype=np.uint8)
+    img = Image.fromarray(img)
+    img.save(imgpath, format='PNG')
+    return None
 
 
 def extract_global_min_max(folder, format):

@@ -225,7 +225,7 @@ def showcase_segmentation(variables, segmenter):
         auto_segments, extra = segmenter.get_segment(af_psd, audio_file)
         end = time.time()
 
-        af_spect = psd2img(af_psd, islog=is_log_psd)
+        af_spect = psd2img(af_psd, islog=is_log_psd, flip=False)
 
         if extra is not None:
             segmenter.paint_extra(af_spect, extra)
