@@ -99,7 +99,7 @@ class LasseckSegmenter(Segmenter):
 
     def paint_extra(self, af_spect, regions):
         border_colour = [255, 255, 255]
-        border_thickness = 1
+        border_thickness = 10
         nrows, ncols, _ = af_spect.shape
         for props in regions:
             bbox_area = props.area

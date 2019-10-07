@@ -253,7 +253,7 @@ class _NDSMLP:
             assert np.allclose(true_cost, cost), 'Cost = {}, tru cost = {}'.format(cost, true_cost)
             print(('Lost = {}'.format(cost)))
 
-    @profile  # noqa F821
+    # @profile  # noqa F821
     def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
         display_step = 10
         self.construct_loss_function()

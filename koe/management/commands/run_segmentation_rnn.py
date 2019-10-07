@@ -154,7 +154,7 @@ def train(variables, save_to):
     spects = {}
     windows_masked = {}
 
-    @profile  # noqa F821
+    # @profile  # noqa F821
     def get_batch(this_batch_size=10, data_type='train'):
         batch_index_limit = batch_index_limits[data_type]
         sids_collection = sids_collections[data_type]

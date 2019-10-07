@@ -402,7 +402,7 @@ class _NDS2SAE:
             self.train_op = optimizer.apply_gradients(capped_gradients)
             self.train_op_eob = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
 
-    @profile  # noqa F821
+    # @profile  # noqa F821
     def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
         self.construct_loss_function()
 

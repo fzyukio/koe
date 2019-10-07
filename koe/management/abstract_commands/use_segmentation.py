@@ -7,6 +7,7 @@ import pickle
 from abc import abstractmethod
 
 import numpy as np
+import time
 from PIL import Image
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
@@ -74,7 +75,8 @@ def paint_segments(af_spect, correct_segments, auto_segments):
 
     for beg, end in auto_segments:
         bottom_bar[:, beg:end, :] = [0, 255, 0]
-    af_spect = np.concatenate((top_bar, af_spect, bottom_bar), axis=0)
+    af_spect = np.flip(af_spect, 0)
+    af_spect = np.concatenate((bottom_bar, af_spect, top_bar), axis=0)
     return af_spect
 
 
@@ -204,6 +206,7 @@ def showcase_segmentation(variables, segmenter):
     audio_files = AudioFile.objects.filter(database=database)
 
     segmentation_results = {}
+    segmentation_extra = {}
     bar = Bar('Extracting spectrogram and show segmentation...', max=len(audio_files))
     for audio_file in audio_files:
         af_id = audio_file.id
@@ -218,7 +221,9 @@ def showcase_segmentation(variables, segmenter):
         correct_segments = np.array(list(correct_segments)) / af_duration_ms * duration_frames
         correct_segments = correct_segments.astype(np.int32)
 
+        start = time.time()
         auto_segments, extra = segmenter.get_segment(af_psd, audio_file)
+        end = time.time()
 
         af_spect = psd2img(af_psd, islog=is_log_psd)
 
@@ -239,6 +244,7 @@ def showcase_segmentation(variables, segmenter):
         img.save(img_path, format='PNG')
 
         segmentation_results[af_id] = (img_filename, score_mAP, score_f1, precision, recall)
+        segmentation_extra[af_id] = (img_filename, score_mAP, score_f1, precision, recall, correct_segments, auto_segments, end-start)
         bar.next()
 
     html = generate_html(segmentation_results)
@@ -246,6 +252,8 @@ def showcase_segmentation(variables, segmenter):
         f.write(html)
     with open(os.path.join(tmp_dir, 'results.pkl'), 'wb') as f:
         pickle.dump(segmentation_results, f)
+    with open(os.path.join(tmp_dir, 'extra_results.pkl'), 'wb') as f:
+        pickle.dump(segmentation_extra, f)
     bar.finish()
 
 

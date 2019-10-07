@@ -17,8 +17,8 @@ class HarmaSegmenter(Segmenter):
 
         peak_over_time = np.max(spectrogram[lo_bin:, :], 0)
         max_peak = np.max(peak_over_time)
-        dropout_thresh = 0.3 * max_peak
-        global_min = 0.8 * max_peak
+        dropout_thresh = 0.2 * max_peak
+        global_min = 0.7 * max_peak
         syllable_count = 0
         x0s = []
         x1s = []

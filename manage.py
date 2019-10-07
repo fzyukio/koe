@@ -12,8 +12,9 @@ else:
 
 try:
     builtins.profile
-except AttributeError:
     builtins.profile = lambda x: x
+except AttributeError:
+    pass
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", 'koe.settings')

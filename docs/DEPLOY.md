@@ -23,7 +23,7 @@ On Mac or Linux:
 ## Prepare your server
 
 ### Install docker
-You need both `docker` and `docker-compose` installed.
+You need both `docker` and `docker-compose` installed. Versions that work for me are: `docker-compose 1.20.1` and `docker 18.09.5`
 
 See https://docs.docker.com/install/ and https://docs.docker.com/compose/install/
 

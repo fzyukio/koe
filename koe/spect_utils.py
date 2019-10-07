@@ -4,9 +4,8 @@ import pickle
 import numpy as np
 from PIL import Image
 
+from koe.colourmap import default_cm, colour_map
 from koe import wavfile
-from koe.colourmap import cm_green
-from koe.colourmap import cm_red, cm_blue
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 
@@ -59,13 +58,21 @@ def extract_log_spect(wav_file_path, fs, start, end, filepath=None):
 eps = 1e-3
 
 
-def psd2img(psd, imgpath=None, islog=False):
+def psd2img(psd, imgpath=None, islog=False, cm=None):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
     :param audio_file:
     :return:
     """
     height, width = np.shape(psd)
+    if cm is None:
+        cm = default_cm
+    else:
+        cm = colour_map[cm]
+
+    cm_red = cm[:, 0]
+    cm_green = cm[:, 1]
+    cm_blue = cm[:, 2]
 
     if not islog:
         # find maximum
