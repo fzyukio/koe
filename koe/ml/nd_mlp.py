@@ -287,8 +287,6 @@ class _NDSMLP:
                     actual_batch_size = len(xs)
 
                     X_batch, y_batch = self.proprocess_samples(xs, ys)
-                    X_batch = X_batch.reshape(len(xs), -1)
-                    y_batch = np.asarray(y_batch, dtype=int).reshape(len(xs), -1).tolist()
 
                     # Training step
                     feed_dict = {

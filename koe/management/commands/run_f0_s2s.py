@@ -10,7 +10,6 @@ import pickle
 import random
 import zipfile
 from logging import warning, info
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -19,9 +18,8 @@ from progress.bar import Bar
 from scipy.ndimage.interpolation import zoom
 
 from koe.ml.nd_vl_s2s import NDS2SFactory
-from koe.models import AudioFile
 from koe.models import Segment
-from koe.spect_utils import extractors, psd2img, binary_img
+from koe.spect_utils import extractors, psd2img, binary_img, extract_global_min_max, save_global_min_max, normalise_all
 from koe.utils import split_segments
 from koe.utils import wav_path
 from koe.wavfile import read_wav_info
@@ -214,9 +212,9 @@ def extract_specs(wav_dir, tsv_file, spect_dir, format):
     csv_lines = [x for x in csv_file_content.values]
     bar = Bar('Exporting segments ...', max=len(csv_lines))
     for seg_id, filename, seg_start, seg_end in csv_lines:
-        spect_path = Path(spect_dir, '{}.{}'.format(seg_id, format))
+        spect_path = os.path.join(spect_dir, '{}.{}'.format(seg_id, format))
         if not os.path.isfile(spect_path):
-            wav_file_path = Path(wav_dir, filename)
+            wav_file_path = os.path.join(wav_dir, filename)
             fs = read_wav_info(wav_file_path)
             extractor(wav_file_path, fs, seg_start, seg_end, spect_path)
         bar.next()
@@ -242,8 +240,8 @@ def read_spect_dir(spect_dir, format):
                     variables['dims'] = dims
 
     random.shuffle(sids)
-    variables['sids_train'] = sids[:10000]
-    variables['sids_test'] = sids[10000:]
+    variables['sids_train'] = sids[:1000]
+    variables['sids_test'] = sids[1000:]
     return variables
 
 
@@ -278,6 +276,7 @@ class Command(BaseCommand):
         parser.add_argument('--f0-dir', action='store', dest='f0_dir', required=True, type=str,
                             help='Target path to store the spect features')
         parser.add_argument('--format', action='store', dest='format', required=True, type=str)
+        parser.add_argument('--normalised', action='store_true', dest='normalised', default=False)
         parser.add_argument('--save-to', action='store', dest='save_to', required=True, type=str)
         parser.add_argument('--batch-size', action='store', dest='batch_size', required=True, type=int)
         parser.add_argument('--n-iterations', action='store', dest='n_iterations', required=True, type=int)
@@ -306,6 +305,7 @@ class Command(BaseCommand):
         lrargs = json.loads(options['lrargs'])
         keep_prob = options['keep_prob']
         topology = infer_topology(options['topology'])
+        normalised = options['normalised']
 
         if not save_to.lower().endswith('.zip'):
             save_to += '.zip'
@@ -315,6 +315,13 @@ class Command(BaseCommand):
         else:
             mkdirp(spect_dir)
             extract_specs(wav_dir, tsv_file, spect_dir, format)
+
+        if normalised:
+            norm_folder = os.path.join(spect_dir, 'normalised')
+            mkdirp(norm_folder)
+            normalise_all(spect_dir, norm_folder, format)
+
+            spect_dir = norm_folder
 
         if os.path.isfile(save_to):
             info('===========CONTINUING===========')

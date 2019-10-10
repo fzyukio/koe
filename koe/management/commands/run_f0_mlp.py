@@ -4,6 +4,7 @@ Train an auto encoder with it
 Then display a pair of original - reconstructed syllable
 Make it playable too
 """
+import pandas as pd
 import json
 import os
 import pickle
@@ -12,18 +13,48 @@ from logging import info
 
 import numpy as np
 from django.core.management.base import BaseCommand
+from scipy.ndimage.interpolation import zoom
 
-from koe.ml.nd_vl_s2s_mlp import NDS2MLPFactory
-from koe.models import Segment, AudioFile
+from koe.ml.nd_mlp import NDMLPFactory
+from koe.models import Segment
 from koe.spect_utils import extractors
-from koe.utils import split_segments
+from koe.utils import split_segments, get_wav_info
 from koe.utils import wav_path
 from root.utils import mkdirp
 
-good_audio_file_ids = [14437, 14455, 14476, 20024, 14006, 14130, 20046, 14013, 19401, 14350, 14076, 14079, 14444, 13319,
-                       14175, 14104, 20053, 14053, 20054, 19387, 14060, 14056, 14133]
-
-# good_audio_file_ids = [14437]
+good_audio_file_name = [
+    'LAI_2015_05_28_DHB018_01_F.G.LAI_2015_05_28_DHB016Aposs.Downs.wav',
+    'LAI_2015_05_28_DHB031_01_F.EX.LAI_2015_05_28_DHB031A..wav',
+    'LAI_2015_05_28_MMR001_01_M.EX.LAI_2015_05_28_MMR001A.2SylsCh2.wav',
+    'LAI_2015_05_29_BAE028_01_M.VG..wav',
+    'LAI_2015_05_29_WHW002_05_FU.G.wav',
+    'LAI_2015_05_29_WHW004_04_U.G...wav',
+    'LAI_2015_05_30_DHB027_04_M.G...wav',
+    'LAI_2015_05_30_MMR019_01_M.VG..PipePipe.wav',
+    'LAI_2015_05_30_WHW001_07_F.G.LAI_2015_05_30_WHW001A..wav',
+    'LBI_2016_04_05_BAE014_02_M.VG.LBI_2016_04_05_BAE014A.SingleNotesDiffFrequencies.wav',
+    'LBI_2016_04_05_BAE015_08_F.EX.LBI_2016_04_05_BAE015A.StutterDiffEnding.wav',
+    'LBI_2016_04_05_BAE017_02_F.EX..StutterSong.wav',
+    'LBI_2016_04_05_BAE018_01_M.EX..DoubleSyrinxMaybe.wav',
+    'LBI_2016_04_05_BAE018_04_M.EX..Clear.wav',
+    'LBI_2016_04_06_BAE027_01_F.VG..stutterShortSongLowVol.wav',
+    'PKI_2017_02_24_AMH002_06_M.EX.PKI_2017_02_25_AMH002APoss1.LighthouseType.wav',
+    'PKI_2017_02_24_AMH010_08_F.EX.PKI_2017_02_25_AMH010Bposs..wav',
+    'PKI_2017_02_24_MMR032_11_M.EX.PKI_2017_02_24_MMR032A..wav',
+    'PKI_2017_02_24_MMR032_18_M.VG.PKI_2017_02_24_MMR032B..wav',
+    'PKI_2017_02_24_WHW006_02_F.EX.PKI_2017_02_24_WHW006A..wav',
+    'PKI_2017_02_24_WHW011_01_M.VG.PKI_2017_02_24_WHW011A.LastclickSeemsMicNotBill.wav',
+    'PKI_2017_02_26_AMH018_01_F.EX.PKI_2017_02_26_AMH018A.Twiddle.wav',
+    'PKI_2017_02_26_MMR029_02_M.VG.PKI_2017_02_26_MMR029A.ClickWarbles.wav',
+    'PKI_2017_02_27_WHW008_02_F.VG.PKI_2017_02_27_WHW007A..wav',
+    'TAW_2016_09_06_WHW011_12_M.EX.TAW_2016_09_06_WHW011B..wav',
+    'TAW_2016_09_07_WHW005_11_M.G.TAW_2016_09_07_WHW005A.WorriedWhistlePipe.wav',
+    'TAW_2016_09_07_WHW016_09_M.G..SingleGhhhew.wav',
+    'TMI_2012_11_27_MMR006_01_F.G.BkY-GM.(A).wav',
+    'TMI_2013_04_29_MMR041_02_M.VG..wav',
+    'TMI_2013_10_16_MMR144_01_M.VG.OW-GyM.wav',
+    'TMI_2014_12_30_MMR138_01_F.VG.RBr-BM.wav'
+]
 
 
 def read_variables(save_to):
@@ -49,62 +80,95 @@ def extract_psd(extractor, audio_file):
     return (spect - spect_min) / (spect_max - spect_min)
 
 
-def create_segment_profile(audio_file, duration_frames, filepath, window_len, step_size=1):
-    """
-    Each audio file has a number of segments. We'll slide a window through it spectrogam to create segments.
-    then we create a mask for each segment with the same length corresponding to the frame number of the segment.
-    For each frame of the segments that falls into the boundary of a syllable, its corresponding value in the mask
-     is 1, otherwise 0.
-    Each of these windowed segments is given a unique ID that is constructible from the audio file's ID and the
-     timestamp
-    :param step_size: how many frames is the next segment ahead of the
-    :param window_len: length of the sliding window
-    :param audio_file:
-    :return: a dictionary of (fake) segment IDs and their corresponding audiofile, start and end indices
-    """
+def create_traning_set(audio_file_id, seg_info, wav_path, spect_path, mask_path, f0_dir, extractor, normalise, window_len, step_size=1):
     noverlap = window_len - step_size
-    real_segments = Segment.objects.filter(audio_file=audio_file)
-    real_segments_timestamps = real_segments.values_list('start_time_ms', 'end_time_ms')
+    fs, length = get_wav_info(wav_path)
+    duration_ms = int(length * 1000 / fs)
+    if not os.path.isfile(spect_path):
+        spect = extractor(wav_path, fs, 0, None)
+        if normalise:
+            spect_min = spect.min()
+            spect_max = spect.max()
+            spect_range = spect_max - spect_min
+            spect = (spect - spect_min) / spect_range
 
-    # Construct a mask for the entire audiofile, then simply slicing it into fake segments
-    duration_ms = int(audio_file.length / audio_file.fs * 1000)
+        with open(spect_path, 'wb') as f:
+            pickle.dump(spect, f)
 
-    mask = np.zeros((duration_frames, 1), dtype=np.float32)
-    for beg, end in real_segments_timestamps:
-        beg_frame = int(beg / duration_ms * duration_frames)
-        end_frame = int(end / duration_ms * duration_frames)
-        mask[beg_frame:end_frame, :] = 1
+        height, width = spect.shape
+        mask_img = np.zeros((height, width))
 
-    nwindows, windows = split_segments(duration_frames, window_len, noverlap, incltail=False)
+        for seg_id, begin_ms, end_ms in seg_info:
+            seg_start_frame = int(begin_ms / duration_ms * width)
+            seg_end_frame = int(end_ms / duration_ms * width)
+
+            seg_duration_frame = seg_end_frame - seg_start_frame
+
+            f0_file_path = os.path.join(f0_dir, seg_id + '.pkl')
+
+            with open(f0_file_path, 'rb') as f:
+                f0 = pickle.load(f)['binary']
+                h_f0, w_f0 = f0.shape
+                f0 = f0.astype(float)
+
+                f0 = zoom(f0, (height / h_f0, seg_duration_frame / w_f0))
+
+            f0 = np.where(f0 > 0.5, 1, 0)
+
+            mask_img[:, seg_start_frame:seg_end_frame] = f0
+
+        with open(mask_path, 'wb') as f:
+            pickle.dump(mask_img, f)
+
+    else:
+        with open(spect_path, 'rb') as f:
+            spect = pickle.load(f)
+        height, width = spect.shape
+
+    nwindows, windows = split_segments(width, window_len, noverlap, incltail=False)
     profiles = {}
     for beg, end in windows:
-        windowed_id = '{}_{}'.format(audio_file.id, beg)
-        windowed_mask = mask[beg:end, :].tolist()
-        profiles[windowed_id] = (filepath, beg, end, windowed_mask)
+        windowed_id = '{}_{}'.format(audio_file_id, beg)
+        profiles[windowed_id] = (spect_path, beg, end, mask_path)
 
     return profiles
 
 
-def prepare_samples(spect_dir, format, window_len):
+def read_tsv_into_dict(tsv_file_path):
+    tsv_file_content = pd.read_csv(tsv_file_path, sep='\t')
+    filename_2_seg_info = {}
+    for seg_id, filename, begin_ms, end_ms in tsv_file_content.values:
+        if filename not in filename_2_seg_info:
+            seg_info = []
+            filename_2_seg_info[filename] = seg_info
+        else:
+            seg_info = filename_2_seg_info[filename]
+        seg_info.append([seg_id, begin_ms, end_ms])
+
+    return filename_2_seg_info
+
+
+def prepare_samples(wav_dir, spect_dir, mask_dir, f0_dir, tsv_file_path, format, normalise, window_len):
+    filename_2_seg_info = read_tsv_into_dict(tsv_file_path)
     extractor = extractors[format]
     input_dims = None
     all_profiles = {}
-    for afid in good_audio_file_ids:
-        filepath = os.path.join(spect_dir, '{}.{}'.format(afid, format))
-        audio_file = AudioFile.objects.filter(id=afid).first()
-        if not os.path.isfile(filepath):
-            spect = extract_psd(extractor, audio_file)
-            with open(filepath, 'wb') as f:
-                pickle.dump(spect, f)
-        else:
-            with open(filepath, 'rb') as f:
-                spect = pickle.load(f)
-        dims, duration_frames = spect.shape
-        if input_dims is None:
-            input_dims = dims
+    for af_name in good_audio_file_name:
+        seg_info = filename_2_seg_info[af_name]
+        audio_file_id = seg_info[0][0].split('_')[0]
 
-        profiles = create_segment_profile(audio_file, duration_frames, filepath, window_len, step_size=1)
+        spect_path = os.path.join(spect_dir, '{}.{}'.format(audio_file_id, format))
+        wav_path = os.path.join(wav_dir, af_name)
+        mask_path = os.path.join(mask_dir, '{}.{}'.format(audio_file_id, 'mask'))
+
+        profiles = create_traning_set(audio_file_id, seg_info, wav_path, spect_path, mask_path, f0_dir, extractor,
+                                      normalise, window_len)
         all_profiles.update(profiles)
+
+        if input_dims is None:
+            with open(spect_path, 'rb') as f:
+                spect = pickle.load(f)
+                input_dims = spect.shape[0]
     return all_profiles, input_dims
 
 
@@ -148,6 +212,7 @@ def train(variables, save_to):
     sids_collections = dict(train=sids_for_training, test=sids_for_testing)
 
     spects = {}
+    masks = {}
     windows_masked = {}
 
     @profile  # noqa F821
@@ -177,26 +242,27 @@ def train(variables, save_to):
         output_masks = []
 
         for sid in batch_ids:
-            filepath, beg, end, window_masked = profiles[sid]
-
-            # window_masked is not numpy array, so we need to convert it to numpy array then store in windows_masked
-            # so next time we don't need to do this anymore
-            if sid in windows_masked:
-                window_masked = windows_masked[sid]
-            else:
-                window_masked = np.array(window_masked, dtype=np.float32)
-                windows_masked[sid] = window_masked
+            filepath, beg, end, mask_path = profiles[sid]
 
             if filepath in spects:
                 file_spect = spects[filepath]
             else:
                 with open(filepath, 'rb') as f:
-                    file_spect = pickle.load(f).transpose(1, 0)
-                spects[filepath] = file_spect
+                    file_spect = pickle.load(f)
+                    spects[filepath] = file_spect
 
-            windowed_spect = file_spect[beg:end, :]
+            if mask_path in masks:
+                file_mask = masks[mask_path]
+            else:
+                with open(mask_path, 'rb') as f:
+                    file_mask = pickle.load(f)
+                    masks[mask_path] = file_mask
+
+            windowed_spect = file_spect[:, beg:end].T
+            windowed_mask = file_mask[:, beg:end].T
+
             input_spects.append(windowed_spect)
-            output_masks.append(window_masked)
+            output_masks.append(windowed_mask)
 
         return input_spects, output_masks, final_batch
 
@@ -206,7 +272,7 @@ def train(variables, save_to):
     def test_batch_gen(batch_size):
         return get_batch(batch_size, 'test')
 
-    factory = NDS2MLPFactory()
+    factory = NDMLPFactory()
     factory.set_output(save_to)
     factory.lrtype = variables['lrtype']
     factory.lrargs = variables['lrargs']
@@ -246,9 +312,16 @@ def infer_topology(topology, dims=None):
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
+        parser.add_argument('--wav-dir', action='store', dest='wav_dir', required=True, type=str,
+                            help='Path to the directory where audio reside', )
+        parser.add_argument('--f0-dir', action='store', dest='f0_dir', required=True, type=str,
+                            help='Target path to store the spect features')
         parser.add_argument('--format', action='store', dest='format', required=True, type=str)
-        parser.add_argument('--spect-dir', action='store', dest='spect_dir', required=True, type=str,
-                            help='Path to the directory where audio segments will be saved', )
+        parser.add_argument('--normalised', action='store_true', dest='normalised', default=False)
+        parser.add_argument('--work-dir', action='store', dest='work_dir', required=True, type=str,
+                            help='Path to the directory where spect and mask will be saved', )
+        parser.add_argument('--tsv-file', action='store', dest='tsv_file', required=True, type=str,
+                            help='Path to tsv file')
         parser.add_argument('--save-to', action='store', dest='save_to', required=True, type=str)
         parser.add_argument('--window-len', action='store', dest='window_len', required=True, type=int)
         parser.add_argument('--batch-size', action='store', dest='batch_size', required=True, type=int)
@@ -266,8 +339,9 @@ class Command(BaseCommand):
                             )
 
     def handle(self, *args, **options):
+        wav_dir = options['wav_dir']
         save_to = options['save_to']
-        spect_dir = options['spect_dir']
+        work_dir = options['work_dir']
         format = options['format']
         batch_size = options['batch_size']
         window_len = options['window_len']
@@ -276,11 +350,20 @@ class Command(BaseCommand):
         lrargs = json.loads(options['lrargs'])
         keep_prob = options['keep_prob']
         topology = infer_topology(options['topology'])
+        normalised = options['normalised']
+        f0_dir = options['f0_dir']
+        tsv_file = options['tsv_file']
 
         if not save_to.lower().endswith('.zip'):
             save_to += '.zip'
 
-        all_profiles, input_dims = prepare_samples(spect_dir, format, window_len)
+        spect_dir = os.path.join(work_dir, 'spect')
+        mask_dir = os.path.join(work_dir, 'mask')
+
+        mkdirp(spect_dir)
+        mkdirp(mask_dir)
+
+        all_profiles, input_dims = prepare_samples(wav_dir, spect_dir, mask_dir, f0_dir, tsv_file, format, normalised, window_len)
 
         input_dims = input_dims * options['window_len']
 
@@ -303,9 +386,9 @@ class Command(BaseCommand):
                 variables['keep_prob'] = keep_prob
 
         else:
-            mkdirp(spect_dir)
-            variables = dict(current_batch_index=dict(train=0, test=0), spect_dir=spect_dir, format=format,
-                             topology=topology, keep_prob=keep_prob, output_dims=options['window_len'])
+            mkdirp(work_dir)
+            variables = dict(current_batch_index=dict(train=0, test=0), spect_dir=work_dir, format=format,
+                             topology=topology, keep_prob=keep_prob, output_dims=input_dims)
             save_variables(variables, all_profiles, input_dims, save_to)
 
         # These variables can be changed when resuming a saved file
@@ -315,3 +398,4 @@ class Command(BaseCommand):
         variables['lrargs'] = lrargs
 
         train(variables, save_to)
+

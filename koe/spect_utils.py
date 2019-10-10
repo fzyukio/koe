@@ -22,8 +22,7 @@ def extract_spect(wav_file_path, fs, start, end, filepath=None):
     if filepath:
         with open(filepath, 'wb') as f:
             pickle.dump(value, f)
-    else:
-        return value
+    return value
 
 
 def extract_mfcc(wav_file_path, fs, start, end, filepath=None):
@@ -108,12 +107,11 @@ def psd2img(psd, imgpath=None, islog=False, cm=None, flip=True):
         return psd_rgb
 
 
-def binary_img(img, imgpath=None, islog=False):
+def binary_img(img, imgpath=None):
     """
     Plot binary images
     :param img:
     :param imgpath:
-    :param islog:
     :return:
     """
     # height, width = np.shape(img)
@@ -162,18 +160,27 @@ def load_global_min_max(min_max_loc):
     return global_min, global_max
 
 
-def normalise_all(folder, norm_folder, format, global_min, global_max):
+def normalise_all(folder, norm_folder, format, global_min=None, global_max=None):
     ext = '.{}'.format(format)
-    global_range = global_max - global_min
     for filename in os.listdir(folder):
         if filename.lower().endswith(ext):
             file_path = os.path.join(folder, filename)
             file_norm_path = os.path.join(norm_folder, filename)
-            with open(file_path, 'rb') as f:
-                spect = pickle.load(f)
-            spect = (spect - global_min) / global_range
-            with open(file_norm_path, 'wb') as f:
-                pickle.dump(spect, f)
+            if not os.path.isfile(file_norm_path):
+                with open(file_path, 'rb') as f:
+                    spect = pickle.load(f)
+
+                if global_min is None or global_max is None:
+                    spect_min = spect.min()
+                    spect_max = spect.max()
+                else:
+                    spect_min = global_min
+                    spect_max = global_max
+
+                spect_range = spect_max - spect_min
+                spect = (spect - spect_min) / spect_range
+                with open(file_norm_path, 'wb') as f:
+                    pickle.dump(spect, f)
 
 
 extractors = {
