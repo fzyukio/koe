@@ -456,10 +456,11 @@ export class Visualiser {
             attr('display', 'none');
     }
 
-    setData({dataArrays, fs, length, durationMs}) {
+    setData({dataArrays, fs, durationRatio, length, durationMs}) {
         const self = this;
         self.dataArrays = dataArrays;
         self.fs = fs;
+        self.durationRatio = durationRatio;
         self.durationMs = durationMs;
         self.length = length;
         self.populateChannelOptions();
@@ -573,15 +574,22 @@ export class Visualiser {
         let endSec = end / 1000;
         let durationMs = end - begin;
 
+        // If the durationRatio is not 1, meaning that the actual playback should take longer than it is shown
+        // on the spectrogram, e.g. 1 second of 96Khz audio should take 2 seconds if playback at 48Khz
+        // therefore we must change the timestamp accordingly.
         let playAudioArgs = {
-            beginSec: begin / 1000,
-            endSec,
+            beginSec: begin * self.durationRatio / 1000,
+            endSec: endSec * self.durationRatio,
         };
 
         playAudioArgs.onStartCallback = function (_playbackSpeed) {
             startPlaybackAt = Date.now();
             playbackSpeed = _playbackSpeed;
-            let durationAtSpeed = durationMs * 100 / playbackSpeed;
+
+            // If the durationRatio is not 1, meaning that the actual playback should take longer than it is shown
+            // on the spectrogram, e.g. 1 second of 96Khz audio should take 2 seconds if playback at 48Khz
+            // therefore we must change the speed of the indicator accordingly.
+            let durationAtSpeed = durationMs * 100 / playbackSpeed * self.durationRatio;
 
             self.playbackIndicator.interrupt();
             self.playbackIndicator.style('display', 'unset').attr('transform', `translate(${startX}, 0)`);

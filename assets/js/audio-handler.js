@@ -2,6 +2,7 @@ require('../vendor/AudioContextMonkeyPatch');
 const bufferToWav = require('audiobuffer-to-wav');
 import {isNull, noop, logError} from './utils';
 import {handleResponse, postRequest, createSpinner} from './ajax-handler';
+import {WAVDecoder} from '../vendor/audiofile';
 
 /**
  * the global instance of AudioContext (we maintain only one instance at all time)
@@ -9,6 +10,8 @@ import {handleResponse, postRequest, createSpinner} from './ajax-handler';
  * @type {*}
  */
 let audioContext = new AudioContext();
+export const MAX_SAMPLE_RATE = audioContext.sampleRate;
+
 
 /**
  * the global instance of AudioBuffer (we maintain only one instance at all time)
@@ -171,17 +174,37 @@ const convertToFormData = function (data) {
  */
 export const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, callback}) {
     const reader = new FileReader();
-    reader.onload = function () {
-        const arrayBuffer = reader.result;
-        audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
-            let fullAudioDataArray = _audioBuffer.getChannelData(0);
-            let sampleRate = _audioBuffer.sampleRate;
+    let decodingFunction;
+    if (url.endsWith('.wav')) {
+        decodingFunction = function () {
+            let data = reader.result;
+            let decoder = new WAVDecoder();
+            let decoded = decoder.decode(data);
+
+            let sampleRate = decoded.sampleRate;
+            let dataArrays = decoded.channels;
+
             if (cacheKey && !window.noCache) {
-                cachedArrays[cacheKey] = [fullAudioDataArray, sampleRate];
+                cachedArrays[cacheKey] = [dataArrays, sampleRate];
             }
-            callback(fullAudioDataArray, sampleRate);
-        });
-    };
+            callback(dataArrays, sampleRate);
+        };
+    }
+    else {
+        decodingFunction = function () {
+            const arrayBuffer = reader.result;
+            audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
+                let fullAudioDataArray = _audioBuffer.getChannelData(0);
+                let sampleRate = _audioBuffer.sampleRate;
+                if (cacheKey && !window.noCache) {
+                    cachedArrays[cacheKey] = [fullAudioDataArray, sampleRate];
+                }
+                callback([fullAudioDataArray], sampleRate);
+            });
+        };
+    }
+
+    reader.onload = decodingFunction;
     let method = isNull(formData) ? 'GET' : 'POST';
 
     const xhr = new XMLHttpRequest();
@@ -198,7 +221,13 @@ export const queryAndHandleAudioGetOrPost = function ({url, cacheKey, formData, 
         // When request finishes, handle success/failure according to the status
         if (this.readyState == 4) {
             if (this.status == 200) {
-                reader.readAsArrayBuffer(this.response);
+                if (url.endsWith('.wav')) {
+                    reader.readAsBinaryString(this.response);
+                }
+                else {
+                    reader.readAsArrayBuffer(this.response);
+                }
+
             }
             else {
                 handleResponse({
@@ -290,7 +319,10 @@ export const queryAndPlayAudio = function ({url, postData, cacheKey, playAudioAr
 };
 
 /**
- * Upload an audio file and extract its data for in-browser processing
+ * Upload an audio file and extract its data for in-browser processing.
+ * The audio might be too high frequency to be processed natively by the browser.
+ * In such case, we'll fake the sample rate to be exactly the maximum supported
+ * But we will also send the real sample rate back once the audio is sent to the server
  *
  * @param file a file Blob
  * @param reader A FileReader instance
@@ -308,19 +340,25 @@ export const loadLocalAudioFile = function ({
     return new Promise(function (resolve) {
         reader.onload = function (e) {
             onLoad(e);
-            const arrayBuffer = reader.result;
-            audioContext.decodeAudioData(arrayBuffer, function (_audioBuffer) {
-                let numberOfChannels = _audioBuffer.numberOfChannels;
-                let dataArrays = [];
-                for (let i = 0; i < numberOfChannels; i++) {
-                    dataArrays.push(_audioBuffer.getChannelData(i));
-                }
-                let sampleRate = _audioBuffer.sampleRate;
+            let data = reader.result;
 
-                resolve({
-                    dataArrays,
-                    sampleRate
-                });
+            // We cannot use WebAudioAPI here because it will downsample high frequency audio
+            // We must first find out if the sample rate is acceptable. If not, we fake it to be MAX_SAMPLE_RATE
+            // And will send the real sample rate back to the server later
+            let decoder = new WAVDecoder();
+            let decoded = decoder.decode(data);
+
+            let sampleRate = decoded.sampleRate;
+            let dataArrays = decoded.channels;
+            let realSampleRate = sampleRate;
+
+            if (sampleRate > MAX_SAMPLE_RATE) {
+                sampleRate = MAX_SAMPLE_RATE
+            }
+            resolve({
+                dataArrays,
+                sampleRate,
+                realSampleRate
             });
         };
         reader.onprogress = onProgress;
@@ -328,7 +366,7 @@ export const loadLocalAudioFile = function ({
         reader.onabort = onAbort;
         reader.onloadstart = onLoadStart;
 
-        reader.readAsArrayBuffer(file);
+        reader.readAsBinaryString(file);
     });
 };
 
@@ -347,14 +385,19 @@ export const loadSongById = function () {
             requestSlug: 'koe/get-audio-file-url',
             data,
             immediate: true,
-            onSuccess(fileUrl) {
+            onSuccess(songData) {
+                let fileUrl = songData.url;
+
+                // fake_fs is either the real fs (if lower than brower's maximum support), or it is
+                // the maximum support (e.g. 44100Hz). We use this for the front end to prevent downsampling
+                let fakeFs = songData.fake_fs;
                 let urlParts = fileUrl.split('/');
                 let filename = urlParts[urlParts.length - 1];
                 queryAndHandleAudioGetOrPost({
                     url: fileUrl,
                     cacheKey: songId,
                     callback(sig, sampleRate) {
-                        resolve({dataArrays: [sig], sampleRate, filename});
+                        resolve({dataArrays: sig, fakeFs, sampleRate, filename});
                     }
                 });
             }

@@ -231,6 +231,10 @@ class AudioFile(SimpleModel):
     """
 
     fs = models.IntegerField()
+
+    # For high frequency audios, provide a lower sample rate (fake_fs) to prevent the browser from downsampling audio
+    # WAV file is stored with original fs, but mp3 file is converted with the faked fs one to circumvent the MP3 specs
+    fake_fs = models.IntegerField(null=True, blank=True)
     length = models.IntegerField()
     name = models.CharField(max_length=255)
     # file_name = models.CharField(max_length=255)

@@ -1,6 +1,12 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, createAudioFromDataArray, loadLocalAudioFile, loadSongById} from './audio-handler';
+import {
+    changePlaybackSpeed,
+    createAudioFromDataArray,
+    loadLocalAudioFile,
+    loadSongById,
+    MAX_SAMPLE_RATE
+} from './audio-handler';
 import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug, pad} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation'
@@ -278,13 +284,19 @@ const saveSongsToDb = function () {
         let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
 
         let subSig = spectViz.sig.slice(startSample, endSample);
-        let blob = createAudioFromDataArray(subSig, audioData.fs);
+        let blob = createAudioFromDataArray(subSig, audioData.realSampleRate);
+
 
         let formData = new FormData();
         formData.append('file', blob, item.name);
         formData.append('item', JSON.stringify(item));
+        formData.append('fs', audioData.realSampleRate);
         formData.append('database-id', database);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
+
+        if (audioData.realSampleRate > MAX_SAMPLE_RATE) {
+            formData.append('fake-fs', MAX_SAMPLE_RATE);
+        }
 
         return promiseChain.then(function () {
             debug(`Sending audio data  #${i}`);
@@ -534,9 +546,9 @@ const initUploadSongsBtn = function () {
                 onLoad,
                 onAbort,
                 onLoadStart
-            }).then(function ({dataArrays, sampleRate}) {
+            }).then(function ({dataArrays, sampleRate, realSampleRate}) {
                 let filename = file.name;
-                resolve({dataArrays, sampleRate, filename});
+                resolve({dataArrays, sampleRate, realSampleRate, filename});
             });
         });
     });
@@ -830,7 +842,7 @@ export const run = function (commonElements) {
 
     spectViz = new Visualiser(vizContainerId);
 
-    loadSongPromise().then(function ({dataArrays, sampleRate, filename}) {
+    loadSongPromise().then(function ({dataArrays, sampleRate, realSampleRate, filename}) {
         if (predefinedSongId) {
             populateTrackInfo(uuid4());
             uploadModal.find('.save-track-info').click();
@@ -841,8 +853,14 @@ export const run = function (commonElements) {
 
         audioData.dataArrays = dataArrays;
         audioData.fs = sampleRate;
+        audioData.realSampleRate = realSampleRate;
         audioData.length = dataArrays[0].length;
-        audioData.durationMs = audioData.length * 1000 / sampleRate;
+        audioData.durationMs = audioData.length * 1000 / realSampleRate;
+
+        // If the audio has high sampling rate, it cannot be played back at original rate. So we have to artificially
+        // lower the sampling rate, this will make the playback slower so we have to account for this later given the
+        // ratio between real and fake sample rate
+        audioData.durationRatio = realSampleRate / sampleRate;
 
         spectViz.setData(audioData);
         spectViz.initScroll();

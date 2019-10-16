@@ -23,7 +23,7 @@ from root.models import ExtraAttr, ExtraAttrValue
 __all__ = ['bulk_get_segment_info', 'bulk_get_exemplars', 'bulk_get_song_sequences', 'bulk_get_segments_for_audio',
            'bulk_get_history_entries', 'bulk_get_audio_file_for_raw_recording', 'bulk_get_song_sequence_associations',
            'bulk_get_database', 'bulk_get_collection', 'bulk_get_database_assignment', 'bulk_get_concise_segment_info',
-           'get_syntactically_similar_pairs']
+           'get_syntactically_similar_pairs', 'get_sequence_info_empty_songs']
 
 
 def bulk_get_concise_segment_info(segs, extras):

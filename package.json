@@ -14,6 +14,7 @@
     },
     "dependencies": {
         "animate.css": "^3.5.2",
+        "audio-resampler": "^1.0.1",
         "audiobuffer-to-wav": "^1.0.0",
         "autoprefixer": "^6.5.1",
         "babel-cli": "^6.18.0",
