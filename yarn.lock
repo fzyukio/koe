@@ -334,6 +334,14 @@ atob@~1.1.0:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/atob/-/atob-1.1.3.tgz#95f13629b12c3a51a5d215abdce2aa9f32f80773"
 
+audio-resampler@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/audio-resampler/-/audio-resampler-1.0.1.tgz#e4c8eb928435e41509e70b482f6f4a08fbd54f1b"
+  integrity sha1-5MjrkoQ15BUJ5wtIL29KCPvVTxs=
+  dependencies:
+    wav-encoder "^0.2.2"
+    webaudioloader "^1.0.1"
+
 audiobuffer-to-wav@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/audiobuffer-to-wav/-/audiobuffer-to-wav-1.0.0.tgz#d5b432271455e7fee56b111cd0f8d620d7f9e105"
@@ -3704,6 +3712,11 @@ ini@~1.3.0:
   version "1.3.5"
   resolved "https://registry.yarnpkg.com/ini/-/ini-1.3.5.tgz#eee25f56db1c9ec6085e0c22778083f596abf927"
 
+inline-worker@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/inline-worker/-/inline-worker-0.1.0.tgz#b290c336eb54a721ed3d22f72a2b9aacdf680e84"
+  integrity sha1-spDDNutUpyHtPSL3KiuarN9oDoQ=
+
 interpret@^0.6.4:
   version "0.6.6"
   resolved "https://registry.yarnpkg.com/interpret/-/interpret-0.6.6.tgz#fecd7a18e7ce5ca6abfb953e1f86213a49f1625b"
@@ -4318,6 +4331,11 @@ loud-rejection@^1.0.0:
   dependencies:
     currently-unhandled "^0.4.1"
     signal-exit "^3.0.0"
+
+lru-cache@^2.6.5:
+  version "2.7.3"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-2.7.3.tgz#6d4524e8b955f95d4f5b58851ce21dd72fb4e952"
+  integrity sha1-bUUk6LlV+V1PW1iFHOId1y+06VI=
 
 lru-cache@^4.0.1:
   version "4.1.2"
@@ -7475,6 +7493,13 @@ watchpack@^0.2.1:
     chokidar "^1.0.0"
     graceful-fs "^4.1.2"
 
+wav-encoder@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/wav-encoder/-/wav-encoder-0.2.2.tgz#179f644fd2837286d420b3a85f1fa51afed4dd7b"
+  integrity sha1-F59kT9KDcobUILOoXx+lGv7U3Xs=
+  dependencies:
+    inline-worker "^0.1.0"
+
 weak-map@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/weak-map/-/weak-map-1.0.5.tgz#79691584d98607f5070bd3b70a40e6bb22e401eb"
@@ -7482,6 +7507,13 @@ weak-map@^1.0.5:
 weakmap-shim@^1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/weakmap-shim/-/weakmap-shim-1.1.1.tgz#d65afd784109b2166e00ff571c33150ec2a40b49"
+
+webaudioloader@^1.0.1:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/webaudioloader/-/webaudioloader-1.0.4.tgz#ee7ebf9294260ca8c05384b2e77f8c16bb7d06a6"
+  integrity sha1-7n6/kpQmDKjAU4Sy53+MFrt9BqY=
+  dependencies:
+    lru-cache "^2.6.5"
 
 webgl-context@^2.2.0:
   version "2.2.0"
