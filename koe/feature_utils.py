@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 from time import sleep
 from logging import warning
 
@@ -22,7 +23,7 @@ from koe.aggregator import aggregator_map
 from koe.celery_init import app
 from koe.features.feature_extract import feature_extractors
 from koe.model_utils import natural_order
-from koe.models import Feature, Aggregation, SimilarityIndex
+from koe.models import Feature, Aggregation, SimilarityIndex, AudioFile
 from koe.models import Segment
 from koe.models import Task, DataMatrix, Ordination
 from koe.task import TaskRunner
@@ -91,16 +92,23 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **
 
 
 # # @profile
-def extract_segment_features_for_segments(task, sids, features, f2bs, force=False):
+def extract_segment_features_for_segments(runner, sids, features, f2bs, force=False):
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
     segments = Segment.objects.filter(id__in=sids).order_by(preserved)
     tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
+
+    s_vl = list(segments.order_by('audio_file', 'start_time_ms').
+                values_list('tid', 'audio_file', 'start_time_ms', 'end_time_ms'))
+
+    tid_lookup = {tid: (afid, start_time_ms, end_time_ms) for tid, afid, start_time_ms, end_time_ms in s_vl}
+    afids = [x[1] for x in s_vl]
+    af_lookup = {x.id: x for x in AudioFile.objects.filter(id__in=afids)}
 
     f2tid2fvals = {}
     f2af2segments = {}
     n_calculations = 0
 
-    for feature in features:
+    for fidx, feature in enumerate(features):
         index_filename, value_filename = f2bs[feature]
 
         if force:
@@ -115,35 +123,36 @@ def extract_segment_features_for_segments(task, sids, features, f2bs, force=Fals
 
         af_to_segments = {}
 
-        for segment in segments.order_by('audio_file', 'start_time_ms'):
-            tid = segment.tid
-            af = segment.audio_file
-            if tid in tids_target:
-                if af not in af_to_segments:
-                    af_to_segments[af] = []
-                af_to_segments[af].append((tid, segment.start_time_ms, segment.end_time_ms))
+        for tid in tids_target:
+            tid_info = tid_lookup.get(tid, None)
+            if tid_info is not None:
+                afid, start_time_ms, end_time_ms = tid_info
+                if afid not in af_to_segments:
+                    af_to_segments[afid] = []
+                af_to_segments[afid].append((tid, start_time_ms, end_time_ms))
 
         f2af2segments[feature] = af_to_segments
         n_calculations += len(af_to_segments)
 
     if n_calculations:
-        task.start(limit=n_calculations)
+        runner.start(limit=n_calculations)
         for feature, af_to_segments in f2af2segments.items():
             _tids = []
             _fvals = []
-            for af, segs_info in af_to_segments.items():
+            for afid, segs_info in af_to_segments.items():
+                af = af_lookup[afid]
                 wav_file_path = wav_path(af)
                 __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
                 _tids += __tids
                 _fvals += __fvals
-                task.tick()
+                runner.tick()
             f2tid2fvals[feature] = (_tids, _fvals)
 
     return tids, f2tid2fvals
 
 
 # @profile
-def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
+def aggregate_feature_values(runner, sids, f2bs, fa2bs, features, aggregators):
     """
     Compress all feature sequences into fixed-length vectors
     :param sid_to_label:
@@ -183,6 +192,8 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
         jobs[duration] = {}
 
         for feature in features:
+            if feature.is_fixed_length:
+                continue
             f_idf, f_vlf = f2bs[feature]
 
             for aggregator in aggregators:
@@ -193,17 +204,18 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
 
                 non_existing_idx = np.where(np.logical_not(np.isin(tids, sorted_ids)))
                 _tids = tids[non_existing_idx]
-                _fss = fss[non_existing_idx]
-
-                n_calculations += len(_tids)
-
-                jobs[duration][feature] = (_tids, _fss, f_idf, f_vlf)
+                if len(_tids) > 0:
+                    _fss = fss[non_existing_idx]
+                    n_calculations += len(_tids)
+                    jobs[duration][feature] = (_tids, _fss, f_idf, f_vlf)
 
     if not n_calculations:
-        ptask.wrapping_up()
+        runner.wrapping_up()
         return
 
-    ptask.start(limit=n_calculations)
+    print('n_calculations={}'.format(n_calculations))
+
+    runner.start(limit=n_calculations)
     result_by_ft = {}
     for duration, ftjobs in jobs.items():
         for feature, (_tids, _fss, f_idf, f_vlf) in ftjobs.items():
@@ -235,25 +247,34 @@ def aggregate_feature_values(ptask, sids, f2bs, fa2bs, features, aggregators):
                         else:
                             aggregated = aggregator.process(value)
 
-                        result_by_agg[aggregator] = aggregated
-                        ptask.tick()
+                        assert len(aggregated) > 0, 'Error aggregate {} of value shape: {}'.format(aggregator.name, value.shape)
 
-    ptask.wrapping_up()
+                        result_by_agg[aggregator] = aggregated
+                        runner.tick()
+                else:
+                    runner.tick()
+
+    runner.wrapping_up()
     for feature in features:
         if feature.is_fixed_length:
             continue
-        result_by_tid = result_by_ft[feature]
-        agg2tids = {aggregator: ([], []) for aggregator in aggregators}
+        result_by_tid = result_by_ft.get(feature, None)
+        if result_by_tid is not None:
+            agg2tids = {aggregator: ([], []) for aggregator in aggregators}
 
-        for tid, result_by_agg in result_by_tid.items():
-            for aggregator, val in result_by_agg.items():
-                agg2tids[aggregator][0].append(tid)
-                agg2tids[aggregator][1].append(val)
+            for tid, result_by_agg in result_by_tid.items():
+                for aggregator, val in result_by_agg.items():
+                    agg2tids[aggregator][0].append(tid)
+                    agg2tids[aggregator][1].append(val)
 
-        for aggregator, (tids, vals) in agg2tids.items():
-            tids = np.array(tids)
-            fa_idf, fa_vlf = fa2bs[feature][aggregator]
-            binstorage.store(tids, vals, fa_idf, fa_vlf)
+            for aggregator, (tids, vals) in agg2tids.items():
+                tids = np.array(tids)
+                fa_idf, fa_vlf = fa2bs[feature][aggregator]
+                try:
+                    binstorage.store(tids, vals, fa_idf, fa_vlf)
+                except ValueError:
+                    traceback.format_exc()
+                    print('Error saving aggregator {}'.format(aggregator.name))
 
 
 def get_segment_ids_and_labels(csv_file):
@@ -315,6 +336,58 @@ def extract_rawdata(f2bs, fa2bs, ids, features, aggregators):
     rawdata = np.concatenate(rawdata, axis=1)
 
     return rawdata, col_inds
+
+
+def extract_rawdata_auto(tids, features, aggregators):
+    # feature to binstorage's files
+    f2bs = {}
+    # feature+aggregation to binstorage's files
+    fa2bs = {}
+
+    for feature in features:
+        feature_name = feature.name
+        index_filename = data_path('binary/features', '{}.idx'.format(feature_name), for_url=False)
+        value_filename = data_path('binary/features', '{}.val'.format(feature_name), for_url=False)
+        f2bs[feature] = (index_filename, value_filename)
+
+        if feature not in fa2bs:
+            fa2bs[feature] = {}
+
+        for aggregator in aggregators:
+            aggregator_name = aggregator.get_name()
+            folder = os.path.join('binary', 'features', feature_name)
+            mkdirp(os.path.join(settings.MEDIA_URL, folder)[1:])
+
+            index_filename = data_path(folder, '{}.idx'.format(aggregator_name), for_url=False)
+            value_filename = data_path(folder, '{}.val'.format(aggregator_name), for_url=False)
+            fa2bs[feature][aggregator] = (index_filename, value_filename)
+
+    rawdata = []
+    col_inds = {}
+    col_inds_start = 0
+
+    for feature in features:
+        if feature.is_fixed_length:
+            index_filename, value_filename = f2bs[feature]
+            rawdata_ = binstorage.retrieve(tids, index_filename, value_filename, flat=True)
+            rawdata_stacked = np.stack(rawdata_)
+            rawdata.append(rawdata_stacked)
+            ncols = rawdata_stacked.shape[1]
+            col_inds[feature.name] = (col_inds_start, col_inds_start + ncols)
+            col_inds_start += ncols
+        else:
+            for aggregator in aggregators:
+                index_filename, value_filename = fa2bs[feature][aggregator]
+                rawdata_ = binstorage.retrieve(tids, index_filename, value_filename, flat=True)
+                rawdata_stacked = np.stack(rawdata_)
+                rawdata.append(rawdata_stacked)
+                ncols = rawdata_stacked.shape[1]
+                col_inds['{}_{}'.format(feature.name, aggregator.name)] = (col_inds_start, col_inds_start + ncols)
+                col_inds_start += ncols
+    rawdata = np.concatenate(rawdata, axis=1)
+
+    return rawdata, col_inds
+
 
 
 def get_or_wait(task_id):

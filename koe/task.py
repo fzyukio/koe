@@ -119,3 +119,54 @@ class TaskRunner:
 
         self._change_suffix()
         self.bar.next()
+
+
+class ConsoleTaskRunner:
+    def __init__(self, prefix):
+        self.tick_interval = 1
+        self.tick_count = 0
+        self.next_count = 0
+        self.stage = TaskProgressStage.NOT_STARTED
+        self.prefix = prefix
+        self.bar = Bar(self.prefix, max=1)
+
+    def preparing(self):
+        self._advance(TaskProgressStage.PREPARING)
+
+    def start(self, limit=100):
+        self.tick_interval = max(1, limit / 100)
+        self.bar.max = limit
+        self.bar.index = -1
+        self._advance(TaskProgressStage.RUNNING)
+
+    def wrapping_up(self):
+        self._advance(TaskProgressStage.WRAPPING_UP)
+
+    def complete(self):
+        self._advance(TaskProgressStage.COMPLETED)
+        self.bar.finish()
+
+    def error(self, e):
+        from django.conf import settings
+        error_tracker = settings.ERROR_TRACKER
+        error_tracker.captureException()
+        self._advance(TaskProgressStage.ERROR)
+
+    def _change_suffix(self):
+        stage_name = stage_dict[self.stage]
+        if self.stage == TaskProgressStage.RUNNING:
+            self.suffix = stage_name + ' - %(percent).1f%%'
+        else:
+            self.suffix = stage_name
+
+    def tick(self):
+        self.next_count += 1
+        if self.next_count >= self.bar.max or \
+           self.next_count / self.tick_interval - self.tick_count > 1:
+            increment = int(self.next_count - (self.tick_interval * self.tick_count))
+            self.bar.next(increment)
+            self.tick_count += 1
+
+    def _advance(self, next_stage):
+        self.stage = next_stage
+        self._change_suffix()

@@ -171,13 +171,19 @@ enabled_aggregators = {
         StatsAggregator(np.std),
     ],
     'divcon-3': [
-        DivideConquer(np.mean, 3)
+        DivideConquer(np.mean, 3),
+        DivideConquer(np.median, 3),
+        DivideConquer(np.std, 3)
     ],
     'divcon-5': [
-        DivideConquer(np.mean, 5)
+        DivideConquer(np.mean, 5),
+        DivideConquer(np.median, 5),
+        DivideConquer(np.std, 5)
     ],
     'divcon-7': [
-        DivideConquer(np.mean, 7)
+        DivideConquer(np.mean, 7),
+        DivideConquer(np.median, 7),
+        DivideConquer(np.std, 7)
     ]
 }
 
