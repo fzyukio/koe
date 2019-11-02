@@ -387,17 +387,17 @@ export const loadSongById = function () {
             immediate: true,
             onSuccess(songData) {
                 let fileUrl = songData.url;
+                let realFs = songData['real-fs'];
 
-                // fake_fs is either the real fs (if lower than brower's maximum support), or it is
-                // the maximum support (e.g. 44100Hz). We use this for the front end to prevent downsampling
-                let fakeFs = songData.fake_fs;
                 let urlParts = fileUrl.split('/');
                 let filename = urlParts[urlParts.length - 1];
                 queryAndHandleAudioGetOrPost({
                     url: fileUrl,
                     cacheKey: songId,
                     callback(sig, sampleRate) {
-                        resolve({dataArrays: sig, fakeFs, sampleRate, filename});
+                        // The sampleRate the browser reads from this file might be faked.
+                        // So we must provide the real fs
+                        resolve({dataArrays: sig, realFs, sampleRate, filename});
                     }
                 });
             }

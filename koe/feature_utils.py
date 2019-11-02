@@ -142,7 +142,11 @@ def extract_segment_features_for_segments(runner, sids, features, f2bs, force=Fa
             for afid, segs_info in af_to_segments.items():
                 af = af_lookup[afid]
                 wav_file_path = wav_path(af)
-                __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
+                try:
+                    __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
+                except Exception as e:
+                    raise Exception('Error extracting [{}] for file {}. Error message: {}'
+                                    .format(feature.name, af.name, str(e)))
                 _tids += __tids
                 _fvals += __fvals
                 runner.tick()

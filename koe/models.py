@@ -310,8 +310,7 @@ class AudioFile(SimpleModel):
             raise CustomAssertionError('Can\'t set the same name to more than 1 song.')
         obj = objs[0]
 
-        is_unique = not AudioFile.objects.filter(database=obj.database, name=name).exists()
-        if not is_unique:
+        if obj.name != name and AudioFile.objects.filter(database=obj.database, name=name).exists():
             raise CustomAssertionError('File {} already exists'.format(name))
 
         # If audio file is original, change the actual audio files' names as well

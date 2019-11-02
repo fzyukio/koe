@@ -1,7 +1,7 @@
 /* global Dropzone */
 
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost} from './audio-handler';
+import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost, MAX_SAMPLE_RATE} from './audio-handler';
 import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -492,6 +492,7 @@ function setupDropZone() {
 
             self.on('sending', function (file, xhr, formData) {
                 formData.append('database', databaseId);
+                formData.append('max-fs', MAX_SAMPLE_RATE);
             });
 
             self.on('maxfilesexceeded', function (file) {

@@ -311,17 +311,17 @@ export const run = function () {
 
     let loadSongPromise = loadSongById.bind({predefinedSongId: fileId});
 
-    return loadSongPromise().then(function({dataArrays, fakeFs, sampleRate}) {
+    return loadSongPromise().then(function({dataArrays, realFs, sampleRate}) {
         audioData.dataArrays = dataArrays;
-        audioData.fs = fakeFs;
-        audioData.realSampleRate = sampleRate;
+        audioData.fs = sampleRate;
+        audioData.realSampleRate = realFs;
         audioData.length = dataArrays[0].length;
-        audioData.durationMs = audioData.length * 1000 / sampleRate;
+        audioData.durationMs = audioData.length * 1000 / realFs;
 
         // If the audio has high sampling rate, it cannot be played back at original rate. So we have to artificially
         // lower the sampling rate, this will make the playback slower so we have to account for this later given the
         // ratio between real and fake sample rate
-        audioData.durationRatio = sampleRate / fakeFs;
+        audioData.durationRatio = realFs / sampleRate;
 
         spectViz.setData(audioData);
         spectViz.initCanvas();

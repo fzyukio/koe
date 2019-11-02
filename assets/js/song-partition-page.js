@@ -290,12 +290,11 @@ const saveSongsToDb = function () {
         let formData = new FormData();
         formData.append('file', blob, item.name);
         formData.append('item', JSON.stringify(item));
-        formData.append('fs', audioData.realSampleRate);
         formData.append('database-id', database);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
 
         if (audioData.realSampleRate > MAX_SAMPLE_RATE) {
-            formData.append('fake-fs', MAX_SAMPLE_RATE);
+            formData.append('max-fs', MAX_SAMPLE_RATE);
         }
 
         return promiseChain.then(function () {

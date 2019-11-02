@@ -13,7 +13,7 @@ from koe import wavfile
 from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
-from koe.utils import audio_path
+from koe.utils import audio_path, get_wav_info
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists, data_path
@@ -87,6 +87,55 @@ def get_segment_audio_data(request):
     return _cached_get_segment_audio_data(audio_file_name, database_id, audio_file.fs, start, end)
 
 
+def _import_and_convert_audio_file(database, file, max_fs, audio_file=None, track=None, start=None, end=None):
+    name = file.name
+    if name.lower().endswith('.wav'):
+        name = name[:-4]
+
+    # Need a unique name (database-wide) for new file
+    if audio_file is None:
+        is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
+        if not is_unique:
+            raise CustomAssertionError('File {} already exists'.format(name))
+    elif audio_file.name != name:
+        raise CustomAssertionError('Impossible! File name in your table and in the database don\'t match')
+
+    name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
+    name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
+                                '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
+
+    with open(name_wav, 'wb') as wav_file:
+        wav_file.write(file.read())
+
+    fs, length = get_wav_info(name_wav)
+
+    # If fake_fs is provided, this audio has higher frequency than most browsers can support. So
+    # we use this fake_fs to circumvent MP3 specification, but WAV file is stored with original FS
+    if max_fs < fs:
+        fake_fs = max_fs
+        faked_wav = change_fs_without_resampling(name_wav, fake_fs)
+        audio = pydub.AudioSegment.from_file(faked_wav)
+        os.remove(faked_wav)
+    else:
+        fake_fs = None
+        audio = pydub.AudioSegment.from_file(name_wav)
+
+    ensure_parent_folder_exists(name_compressed)
+    audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
+
+    if audio_file is None:
+        audio_file = AudioFile(name=name, length=length, fs=fs, database=database, track=track, start=start, end=end,
+                               fake_fs=fake_fs)
+    else:
+        audio_file.start = start
+        audio_file.end = end
+        audio_file.length = length
+
+    audio_file.save()
+
+    return audio_file
+
+
 def import_audio_files(request):
     """
     Store uploaded files (only wav is accepted)
@@ -98,6 +147,7 @@ def import_audio_files(request):
 
     database_id = get_or_error(request.POST, 'database')
     database = get_or_error(Database, dict(id=database_id))
+    max_fs = int(get_or_error(request.POST, 'max-fs'))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
     added_files = []
@@ -122,28 +172,9 @@ def import_audio_files(request):
                                    .format(', '.join(not_importable_filenames)))
     else:
         for file in importable_files:
-            name = file.name
-            if name.lower().endswith('.wav'):
-                name = name[:-4]
-
-            name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
-            name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
-                                        '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
-
-            with open(name_wav, 'wb') as wav_file:
-                wav_file.write(file.read())
-
-            audio = pydub.AudioSegment.from_file(name_wav)
-
-            ensure_parent_folder_exists(name_compressed)
-            audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
-
-            fs = audio.frame_rate
-            length = audio.raw_data.__len__() // audio.frame_width
-            audio_file = AudioFile(name=name, length=length, fs=fs, database=database)
+            audio_file = _import_and_convert_audio_file(database, file, max_fs)
             added_files.append(audio_file)
 
-        AudioFile.objects.bulk_create(added_files)
         added_files = AudioFile.objects.filter(database=database, name__in=[x.name for x in added_files])
         _, rows = get_sequence_info_empty_songs(added_files)
         return rows
@@ -186,9 +217,8 @@ def import_audio_file(request):
 
     database_id = get_or_error(request.POST, 'database-id')
     item = json.loads(get_or_error(request.POST, 'item'))
-    fake_fs = request.POST.get('fake-fs', None)
+    max_fs = int(request.POST.get('max-fs', None))
     track_id = get_or_error(request.POST, 'track-id')
-    fs = get_or_error(request.POST, 'fs')
 
     database = get_or_error(Database, dict(id=database_id))
     track = get_or_error(AudioTrack, dict(id=track_id))
@@ -199,55 +229,12 @@ def import_audio_file(request):
     song_id = item['id']
 
     file = File(file=f)
-    name = file.name
-    if name.lower().endswith('.wav'):
-        name = name[:-4]
 
     audio_file = None
-    need_unique_name = True
     if not isinstance(song_id, str) or not song_id.startswith('new:'):
-        audio_file = AudioFile.objects.filter(id=song_id).first()
-        if audio_file and audio_file.name == name:
-            need_unique_name = False
+        audio_file = AudioFile.objects.filter(database=database, id=song_id).first()
 
-    if need_unique_name:
-        is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
-        if not is_unique:
-            raise CustomAssertionError('File {} already exists'.format(name))
-
-    name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
-    name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
-                                '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
-
-    with open(name_wav, 'wb') as wav_file:
-        wav_file.write(file.read())
-
-    # If fake_fs is provided, this audio has higher frequency than most browsers can support. So
-    # we use this fake_fs to circumvent MP3 specification, but WAV file is stored with original FS
-    if fake_fs is not None:
-        fake_fs = int(fake_fs)
-        faked_wav = change_fs_without_resampling(name_wav, fake_fs)
-        audio = pydub.AudioSegment.from_file(faked_wav)
-    else:
-        audio = pydub.AudioSegment.from_file(name_wav)
-
-    if fake_fs is not None:
-        os.remove(faked_wav)
-
-    ensure_parent_folder_exists(name_compressed)
-    audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
-    length = audio.raw_data.__len__() // audio.frame_width
-
-    if audio_file is None:
-        audio_file = AudioFile(name=name, length=length, fs=fs, database=database, track=track, start=start, end=end,
-                               fake_fs=fake_fs)
-    else:
-        if audio_file.name != name:
-            AudioFile.set_name([audio_file], name)
-        audio_file.start = start
-        audio_file.end = end
-        audio_file.length = length
-        audio_file.save()
+    audio_file = _import_and_convert_audio_file(database, file, max_fs, audio_file, track, start, end)
 
     quality = item.get('quality', None)
     individual_name = item.get('individual', None)
@@ -288,14 +275,11 @@ def get_audio_file_url(request):
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
-    # If the fake_fs is not None, it means we need to use the fake_fs to play the audio
-    # so return the fake_fs, instead of the original fs
-    if audio_file.fake_fs is not None:
-        fake_fs = audio_file.fake_fs
-    else:
-        fake_fs = audio_file.fs
+    # The audio file might have sample rate being faked - this is the only sample rate value the browser can see.
+    # It has no idea what the real fs is unless we tell it
+    real_fs = audio_file.fs
 
-    return dict(url=audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), fake_fs=fake_fs)
+    return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs}
 
 
 def get_audio_files_urls(request):

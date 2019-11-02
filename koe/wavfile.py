@@ -151,19 +151,6 @@ def nearest_multiple(from_number, factor):
     return from_number - residual
 
 
-def nearest_frame(approx, bpf, noc):
-    """
-    Due to rounding problem, before reading a chunk we must calculate the nearest frame according to the
-    byte per frame and number of channels
-    :param approx: roughly the start of the chunk
-    :param bpf: bytes per frame
-    :param noc: number of channels
-    :return:
-    """
-    residual
-    pass
-
-
 def read_wav_info(file):
     """
     Return info of a wav file
