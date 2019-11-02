@@ -83,13 +83,21 @@ def _read_data_chunk(fid, noc, size, bits, beg, end, normalised=False, mono=Fals
     # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
     #      for 24-bit audio (bytes = 1), beg must be divisible by 1
     #      for 32-bit audio (bytes = 4), beg must be divisible by 4
+    # Furthermore, if there are more than one channel, beg must be divisible by (bytes per frame * number of channels)
     byte_per_frame = bits // 8
-    beg = nearest_multiple(beg, byte_per_frame)
-    end = nearest_multiple(end, byte_per_frame)
+    beg = nearest_multiple(beg, byte_per_frame * noc)
+    end = nearest_multiple(end, byte_per_frame * noc)
     fid.seek(beg + data_start)
     chunk_size = end - beg
 
-    data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+    if chunk_size / bytes - chunk_size // bytes != 0:
+        raise Exception('chunk_size is not integer multiple of bytes')
+
+    count = chunk_size // bytes
+    if count / noc - count // noc != 0:
+        raise Exception('count is not integer multiple of noc')
+
+    data = numpy.fromfile(fid, dtype=dtype, count=count)
 
     if bits == 24:
         a = numpy.empty((len(data) // 3, 4), dtype='u1')
@@ -141,6 +149,19 @@ def nearest_multiple(from_number, factor):
     """
     residual = from_number % factor
     return from_number - residual
+
+
+def nearest_frame(approx, bpf, noc):
+    """
+    Due to rounding problem, before reading a chunk we must calculate the nearest frame according to the
+    byte per frame and number of channels
+    :param approx: roughly the start of the chunk
+    :param bpf: bytes per frame
+    :param noc: number of channels
+    :return:
+    """
+    residual
+    pass
 
 
 def read_wav_info(file):
