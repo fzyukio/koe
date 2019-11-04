@@ -87,7 +87,9 @@ def get_segment_audio_data(request):
     return _cached_get_segment_audio_data(audio_file_name, database_id, audio_file.fs, start, end)
 
 
-def _import_and_convert_audio_file(database, file, max_fs, audio_file=None, track=None, start=None, end=None):
+def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_file=None, track=None, start=None,
+                                   end=None):
+
     name = file.name
     if name.lower().endswith('.wav'):
         name = name[:-4]
@@ -100,32 +102,47 @@ def _import_and_convert_audio_file(database, file, max_fs, audio_file=None, trac
     elif audio_file.name != name:
         raise CustomAssertionError('Impossible! File name in your table and in the database don\'t match')
 
-    name_wav = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
+    wav_name = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
     name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
                                 '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
 
-    with open(name_wav, 'wb') as wav_file:
+    fake_wav_name = wav_name + '.bak'
+
+    with open(wav_name, 'wb') as wav_file:
         wav_file.write(file.read())
 
-    fs, length = get_wav_info(name_wav)
+    _fs, length = get_wav_info(wav_name)
 
-    # If max_fs is provided, this audio has higher frequency than most browsers can support. So
-    # we use this fake_fs to circumvent MP3 specification, but WAV file is stored with original FS
-    if max_fs and max_fs < fs:
+    # If real_fs is provided, it is absolute -- otherwise it is what we can really read from the file
+    if real_fs is None:
+        real_fs = _fs
+
+    fake_fs = None
+    # If real_fs is not what we read from the file, then the file is fake, and we must restore the original file
+    # to do that we rename the wav file that we just stored (which is fake) to .bak, then change the sample rate
+    # back to the original and store the original file as .wav
+    if real_fs != _fs:
+        os.rename(wav_name, fake_wav_name)
+        change_fs_without_resampling(fake_wav_name, real_fs, wav_name)
+        audio = pydub.AudioSegment.from_file(fake_wav_name)
+        os.remove(fake_wav_name)
+
+    # Otherwise, if real_fs is more than max_fs, we must create a fake file for the sake of converting to mp3:
+    elif real_fs > max_fs:
         fake_fs = max_fs
-        faked_wav = change_fs_without_resampling(name_wav, fake_fs)
-        audio = pydub.AudioSegment.from_file(faked_wav)
-        os.remove(faked_wav)
+        change_fs_without_resampling(wav_name, fake_fs, fake_wav_name)
+        audio = pydub.AudioSegment.from_file(fake_wav_name)
+        os.remove(fake_wav_name)
+    # Otherwise the file is ordinary - no need to fake it
     else:
-        fake_fs = None
-        audio = pydub.AudioSegment.from_file(name_wav)
+        audio = pydub.AudioSegment.from_file(wav_name)
 
     ensure_parent_folder_exists(name_compressed)
     audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
 
     if audio_file is None:
-        audio_file = AudioFile(name=name, length=length, fs=fs, database=database, track=track, start=start, end=end,
-                               fake_fs=fake_fs)
+        audio_file = AudioFile(name=name, length=length, fs=real_fs, database=database, track=track, start=start,
+                               end=end, fake_fs=fake_fs)
     else:
         audio_file.start = start
         audio_file.end = end
@@ -180,12 +197,12 @@ def import_audio_files(request):
         return rows
 
 
-def change_fs_without_resampling(wav_file, fake_fs):
+def change_fs_without_resampling(wav_file, new_fs, new_name):
     """
     Create a new wav file with the a new (fake) sample rate, without changing the actual data.
     This is necessary if the frequency of the wav file is higher than the maximum sample rate that the browser supports
     :param wav_file: path to the original wav file
-    :param fake_fs: the new sample rate
+    :param new_fs: the new sample rate
     :return: the path of the faked wav file
     """
     spf = wave.open(wav_file, 'rb')
@@ -194,16 +211,12 @@ def change_fs_without_resampling(wav_file, fake_fs):
     signal = spf.readframes(-1)
     spf.close()
 
-    fake_wav_location = wav_file + '.bak'
-
-    wf = wave.open(fake_wav_location, 'wb')
+    wf = wave.open(new_name, 'wb')
     wf.setnchannels(num_channels)
     wf.setsampwidth(swidth)
-    wf.setframerate(fake_fs)
+    wf.setframerate(new_fs)
     wf.writeframes(signal)
     wf.close()
-
-    return fake_wav_location
 
 
 def import_audio_file(request):
@@ -217,7 +230,8 @@ def import_audio_file(request):
 
     database_id = get_or_error(request.POST, 'database-id')
     item = json.loads(get_or_error(request.POST, 'item'))
-    max_fs = int(request.POST.get('max-fs', 0))
+    real_fs = int(get_or_error(request.POST, 'real-fs'))
+    max_fs = int(get_or_error(request.POST, 'max-fs'))
     track_id = get_or_error(request.POST, 'track-id')
 
     database = get_or_error(Database, dict(id=database_id))
@@ -234,7 +248,7 @@ def import_audio_file(request):
     if not isinstance(song_id, str) or not song_id.startswith('new:'):
         audio_file = AudioFile.objects.filter(database=database, id=song_id).first()
 
-    audio_file = _import_and_convert_audio_file(database, file, max_fs, audio_file, track, start, end)
+    audio_file = _import_and_convert_audio_file(database, file, max_fs, real_fs, audio_file, track, start, end)
 
     quality = item.get('quality', None)
     individual_name = item.get('individual', None)

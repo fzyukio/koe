@@ -284,18 +284,24 @@ const saveSongsToDb = function () {
         let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
 
         let subSig = spectViz.sig.slice(startSample, endSample);
-        let blob = createAudioFromDataArray(subSig, audioData.realSampleRate);
+        let fsInBuffer = audioData.realSampleRate;
+        let realFs = audioData.realSampleRate;
 
+        // techinically audiobuffer can be created for sample rate <= 384k. If exceeds, it fails
+        // So just to be safe we fake the sampling rate to max_sample_rate (48k) and tell the server that
+        // the file it receives doesn't have the correct sample rate
+        if (fsInBuffer > MAX_SAMPLE_RATE) {
+            fsInBuffer = MAX_SAMPLE_RATE;
+        }
+        let blob = createAudioFromDataArray(subSig, fsInBuffer);
 
         let formData = new FormData();
         formData.append('file', blob, item.name);
         formData.append('item', JSON.stringify(item));
         formData.append('database-id', database);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
-
-        if (audioData.realSampleRate > MAX_SAMPLE_RATE) {
-            formData.append('max-fs', MAX_SAMPLE_RATE);
-        }
+        formData.append('real-fs', realFs);
+        formData.append('max-fs', MAX_SAMPLE_RATE);
 
         return promiseChain.then(function () {
             debug(`Sending audio data  #${i}`);
