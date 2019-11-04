@@ -109,9 +109,9 @@ def _import_and_convert_audio_file(database, file, max_fs, audio_file=None, trac
 
     fs, length = get_wav_info(name_wav)
 
-    # If fake_fs is provided, this audio has higher frequency than most browsers can support. So
+    # If max_fs is provided, this audio has higher frequency than most browsers can support. So
     # we use this fake_fs to circumvent MP3 specification, but WAV file is stored with original FS
-    if max_fs < fs:
+    if max_fs and max_fs < fs:
         fake_fs = max_fs
         faked_wav = change_fs_without_resampling(name_wav, fake_fs)
         audio = pydub.AudioSegment.from_file(faked_wav)
@@ -147,7 +147,7 @@ def import_audio_files(request):
 
     database_id = get_or_error(request.POST, 'database')
     database = get_or_error(Database, dict(id=database_id))
-    max_fs = int(get_or_error(request.POST, 'max-fs'))
+    max_fs = int(request.POST.get('max-fs', 0))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
     added_files = []
@@ -217,7 +217,7 @@ def import_audio_file(request):
 
     database_id = get_or_error(request.POST, 'database-id')
     item = json.loads(get_or_error(request.POST, 'item'))
-    max_fs = int(request.POST.get('max-fs', None))
+    max_fs = int(request.POST.get('max-fs', 0))
     track_id = get_or_error(request.POST, 'track-id')
 
     database = get_or_error(Database, dict(id=database_id))
