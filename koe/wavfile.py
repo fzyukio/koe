@@ -219,15 +219,17 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True):
             # e.g. for 16-bit audio (bytes = 2), beg must be divisible by 2
             #      for 24-bit audio (bytes = 1), beg must be divisible by 1
             #      for 32-bit audio (bytes = 4), beg must be divisible by 4
+            # Furthermore, if there are more than one channel, beg must be divisible by
+            # (bytes per frame * number of channels)
             byte_per_frame = bits // 8
-            beg = nearest_multiple(beg, byte_per_frame)
+            beg = nearest_multiple(beg, byte_per_frame * noc)
             fid.seek(beg + data_start)
 
             if end_ms is None:
                 end = size
             else:
                 end = int(end_ms * rate * ba / 1000)
-            end = nearest_multiple(end, byte_per_frame)
+            end = nearest_multiple(end, byte_per_frame * noc)
 
             chunk_size = end - beg
             data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
