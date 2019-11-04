@@ -1,19 +1,15 @@
 import array
 import os
-
-import numpy
-import numpy as np
-import psycopg2
-import psycopg2.extras
-import pydub
 import sys
+
+import numpy as np
+import pydub
 from django.conf import settings
 
-from koe import wavfile
 from koe import wavfile as wf
 from koe.utils import get_wav_info
-from root.utils import ensure_parent_folder_exists
 from koe.utils import wav_path, audio_path
+from root.utils import ensure_parent_folder_exists
 
 PY3 = sys.version_info[0] == 3
 if PY3:
@@ -42,6 +38,8 @@ def get_syllable_end_time(el_rows):
 
 
 def get_dbconf(dbs):
+    import psycopg2
+    import psycopg2.extras
     conns = {}
 
     for dbconf in dbs.split(','):
@@ -53,25 +51,6 @@ def get_dbconf(dbs):
         conns[abbr] = conn
 
     return conns
-
-
-def wav_2_mono(file, **kwargs):
-    """
-    Read a wav file and return fs and first channel's data stream.
-    The data is normalised to be equivalent to Matlab's `audioread(...)` function
-    :param file:
-    :return: fs and signal
-    """
-    w = wavfile.read(file, **kwargs)
-    if len(numpy.shape(w[1])) > 1:
-        data = w[1][:, 0]
-    else:
-        data = w[1]
-    fs = w[0]
-    # bitrate = w[2]
-    # normalization_factor = float(2 ** (bitrate - 1))
-    # sig = data / normalization_factor
-    return fs, data
 
 
 def import_pcm(song, cur, audio_file, wav_file_path=None, compressed_url=None):

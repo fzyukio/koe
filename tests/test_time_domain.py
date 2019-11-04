@@ -4,7 +4,7 @@ from dotmap import DotMap
 from scipy.io import loadmat
 
 from koe.features.time_domain import log_attack_time, energy_envelope, temporal_centroid
-from koe.management.utils.luscinia_utils import wav_2_mono
+from koe.utils import wav_2_mono
 
 nfft = 512
 noverlap = nfft * 3 // 4

@@ -6,7 +6,7 @@ from koe import wavfile
 
 import django
 
-from koe.management.utils.luscinia_utils import wav_2_mono
+from koe.utils import wav_2_mono
 
 django.setup()
 

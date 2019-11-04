@@ -17,9 +17,9 @@ from scipy import signal
 
 from koe.colourmap import cm_blue, cm_green, cm_red
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
+from koe.management.utils.luscinia_utils import get_syllable_end_time, import_pcm
 from koe.models import AudioFile, Segment, AudioTrack, Database, DatabaseAssignment, DatabasePermission
-from koe.utils import spect_fft_path, spect_mask_path, audio_path, wav_path
+from koe.utils import spect_fft_path, spect_mask_path, audio_path, wav_path, wav_2_mono
 from root.models import User
 from root.utils import ensure_parent_folder_exists
 

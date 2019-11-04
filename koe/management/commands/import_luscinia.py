@@ -16,11 +16,11 @@ from scipy import signal
 
 from koe.colourmap import cm_red, cm_green, cm_blue
 from koe.management.commands import utils
-from koe.management.commands.utils import get_syllable_end_time, wav_2_mono, import_pcm
+from koe.management.utils.luscinia_utils import get_syllable_end_time, import_pcm
 from koe.models import AudioFile, Segment, AudioTrack, Individual, Database, DatabaseAssignment, DatabasePermission
 from root.models import ExtraAttrValue, User
 from root.utils import ensure_parent_folder_exists
-from koe.utils import wav_path, spect_fft_path, spect_mask_path
+from koe.utils import wav_path, spect_fft_path, spect_mask_path, wav_2_mono
 
 COLOURS = [[69, 204, 255], [73, 232, 62], [255, 212, 50], [232, 75, 48], [170, 194, 102]]
 FF_COLOUR = [0, 0, 0]

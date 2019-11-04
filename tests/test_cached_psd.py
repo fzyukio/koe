@@ -8,7 +8,7 @@ from koe.features.freq_domain import spectral_flatness, spectral_bandwidth, spec
     spectral_rolloff
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_psd, stft_from_sig
-from koe.management.utils.luscinia_utils import wav_2_mono
+from koe.utils import wav_2_mono
 
 
 nfft = 512

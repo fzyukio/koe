@@ -10,7 +10,7 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.celery_init import app
 from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.management.utils.luscinia_utils import wav_2_mono
+from koe.utils import wav_2_mono
 from koe.models import Database
 from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
     AudioFile

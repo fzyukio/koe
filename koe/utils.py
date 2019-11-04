@@ -12,6 +12,7 @@ from itertools import product
 
 import numpy as np
 
+from koe import wavfile
 from root.utils import data_path
 
 
@@ -79,6 +80,25 @@ def get_wav_info(audio_file):
         nframes = f.getnframes()
         rate = f.getframerate()
     return rate, nframes
+
+
+def wav_2_mono(file, **kwargs):
+    """
+    Read a wav file and return fs and first channel's data stream.
+    The data is normalised to be equivalent to Matlab's `audioread(...)` function
+    :param file:
+    :return: fs and signal
+    """
+    w = wavfile.read(file, **kwargs)
+    if len(np.shape(w[1])) > 1:
+        data = w[1][:, 0]
+    else:
+        data = w[1]
+    fs = w[0]
+    # bitrate = w[2]
+    # normalization_factor = float(2 ** (bitrate - 1))
+    # sig = data / normalization_factor
+    return fs, data
 
 
 def split_segments(siglen, window, noverlap, incltail=False):
