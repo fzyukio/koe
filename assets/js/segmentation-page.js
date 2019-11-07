@@ -1,7 +1,7 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, loadSongById} from './audio-handler';
-import {deepCopy, setCache, getCache, isNumber} from './utils';
+import {deepCopy, setCache, getCache, isNumber, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation';
 require('bootstrap-slider/dist/bootstrap-slider.js');
@@ -314,6 +314,11 @@ export const run = function () {
     return loadSongPromise().then(function({dataArrays, realFs, sampleRate}) {
         audioData.dataArrays = dataArrays;
         audioData.fs = sampleRate;
+
+        // If realFs is null, the sample rate read from the audio file is real
+        if (isNull(realFs)) {
+            realFs = sampleRate;
+        }
         audioData.realSampleRate = realFs;
         audioData.length = dataArrays[0].length;
         audioData.durationMs = audioData.length * 1000 / realFs;

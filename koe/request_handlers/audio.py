@@ -290,8 +290,14 @@ def get_audio_file_url(request):
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
     # The audio file might have sample rate being faked - this is the only sample rate value the browser can see.
-    # It has no idea what the real fs is unless we tell it
-    real_fs = audio_file.fs
+    # It has no idea what the real fs is unless we tell it.
+    # However, when converted to MP3, the real fs can be changed anyways. For example, 44100Hz (wav) -> 48000 (mp3)
+    # in which case there is a difference in real_fs and what the browser can see.
+    # In this case we must tell the browser to use 48000 as the real_fs of the mp3 file.
+    # We do that by omitting real_fs (returning NULL to the browser)
+    real_fs = None
+    if audio_file.fake_fs is not None:
+        real_fs = audio_file.fs
 
     return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs}
 
