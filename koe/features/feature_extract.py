@@ -90,28 +90,29 @@ feature_whereabout = {
 # }
 
 ftgroup_names = {
-    'mfcc': ['mfcc'],
-    'mfcc+': ['mfcc', 'mfcc_delta'],
-    'mfcc++': ['mfcc', 'mfcc_delta', 'mfcc_delta2'],
-    'lpcoefs': ['lp_coefficients'],
-    'desc-traditional': [
-        'spectral_flatness', 'spectral_flux', 'spectral_bandwidth', 'spectral_centroid', 'spectral_contrast',
-        'spectral_rolloff', 'spectral_crest', 'spectral_skewness', 'spectral_kurtosis', 'spectral_decrease',
-        'harmonic_ratio', 'fundamental_frequency', 'dominant_frequency',
-        'duration', 'zero_crossing_rate', 'log_attack_time', 'energy_envelope'
-    ],
-    'desc-sap': [
-        'frequency_modulation', 'amplitude_modulation', 'goodness_of_pitch', 'amplitude', 'entropy', 'mean_frequency',
-        'spectral_continuity',
-    ],
-    'desc': [
-        'spectral_flatness', 'spectral_flux', 'spectral_bandwidth', 'spectral_centroid', 'spectral_contrast',
-        'spectral_rolloff', 'spectral_crest', 'spectral_skewness', 'spectral_kurtosis', 'spectral_decrease',
-        'harmonic_ratio', 'fundamental_frequency', 'dominant_frequency',
-        'duration', 'zero_crossing_rate', 'log_attack_time', 'energy_envelope',
-        'frequency_modulation', 'amplitude_modulation', 'goodness_of_pitch', 'amplitude', 'entropy', 'mean_frequency',
-        'spectral_continuity',
-    ]
+    # 'mfcc': ['mfcc'],
+    # 'mfcc+': ['mfcc', 'mfcc_delta'],
+    # 'mfcc++': ['mfcc', 'mfcc_delta', 'mfcc_delta2'],
+    # 'lpcoefs': ['lp_coefficients'],
+    'lpceps': ['lpc_cepstrum'],
+    # 'desc-traditional': [
+    #     'spectral_flatness', 'spectral_flux', 'spectral_bandwidth', 'spectral_centroid', 'spectral_contrast',
+    #     'spectral_rolloff', 'spectral_crest', 'spectral_skewness', 'spectral_kurtosis', 'spectral_decrease',
+    #     'harmonic_ratio', 'fundamental_frequency', 'dominant_frequency',
+    #     'duration', 'zero_crossing_rate', 'log_attack_time', 'energy_envelope'
+    # ],
+    # 'desc-sap': [
+    #     'frequency_modulation', 'amplitude_modulation', 'goodness_of_pitch', 'amplitude', 'entropy', 'mean_frequency',
+    #     'spectral_continuity',
+    # ],
+    # 'desc': [
+    #     'spectral_flatness', 'spectral_flux', 'spectral_bandwidth', 'spectral_centroid', 'spectral_contrast',
+    #     'spectral_rolloff', 'spectral_crest', 'spectral_skewness', 'spectral_kurtosis', 'spectral_decrease',
+    #     'harmonic_ratio', 'fundamental_frequency', 'dominant_frequency',
+    #     'duration', 'zero_crossing_rate', 'log_attack_time', 'energy_envelope',
+    #     'frequency_modulation', 'amplitude_modulation', 'goodness_of_pitch', 'amplitude', 'entropy', 'mean_frequency',
+    #     'spectral_continuity',
+    # ]
 }
 
 

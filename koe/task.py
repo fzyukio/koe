@@ -21,7 +21,7 @@ def send_email(task, success):
     user = task.user
     cls, objid = task.target.split(':')
     objid = int(objid)
-    context = {}
+    context = dict(message=task.message)
     if cls == DataMatrix.__name__:
         context['dm'] = DataMatrix.objects.get(id=objid)
     elif cls == Ordination.__name__:

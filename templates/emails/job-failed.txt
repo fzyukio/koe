@@ -43,5 +43,7 @@ Unfortunately, your Koe job has failed. Details follow:
     {% endif %}
 {% endif %}
 
+Reason for failure: {{ message }}
+
 Best regards,
 The Koe project

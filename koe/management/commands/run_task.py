@@ -3,6 +3,7 @@ from django.core.management import BaseCommand
 from koe.celery_init import delay_in_production
 from koe.feature_utils import extract_database_measurements, construct_ordination, calculate_similarity
 from koe.models import Task, DataMatrix, SimilarityIndex, Ordination
+from root.models import User
 
 cls2func = {
     DataMatrix.__name__: extract_database_measurements,
@@ -24,6 +25,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         task_id = options['task_id']
         task = Task.objects.get(id=task_id)
+        superuser = User.objects.get(username='superuser')
+        task.user = superuser
+        task.save()
 
         cls = task.target.split(':')[0]
 

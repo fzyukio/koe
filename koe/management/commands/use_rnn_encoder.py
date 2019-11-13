@@ -331,10 +331,10 @@ class Command(BaseCommand):
         variables['is_log_psd'] = format.startswith('log_')
 
         factory = NDS2SAEFactory()
-        factory.load(load_from)
+        factory.set_output(load_from)
         factory.learning_rate = None
         factory.learning_rate_func = None
-        encoder = factory.build(load_from)
+        encoder = factory.build()
         session = encoder.recreate_session()
 
         if mode == 'showcase':

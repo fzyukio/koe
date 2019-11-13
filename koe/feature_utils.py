@@ -437,6 +437,9 @@ def extract_database_measurements(arg=None, force=False):
             features_hash = task.features_hash
             aggregations_hash = task.aggregations_hash
 
+        if len(sids) == 0:
+            raise Exception('Measurement cannot be extracted because your database doesn\'t contain any segments.')
+
         features = Feature.objects.filter(id__in=features_hash.split('-'))
         aggregations = Aggregation.objects.filter(id__in=aggregations_hash.split('-'))
         aggregators = [aggregator_map[x.name] for x in aggregations]
