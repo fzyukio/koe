@@ -6,14 +6,14 @@ import numpy as np
 from django.core.management.base import BaseCommand
 from pymlfunc import tictoc
 
-from koe import binstorage
+from koe import binstorage3 as bs
 from koe.features.feature_extract import feature_map, feature_whereabout
 from koe.model_utils import get_labels_by_sids, exclude_no_labels
 from koe.model_utils import get_or_error
 from koe.models import Database, Feature
 from koe.rnn_models import OneHotSequenceProvider
 from koe.rnn_train import train
-from koe.storage_utils import get_sids_tids, get_binstorage_locations
+from koe.storage_utils import get_sids_tids, get_storage_loc_template
 from root.models import User
 
 feature_whereabout = {x.__name__[len('koe.features.'):]: y for x, y in feature_whereabout.items()}
@@ -22,14 +22,14 @@ ftgroup_names = list(feature_whereabout.keys())
 feature_whereabout_flat = [x for group in feature_whereabout.values() for x in group]
 
 
-def extract_rawdata(f2bs, ids, features):
-    # ids = np.array([19078])
+def extract_rawdata(ids, features):
+    storage_loc_template = get_storage_loc_template()
     data_by_id = {id: [] for id in ids}
 
     for feature in features:
-        index_filename, value_filename = f2bs[feature]
+        storage_loc = storage_loc_template.format(feature.name)
         with tictoc('{}'.format(feature.name)):
-            feature_values = binstorage.retrieve(ids, index_filename, value_filename)
+            feature_values = bs.retrieve(ids, storage_loc)
             for id, feature_value in zip(ids, feature_values):
                 data_by_id[id].append(feature_value)
 
@@ -99,8 +99,7 @@ class Command(BaseCommand):
         if len(no_label_ids) > 0:
             sids, tids, labels = exclude_no_labels(sids, tids, labels, no_label_ids)
 
-        f2bs, _ = get_binstorage_locations(features, [])
-        full_data = extract_rawdata(f2bs, tids, enabled_features)
+        full_data = extract_rawdata(tids, enabled_features)
         feature_inds = {x.name: idx for idx, x in enumerate(enabled_features)}
 
         for ftgroup_name in ftgroup_names + ['all']:

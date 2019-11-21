@@ -7,7 +7,7 @@ from koe.ml_utils import get_ratios, cnn
 from koe.model_utils import get_or_error
 from koe.models import Database, Feature
 from koe.rnn_models import OneHotSequenceProvider
-from koe.storage_utils import get_sids_tids, get_binstorage_locations
+from koe.storage_utils import get_sids_tids
 from root.models import User
 
 
@@ -90,8 +90,7 @@ class Command(BaseCommand):
         if len(no_label_ids) > 0:
             sids, tids, labels = exclude_no_labels(sids, tids, labels, no_label_ids)
 
-        f2bs, _ = get_binstorage_locations(features, [])
-        full_data = extract_rawdata(f2bs, tids, features)
+        full_data = extract_rawdata(tids, features)
         data = [x[0].T for x in full_data]
 
         unique_labels = np.unique(labels)

@@ -13,7 +13,7 @@ from koe.aggregator import aggregator_map
 from koe.feature_utils import extract_rawdata
 from koe.model_utils import get_or_error
 from koe.models import Feature, Aggregation, Database, FullTensorData, DerivedTensorData
-from koe.storage_utils import get_binstorage_locations
+
 from koe.storage_utils import get_sids_tids
 from koe.ts_utils import ndarray_to_bytes, write_config, bytes_to_ndarray, get_rawdata_from_binary, reduce_funcs
 from root.models import User
@@ -44,8 +44,7 @@ def create_full_tensor(database, recreate):
     full_cols_path = full_tensor.get_cols_path()
 
     sids, tids = get_sids_tids(database)
-    f2bs, fa2bs = get_binstorage_locations(features, aggregators)
-    data, col_inds = extract_rawdata(f2bs, fa2bs, tids, features, aggregators)
+    data, col_inds = extract_rawdata(tids, features, aggregators)
 
     ndarray_to_bytes(data, full_bytes_path)
     ndarray_to_bytes(sids, full_sids_path)
