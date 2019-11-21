@@ -1,14 +1,15 @@
-import os
 import copy
+import os
+import shutil
 import uuid
 
 import numpy as np
 from django.test import TestCase
 from pymlfunc import tictoc
 
-import koe.binstorage as bs
+import binstorage2 as bs
 
-NUM_POINTS = 100000
+NUM_POINTS = 1000
 
 
 def one_randint(max=100, min=1):
@@ -52,10 +53,15 @@ def create_random_id_based_dataset(npoints=NUM_POINTS, max_len=100):
 class BinStorageTest(TestCase):
     def setUp(self):
         self.ids, self.arrs = create_random_id_based_dataset()
+        ids_sorted_order = np.argsort(self.ids)
+        self.sorted_ids = np.array(self.ids)[ids_sorted_order]
+        self.sorted_arrs = np.array(self.arrs)[ids_sorted_order]
+
         path = '/tmp'
         name = uuid.uuid4().hex
-        self.index_filename = os.path.join(path, '{}.idx'.format(name))
-        self.value_filename = os.path.join(path, '{}.val'.format(name))
+        self.loc = os.path.join(path, name)
+        self.index_file = os.path.join(self.loc, '.index')
+        os.mkdir(self.loc)
 
     def test(self):
         try:
@@ -73,64 +79,64 @@ class BinStorageTest(TestCase):
             self._test_retrieve_error()
 
         finally:
-            os.remove(self.index_filename)
-            os.remove(self.value_filename)
+            shutil.rmtree(self.loc)
 
     def _test_store(self):
         with tictoc('Test storing'):
-            bs.store(self.ids, self.arrs, self.index_filename, self.value_filename)
-        index_filesize = os.path.getsize(self.index_filename)
-        index_memory_usage = len(self.ids) * bs.INDEX_FILE_NCOLS * 4
+            bs.store(self.ids, self.arrs, self.loc)
 
-        value_filesize = os.path.getsize(self.value_filename)
-        value_memory_usage = sum([np.size(x) for x in self.arrs]) * 4
-
-        self.assertEqual(index_filesize, index_memory_usage)
-        self.assertEqual(value_filesize, value_memory_usage)
-
-        with open(self.index_filename, 'rb') as f:
+        with open(self.index_file, 'rb') as f:
             index_arr = np.fromfile(f, dtype=np.int32)
             nids = len(index_arr) // bs.INDEX_FILE_NCOLS
 
             self.assertEqual(nids, len(self.ids))
 
             index_arr = index_arr.reshape((nids, bs.INDEX_FILE_NCOLS))
+            val_file_template = os.path.join(self.loc, '{}.val')
+
             for i in range(nids):
-                id = self.ids[i]
-                arr = self.arrs[i]
+                id = self.sorted_ids[i]
+                arr = self.sorted_arrs[i]
+
+                val_file = val_file_template.format(id)
 
                 arr_size = np.size(arr)
-                id_, beg, end, dim0, dim1 = index_arr[i]
+                id_, dim0, dim1 = index_arr[i]
 
                 self.assertEqual(id, id_)
-                self.assertEqual(end - beg, arr_size)
                 self.assertEqual(dim0, arr.shape[0] if arr.ndim >= 1 else 0)
                 self.assertEqual(dim1, arr.shape[1] if arr.ndim == 2 else 0)
                 self.assertEqual(max(1, dim0) * max(dim1, 1), arr_size)
 
-        with open(self.value_filename, 'rb') as f:
-            value_arr = np.fromfile(f, dtype=np.float32)
-            self.assertEqual(len(value_arr), sum([np.size(arr) for arr in self.arrs]))
+                with open(val_file, 'rb') as f:
+                    value_arr = np.fromfile(f, dtype=np.float32)
+                    if dim1 == 0:
+                        if dim0 == 0:
+                            value_arr = value_arr[0]
+                        else:
+                            self.assertEqual(len(value_arr), dim0)
+                    else:
+                        self.assertEqual(len(value_arr), dim0 * dim1)
+                        value_arr = value_arr.reshape((dim0, dim1))
 
-            arrs_ravel = np.concatenate([x.ravel() for x in self.arrs])
-            self.assertTrue(np.allclose(value_arr, arrs_ravel))
+                    self.assertTrue(np.allclose(value_arr, arr))
 
     def _test_update(self, nupdate):
-        _, new_arrs = create_random_id_based_dataset()
-        npoints = NUM_POINTS
+        _, arrs_for_update = create_random_id_based_dataset(nupdate)
 
         id2arr = {x: y for x, y in zip(self.ids, self.arrs)}
 
         # We want to make sure there are new ids (to be appended) and old ids (to be updated)
-        while True:
-            new_ids = np.arange(npoints * 10)
-            np.random.shuffle(new_ids)
-            new_ids = new_ids[:nupdate]
-            nnew = np.array([x for x in new_ids if x not in self.ids])
-            if 0 < len(nnew) < npoints:
-                break
+        nkeeps = nupdate // 2
+        nnews = nupdate - nkeeps
 
-        for x, y in zip(new_ids, new_arrs):
+        maxid = np.max(self.ids)
+        new_ids = np.arange(maxid + 1, maxid + nnews + 1)
+        keep_ids = self.ids[:nkeeps]
+
+        ids_for_update = np.concatenate((keep_ids, new_ids))
+
+        for x, y in zip(ids_for_update, arrs_for_update):
             id2arr[x] = y
 
         self.ids = np.array(list(id2arr.keys()))
@@ -139,9 +145,9 @@ class BinStorageTest(TestCase):
         self.arrs = [id2arr[i] for i in self.ids]
 
         with tictoc('Test update {} items'.format(nupdate)):
-            bs.store(new_ids, new_arrs, self.index_filename, self.value_filename)
+            bs.store(ids_for_update, arrs_for_update, self.loc)
 
-        retrieved_arrs = bs.retrieve(self.ids, self.index_filename, self.value_filename)
+        retrieved_arrs = bs.retrieve(self.ids, self.loc)
         for id, retrieved_arr in zip(self.ids, retrieved_arrs):
             self.assertTrue(np.allclose(id2arr[id], retrieved_arr))
 
@@ -154,7 +160,7 @@ class BinStorageTest(TestCase):
         selected_arrs = [self.arrs[i] for i in selected_ids_inds]
 
         with tictoc('Test retrieving {} items'.format(nselected)):
-            retrieved_arrs = bs.retrieve(selected_ids, self.index_filename, self.value_filename)
+            retrieved_arrs = bs.retrieve(selected_ids, self.loc)
 
         self.assertEqual(len(selected_ids), len(retrieved_arrs))
         for i in range(len(selected_ids)):
@@ -164,7 +170,7 @@ class BinStorageTest(TestCase):
             self.assertTrue(np.allclose(selected_arr, retrieved_arr))
 
     def _test_retrieve_error(self):
-        non_existing_ids = NUM_POINTS * 10 + np.random.randint(100, size=5)
+        non_existing_ids = NUM_POINTS * 100 + np.random.randint(100, size=NUM_POINTS // 2)
 
         with self.assertRaises(ValueError):
-            bs.retrieve(non_existing_ids, self.index_filename, self.value_filename)
+            bs.retrieve(non_existing_ids, self.loc)
