@@ -13,74 +13,15 @@ from django.core.management.base import BaseCommand
 from django.db.models import Case
 from django.db.models import F
 from django.db.models import When
-from progress.bar import Bar
 
 from koe.features.feature_extract import feature_map
-from koe.management.commands.run_rnn_encoder import read_variables
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.model_utils import get_or_error
 from koe.models import Segment, Database, DataMatrix, AudioFile
 from koe.spect_utils import extractors, psd2img, load_global_min_max
 from koe.ts_utils import ndarray_to_bytes
-from koe.utils import wav_path
+from ml.s2senc_utils import read_variables, spect_from_seg, encode_syllables
 from root.utils import mkdirp
-
-
-def spect_from_seg(seg, extractor):
-    af = seg.audio_file
-    wav_file_path = wav_path(af)
-    fs = af.fs
-    start = seg.start_time_ms
-    end = seg.end_time_ms
-    return extractor(wav_file_path, fs=fs, start=start, end=end)
-
-
-def encode_syllables(variables, encoder, session, segs, kernel_only):
-    num_segs = len(segs)
-    batch_size = 200
-    extractor = variables['extractor']
-    denormalised = variables['denormalised']
-    global_max = variables.get('global_max', None)
-    global_min = variables.get('global_min', None)
-    global_range = global_max - global_min
-
-    num_batches = num_segs // batch_size
-    if num_segs / batch_size > num_batches:
-        num_batches += 1
-
-    seg_idx = -1
-    encoding_result = {}
-
-    bar = Bar('', max=num_segs)
-
-    for batch_idx in range(num_batches):
-        if batch_idx == num_batches - 1:
-            batch_size = num_segs - (batch_size * batch_idx)
-
-        bar.message = 'Batch #{}/#{} batch size {}'.format(batch_idx, num_batches, batch_size)
-
-        lengths = []
-        batch_segs = []
-        spects = []
-        for idx in range(batch_size):
-            seg_idx += 1
-            seg = segs[seg_idx]
-            batch_segs.append(seg)
-            spect = spect_from_seg(seg, extractor)
-            if denormalised:
-                spect = (spect - global_min) / global_range
-
-            dims, length = spect.shape
-            lengths.append(length)
-            spects.append(spect.T)
-            bar.next()
-        encoded = encoder.encode(spects, session=session, kernel_only=kernel_only)
-
-        for encod, seg, length in zip(encoded, batch_segs, lengths):
-            encoding_result[seg.id] = encod
-
-        bar.finish()
-    return encoding_result
 
 
 def reconstruct_syllables(variables, encoder, session, segs):

@@ -16,20 +16,10 @@ from koe.management.commands.run_segmentation_rnn import extract_psd, good_audio
 from koe.model_utils import get_or_error
 from koe.models import Database, AudioFile, Segment
 from koe.spect_utils import extractors, psd2img
-from koe.utils import wav_path
 from root.utils import mkdirp
 
 bad_groundtruth = [14413, 14358, 14408, 19398, 14480, 14463, 14531, 20067, 14484, 14529, 14530, 14017, 20033, 14478,
                    14486, 14016, 14511, 14372, 14438, 14118, 14528, 14019, 14116]
-
-
-def spect_from_seg(seg, extractor):
-    af = seg.audio_file
-    wav_file_path = wav_path(af)
-    fs = af.fs
-    start = seg.start_time_ms
-    end = seg.end_time_ms
-    return extractor(wav_file_path, fs=fs, start=start, end=end)
 
 
 def generate_html(segmentation_results):

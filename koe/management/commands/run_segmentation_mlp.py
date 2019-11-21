@@ -18,20 +18,13 @@ from koe.models import Segment, AudioFile
 from koe.spect_utils import extractors
 from koe.utils import split_segments
 from koe.utils import wav_path
+from ml.s2senc_utils import read_variables
 from root.utils import mkdirp
 
 good_audio_file_ids = [14437, 14455, 14476, 20024, 14006, 14130, 20046, 14013, 19401, 14350, 14076, 14079, 14444, 13319,
                        14175, 14104, 20053, 14053, 20054, 19387, 14060, 14056, 14133]
 
 # good_audio_file_ids = [14437]
-
-
-def read_variables(save_to):
-    with zipfile.ZipFile(save_to, 'r', zipfile.ZIP_BZIP2, False) as zip_file:
-        content = zip_file.read('variables')
-        content = str(content, "utf-8")
-        variables = json.loads(content)
-    return variables
 
 
 def extract_psd(extractor, audio_file):

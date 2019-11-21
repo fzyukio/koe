@@ -19,15 +19,11 @@ from koe.model_utils import get_or_error
 from koe.models import Database, Segment
 from koe.spect_utils import extractors
 from koe.utils import wav_path
+from ml.s2senc_utils import read_variables
 from root.utils import mkdirp
 
 
-def read_variables(save_to):
-    with zipfile.ZipFile(save_to, 'r', zipfile.ZIP_BZIP2, False) as zip_file:
-        content = zip_file.read('variables')
-        content = str(content, "utf-8")
-        variables = json.loads(content)
-    return variables
+__all__ = []
 
 
 def extract_syllables(database_name, spect_dir, format):
