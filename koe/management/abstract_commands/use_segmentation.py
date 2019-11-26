@@ -234,7 +234,8 @@ def showcase_segmentation(variables, segmenter):
         img.save(img_path, format='PNG')
 
         segmentation_results[af_id] = (img_filename, score_mAP, score_f1, precision, recall)
-        segmentation_extra[af_id] = (img_filename, score_mAP, score_f1, precision, recall, correct_segments, auto_segments, end-start)
+        segmentation_extra[af_id] = (img_filename, score_mAP, score_f1, precision, recall, correct_segments,
+                                     auto_segments, end - start)
         bar.next()
 
     html = generate_html(segmentation_results)
