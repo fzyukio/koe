@@ -44,8 +44,9 @@ class TaskRunner:
         self.tick_interval = 1
         self.tick_count = 0
         self.next_count = 0
+        self.bar_increment = 0
         self.bar = Bar(prefix, max=1)
-        self.bar.index = -1
+        self.bar.index = 0
         self.bar.next()
         self._change_suffix()
 
@@ -55,7 +56,7 @@ class TaskRunner:
     def start(self, limit=100):
         self.tick_interval = max(1, limit / 100)
         self.bar.max = limit
-        self.bar.index = -1
+        self.bar.index = 0
         self._advance(TaskProgressStage.RUNNING)
 
     def wrapping_up(self):
@@ -84,18 +85,19 @@ class TaskRunner:
         else:
             self.bar.suffix = stage_name
 
-    def tick(self):
-        self.next_count += 1
+    def tick(self, nticks=1):
+        self.next_count += nticks
+        tick_increment = int(round(self.next_count / self.tick_interval - self.tick_count))
+        self.bar_increment += nticks
 
-        if self.next_count >= self.bar.max or \
-           self.next_count / self.tick_interval - self.tick_count > 1:
-            increment = int(self.next_count - (self.tick_interval * self.tick_count))
+        if self.next_count >= self.bar.max or tick_increment >= 1:
+            self.bar.next(self.bar_increment)
+            self.tick_count += tick_increment
+            self.bar_increment = 0
 
-            self.bar.next(increment)
             pc_complete = self.bar.index * 100 / self.bar.max
             self.task.pc_complete = pc_complete
             self.task.save()
-            self.tick_count += 1
 
     def _advance(self, next_stage, message=None):
         # if self.task.stage >= TaskProgressStage.COMPLETED:
@@ -126,6 +128,7 @@ class ConsoleTaskRunner:
         self.tick_interval = 1
         self.tick_count = 0
         self.next_count = 0
+        self.bar_increment = 0
         self.stage = TaskProgressStage.NOT_STARTED
         self.prefix = prefix
         self.bar = Bar(self.prefix, max=1)
@@ -136,11 +139,12 @@ class ConsoleTaskRunner:
     def start(self, limit=100):
         self.tick_interval = max(1, limit / 100)
         self.bar.max = limit
-        self.bar.index = -1
+        # self.bar.index = 0
         self._advance(TaskProgressStage.RUNNING)
 
     def wrapping_up(self):
         self._advance(TaskProgressStage.WRAPPING_UP)
+        self.bar.finish()
 
     def complete(self):
         self._advance(TaskProgressStage.COMPLETED)
@@ -159,13 +163,17 @@ class ConsoleTaskRunner:
         else:
             self.suffix = stage_name
 
-    def tick(self):
-        self.next_count += 1
-        if self.next_count >= self.bar.max or \
-           self.next_count / self.tick_interval - self.tick_count > 1:
-            increment = int(self.next_count - (self.tick_interval * self.tick_count))
-            self.bar.next(increment)
-            self.tick_count += 1
+    def tick(self, nticks=1):
+        self.next_count += nticks
+        tick_increment = int(round(self.next_count / self.tick_interval - self.tick_count))
+        self.bar_increment += nticks
+
+        # print('self.next_count = {}/{} tick_increment = {}'.format(self.next_count, self.bar.max, tick_increment))
+
+        if self.next_count >= self.bar.max or tick_increment >= 1:
+            self.bar.next(self.bar_increment)
+            self.tick_count += tick_increment
+            self.bar_increment = 0
 
     def _advance(self, next_stage):
         self.stage = next_stage
