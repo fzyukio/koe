@@ -463,6 +463,11 @@ export class Visualiser {
         self.durationRatio = durationRatio;
         self.durationMs = durationMs;
         self.length = length;
+
+        if (self.durationRatio !== 1) {
+            self.tickInterval /= self.durationRatio;
+        }
+
         self.populateChannelOptions();
     }
 

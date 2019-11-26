@@ -299,6 +299,9 @@ def get_audio_file_url(request):
     if audio_file.fake_fs is not None:
         real_fs = audio_file.fs
 
+    if audio_file.fs > 48000:
+        real_fs = audio_file.fs
+
     return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs}
 
 
