@@ -45,7 +45,10 @@ def get_psd(args):
 
 # @profile
 def get_sig(args):
-    wav_file_path, fs, start, end = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end'])
+    wav_file_path, fs, start, end, win_length = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'win_length'])
+
+    if end and end - start < win_length:
+        end = start + win_length
     if wav_file_path:
         sig = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=True)
     else:
@@ -75,7 +78,7 @@ def get_psddb(args):
 # @memoize(timeout=60)
 # @profile
 def cached_stft(wav_file_path, start, end, nfft, noverlap, win_length, window_name, center):
-    fs, chunk, _ = wavfile.read(wav_file_path, start, end, normalised=True, mono=True)
+    chunk, fs = wavfile.read_segment(wav_file_path, start, end, normalised=True, mono=True, return_fs=True)
     return stft_from_sig(chunk, nfft, noverlap, win_length, window_name, center)
 
 

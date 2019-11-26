@@ -3,7 +3,8 @@ from django.core.management.base import BaseCommand
 
 from koe.management.commands.utils import import_pcm, get_dbconf
 from koe.models import AudioFile
-from koe.utils import get_wav_info, wav_path
+from koe.utils import wav_path
+from koe.wavfile import get_wav_info
 
 
 class Command(BaseCommand):
