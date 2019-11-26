@@ -16,7 +16,7 @@ def zero_crossing_rate(args):
     nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
     hopsize = nfft - noverlap
     zcr = rosaft.zero_crossing_rate(y=sig, frame_length=nfft, hop_length=hopsize, center=False)
-    return zcr.reshape((zcr.size, 1))
+    return zcr
 
 
 def time_axis(args):
@@ -53,7 +53,7 @@ def energy_envelope(args):
     sig = np.abs(sig)
     hann_window = _cached_get_window('hanning', nfft)
     envelope = np.convolve(sig, hann_window, 'same')
-    return envelope.reshape((len(envelope), 1))
+    return envelope
 
 
 def temporal_centroid(args):

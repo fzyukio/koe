@@ -1,5 +1,4 @@
 from koe.features import freq_domain, time_domain
-from koe.features import linear_prediction
 from koe.features import mt_features
 from koe.features import other_features
 from koe.features import scaled_freq_features
@@ -23,7 +22,7 @@ feature_whereabout = {
         ('spectral_decrease', False, True),
         ('harmonic_ratio', False, True),
         ('fundamental_frequency', False, True),
-        ('spectrum', False, False),
+        # ('spectrum', False, False),
         ('total_energy', True, True),
         ('aggregate_entropy', True, True),
         ('average_entropy', True, True),
@@ -42,7 +41,7 @@ feature_whereabout = {
         ('duration', True, True),
         ('zero_crossing_rate', False, True),
         ('log_attack_time', True, True),
-        ('energy_envelope', False, True)
+        # ('energy_envelope', False, True)
     ],
     mt_features: [
         ('frequency_modulation', False, True),
@@ -53,10 +52,10 @@ feature_whereabout = {
         ('mean_frequency', False, True),
         ('spectral_continuity', False, True)
     ],
-    linear_prediction: [
-        ('lpc_cepstrum', False, False),
-        ('lp_coefficients', False, False)
-    ],
+    # linear_prediction: [
+    #     ('lpc_cepstrum', False, False),
+    #     ('lp_coefficients', False, False)
+    # ],
     other_features: [
         ('frame_entropy', False, True),
         ('average_frame_power', False, True),
