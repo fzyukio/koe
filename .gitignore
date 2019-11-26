@@ -27,3 +27,6 @@ notebooks/*.pdf
 csv/
 .env
 *.deploy
+tests/_*
+_*.sh
+trained_models/*.zip
