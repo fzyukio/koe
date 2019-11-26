@@ -53,7 +53,7 @@ def energy_envelope(args):
     sig = np.abs(sig)
     hann_window = _cached_get_window('hanning', nfft)
     envelope = np.convolve(sig, hann_window, 'same')
-    return envelope.reshape((len(envelope), 1))
+    return envelope
 
 
 def temporal_centroid(args):

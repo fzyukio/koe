@@ -72,7 +72,7 @@ def lpc_cepstrum(args):
 
 def lp_coefficients_frame(sig, order):
     lp, e = spectrum.lpc(sig, order)
-    return lp
+    return lp.astype(np.float32)
 
 
 def lp_coefficients(args):
@@ -84,7 +84,7 @@ def lp_coefficients(args):
     siglen = len(sig)
     nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
-    lp_coeffs = np.zeros((order, nsegs), dtype=np.complex64)
+    lp_coeffs = np.zeros((order, nsegs), dtype=np.float32)
     for i in range(nsegs):
         seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]

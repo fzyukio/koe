@@ -49,7 +49,12 @@ def spectral_contrast(args):
     psd = get_psd(args)
     fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
     hopsize = nfft - noverlap
-    return rosaft.spectral_contrast(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
+    if fs < 12800:
+        n_bands = 6
+        fmin = int(fs / 2.0 ** (n_bands))
+    else:
+        fmin = 200
+    return rosaft.spectral_contrast(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize, fmin=fmin)
 
 
 # @profile
@@ -132,7 +137,7 @@ def _harmonic_and_pitch(args):
         seg_beg, seg_end = segs[i]
         frame = sig[seg_beg:seg_end]
 
-        M = np.round(0.016 * fs) - 1
+        M = int(np.round(0.016 * fs) - 1)
         R = np.correlate(frame, frame, mode='full')
 
         g = R[len(frame) - 1]
