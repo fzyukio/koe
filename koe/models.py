@@ -652,11 +652,11 @@ class Task(SimpleModel):
 
     def __str__(self):
         if self.parent is None:
-            return 'Task #{} owner: {} Stage: {} - {:3.1f}% completed'.format(
+            return 'Task #{} owner: {} Stage: {} - {:3.1f}pc completed'.format(
                 self.id, self.user.id, self.get_stage_display(), self.pc_complete
             )
         else:
-            return 'Subtask #{} from Task #{} owner: {} Stage: {} - {:3.1f}% completed'.format(
+            return 'Subtask #{} from Task #{} owner: {} Stage: {} - {:3.1f}pc completed'.format(
                 self.id, self.parent.id, self.user.id, self.get_stage_display(), self.pc_complete
             )
 
