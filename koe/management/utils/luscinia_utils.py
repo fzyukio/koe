@@ -7,7 +7,7 @@ import pydub
 from django.conf import settings
 
 from koe import wavfile as wf
-from koe.utils import get_wav_info
+from koe.wavfile import get_wav_info
 from koe.utils import wav_path, audio_path
 from root.utils import ensure_parent_folder_exists
 

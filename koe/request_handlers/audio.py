@@ -13,7 +13,9 @@ from koe import wavfile
 from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
-from koe.utils import audio_path, get_wav_info
+from koe.utils import audio_path
+from koe.wavfile import get_wav_info
+
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists, data_path

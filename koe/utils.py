@@ -3,16 +3,16 @@ General utils for the entire project.
 DO NOT import any project-related files here. NO Model, NO form, NO nothing.
 model_utils is there you can import those
 """
-import os
 import base64
 import contextlib
+import os
 import re
-import wave
 from itertools import product
 
 import numpy as np
 
 from koe import wavfile
+from koe.wavfile import get_wav_info
 from root.utils import data_path
 
 
@@ -70,18 +70,6 @@ def printoptions(*args, **kwargs):
         np.set_printoptions(**original)
 
 
-def get_wav_info(audio_file):
-    """
-    Return fs and length of an audio without readng the entire file
-    :param audio_file:
-    :return:
-    """
-    with contextlib.closing(wave.open(audio_file, 'r')) as f:
-        nframes = f.getnframes()
-        rate = f.getframerate()
-    return rate, nframes
-
-
 def wav_2_mono(file, **kwargs):
     """
     Read a wav file and return fs and first channel's data stream.
@@ -89,15 +77,11 @@ def wav_2_mono(file, **kwargs):
     :param file:
     :return: fs and signal
     """
-    w = wavfile.read(file, **kwargs)
-    if len(np.shape(w[1])) > 1:
-        data = w[1][:, 0]
-    else:
-        data = w[1]
-    fs = w[0]
-    # bitrate = w[2]
-    # normalization_factor = float(2 ** (bitrate - 1))
-    # sig = data / normalization_factor
+    data = wavfile.read_segment(file, **kwargs)
+    if len(np.shape(data)) > 1:
+        data = data[:, 0]
+
+    fs, _ = get_wav_info(file)
     return fs, data
 
 
