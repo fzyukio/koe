@@ -1,5 +1,6 @@
 import json
 import os
+from logging import warning
 from time import sleep
 
 import csv
@@ -318,7 +319,7 @@ def get_or_wait(task_id):
 
 
 @app.task(bind=False)
-def extract_database_measurements(arg=None, force=False, send_email=False, *args, **kwargs):
+def extract_database_measurements(arg=None, force=False, send_email=False, raise_err=False, *args, **kwargs):
     if isinstance(arg, int):
         task = get_or_wait(arg)
     else:
@@ -347,13 +348,29 @@ def extract_database_measurements(arg=None, force=False, send_email=False, *args
             aggregations_hash = task.aggregations_hash
 
         if len(sids) == 0:
-            raise Exception('Measurement cannot be extracted because your database doesn\'t contain any segments.')
+            raise CustomAssertionError(
+                'Measurement cannot be extracted because your database doesn\'t contain any segments.')
 
         segments = Segment.objects.filter(id__in=sids)
         tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
 
         features = Feature.objects.filter(id__in=features_hash.split('-'))
         aggregations = Aggregation.objects.filter(id__in=aggregations_hash.split('-'))
+
+        available_feature_names = feature_extractors.keys()
+        disabled_features_names = [x.name for x in features if x.name not in available_feature_names]
+
+        if len(disabled_features_names):
+            warning('Task #{}: Features {} are no longer available'.format(task.id, disabled_features_names))
+            features = [x for x in features if x.name in available_feature_names]
+
+        available_aggregator_names = aggregator_map.keys()
+        disabled_aggregators_names = [x.name for x in aggregations if x.name not in available_aggregator_names]
+
+        if len(disabled_aggregators_names):
+            warning('Task #{}: Aggregation {} are no longer available'.format(task.id, disabled_aggregators_names))
+            aggregations = [x for x in aggregations if x.name in available_aggregator_names]
+
         aggregators = [aggregator_map[x.name] for x in aggregations]
 
         extract_segment_features_for_segments(runner, sids, features, force=force)
@@ -385,6 +402,8 @@ def extract_database_measurements(arg=None, force=False, send_email=False, *args
         runner.complete()
 
     except Exception as e:
+        if raise_err:
+            raise e
         runner.error(e)
 
 
@@ -450,7 +469,7 @@ methods = {'pca': pca, 'ica': pca, 'tsne': tsne}
 
 
 @app.task(bind=False)
-def construct_ordination(task_id, send_email=False, *args, **kwargs):
+def construct_ordination(task_id, send_email=False, raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
     runner = TaskRunner(task, send_email=send_email)
 
@@ -467,7 +486,7 @@ def construct_ordination(task_id, send_email=False, *args, **kwargs):
         ndims = ord.ndims
         param_kwargs = Ordination.params_to_kwargs(ord.params)
 
-        assert dm.task is None or dm.task.is_completed()
+        assert dm.task is None or dm.task.is_completed(), 'Cannot construct ordination because its DataMatrix failed'
         assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
         assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
 
@@ -495,6 +514,8 @@ def construct_ordination(task_id, send_email=False, *args, **kwargs):
 
         runner.complete()
     except Exception as e:
+        if raise_err:
+            raise e
         runner.error(e)
 
 
@@ -511,7 +532,7 @@ def _calculate_similarity(sids_path, source_bytes_path, return_tree=False):
 
 
 @app.task(bind=False)
-def calculate_similarity(task_id, send_email=False, *args, **kwargs):
+def calculate_similarity(task_id, send_email=False, raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
 
     runner = TaskRunner(task, send_email=send_email)
@@ -551,8 +572,9 @@ def calculate_similarity(task_id, send_email=False, *args, **kwargs):
 
         runner.complete()
     except Exception as e:
+        if raise_err:
+            raise e
         runner.error(e)
-
 
 def drop_useless_columns(mat):
     colmin = np.min(mat, axis=0)

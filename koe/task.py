@@ -34,7 +34,7 @@ def send_email(task, success):
 
 
 class TaskRunner:
-    def __init__(self, task, send_email=True):
+    def __init__(self, task, send_email=None):
         self.task = task
         if task.parent is None:
             prefix = 'Task #{} owner: {}'.format(task.id, task.user.username)
@@ -75,7 +75,7 @@ class TaskRunner:
         error_tracker = settings.ERROR_TRACKER
         error_tracker.captureException()
         self._advance(TaskProgressStage.ERROR, str(e))
-        if self.do_send_email:
+        if self.do_send_email == 'always':
             send_email(self.task, False)
 
     def _change_suffix(self):
