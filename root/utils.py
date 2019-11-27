@@ -27,10 +27,12 @@ def password_generator(size=6, chars=string.ascii_uppercase + string.digits):
 
 
 class SendEmailThread(threading.Thread):
-    def __init__(self, subject, template, to, context, to_override=None, **kwargs):
+    def __init__(self, subject, template, to, context, cc=None, reply_to=None, **kwargs):
         self.subject = subject
         self.template = template
-        self.to = [to_override] if to_override else to  # allow overriding the "to" email field for testing
+        self.to = to
+        self.cc = cc
+        self.reply_to = reply_to if reply_to else [from_email]
         self.context = context
 
         super(SendEmailThread, self).__init__(**kwargs)
@@ -42,7 +44,8 @@ class SendEmailThread(threading.Thread):
         html_content = html.render(self.context)
         plain_content = plain.render(self.context)
 
-        email = EmailMultiAlternatives(self.subject, plain_content, from_email, self.to, headers={'From': sender_name})
+        email = EmailMultiAlternatives(self.subject, plain_content, from_email, self.to,
+                                       headers={'From': sender_name}, cc=self.cc, reply_to=self.reply_to)
         email.attach_alternative(html_content, 'text/html')
         email.send()
 

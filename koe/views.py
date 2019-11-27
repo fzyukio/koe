@@ -1,4 +1,5 @@
 import json
+from copy import copy
 
 from django.conf import settings
 from django.db.models import Q
@@ -16,9 +17,13 @@ from koe.model_utils import get_user_databases, get_or_error
 from koe.models import AudioFile, AudioTrack,\
     DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination, SimilarityIndex
 from koe.request_handlers.templates import populate_context
-from root.models import User, ExtraAttrValue
+from maintenance import get_config
+from root.models import ExtraAttrValue
 from root.utils import SendEmailThread, get_referrer_pathname
 from root.views import can_have_exception
+
+
+envconf = get_config()
 
 
 class SegmentationView(TemplateView):
@@ -444,13 +449,19 @@ class ContactUsView(FormView):
     def form_valid(self, form, **kwargs):
         data = form.cleaned_data
 
-        superuser = User.objects.get(username='superuser')
-
         subject = 'Someone just contacted Koe'
         template = 'contact-received'
+        contact_emails = envconf['contact_emails']
 
-        send_email_thread = SendEmailThread(subject, template, [superuser.email], context=data)
-        send_email_thread.start()
+        sender_email = data['email']
+
+        for primary_email in contact_emails:
+            cc_emails = copy(contact_emails)
+            cc_emails.remove(primary_email)
+            reply_to = [sender_email] + cc_emails
+
+            send_email_thread = SendEmailThread(subject, template, [primary_email], context=data, reply_to=reply_to)
+            send_email_thread.start()
 
         rendered = render_to_string('support-confirmation.html')
         return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))

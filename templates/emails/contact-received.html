@@ -1,15 +1,9 @@
 {% load staticfiles %}
 {% load custom_tags %}
 <p>Hi,</p>
-<br/>
-
-Someone's just contacted Koe. Details:
-
-<strong>Name: </strong> {{ name }}
 <br>
-<strong>Email: </strong> {{ email }}
+<p>"{{ name }} <{{ email }}>" just contacted Koe with the following message:</p>
+<p>{{ message }}</p>
 <br>
-<strong>Message: </strong> {{ message }}
-
 <p>Best regards,</p>
 <p>The Koe project</p>

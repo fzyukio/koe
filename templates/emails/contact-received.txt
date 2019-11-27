@@ -1,12 +1,8 @@
 {% load staticfiles %}
 {% load custom_tags %}
 Hi,
-
-Someone's just contacted Koe. Details:
-
-Name: {{ name }}
-Email: {{ email }}
-Message: {{ message }}
+"{{ name }} <{{ email }}>" just contacted Koe with the following message:
+{{ message }}
 
 Best regards,
 The Koe project
