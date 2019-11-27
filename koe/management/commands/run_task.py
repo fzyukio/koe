@@ -14,16 +14,14 @@ cls2func = {
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--task-id',
-            action='store',
-            dest='task_id',
-            required=True,
-            type=int,
-        )
+        parser.add_argument('--task-id', action='store', dest='task_id', required=True, type=int)
+
+        parser.add_argument('--force', action='store_true', dest='force', default=False)
 
     def handle(self, *args, **options):
         task_id = options['task_id']
+        force = options['force']
+
         task = Task.objects.get(id=task_id)
         superuser = User.objects.get(username='superuser')
         task.user = superuser
@@ -33,7 +31,7 @@ class Command(BaseCommand):
 
         if cls in cls2func:
             func = cls2func[cls]
-            delay_in_production(func, task.id)
+            delay_in_production(func, task.id, force=force)
             print('Successfully resumed {}({})'.format(func.__name__, task.id))
         else:
             print('Unknown target {} of task#{}'.format(task.target, task.id))

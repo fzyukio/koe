@@ -26,8 +26,8 @@ def debug_task(self):
     print('Request: {0!r}'.format(self.request))
 
 
-def delay_in_production(func, *args):
+def delay_in_production(func, *args, **kwargs):
     if settings.DEBUG:
-        func(*args)
+        func(*args, **kwargs)
     else:
-        func.delay(*args)
+        func.delay(*args, **kwargs)

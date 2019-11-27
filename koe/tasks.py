@@ -6,7 +6,7 @@ from koe.task import TaskRunner
 
 
 @app.task(bind=False)
-def celery_task_test(task_id):
+def celery_task_test(task_id, *args, **kwargs):
     task = Task.objects.get(id=task_id)
 
     runner = TaskRunner(task)

@@ -234,10 +234,10 @@ def get_user_databases(user):
 
 
 @app.task(bind=False)
-def extract_spectrogram(audio_file_id):
+def extract_spectrogram(audio_file_id, *args, **kwargs):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
-    :param audio_file:
+    :param audio_file_id:
     :return:
     """
     audio_file = AudioFile.objects.get(id=audio_file_id)
@@ -341,7 +341,7 @@ def get_or_error(obj, key, errmsg=None):
 
 
 @app.task(bind=False)
-def delete_segments_async():
+def delete_segments_async(*args, **kwargs):
     segments = Segment.fobjs.filter(active=False)
     this_vl = segments.values_list('id', 'tid')
     this_tids = [x[1] for x in this_vl]
@@ -368,7 +368,7 @@ def delete_segments_async():
 
 
 @app.task(bind=False)
-def delete_audio_files_async():
+def delete_audio_files_async(*args, **kwargs):
     audio_files = AudioFile.fobjs.filter(active=False)
     audio_files_ids = audio_files.values_list('id', flat=True)
 
