@@ -1,3 +1,4 @@
+import json
 import os
 from logging import warning
 
@@ -6,14 +7,15 @@ from django.core.management import BaseCommand
 
 from koe import binstorage3 as bs
 from koe.aggregator import aggregator_map
-from koe.feature_utils import extract_segment_features_for_segments, aggregate_feature_values
+from koe.feature_utils import extract_segment_features_for_segments, aggregate_feature_values, extract_rawdata
 from koe.features.feature_extract import feature_extractors, feature_map
 from koe.models import DataMatrix, Segment, Feature, Aggregation
 from koe.storage_utils import get_storage_loc_template
 from koe.task import ConsoleTaskRunner
+from koe.ts_utils import ndarray_to_bytes
 
 
-def reextract_dm(dm, skip_features=False, skip_aggregations=False):
+def reextract_dm(dm, only_missing=False):
     if dm.database:
         segments = Segment.objects.filter(audio_file__database=dm.database)
         sids = segments.values_list('id', flat=True)
@@ -22,11 +24,30 @@ def reextract_dm(dm, skip_features=False, skip_aggregations=False):
         sids = dm.tmpdb.ids
         dbname = dm.tmpdb.name
 
-    if len(sids) == 0:
-        print('Skip DM #{}-{}-{}: '.format(dm.id, dbname, dm.name))
+    full_sids_path = dm.get_sids_path()
+    full_bytes_path = dm.get_bytes_path()
+    full_cols_path = dm.get_cols_path()
+
+    file_missing = True
+    if os.path.isfile(full_sids_path) and os.path.isfile(full_bytes_path) and os.path.isfile(full_cols_path):
+        file_missing = False
+
+    need_extraction = False
+    if not only_missing or file_missing:
+        need_extraction = True
+
+    if not need_extraction:
         return
 
     segments = Segment.objects.filter(id__in=sids)
+
+    if len(segments) != len(sids):
+        warning('Datamatrix {}{}{} contains IDs that have been removed.'.format(dm.id, dbname, dm.name))
+
+    if len(segments) == 0:
+        print('Skip DM #{}-{}-{}: '.format(dm.id, dbname, dm.name))
+        return
+
     tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
 
     features_ids = dm.features_hash.split('-')
@@ -53,23 +74,31 @@ def reextract_dm(dm, skip_features=False, skip_aggregations=False):
 
     aggregators = [aggregator_map[x.name] for x in aggregations]
 
-    if not skip_features:
-        runner = ConsoleTaskRunner(prefix='Extract measurement for DM #{}-{}-{}: '.format(dm.id, dbname, dm.name))
-        runner.preparing()
-        extract_segment_features_for_segments(runner, sids, features, force=False)
-        runner.wrapping_up()
+    runner = ConsoleTaskRunner(prefix='Extract measurement for DM #{}-{}-{}: '.format(dm.id, dbname, dm.name))
+    runner.preparing()
+    extract_segment_features_for_segments(runner, sids, features, force=False)
+    runner.wrapping_up()
 
-    if not skip_aggregations:
-        child_runner = ConsoleTaskRunner(prefix='Aggregate measurement for DM #{}-{}-{}: '
-                                         .format(dm.id, dbname, dm.name))
-        child_runner.preparing()
+    child_runner = ConsoleTaskRunner(prefix='Aggregate measurement for DM #{}-{}-{}: '
+                                     .format(dm.id, dbname, dm.name))
+    child_runner.preparing()
 
-        aggregate_feature_values(child_runner, tids, features, aggregators)
-        child_runner.wrapping_up()
-        child_runner.complete()
+    aggregate_feature_values(child_runner, tids, features, aggregators)
+    child_runner.wrapping_up()
+    child_runner.complete()
 
-    if not skip_features:
-        runner.complete()
+    runner.complete()
+
+    data, col_inds = extract_rawdata(tids, features, aggregators)
+
+    ndarray_to_bytes(data, full_bytes_path)
+    ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
+
+    with open(full_cols_path, 'w', encoding='utf-8') as f:
+        json.dump(col_inds, f)
+
+    dm.ndims = data.shape[1]
+    dm.save()
 
 
 def reextract_by_tids(features, aggregators):
@@ -97,7 +126,6 @@ def reextract_by_tids(features, aggregators):
 
             if not os.path.isdir(fa_storage_loc):
                 continue
-                continue
 
             tids = bs.retrieve_ids(fa_storage_loc)
             ntids = len(tids)
@@ -115,10 +143,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--use-dm', action='store_true', dest='use_dm', default=False)
         parser.add_argument('--use-tid', action='store_true', dest='use_tid', default=False)
+        parser.add_argument('--only-missing', action='store_true', dest='only_missing', default=False)
 
     def handle(self, *args, **options):
         use_dm = options['use_dm']
         use_tid = options['use_tid']
+        only_missing = options['only_missing']
 
         features = list(feature_map.values())
 
@@ -130,6 +160,6 @@ class Command(BaseCommand):
 
         if use_dm:
             for dm in DataMatrix.objects.all():
-                reextract_dm(dm)
+                reextract_dm(dm, only_missing)
         else:
             reextract_by_tids(features, aggregators)
