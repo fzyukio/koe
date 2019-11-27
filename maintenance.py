@@ -34,6 +34,9 @@ fixture_list = [
 ]
 
 
+CONF = {}
+
+
 def get_config():
     """
     If file 'settings.yaml' doesn't exist, create one from template, otherwise read it.
@@ -47,6 +50,9 @@ def get_config():
 
     if not os.path.isfile(filename):
         raise Exception('File {} not found, please make a copy of {}'.format(filename, default_filename))
+
+    if len(CONF) > 0:
+        return CONF
 
     with open(filename, 'r', encoding='utf-8') as f:
         conf = yaml.load(f)
@@ -64,7 +70,9 @@ def get_config():
         conf = yaml.load(f)
 
     conf['base_dir'] = base_dir
-    return conf
+    CONF.update(conf)
+
+    return CONF
 
 
 def populate_environment_variables(config):

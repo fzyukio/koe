@@ -175,8 +175,9 @@ else:  # assume we have fully-specified smtp configuration
     EMAIL_HOST_USER = email_user
     EMAIL_HOST_PASSWORD = email_pass
     EMAIL_TIMEOUT = 10  # hopefully this is enough...
-    EMAIL_PORT = email_port
-    EMAIL_USE_TLS = True
+    EMAIL_PORT = int(email_port)
+    EMAIL_USE_TLS = EMAIL_PORT == 587
+    EMAIL_USE_SSL = EMAIL_PORT == 465
     FROM_EMAIL = envconf['from_email']
 
 DATABASES = {
