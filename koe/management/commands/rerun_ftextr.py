@@ -1,18 +1,16 @@
+import os
 from logging import warning
 
-import os
 import numpy as np
 from django.core.management import BaseCommand
 
-from koe.features.feature_extract import feature_extractors, feature_map
+from koe import binstorage3 as bs
 from koe.aggregator import aggregator_map
 from koe.feature_utils import extract_segment_features_for_segments, aggregate_feature_values
+from koe.features.feature_extract import feature_extractors, feature_map
 from koe.models import DataMatrix, Segment, Feature, Aggregation
-from koe.task import ConsoleTaskRunner
-from koe import binstorage3 as bs
-
-from root.utils import mkdirp
 from koe.storage_utils import get_storage_loc_template
+from koe.task import ConsoleTaskRunner
 
 
 def reextract_dm(dm, skip_features=False, skip_aggregations=False):
@@ -86,7 +84,8 @@ def reextract_by_tids(features, aggregators):
         sids = Segment.objects.filter(tid__in=existing_tids).values_list('id', flat=True)
         nsids = len(sids)
 
-        runner = ConsoleTaskRunner(prefix='Re-extract measurement for feature {}, nids = {}'.format(feature.name, nsids))
+        prefix = 'Re-extract measurement for feature {}, nids = {}'.format(feature.name, nsids)
+        runner = ConsoleTaskRunner(prefix=prefix)
         runner.preparing()
         extract_segment_features_for_segments(runner, sids, [feature], force=False)
         runner.wrapping_up()
@@ -103,7 +102,8 @@ def reextract_by_tids(features, aggregators):
             tids = bs.retrieve_ids(fa_storage_loc)
             ntids = len(tids)
 
-            runner = ConsoleTaskRunner(prefix='Apply aggregation {}, nids = {}'.format(aggregator.name, ntids))
+            prefix = 'Apply aggregation {}, nids = {}'.format(aggregator.name, ntids)
+            runner = ConsoleTaskRunner(prefix=prefix)
             runner.preparing()
 
             aggregate_feature_values(runner, tids, [feature], [aggregator], force=False)
@@ -116,26 +116,13 @@ class Command(BaseCommand):
         parser.add_argument('--use-dm', action='store_true', dest='use_dm', default=False)
         parser.add_argument('--use-tid', action='store_true', dest='use_tid', default=False)
 
-        # parser.add_argument('--features', action='store', dest='features', default=None, type=str)
-        # parser.add_argument('--aggregators', action='store', dest='aggregators', default=None, type=str)
-
     def handle(self, *args, **options):
         use_dm = options['use_dm']
         use_tid = options['use_tid']
-        # features_to_use = options['features']
-        # aggregators_to_use = options['aggregators']
 
-        # if features_to_use:
-        #     features_to_use = list(features_to_use.split(','))
-        #     features = [feature_map[x] for x in features_to_use]
-        # else:
         features = list(feature_map.values())
 
         aggregations = Aggregation.objects.filter(enabled=True).order_by('id')
-        # if aggregators_to_use:
-        #     aggregators_to_use = list(aggregators_to_use.split(','))
-        #     aggregators = [aggregator_map[x] for x in aggregators_to_use]
-        # else:
         aggregators = [aggregator_map[x.name] for x in aggregations]
 
         if use_dm and use_tid:
@@ -146,4 +133,3 @@ class Command(BaseCommand):
                 reextract_dm(dm)
         else:
             reextract_by_tids(features, aggregators)
-

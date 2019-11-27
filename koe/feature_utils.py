@@ -319,7 +319,7 @@ def get_or_wait(task_id):
 
 
 @app.task(bind=False)
-def extract_database_measurements(arg=None, force=False, send_email=False, raise_err=False, *args, **kwargs):
+def extract_database_measurements(arg=None, force=False, send_email='always', raise_err=False, *args, **kwargs):
     if isinstance(arg, int):
         task = get_or_wait(arg)
     else:
@@ -469,7 +469,7 @@ methods = {'pca': pca, 'ica': pca, 'tsne': tsne}
 
 
 @app.task(bind=False)
-def construct_ordination(task_id, send_email=False, raise_err=False, *args, **kwargs):
+def construct_ordination(task_id, send_email='always', raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
     runner = TaskRunner(task, send_email=send_email)
 
@@ -532,7 +532,7 @@ def _calculate_similarity(sids_path, source_bytes_path, return_tree=False):
 
 
 @app.task(bind=False)
-def calculate_similarity(task_id, send_email=False, raise_err=False, *args, **kwargs):
+def calculate_similarity(task_id, send_email='always', raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
 
     runner = TaskRunner(task, send_email=send_email)
@@ -575,6 +575,7 @@ def calculate_similarity(task_id, send_email=False, raise_err=False, *args, **kw
         if raise_err:
             raise e
         runner.error(e)
+
 
 def drop_useless_columns(mat):
     colmin = np.min(mat, axis=0)

@@ -90,4 +90,3 @@ class Command(BaseCommand):
                 Task.objects.exclude(stage=TaskProgressStage.COMPLETED).exclude(parent=None).delete()
             for task in tasks:
                 run_task(task, use_celery, force, send_email, remove_dead)
-
