@@ -468,6 +468,40 @@ def mds(data, ndims, **kwargs):
 methods = {'pca': pca, 'ica': pca, 'tsne': tsne}
 
 
+def _construct_ordination(ord, runner):
+    dm = ord.dm
+    method_name = ord.method
+    ndims = ord.ndims
+    param_kwargs = Ordination.params_to_kwargs(ord.params)
+
+    assert dm.task is None or dm.task.is_completed(), 'Cannot construct ordination because its DataMatrix failed'
+    assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
+    assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
+
+    runner.start()
+    dm_sids_path = dm.get_sids_path()
+    dm_bytes_path = dm.get_bytes_path()
+
+    sids = bytes_to_ndarray(dm_sids_path, np.int32)
+    dm_data = get_rawdata_from_binary(dm_bytes_path, len(sids))
+
+    data = zscore(dm_data)
+    data[np.where(np.isnan(data))] = 0
+    data[np.where(np.isinf(data))] = 0
+
+    method = methods[method_name]
+    result = method(data, ndims, **param_kwargs)
+    result = result.astype(np.float32)
+
+    runner.wrapping_up()
+
+    ord_sids_path = ord.get_sids_path()
+    ord_bytes_path = ord.get_bytes_path()
+
+    ndarray_to_bytes(result, ord_bytes_path)
+    ndarray_to_bytes(sids, ord_sids_path)
+
+
 @app.task(bind=False)
 def construct_ordination(task_id, send_email='always', raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
@@ -481,36 +515,7 @@ def construct_ordination(task_id, send_email='always', raise_err=False, *args, *
         assert cls == Ordination.__name__
         ord = Ordination.objects.get(id=ord_id)
 
-        dm = ord.dm
-        method_name = ord.method
-        ndims = ord.ndims
-        param_kwargs = Ordination.params_to_kwargs(ord.params)
-
-        assert dm.task is None or dm.task.is_completed(), 'Cannot construct ordination because its DataMatrix failed'
-        assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
-        assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
-
-        runner.start()
-        dm_sids_path = dm.get_sids_path()
-        dm_bytes_path = dm.get_bytes_path()
-
-        sids = bytes_to_ndarray(dm_sids_path, np.int32)
-        dm_data = get_rawdata_from_binary(dm_bytes_path, len(sids))
-
-        data = zscore(dm_data)
-        data[np.where(np.isnan(data))] = 0
-        data[np.where(np.isinf(data))] = 0
-
-        method = methods[method_name]
-        result = method(data, ndims, **param_kwargs)
-
-        runner.wrapping_up()
-
-        ord_sids_path = ord.get_sids_path()
-        ord_bytes_path = ord.get_bytes_path()
-
-        ndarray_to_bytes(result, ord_bytes_path)
-        ndarray_to_bytes(sids, ord_sids_path)
+        _construct_ordination(ord, runner)
 
         runner.complete()
     except Exception as e:
@@ -519,16 +524,37 @@ def construct_ordination(task_id, send_email='always', raise_err=False, *args, *
         runner.error(e)
 
 
-def _calculate_similarity(sids_path, source_bytes_path, return_tree=False):
+def _calculate_similarity(sim, runner):
+    dm = sim.dm
+    ord = sim.ord
+
+    assert dm.task is None or dm.task.is_completed()
+    assert ord is None or ord.task is None or ord.task.is_completed()
+
+    if ord:
+        sids_path = ord.get_sids_path()
+        source_bytes_path = ord.get_bytes_path()
+    else:
+        sids_path = dm.get_sids_path()
+        source_bytes_path = dm.get_bytes_path()
+
     sids = bytes_to_ndarray(sids_path, np.int32)
     coordinates = get_rawdata_from_binary(source_bytes_path, len(sids))
+    coordinates[np.where(np.logical_not(np.isfinite(coordinates)))] = 0
 
+    runner.start()
     tree = linkage(coordinates, method='average')
+
     order = natural_order(tree)
     sorted_order = np.argsort(order).astype(np.int32)
-    if return_tree:
-        return sids, sorted_order, tree
-    return sids, sorted_order
+
+    runner.wrapping_up()
+
+    sim_sids_path = sim.get_sids_path()
+    sim_bytes_path = sim.get_bytes_path()
+
+    ndarray_to_bytes(sorted_order, sim_bytes_path)
+    ndarray_to_bytes(sids, sim_sids_path)
 
 
 @app.task(bind=False)
@@ -545,30 +571,7 @@ def calculate_similarity(task_id, send_email='always', raise_err=False, *args, *
         assert cls == SimilarityIndex.__name__
         sim = SimilarityIndex.objects.get(id=sim_id)
 
-        dm = sim.dm
-        ord = sim.ord
-
-        assert dm.task is None or dm.task.is_completed()
-        assert ord is None or ord.task is None or ord.task.is_completed()
-
-        if ord:
-            sids_path = ord.get_sids_path()
-            source_bytes_path = ord.get_bytes_path()
-        else:
-            sids_path = dm.get_sids_path()
-            source_bytes_path = dm.get_bytes_path()
-
-        runner.start()
-
-        sids, sorted_order = _calculate_similarity(sids_path, source_bytes_path)
-
-        runner.wrapping_up()
-
-        sim_sids_path = sim.get_sids_path()
-        sim_bytes_path = sim.get_bytes_path()
-
-        ndarray_to_bytes(sorted_order, sim_bytes_path)
-        ndarray_to_bytes(sids, sim_sids_path)
+        _calculate_similarity(sim, runner)
 
         runner.complete()
     except Exception as e:
