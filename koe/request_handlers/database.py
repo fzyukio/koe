@@ -382,7 +382,7 @@ def copy_audio_files(request):
             'There\'s a mismatch between the song IDs you provided and the actual songs in the database')
 
     song_values = source_audio_files \
-        .values_list('id', 'fs', 'length', 'name', 'track', 'individual', 'quality', 'original')
+        .values_list('id', 'fs', 'fake_fs', 'length', 'name', 'track', 'individual', 'quality', 'original')
     old_song_id_to_name = {x[0]: x[3] for x in song_values}
     old_song_names = old_song_id_to_name.values()
     old_song_ids = old_song_id_to_name.keys()
@@ -397,14 +397,15 @@ def copy_audio_files(request):
     songs_old_id_to_new_id = {}
 
     # Create Song objects one by one because they can't be bulk created
-    for old_id, fs, length, name, track, individual, quality, original in song_values:
+    for old_id, fs, fake_fs, length, name, track, individual, quality, original in song_values:
         # Make sure that we always point to the true original. E.g if AudioFile #2 is a copy of #1 and someone makes
         # a copy of AudioFile #2, the new AudioFile must still reference #1 as its original
 
         original_id = old_id if original is None else original
 
-        audio_file = AudioFile.objects.create(fs=fs, length=length, name=name, track_id=track, individual_id=individual,
-                                              quality=quality, original_id=original_id, database=target_database)
+        audio_file = AudioFile.objects.create(fs=fs, fake_fs=fake_fs, length=length, name=name, track_id=track,
+                                              individual_id=individual, quality=quality, original_id=original_id,
+                                              database=target_database)
 
         songs_old_id_to_new_id[old_id] = audio_file.id
 
@@ -470,14 +471,20 @@ def copy_audio_files(request):
         new_segment_extra_attrs.append(ExtraAttrValue(user=user, attr_id=attr_id, value=value, owner_id=new_segment_id))
 
     # Now bulk create
-    ExtraAttrValue.objects.filter(owner_id__in=songs_old_id_to_new_id.values(), attr__in=song_attrs).delete()
+    extra_attr_value = ExtraAttrValue.objects.filter(owner_id__in=songs_old_id_to_new_id.values(), attr__in=song_attrs)
+    if extra_attr_value.count():
+        extra_attr_value._raw_delete(extra_attr_value.db)
 
     try:
         ExtraAttrValue.objects.bulk_create(new_song_extra_attrs)
     except IntegrityError as e:
         raise CustomAssertionError(e)
 
-    ExtraAttrValue.objects.filter(owner_id__in=segments_old_id_to_new_id.values(), attr__in=segment_attrs).delete()
+    owner_ids = list(segments_old_id_to_new_id.values())
+
+    extra_attr_value = ExtraAttrValue.objects.filter(owner_id__in=owner_ids, attr__in=segment_attrs)
+    if extra_attr_value.count():
+        extra_attr_value._raw_delete(extra_attr_value.db)
 
     try:
         ExtraAttrValue.objects.bulk_create(new_segment_extra_attrs)

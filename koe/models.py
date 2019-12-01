@@ -368,6 +368,11 @@ class Segment(SimpleModel):
     class Meta:
         ordering = ('audio_file', 'start_time_ms')
 
+        indexes = [
+            models.Index(fields=['id']),
+            models.Index(fields=['tid']),
+        ]
+
     @classmethod
     def get_table_editability(cls, *args, **kwargs):
         return set_editable_for_real_db(*args, **kwargs)

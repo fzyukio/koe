@@ -269,6 +269,9 @@ class ExtraAttrValue(models.Model):
         """
 
         unique_together = ('user', 'owner_id', 'attr')
+        indexes = [
+            models.Index(fields=['owner_id']),
+        ]
 
     def __str__(self):
         return '{}\'s {} = {}'.format(self.owner_id, self.attr.name, self.value)
