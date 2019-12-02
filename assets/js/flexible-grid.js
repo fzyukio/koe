@@ -9,7 +9,7 @@ import {
     appendSlickGridData,
     renderSlickGrid,
     initFilter,
-    updateSlickGridData, findColumn
+    updateSlickGridData, findColumns
 } from './grid-utils';
 import {editabilityAwareFormatter} from './slick-grid-addons';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
@@ -109,7 +109,6 @@ export class FlexibleGrid {
         this.gridName = args['grid-name'];
         this.gridType = args['grid-type'];
         this.defaultFilterField = args['default-field'];
-        this.importKey = args['import-key'];
         this.currentMouseEvent = null;
 
         this.mainGridSelector = '#' + this.gridType;
@@ -502,7 +501,7 @@ export class FlexibleGrid {
         let self = this;
         let grid = self.mainGrid;
         let columns = grid.getColumns();
-        let column = findColumn(columns, field);
+        let column = findColumns(columns, [field])[0];
         let selectedRows = grid.getSelectedRows();
         let numRows = selectedRows.length;
         if (numRows > 0) {

@@ -859,17 +859,15 @@ export const renderSlickGrid = function (selector, grid, rows, columns, args = {
 /**
  * Find the column object (Slickgrid column) from the array of columns and the name of the column being searched for
  * @param columns
- * @param field
+ * @param fields
  * @returns {*}
  */
-export const findColumn = function(columns, field) {
-    let retval;
+export const findColumns = function(columns, fields) {
+    let retval = [];
     $.each(columns, function (idx, column) {
-        if (column.field == field) {
-            retval = column;
-            return false;
+        if (fields.indexOf(column.field) > -1) {
+            retval.push(column);
         }
-        return true;
     });
     return retval;
 };

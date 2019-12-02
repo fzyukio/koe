@@ -23,11 +23,12 @@ from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     InvitationCode, MergingInfo
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
+from root.views import _change_properties_table
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
            'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
-           'bulk_merge_classes', 'record_merge_classes']
+           'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv']
 
 
 def import_audio_metadata(request):
@@ -647,3 +648,83 @@ def record_merge_classes(request):
 
     MergingInfo.objects.create(user=request.user, info=info)
     return True
+
+
+def update_segments_from_csv(request):
+    rows = json.loads(get_or_error(request.POST, 'rows'))
+    grid_type = get_or_error(request.POST, 'grid-type')
+    database_id = get_or_error(request.POST, 'database-id')
+    missing_attrs = json.loads(get_or_error(request.POST, 'missing-attrs'))
+    attrs = json.loads(get_or_error(request.POST, 'attrs'))
+    user = request.user
+
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
+
+    song_attr_idx = attrs.index('song')
+    start_attr_idx = attrs.index('start_time_ms')
+    end_attr_idx = attrs.index('end_time_ms')
+
+    song_names = set()
+    starts = set()
+    ends = set()
+
+    # The logic here is as follow: from the given CSV data, try to match each row with existing syllable in the database
+    # To match, a row must contain the same song, start and end time as a segment. We use this as the key and find
+    # matching value from two dictionaries: key => row and key => segment
+
+    # Build key => row
+    key2row = {}
+    for row in rows:
+        song = row[song_attr_idx]
+        start = row[start_attr_idx]
+        end = row[end_attr_idx]
+        song_names.add(song)
+        starts.add(start)
+        ends.add(end)
+
+        key2row[(song, start, end)] = row
+
+    songs = AudioFile.objects.filter(name__in=song_names, database=database)
+    name2song = {song.name: song for song in songs}
+
+    # Build key => seg
+    segs = Segment.objects.filter(audio_file__in=songs, start_time_ms__in=starts, end_time_ms__in=ends)
+    key2seg = {(seg.audio_file.name, seg.start_time_ms, seg.end_time_ms): seg for seg in segs}
+
+    # It is possible that a segment with same song, start and end time that doesn't exist in the current database
+    # (and has to be created) exists elsewhere in other database. In this case, we must use the same TID given to the
+    # existing segment when creating this new segment in this database
+
+    # Query for all segments with song, start and end from ALL database
+    segs_all_db = Segment.objects.filter(audio_file__name__in=song_names, start_time_ms__in=starts,
+                                         end_time_ms__in=ends)
+    segs_all_db_vl = segs_all_db.values_list('audio_file__name', 'start_time_ms', 'end_time_ms', 'tid')
+
+    # Similarly, we map key => tid for lookup
+    key2tid = {(name, start, end): tid for name, start, end, tid in segs_all_db_vl}
+
+    # This is used to re-extract segment's spectrograms for songs that have new segments added
+    new_segs_song_ids = set()
+
+    for key, row in key2row.items():
+        (song_name, start, end) = key
+        seg = key2seg.get(key, None)
+        if seg is None:
+            song = name2song[song_name]
+            seg = Segment.objects.create(audio_file=song, start_time_ms=start, end_time_ms=end)
+            tid = key2tid.get(key, seg.id)
+            seg.tid = tid
+            seg.save()
+            new_segs_song_ids.add(song.id)
+
+        # Although the ids of modified rows are sent back and stored at the end of each row,
+        # We cannot rely on this ID because there might be errors in the uploaded CSV
+        # We store the correct segment ID here
+        row[-1] = seg.id
+
+    for song_id in new_segs_song_ids:
+        delay_in_production(extract_spectrogram, song_id)
+
+    # Finally to change all other properties (label, family, note...)
+    return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)

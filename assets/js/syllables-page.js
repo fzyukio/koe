@@ -1,8 +1,9 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {deepCopy, getUrl, getCache, setCache, debug, isNull} from './utils';
+import {deepCopy, getUrl, getCache, setCache, debug, isNull, indicesOf, isEmpty} from './utils';
 import {postRequest} from './ajax-handler';
 import {changePlaybackSpeed} from './audio-handler';
+import {CsvUploader} from './csv-uploader';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 
@@ -18,6 +19,195 @@ class SegmentGrid extends FlexibleGrid {
             'default-field': 'label_family',
             gridOptions
         });
+    }
+}
+
+const KEY_CONVERTERS = {
+    'Integer': (x) => parseInt(x),
+    'DecimalPoint': (x) => parseFloat(x),
+    '_': (x) => x
+};
+
+class SyllableCsvUploader extends CsvUploader {
+
+    init(grid) {
+        const self = this;
+
+        let primaryKey = 'song';
+        let extraKeys = ['start_time_ms', 'end_time_ms'];
+        const importKeys = [primaryKey].concat(extraKeys);
+
+        let uploadUrl = 'koe/update-segments-from-csv';
+
+        super.init(grid, importKeys, uploadUrl);
+
+        self.primaryKey = primaryKey;
+        self.extraKeys = extraKeys;
+    }
+
+    /**
+     * From the list of grid items and csv rows, find the rows that match grid items at key field and
+     * differ from the grid data at at least one other field
+     * @param items
+     * @param csvRows
+     * @param key2Vals
+     * @param matched
+     * @param permittedCols
+     * @param columns SlickGrid's columns
+     * @returns {{allValid: boolean, rows: *, info: *}}
+     */
+    getMatchedAndChangedRows(items, csvRows, key2Vals, matched, permittedCols, columns) {
+        const self = this;
+        let rows;
+        let totalRowCount = csvRows.length;
+        let fieldValueConverter = {};
+        $.each(columns, function (__, column) {
+            let converter = KEY_CONVERTERS[column._formatter];
+            if (converter === undefined) {
+                converter = KEY_CONVERTERS._;
+            }
+            fieldValueConverter[column.field] = converter;
+        });
+
+        let unmatchedRows = [];
+        let matchAllKeysRows = [];
+        let matchPrimaryKeyRows = [];
+
+        $.each(csvRows, function (_i, csvRow) {
+            // In order to be valid for processing, the "song" column must match.
+            // Unlike song page, where there can only be one entry per song,
+            // In syllable page, multi syllables can match to one song
+            let rowPrimaryValue = csvRow[matched[0]];
+            let primaryKeyValues = key2Vals[self.primaryKey];
+
+            let primaryColIdxs = indicesOf(primaryKeyValues, rowPrimaryValue);
+
+            if (primaryColIdxs.length === 0) {
+                unmatchedRows.push(csvRow);
+                return;
+            }
+
+            // Find fully matched or partial matched rows.
+            // First we extract the rows that match the primary key.
+            // Within these rows, we search for one that matches both or either the start and end time
+            // If the row fully matches, the start and end times must be found at the same index
+            let key2Vals_ = {};
+            $.each(key2Vals, function (key, vals) {
+
+                // To preserve the indices of the rows,
+                // the extracted values list will have the same number of items, but only the indices where
+                // the row's primary key match will have value, all other rows are empty
+                let vals_ = new Array(vals.length);
+                key2Vals_[key] = vals_;
+                $.each(primaryColIdxs, function (_, colIdx) {
+                    vals_[colIdx] = vals[colIdx];
+                })
+            });
+
+            let rowIdx;
+            $.each(self.importKeys, function (ind, key) {
+                if (key === self.primaryKey) {
+                    return;
+                }
+                let rowVal = csvRow[matched[ind]];
+                let converter = fieldValueConverter[key];
+                rowVal = converter(rowVal);
+                let rowIdx_ = key2Vals_[key].indexOf(rowVal);
+                if (rowIdx_ > -1) {
+                    if (rowIdx === undefined) {
+                        rowIdx = rowIdx_;
+                    }
+                    else if (rowIdx !== rowIdx_) {
+                        rowIdx = -1;
+                    }
+                }
+            });
+
+            // if rowIdx stays undefined after the loop, neither start nor end time matches.
+            // if rowIdx becomes -1, either start or end time matches bot not both.
+            // In both cases, we consider this row to be new and to be created in the database
+            if (rowIdx === undefined || rowIdx === -1) {
+                matchPrimaryKeyRows.push(csvRow);
+            }
+            // Else this row needs to be updated and not created
+            else {
+                let item = items[rowIdx];
+                matchAllKeysRows.push({csvRow, item});
+            }
+        });
+
+        const changedRows = [];
+        $.each(matchAllKeysRows, function (_, {csvRow, item}) {
+            let itemId = item.id;
+            let changed = false;
+
+            let row = [];
+
+            for (let permittedCol = 0; permittedCol < permittedCols.length; permittedCol++) {
+                let field = permittedCols[permittedCol];
+                let converter = fieldValueConverter[field];
+                let csvCol = matched[permittedCol];
+
+                let csvCellVal = csvRow[csvCol];
+                csvCellVal = converter(csvCellVal);
+
+                let itemFieldVal = item[field];
+                if ((!isEmpty(itemFieldVal) || !isEmpty(csvCellVal)) && csvCellVal !== itemFieldVal) {
+                    changed = true;
+                }
+                row.push(csvCellVal);
+            }
+
+            // Only add rows that differ from the corresponding grid item
+            if (changed) {
+                // Always put the ID last so that it will not be rendered to the table which the user can see.
+                row.push(itemId);
+                changedRows.push(row);
+            }
+        });
+
+        let newRows = [];
+        $.each(matchPrimaryKeyRows, function (_, csvRow) {
+            let row = [];
+            for (let permittedCol = 0; permittedCol < permittedCols.length; permittedCol++) {
+                let field = permittedCols[permittedCol];
+                let converter = fieldValueConverter[field];
+                let csvCol = matched[permittedCol];
+
+                let csvCellVal = csvRow[csvCol];
+                csvCellVal = converter(csvCellVal);
+
+                row.push(csvCellVal);
+            }
+            row.push(null);
+            newRows.push(row);
+        });
+
+        let info;
+
+        let changedCount = changedRows.length;
+        let newCount = newRows.length;
+        let unmatchedCount = unmatchedRows.length;
+        if (changedCount + newCount === 0) {
+            throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
+        }
+        info = `You CSV contains <strong>${totalRowCount}</strong> rows.`;
+
+        if (unmatchedCount) {
+            info += `<hr><strong>${unmatchedCount}</strong> rows cannot be matched because the value in column ${self.primaryKey}
+            cannot be found. These rows will be ignored.`;
+        }
+        if (changedCount) {
+            info += `<hr><strong>${changedCount}</strong> rows have matched ${self.importKeys} and contain different values from table value.
+            These rows will be used to update existing syllables in the database.`;
+        }
+        if (newCount) {
+            info += `<hr><strong>${newCount}</strong> rows have matched ${self.primaryKey} but values of ${self.extraKeys} are different.
+            These rows will be used to create new syllables in the database.`;
+        }
+        rows = changedRows.concat(newRows);
+
+        return {allValid: true, rows, info};
     }
 }
 
@@ -245,7 +435,7 @@ let gridArgs = {
 };
 
 
-export const preRun = function() {
+export const preRun = function () {
     initSlider();
 
     if (isNull(database) && isNull(tmpdb)) {
@@ -276,7 +466,7 @@ export const run = function (commonElements) {
     return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
         subscribeSlickEvents();
         subscribeFlexibleEvents();
-        return grid.initMainGridContent(gridArgs, extraArgs).then(function() {
+        return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
             focusOnGridOnInit();
         });
     });
@@ -344,7 +534,7 @@ const dialogModalBody = dialogModal.find('.modal-body');
 const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 
 
-const initCreateTemporaryDatabaseBtn = function() {
+const initCreateTemporaryDatabaseBtn = function () {
     let generatedName;
 
     /**
@@ -384,7 +574,7 @@ const initCreateTemporaryDatabaseBtn = function() {
         });
     }
 
-    makeTemporaryDatabaseBtn.click(function(e) {
+    makeTemporaryDatabaseBtn.click(function (e) {
         e.preventDefault();
         let grid_ = grid.mainGrid;
         let selectedRows = grid_.getSelectedRows();
@@ -423,9 +613,18 @@ const initCreateTemporaryDatabaseBtn = function() {
 };
 
 
+const initUploadCsv = function() {
+    let csvUploader = new SyllableCsvUploader();
+    csvUploader.init(grid);
+    csvUploader.setExtraPostArgs({'database-id': database});
+    csvUploader.initUploadCsv();
+};
+
+
 export const postRun = function () {
     initDeleteSegmentsBtn();
     initCreateTemporaryDatabaseBtn();
+    initUploadCsv();
     return Promise.resolve();
 };
 

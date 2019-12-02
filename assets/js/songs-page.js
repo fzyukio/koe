@@ -4,6 +4,7 @@ import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost, MAX_SAMPLE_RATE} from './audio-handler';
 import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
+import {CsvUploader} from './csv-uploader';
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const JSZip = require('jszip/dist/jszip.min.js');
 const filesaver = require('file-saver/dist/FileSaver.min.js');
@@ -19,13 +20,14 @@ class Grid extends FlexibleGrid {
             'grid-name': 'sequences',
             'grid-type': 'songs-grid',
             'default-field': 'filename',
-            'import-key': 'filename',
             gridOptions
         });
 
         this.granularity = granularity;
     }
 }
+
+class SongCsvUploader extends CsvUploader {}
 
 export const grid = new Grid();
 const $segmentGrid = $('#songs-grid');
@@ -585,9 +587,17 @@ export const run = function (commonElements) {
     });
 };
 
+
+const initUploadCsv = function() {
+    let csvUploader = new SongCsvUploader();
+    csvUploader.init(grid, ['filename'], 'change-properties-table');
+    csvUploader.initUploadCsv();
+};
+
 export const postRun = function () {
     initDeleteSongsBtn();
     initCopySongsBtn();
+    initUploadCsv();
     return Promise.resolve();
 };
 

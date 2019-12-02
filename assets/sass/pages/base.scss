@@ -424,6 +424,13 @@ body.loading #loading-spinner-modal {
   }
 }
 
+.modal-body {
+  .message hr {
+    margin-top: 3px;
+    margin-bottom: 3px;
+  }
+}
+
 #go-to-songs-modal {
   .modal-body {
     img {

@@ -20,7 +20,7 @@ from tz_detect.utils import offset_to_timezone
 
 from koe import jsons
 from root.exceptions import CustomAssertionError
-from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue, \
+from root.models import ValueTypes, ExtraAttr, value_setter, value_getter, has_field, ExtraAttrValue,\
     ColumnActionValue, get_bulk_id, get_field
 
 error_tracker = settings.ERROR_TRACKER
@@ -342,17 +342,7 @@ def change_properties(request):
     return True
 
 
-def change_properties_table(request):
-    """
-    Similar to change_properties, but this takes input from an array of rows
-    :param request:
-    :return:
-    """
-    rows = json.loads(request.POST['rows'])
-    grid_type = request.POST['grid-type']
-    missing_attrs = json.loads(request.POST['missing-attrs'])
-    attrs = json.loads(request.POST['attrs'])
-
+def _change_properties_table(rows, grid_type, missing_attrs, attrs, user):
     # The last attribute in a row is always the ID
     ids = [x[-1] for x in rows]
 
@@ -367,16 +357,12 @@ def change_properties_table(request):
 
     bulk_list = {
         x: ([], []) for x in attrs
-        if x not in missing_attrs and
-        attr_editability.get(x, False) and
-        attr_setter.get(x, None)
+        if x not in missing_attrs and attr_editability.get(x, False) and attr_setter.get(x, None)
     }
 
     bulk_setter = {
         x: attr_setter.get(x, None) for x in attrs
-        if x not in missing_attrs and
-        attr_editability.get(x, False) and
-        attr_setter.get(x, None)
+        if x not in missing_attrs and attr_editability.get(x, False) and attr_setter.get(x, None)
     }
 
     for row_idx, row in enumerate(rows):
@@ -399,7 +385,7 @@ def change_properties_table(request):
             # we can bulk set multiple objects with multiple values
             field = get_field(klass, attr)
             if field and not isinstance(field, (ManyToManyField, ForeignObjectRel, ForeignKey)):
-                setter(bulk, vals, DotMap(user=request.user))
+                setter(bulk, vals, DotMap(user=user))
 
             # Otherwise there is no way but to bulk set multiple objects that share the same value
             else:
@@ -410,7 +396,22 @@ def change_properties_table(request):
                     else:
                         val2bulk[val].append(obj)
                 for val, bulk in val2bulk.items():
-                    setter(bulk, val, DotMap(user=request.user))
+                    setter(bulk, val, DotMap(user=user))
+
+
+def change_properties_table(request):
+    """
+    Similar to change_properties, but this takes input from an array of rows
+    :param request:
+    :return:
+    """
+    rows = json.loads(request.POST['rows'])
+    grid_type = request.POST['grid-type']
+    missing_attrs = json.loads(request.POST['missing-attrs'])
+    attrs = json.loads(request.POST['attrs'])
+    user = request.user
+
+    return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
 
 
 def change_extra_attr_value(request):
@@ -482,8 +483,8 @@ def reorder_columns_handler(action_name, table_name, user, modified_columns):
     """
     columns = tables[table_name]['columns']
     column_names = [x['slug'] for x in columns]
-    column_values = ColumnActionValue.objects \
-        .filter(user=user, action=action_name, table=table_name, column__in=column_names) \
+    column_values = ColumnActionValue.objects\
+        .filter(user=user, action=action_name, table=table_name, column__in=column_names)\
         .values_list('column', 'value')
 
     action = actions[action_name]
@@ -510,8 +511,8 @@ def set_column_width_handler(action_name, table_name, user, modified_columns):
     """
     columns = tables[table_name]['columns']
     column_names = [x['slug'] for x in columns]
-    column_values = ColumnActionValue.objects \
-        .filter(user=user, action=action_name, table=table_name, column__in=column_names) \
+    column_values = ColumnActionValue.objects\
+        .filter(user=user, action=action_name, table=table_name, column__in=column_names)\
         .values_list('column', 'value')
 
     action = actions[action_name]

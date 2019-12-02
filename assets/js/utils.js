@@ -300,19 +300,24 @@ export const isEmpty = function (str) {
 };
 
 
-export const extractHeader = function (columns, permission, importKey) {
+export const extractHeader = function (columns, permission, importKeys) {
     let columnHeadings = [];
+    let keyColumnHeadings;
+    if (importKeys) {
+        keyColumnHeadings = new Array(importKeys.length);
+    }
     for (let i = 0; i < columns.length; i++) {
         let column = columns[i];
         let columnVal = column.field;
-        if (importKey !== undefined && columnVal === importKey) {
-            columnHeadings.unshift(columnVal);
+        let importKeyIndex = importKeys ? importKeys.indexOf(columnVal) : -1;
+        if (importKeyIndex > -1) {
+            keyColumnHeadings[importKeyIndex] = columnVal;
         }
         else if (column[permission]) {
             columnHeadings.push(columnVal)
         }
     }
-    return columnHeadings;
+    return keyColumnHeadings.concat(columnHeadings);
 };
 
 
@@ -1016,4 +1021,22 @@ export function normalise(array, [lo, hi] = [0, 1]) {
     };
 
     return arrayFuncCollect(array, minusMinAndDivideRange);
+}
+
+
+/**
+ * Find indices of all occurrences of a value in an array
+ * @param arr
+ * @param val
+ * @returns {Array}
+ */
+export function indicesOf(arr, val) {
+    let indices = [];
+    let i;
+    for (i = 0; i < arr.length; i++) {
+        if (arr[i] === val) {
+            indices.push(i);
+        }
+    }
+    return indices;
 }
