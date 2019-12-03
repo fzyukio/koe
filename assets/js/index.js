@@ -20,7 +20,7 @@ window.Promise = Promise;
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams, getCache, logError, uuid4, toJSONLocal} from './utils';
 import {queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
-require('no-going-back');
+// require('no-going-back');
 
 let page;
 
