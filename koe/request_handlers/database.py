@@ -17,7 +17,7 @@ from dotmap import DotMap
 from koe.celery_init import delay_in_production
 from koe.grid_getters import bulk_get_segments_for_audio, bulk_get_database_assignment
 from koe.model_utils import extract_spectrogram, assert_permission, get_or_error, delete_audio_files_async,\
-    delete_segments_async
+    delete_segments_async, delete_database_async
 from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     DatabasePermission, Individual, Species, AudioTrack, AccessRequest, TemporaryDatabase, IdOrderedModel,\
     InvitationCode, MergingInfo
@@ -28,7 +28,7 @@ from root.views import _change_properties_table
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
            'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
-           'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv']
+           'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv', 'delete_database']
 
 
 def import_audio_metadata(request):
@@ -137,12 +137,7 @@ def delete_audio_files(request):
         raise CustomAssertionError('You\'re trying to delete files that don\'t belong to database {}. '
                                    'Are you messing with Javascript?'.format(database.name))
 
-    segments = Segment.objects.filter(audio_file__in=audio_files)
-
-    segments.update(active=False)
     audio_files.update(active=False)
-
-    delay_in_production(delete_segments_async)
     delay_in_production(delete_audio_files_async)
 
     return True
@@ -174,6 +169,19 @@ def create_database(request):
 
     permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
     return dict(id=database.id, name=name, permission=permission_str)
+
+
+def delete_database(request):
+    user = request.user
+    database_id = get_or_error(request.POST, 'database-id')
+    database = get_or_error(Database, dict(id=database_id))
+
+    assert_permission(user, database, DatabasePermission.ASSIGN_USER)
+
+    database.active = False
+    database.save()
+
+    delay_in_production(delete_database_async)
 
 
 def redeem_invitation_code(request):

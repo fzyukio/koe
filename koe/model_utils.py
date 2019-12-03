@@ -347,7 +347,7 @@ def delete_segments_async(*args, **kwargs):
     this_tids = [x[1] for x in this_vl]
     this_sids = [x[0] for x in this_vl]
 
-    other_vl = Segment.objects.filter(tid__in=this_tids).values_list('id', 'tid')
+    other_vl = Segment.fobjs.filter(tid__in=this_tids).values_list('id', 'tid')
 
     tid2ids = {x: [] for x in this_tids}
     path_template = spect_fft_path('{}', 'syllable')
@@ -370,6 +370,13 @@ def delete_segments_async(*args, **kwargs):
 @app.task(bind=False)
 def delete_audio_files_async(*args, **kwargs):
     audio_files = AudioFile.fobjs.filter(active=False)
+
+    # Mark all segments belong to these audio files as to be deleted, then delete them
+    segments = Segment.objects.filter(audio_file__in=audio_files)
+    segments.update(active=False)
+    delete_segments_async()
+
+    # Now delete the audio files
     audio_files_ids = audio_files.values_list('id', flat=True)
 
     ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__, owner_id__in=audio_files_ids).delete()
@@ -408,6 +415,19 @@ def delete_audio_files_async(*args, **kwargs):
                 if os.path.isfile(mp4):
                     os.remove(mp4)
         af.delete()
+
+
+@app.task(bind=False)
+def delete_database_async(*args, **kwargs):
+    databases = Database.fobjs.filter(active=False)
+
+    # Delete all audio files that belong to this database (which will also delete all segments)
+    audio_files = AudioFile.objects.filter(database__in=databases)
+    audio_files.update(active=False)
+    delete_audio_files_async()
+
+    # Now we can safely remove this database
+    databases.delete()
 
 
 def get_labels_by_sids(sids, label_level, annotator, min_occur=None):

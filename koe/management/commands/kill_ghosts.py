@@ -87,10 +87,16 @@ class Command(BaseCommand):
                 if commit:
                     os.remove(filepath)
 
-        attr_values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__).exclude(owner_id__in=segment_ids)
-        print('Found {} ghost ExtraAttrValue of Segment'.format(attr_values.count()))
+        attr_values = ExtraAttrValue.objects.filter(attr__klass=Segment.__name__)
+        attr_value_vl = attr_values.values_list('id', 'owner_id')
+        ghost_attr_values = []
+        for id, owner_id in attr_value_vl:
+            if owner_id not in segment_ids:
+                ghost_attr_values.append(id)
+
+        print('Found {} ghost ExtraAttrValue of Segment'.format(len(ghost_attr_values)))
         if commit:
-            attr_values.delete()
+            ExtraAttrValue.objects.filter(id__in=ghost_attr_values).delete()
 
         audio_file_ids = frozenset(AudioFile.objects.values_list('id', flat=True))
         attr_values = ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__).exclude(owner_id__in=audio_file_ids)

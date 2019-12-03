@@ -28,6 +28,11 @@ __all__ = [
 ]
 
 
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return ValidateOnUpdateQuerySet(self.model, using=self._db).filter(active=True)
+
+
 class NumpyArrayField(models.TextField):
     """
     A class that faciliates storing and retrieving numpy array in database.
@@ -102,6 +107,10 @@ class Database(SimpleModel):
     """
 
     name = models.CharField(max_length=255, unique=True)
+
+    active = models.BooleanField(default=True)
+    objects = ActiveManager()
+    fobjs = models.Manager()
 
     def is_real(self):
         return True
@@ -218,11 +227,6 @@ class DatabaseAssignment(SimpleModel):
         # Forbid owners from changing their own permission - prevent database from having no owner at all.
         retval[user_permission.id] = False
         return retval
-
-
-class ActiveManager(models.Manager):
-    def get_queryset(self):
-        return ValidateOnUpdateQuerySet(self.model, using=self._db).filter(active=True)
 
 
 class AudioFile(SimpleModel):

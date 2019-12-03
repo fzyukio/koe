@@ -23,6 +23,7 @@ const fileUploadInput = fileUploadForm.find('input[type=file]');
 const addCollaborator = $('#add-collaborator');
 const removeCollaborator = $('#remove-collaborator');
 const createDatabaseBtn = $('#create-database-btn');
+const deleteDatabaseBtn = $('#delete-database-btn');
 const enterInvitationCodeBtn = $('#enter-invitation-code-btn');
 
 const selected = {
@@ -295,6 +296,7 @@ export const run = function (commonElements) {
             backupBtns.prop('disabled', false);
 
             let hasAdminPrivileges = args.item.__name_editable;
+
             addCollaborator.prop('disabled', !hasAdminPrivileges);
             removeCollaborator.hasAdminPrivileges = hasAdminPrivileges;
             dbAssignmentGridArgs.multiSelect = hasAdminPrivileges;
@@ -311,6 +313,11 @@ export const run = function (commonElements) {
                     versionGrid.initMainGridContent(versionGridArgs, versionExtraArgs)
                 ])
             }).then(function () {
+                let hasNoCollaborators = dbAssignmentGrid.mainGrid.getData().getItems().length == 1;
+
+                let allowDeleteDatabase = hasAdminPrivileges && hasNoCollaborators;
+                deleteDatabaseBtn.prop('disabled', !allowDeleteDatabase);
+
                 return syllableGrid.initMainGridContent(syllableGridArgs, syllableExtraArgs);
             });
         });
@@ -377,6 +384,32 @@ function initCreateDatabaseButton() {
     createDatabaseBtn.on('click', function (e) {
         e.preventDefault();
         showDialog();
+    });
+
+    deleteDatabaseBtn.on('click', function () {
+        let grid_ = databaseGrid.mainGrid;
+        let selectedRow = grid_.getSelectedRows()[0];
+        let dataView = grid_.getData();
+        let item = dataView.getItem(selectedRow);
+
+        ce.dialogModalTitle.html(`Confirm delete database ${item.name}`);
+        ce.dialogModalBody.html('Are you sure you want to delete this database?');
+
+        ce.dialogModal.modal('show');
+
+        ce.dialogModalOkBtn.on('click', function () {
+            let onSuccess = function () {
+                dataView.deleteItem(item.id);
+            };
+            ce.dialogModal.modal('hide');
+            postRequest({
+                requestSlug: 'koe/delete-database',
+                data: {
+                    'database-id': JSON.stringify(item.id)
+                },
+                onSuccess
+            });
+        })
     });
 }
 
