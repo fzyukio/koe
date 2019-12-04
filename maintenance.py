@@ -343,13 +343,32 @@ def run_command(cmd, suppress_output=False, suppress_error=False):
         cmd = cmd.split(' ')
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
 
-    if not suppress_output and out:
-        print(out.decode('utf-8'), end='', flush=True)
+    out_lines = []
+    err_lines = []
 
-    if not suppress_error and err:
-        print(err.decode('utf-8'), file=sys.stderr, end='', flush=True)
+    while True:
+        out_byte = p.stdout.readline()
+        err_byte = p.stderr.readline()
+        if out_byte == err_byte == b'' and p.poll() is not None:
+            break
+        else:
+            out_line_str = out_byte.decode()
+            out_lines.append(out_line_str)
+
+            err_line_str = err_byte.decode()
+            err_lines.append(err_line_str)
+
+            if not suppress_output:
+                sys.stdout.write(out_line_str)
+                sys.stdout.flush()
+
+            if not suppress_error:
+                sys.stderr.write(err_line_str)
+                sys.stderr.flush()
+
+    out = ''.join(out_lines).encode()
+    err = ''.join(err_lines).encode()
 
     return out, err
 
