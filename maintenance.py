@@ -10,6 +10,7 @@ import uuid
 import time
 from contextlib import contextmanager
 
+import collections
 import yaml
 import zipfile
 from shutil import copyfile
@@ -479,14 +480,19 @@ def wait_for_database():
 def empty_database():
     talk_to_user('Resetting database to empty...')
     reset_db_function = reset_db_functions[db_engine_short_name]
-    reset_db_function()
+    return reset_db_function()
 
 
 def apply_migrations():
     talk_to_user('Apply migration...')
-    run_command('python manage.py makemigrations koe')
-    run_command('python manage.py makemigrations root')
-    run_command('python manage.py migrate --database=default')
+    out, err = run_command('python manage.py makemigrations koe')
+    if err == b'':
+        out, err = run_command('python manage.py makemigrations root')
+
+    if err == b'':
+        out, err = run_command('python manage.py migrate --database=default')
+
+    return err == b''
 
 
 def backup_database_using_fixtures():
@@ -544,6 +550,20 @@ def restore_database_using_sql():
         talk_to_user('Successfully restored database')
 
     return success
+
+
+def handle_function(func: collections.Callable, *args, **kwargs):
+    func_name = func.__name__
+    start = time.time()
+
+    no_error = func(*args, **kwargs)
+
+    end = time.time()
+    talk_to_user('{0:s}: finished in {1: 9.9f} seconds'.format(func_name, end - start))
+
+    if not no_error:
+        talk_to_user('Terminated due to an error')
+        exit(1)
 
 
 if __name__ == '__main__':
@@ -618,29 +638,31 @@ if __name__ == '__main__':
         raise Exception('Database engine {} is not supported.'.format(db_engine))
 
     if wait_db:
-        wait_for_database()
+        handle_function(wait_for_database)
 
     if backup_db:
         if backup_file.endswith('.zip'):
-            backup_database_using_fixtures()
+            handle_function(backup_database_using_fixtures)
         else:
-            backup_database_using_sql()
+            handle_function(backup_database_using_sql)
 
     os.environ['IMPORTING_FIXTURE'] = 'true'
 
     if reset_db or empty_db:
-        empty_database()
+        handle_function(empty_database)
 
     if reset_db:
-        apply_migrations()
+        handle_function(apply_migrations)
 
     if restore_db:
-        empty_database()
+        handle_function(empty_database)
         if backup_file.endswith('.zip'):
-            restore_database_using_fixtures()
+            handle_function(restore_database_using_fixtures)
         else:
-            restore_database_using_sql()
-        apply_migrations()
+            handle_function(restore_database_using_sql)
+
+        handle_function(apply_migrations)
+
     del os.environ['IMPORTING_FIXTURE']
 
     talk_to_user('All done!')
