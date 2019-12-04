@@ -8,10 +8,13 @@ import os
 import uuid
 
 import time
+from contextlib import contextmanager
+
 import yaml
 import zipfile
 from shutil import copyfile
 
+from django.core.files.temp import NamedTemporaryFile
 
 fixture_list = [
     'root.user',
@@ -98,35 +101,58 @@ def talk_to_user(message):
     print(Back.BLUE + Fore.WHITE + message + Style.RESET_ALL)
 
 
+@contextmanager
+def create_tmp_mysql_conf():
+    """
+    Make a temporary file to store password for secure MySQL login
+    :return:
+    """
+    with NamedTemporaryFile(mode='w+', delete=True) as f:
+        f.write('[client]')
+        f.write('\n')
+        f.write('password=')
+        f.write(db_pass)
+        f.write('\n')
+        f.write('user=')
+        f.write(db_user)
+        f.write('\n')
+        f.write('host=')
+        f.write(db_host)
+        f.write('\n')
+        f.write('port=')
+        f.write(str(db_port))
+        f.write('\n')
+        f.write('\n')
+        f.flush()
+
+        yield f
+
+
 def reset_mysql():
     """
     Reset Mysql database to empty.
 
     :return: None
     """
-    # generic command to log in mysql
-    cmd = ['mysql',
-           '--user={}'.format(db_user),
-           '--password={}'.format(db_pass),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '--database={}'.format(db_name)
-           ]
+    with create_tmp_mysql_conf() as temp_conf:
+        # generic command to log in mysql
+        cmd = ['mysql', '--defaults-extra-file={}'.format(temp_conf.name), '--database', db_name]
 
-    # Run query 'show tables;' and get the result
-    result, err = run_command(cmd + ['-e', 'show tables;'], suppress_output=True)
+        # Run query 'show tables;' and get the result
+        result, err = run_command(cmd + ['-e', 'show tables;'], suppress_output=True)
 
-    result_lines = result.decode('utf-8').split('\n')
+        result_lines = result.decode('utf-8').split('\n')
 
-    # From the result construct a series of queries to drop the tables
-    drop_table_queries = ['SET FOREIGN_KEY_CHECKS = 0;']
-    for line in result_lines:
-        line = line.strip()
-        if line and not line.startswith('Tables_in'):
-            drop_table_queries.append('DROP TABLE IF EXISTS {};'.format(line))
+        # From the result construct a series of queries to drop the tables
+        drop_table_queries = ['SET FOREIGN_KEY_CHECKS = 0;']
+        for line in result_lines:
+            line = line.strip()
+            if line and not line.startswith('Tables_in'):
+                drop_table_queries.append('DROP TABLE IF EXISTS {};'.format(line))
 
-    # Now run those drop table queries
-    run_command(cmd + ['-e', ''.join(drop_table_queries)])
+        # Now run those drop table queries
+        run_command(cmd + ['-e', ''.join(drop_table_queries)])
+        return err == b''
 
 
 def backup_mysql():
@@ -136,19 +162,11 @@ def backup_mysql():
     :param filename: path to the backup file. If exists it will be overwritten
     :return: None
     """
-    # generic command to log in mysql
-    cmd = ['mysqldump',
-           '--user={}'.format(db_user),
-           '--password={}'.format(db_pass),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '{}'.format(db_name)
-           ]
+    with create_tmp_mysql_conf() as temp_conf:
+        cmd = ['mysqldump', '--defaults-extra-file={}'.format(temp_conf.name), db_name, '--result-file', backup_file]
+        out, err = run_command(cmd, suppress_output=True)
 
-    result, err = run_command(cmd, suppress_output=True)
-
-    with open(backup_file, 'wb') as f:
-        f.write(result)
+        return err == b''
 
 
 def restore_mysql():
@@ -157,27 +175,25 @@ def restore_mysql():
 
     :return: None
     """
-    # generic command to log in mysql
-    cmd = ['mysql',
-           '--user={}'.format(db_user),
-           '--password={}'.format(db_pass),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '{}'.format(db_name)
-           ]
+    with create_tmp_mysql_conf() as temp_conf:
+        # generic command to log in mysql
+        cmd = [
+            'mysql',
+            '--defaults-extra-file={}'.format(temp_conf.name),
+            '--init-command', 'SET FOREIGN_KEY_CHECKS=0;',
+            '--database', db_name
+        ]
+        out, err = run_command(cmd + ['--execute', 'source {}'.format(backup_file)], suppress_output=True)
 
-    run_command(cmd + ['-e', 'source {}'.format(backup_file)], suppress_output=True)
-    return True
+        return err == b''
 
 
 def backup_sqlite():
     """
     Remove the sqlite3 data file.
 
-    :param filename: path to the backup file. If exists it will be overwritten
     :return:
     """
-    db_name = db_config['NAME']
     try:
         copyfile(db_name, backup_file)
         return True
@@ -190,10 +206,8 @@ def restore_sqlite():
     """
     Restore the sqlite3 data file - simply by copying the backup over
 
-    :param filename: path to the backup file. If exists it will be overwritten
     :return:
     """
-    db_name = db_config['NAME']
     try:
         copyfile(backup_file, db_name)
         return True
@@ -215,6 +229,34 @@ def reset_sqlite():
         # Not a problem if file doesn't exist
         pass
 
+    return True
+
+
+@contextmanager
+def create_tmp_postgre_conf():
+    """
+    Postgres doesn't accept password from command line, so we have to create a temporary .pgpass file.
+    :return:
+    """
+    if db_pass:
+        from django.db.backends.postgresql.client import _escape_pgpass
+        with NamedTemporaryFile(mode='w+', delete=True) as temp_pgpass:
+            print(
+                _escape_pgpass(db_host) or '*',
+                str(db_port) or '*',
+                _escape_pgpass(db_name) or '*',
+                _escape_pgpass(db_user) or '*',
+                _escape_pgpass(db_pass),
+                file=temp_pgpass,
+                sep=':',
+                flush=True,
+            )
+            os.environ['PGPASSFILE'] = temp_pgpass.name
+
+            yield temp_pgpass
+    else:
+        yield
+
 
 def reset_postgres():
     """
@@ -222,33 +264,19 @@ def reset_postgres():
 
     :return: None
     """
-    from django.core.files.temp import NamedTemporaryFile
-    from django.db.backends.postgresql.client import _escape_pgpass
-
     # generic command to log in postgres
-    cmd = ['psql',
-           '--username={}'.format(db_user),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '--dbname={}'.format(db_name)]
+    cmd = [
+        'psql',
+        '--username', db_user,
+        '--host', db_host,
+        '--port', str(db_port),
+        '--dbname', db_name
+    ]
 
-    if db_pass:
-        # Postgres doesn't accept password from command line, so we have to create a temporary .pgpass file.
-        temp_pgpass = NamedTemporaryFile(mode='w+')
-        print(
-            _escape_pgpass(db_host) or '*',
-            str(db_port) or '*',
-            _escape_pgpass(db_name) or '*',
-            _escape_pgpass(db_user) or '*',
-            _escape_pgpass(db_pass),
-            file=temp_pgpass,
-            sep=':',
-            flush=True,
-        )
-        os.environ['PGPASSFILE'] = temp_pgpass.name
-
-    # Now run query DROP SCHEMA public CASCADE; CREATE SCHEMA public; to empty the database
-    run_command(cmd + ['-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'], suppress_output=True)
+    with create_tmp_postgre_conf():
+        # Now run query DROP SCHEMA public CASCADE; CREATE SCHEMA public; to empty the database
+        out, err = run_command(cmd + ['-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'], suppress_output=True)
+        return err != b''
 
 
 def backup_postgres():
@@ -258,17 +286,21 @@ def backup_postgres():
     :param filename: path to the backup file. If exists it will be overwritten
     :return: None
     """
-    cmd = ['pg_dump',
-           '--username={}'.format(db_user),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '--dbname={}'.format(db_name),
-           '--file={}'.format(backup_file),
-           '--format=plain']
+    cmd = [
+        'pg_dump',
+        '--username', db_user,
+        '--host', db_host,
+        '--port', str(db_port),
+        '--dbname', db_name,
+        '--file', backup_file,
+        '--format', 'plain'
+    ]
 
-    message, err = run_command(cmd, suppress_output=True)
+    with create_tmp_postgre_conf():
+        message, err = run_command(cmd, suppress_output=True)
+
     talk_to_user(message.decode('utf-8'))
-    return True
+    return err != b''
 
 
 def restore_postgres():
@@ -278,14 +310,18 @@ def restore_postgres():
     :param filename: path to the backup file. If exists it will be overwritten
     :return: None
     """
-    cmd = ['psql',
-           '--username={}'.format(db_user),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '--dbname={}'.format(db_name),
-           '--file={}'.format(backup_file)]
+    cmd = [
+        'psql',
+        '--username', db_user,
+        '--host', db_host,
+        '--port', str(db_port),
+        '--dbname', db_name,
+        '--file', backup_file
+    ]
 
-    message, err = run_command(cmd, suppress_output=True)
+    with create_tmp_postgre_conf():
+        message, err = run_command(cmd, suppress_output=True)
+
     talk_to_user(message.decode('utf-8'))
     return True
 
@@ -368,12 +404,13 @@ def probe_sqlite():
 
 
 def probe_postgres():
-    cmd = ['psql',
-           '--username={}'.format(db_user),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '--dbname={}'.format(db_name),
-           '--file={}'.format(backup_file)]
+    cmd = [
+        'psql',
+        '--username', db_user,
+        '--host', db_host,
+        '--port', str(db_port),
+        '--dbname', db_name,
+    ]
 
     message, err = run_command(cmd, suppress_output=True, suppress_error=True)
 
@@ -389,19 +426,16 @@ def probe_mysql():
     :param filename: path to the backup file. If exists it will be overwritten
     :return: None
     """
-    # generic command to log in mysql
-    cmd = ['mysql',
-           '--user={}'.format(db_user),
-           '--password={}'.format(db_pass),
-           '--host={}'.format(db_host),
-           '--port={}'.format(db_port),
-           '{}'.format(db_name)
-           ]
-
-    out, err = run_command(cmd, suppress_output=True, suppress_error=True)
-    err = err.decode('utf-8').strip().split('\n')
-    error_messages = [x for x in err if x.startswith('ERROR')]
-    return len(error_messages) == 0
+    with create_tmp_mysql_conf() as temp_conf:
+        # generic command to log in mysql
+        cmd = [
+            'mysql', '--defaults-extra-file={}'.format(temp_conf.name),
+            '--database', db_name, '--execute', 'show tables;'
+        ]
+        out, err = run_command(cmd, suppress_output=True, suppress_error=True)
+        err = err.decode('utf-8').strip().split('\n')
+        error_messages = [x for x in err if x.startswith('ERROR')]
+        return len(error_messages) == 0
 
 
 reset_db_functions = {
@@ -439,6 +473,8 @@ def wait_for_database():
         print('Connection is not ready, sleep for 1 sec')
         time.sleep(1)
 
+    return True
+
 
 def empty_database():
     talk_to_user('Resetting database to empty...')
@@ -461,6 +497,8 @@ def backup_database_using_fixtures():
             out, err = run_command(command, suppress_output=True)
             zip_file.writestr(fixture_name, out.decode('utf-8'))
 
+    return True
+
 
 def backup_database_using_sql():
     talk_to_user('Backing up database...'.format(db_engine))
@@ -470,6 +508,8 @@ def backup_database_using_sql():
 
     if success:
         talk_to_user('Successfully backed up database to {}'.format(backup_file))
+
+    return success
 
 
 def restore_database_using_fixtures():
@@ -492,6 +532,7 @@ def restore_database_using_fixtures():
             run_command(command)
 
             os.remove(temp_file_name)
+    return True
 
 
 def restore_database_using_sql():
@@ -501,6 +542,8 @@ def restore_database_using_sql():
 
     if success:
         talk_to_user('Successfully restored database')
+
+    return success
 
 
 if __name__ == '__main__':
