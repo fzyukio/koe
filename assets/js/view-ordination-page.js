@@ -257,22 +257,29 @@ function calcLayout() {
 function relayout() {
     let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
     let plotDivLayout = $('#' + plotId)[0].layout;
-    let xaxisRange = plotDivLayout.xaxis.range;
-    let yaxisRange = plotDivLayout.xaxis.range;
 
     let layout = {
         width: plotWidth,
         height: plotHeight,
         margin: {l, r, b, t},
-        xaxis: {
+    };
+
+    let xaxis = plotDivLayout.xaxis;
+    if (xaxis) {
+        let xaxisRange = plotDivLayout.xaxis.range;
+        let yaxisRange = plotDivLayout.yaxis.range;
+
+        layout.xaxis = {
             range: xaxisRange,
             autorange: false,
-        },
-        yaxis: {
+        };
+
+        layout.yaxis = {
             range: yaxisRange,
             autorange: false,
-        },
-    };
+        };
+    }
+
     Plotly.relayout(plotId, layout);
 }
 
@@ -398,7 +405,10 @@ function registerPlotlyEvents() {
         setLassoSelectionMode(false);
     });
 
-    plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0].click();
+    let lassoBtn = plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0];
+    if (lassoBtn) {
+        lassoBtn.click();
+    }
 }
 
 
