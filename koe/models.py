@@ -249,6 +249,8 @@ class AudioFile(SimpleModel):
     start = models.IntegerField(null=True, blank=True)
     end = models.IntegerField(null=True, blank=True)
 
+    added = models.DateTimeField()
+
     # To facilitate copying database - when an AudioFile object is copied, another object is created
     # with the same name but different database, and reference this object as its original
     original = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
@@ -297,7 +299,7 @@ class AudioFile(SimpleModel):
         Individual.objects.filter(audiofile__in=objs).update(gender=value)
 
     @classmethod
-    def set_date(cls, objs, value, extras={}):
+    def set_record_date(cls, objs, value, extras={}):
         if value is None or value.strip() == '':
             date = None
         else:

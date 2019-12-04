@@ -7,6 +7,7 @@ from coverage.annotate import os
 from django.conf import settings
 from django.core.files import File
 from django.http import HttpResponse
+from django.utils import timezone
 from memoize import memoize
 
 from koe import wavfile
@@ -144,7 +145,7 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
 
     if audio_file is None:
         audio_file = AudioFile(name=name, length=length, fs=real_fs, database=database, track=track, start=start,
-                               end=end, fake_fs=fake_fs)
+                               end=end, fake_fs=fake_fs, added=timezone.now())
     else:
         audio_file.start = start
         audio_file.end = end

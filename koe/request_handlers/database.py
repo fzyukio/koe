@@ -414,7 +414,7 @@ def copy_audio_files(request):
 
         audio_file = AudioFile.objects.create(fs=fs, fake_fs=fake_fs, length=length, name=name, track_id=track,
                                               individual_id=individual, quality=quality, original_id=original_id,
-                                              database=target_database)
+                                              database=target_database, added=timezone.now())
 
         songs_old_id_to_new_id[old_id] = audio_file.id
 

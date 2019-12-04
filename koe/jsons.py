@@ -94,8 +94,13 @@ tables =\
                     "type": "SHORT_TEXT"
                 },
                 {
-                    "name": "Date",
-                    "slug": "song_date",
+                    "name": "Song added",
+                    "slug": "song_added",
+                    "type": "DATE",
+                },
+                {
+                    "name": "Date of record",
+                    "slug": "record_date",
                     "type": "DATE"
                 },
                 {
@@ -217,11 +222,18 @@ tables =\
                     "importable": False,
                 },
                 {
-                    "name": "Date",
-                    "slug": "date",
+                    "name": "Added",
+                    "slug": "added",
+                    "type": "DATE",
+                    "editable": False,
+                    "is_attribute": True,
+                },
+                {
+                    "name": "Date of record",
+                    "slug": "record_date",
                     "type": "DATE",
                     "editable": True,
-                    "is_attribute": True,
+                    "is_attribute": False,
                 },
                 {
                     "name": "Sex",
