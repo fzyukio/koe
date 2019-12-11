@@ -45,6 +45,17 @@ class SyllableCsvUploader extends CsvUploader {
         self.extraKeys = extraKeys;
     }
 
+    static getUnsegmentedSongs() {
+        return new Promise(function (resolve, reject) {
+            postRequest({
+                requestSlug: 'koe/get-unsegmented-songs',
+                data: {'database-id': database},
+                onSuccess: resolve,
+                onFailure: reject
+            });
+        });
+    }
+
     /**
      * From the list of grid items and csv rows, find the rows that match grid items at key field and
      * differ from the grid data at at least one other field
@@ -54,7 +65,7 @@ class SyllableCsvUploader extends CsvUploader {
      * @param matched
      * @param permittedCols
      * @param columns SlickGrid's columns
-     * @returns {{allValid: boolean, rows: *, info: *}}
+     * @returns {Promise}
      */
     getMatchedAndChangedRows(items, csvRows, key2Vals, matched, permittedCols, columns) {
         const self = this;
@@ -69,7 +80,7 @@ class SyllableCsvUploader extends CsvUploader {
             fieldValueConverter[column.field] = converter;
         });
 
-        let unmatchedRows = [];
+        let primaryKeyUnmatchedOnGridRows = [];
         let matchAllKeysRows = [];
         let matchPrimaryKeyRows = [];
 
@@ -83,7 +94,7 @@ class SyllableCsvUploader extends CsvUploader {
             let primaryColIdxs = indicesOf(primaryKeyValues, rowPrimaryValue);
 
             if (primaryColIdxs.length === 0) {
-                unmatchedRows.push(csvRow);
+                primaryKeyUnmatchedOnGridRows.push(csvRow);
                 return;
             }
 
@@ -167,7 +178,12 @@ class SyllableCsvUploader extends CsvUploader {
         });
 
         let newRows = [];
-        $.each(matchPrimaryKeyRows, function (_, csvRow) {
+
+        /**
+         * Convert text-based csv row into list of importable values
+         * @param csvRow
+         */
+        function collectNewRow(csvRow) {
             let row = [];
             for (let permittedCol = 0; permittedCol < permittedCols.length; permittedCol++) {
                 let field = permittedCols[permittedCol];
@@ -181,33 +197,54 @@ class SyllableCsvUploader extends CsvUploader {
             }
             row.push(null);
             newRows.push(row);
+        }
+
+        $.each(matchPrimaryKeyRows, function (_, csvRow) {
+            collectNewRow(csvRow);
         });
 
-        let info;
+        let unmatchedRows = [];
 
-        let changedCount = changedRows.length;
-        let newCount = newRows.length;
-        let unmatchedCount = unmatchedRows.length;
-        if (changedCount + newCount === 0) {
-            throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
-        }
-        info = `You CSV contains <strong>${totalRowCount}</strong> rows.`;
+        // The csv might contain songs that don't show up in the grid (because they have no segments)
+        // We must account for this by querying the server for unsegmented songs and keep the ones in the csv
+        // that match any of these unsegmented songs
+        return SyllableCsvUploader.getUnsegmentedSongs().then(function (unsegmentedSongs) {
+            $.each(primaryKeyUnmatchedOnGridRows, function (_i, csvRow) {
+                let rowPrimaryValue = csvRow[matched[0]];
+                let primaryColIdx = unsegmentedSongs.indexOf(rowPrimaryValue);
 
-        if (unmatchedCount) {
-            info += `<hr><strong>${unmatchedCount}</strong> rows cannot be matched because the value in column ${self.primaryKey}
+                if (primaryColIdx > -1) {
+                    collectNewRow(csvRow);
+                }
+                else {
+                    unmatchedRows.push(csvRow);
+                }
+            });
+        }).then(function () {
+            let info;
+            let changedCount = changedRows.length;
+            let newCount = newRows.length;
+            let unmatchedCount = unmatchedRows.length;
+            if (changedCount + newCount === 0) {
+                throw new Error('Your CSV contains the exact same data as current on the table. The table will not be updated.');
+            }
+            info = `You CSV contains <strong>${totalRowCount}</strong> rows.`;
+
+            if (unmatchedCount) {
+                info += `<hr><strong>${unmatchedCount}</strong> rows cannot be matched because the value in column ${self.primaryKey}
             cannot be found. These rows will be ignored.`;
-        }
-        if (changedCount) {
-            info += `<hr><strong>${changedCount}</strong> rows have matched ${self.importKeys} and contain different values from table value.
+            }
+            if (changedCount) {
+                info += `<hr><strong>${changedCount}</strong> rows have matched ${self.importKeys} and contain different values from table value.
             These rows will be used to update existing syllables in the database.`;
-        }
-        if (newCount) {
-            info += `<hr><strong>${newCount}</strong> rows have matched ${self.primaryKey} but values of ${self.extraKeys} are different.
+            }
+            if (newCount) {
+                info += `<hr><strong>${newCount}</strong> rows have matched ${self.primaryKey} but values of ${self.extraKeys} are different.
             These rows will be used to create new syllables in the database.`;
-        }
-        rows = changedRows.concat(newRows);
-
-        return {allValid: true, rows, info};
+            }
+            rows = changedRows.concat(newRows);
+            return {allValid: true, rows, info, matched};
+        });
     }
 }
 
@@ -613,7 +650,7 @@ const initCreateTemporaryDatabaseBtn = function () {
 };
 
 
-const initUploadCsv = function() {
+const initUploadCsv = function () {
     let csvUploader = new SyllableCsvUploader();
     csvUploader.init(grid);
     csvUploader.setExtraPostArgs({'database-id': database});

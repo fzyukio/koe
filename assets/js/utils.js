@@ -306,6 +306,9 @@ export const extractHeader = function (columns, permission, importKeys) {
     if (importKeys) {
         keyColumnHeadings = new Array(importKeys.length);
     }
+    else {
+        keyColumnHeadings = [];
+    }
     for (let i = 0; i < columns.length; i++) {
         let column = columns[i];
         let columnVal = column.field;
