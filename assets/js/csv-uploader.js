@@ -199,12 +199,12 @@ export class CsvUploader {
         // column index of the key column in the uploaded CSV.
         let missingColumns = [];
         $.each(self.importKeys, function (ind, key) {
-            if (matched[ind] !== key) {
+            if (header[matched[ind]] !== key) {
                 missingColumns.push(key);
             }
         });
 
-        if (missingColumns.length === 0) {
+        if (missingColumns.length !== 0) {
             throw new Error(`The following columns: "${missingColumns}" are missing from your CSV`);
         }
         return {unmatched, matched};
@@ -219,7 +219,6 @@ export class CsvUploader {
      * @param matched
      * @param permittedCols
      * @param columns SlickGrid's columns
-     * @returns {{allValid: boolean, rows: *, info: *}}
      */
     getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, columns) {
         const self = this;
@@ -314,8 +313,11 @@ export class CsvUploader {
             rows = invalidRows;
         }
 
-        return {allValid, rows, info};
+        return new Promise(function (resolve) {
+            resolve({allValid, rows, info, matched});
+        });
     }
+
 
     /**
      * Read csv from text & perform other task to arrive at {rows: the rows that will update the grid, info: information
@@ -331,7 +333,7 @@ export class CsvUploader {
         let importKeyColumns = findColumns(columns, self.importKeys);
         let rowKeys = CsvUploader.getKeyFields(items, importKeyColumns);
 
-        return new Promise(function (resolve, reject) {
+        let convertCsv = new Promise(function (resolve, reject) {
             try {
                 let csvRows = [];
                 Papa.parse(csvText, {
@@ -348,10 +350,7 @@ export class CsvUploader {
                         csvRows.push(row);
                     },
                     complete() {
-                        let header = csvRows.splice(0, 1)[0];
-                        let {matched} = self.matchColumns(header, permittedCols);
-                        let {allValid, rows, info} = self.getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, columns);
-                        resolve({allValid, rows, info, matched});
+                        resolve({csvRows});
                     }
                 });
             }
@@ -360,6 +359,12 @@ export class CsvUploader {
                 reject(e);
             }
         });
+
+        return convertCsv.then(function ({csvRows}) {
+            let header = csvRows.splice(0, 1)[0];
+            let {matched} = self.matchColumns(header, permittedCols);
+            return self.getMatchedAndChangedRows(items, csvRows, rowKeys, matched, permittedCols, columns);
+        })
 
     }
 

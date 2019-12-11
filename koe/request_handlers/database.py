@@ -28,7 +28,8 @@ from root.views import _change_properties_table
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
            'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
-           'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv', 'delete_database']
+           'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv', 'delete_database',
+           'get_unsegmented_songs']
 
 
 def import_audio_metadata(request):
@@ -736,3 +737,18 @@ def update_segments_from_csv(request):
 
     # Finally to change all other properties (label, family, note...)
     return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
+
+
+def get_unsegmented_songs(request):
+    database_id = get_or_error(request.POST, 'database-id')
+    user = request.user
+
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.MODIFY_SEGMENTS)
+
+    existing_file_names = AudioFile.objects.filter(database=database).values_list('name', flat=True)
+    file_with_segments = Segment.objects.filter(audio_file__database=database)\
+        .values_list('audio_file__name', flat=True).distinct()
+
+    af_with_no_segments = list(set(existing_file_names) - set(file_with_segments))
+    return af_with_no_segments
