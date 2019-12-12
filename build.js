@@ -16,9 +16,9 @@ console.log(`Build in ${mode} mode on ${osType} system using ${configFile}`);
 
 let command;
 if (osType === 'Linux' || osType == 'Darwin')
-    command = `NODE_ENV=${mode} webpack -p --progress --colors --config ${configFile} --bail`;
+    command = `NODE_ENV=${mode} webpack --mode ${mode} -p --progress --colors --config ${configFile} --bail`;
 else if (os.type() === 'Windows_NT')
-    command = `set NODE_ENV=${mode} & webpack -p --progress --colors --config ${configFile} --bail`;
+    command = `set NODE_ENV=${mode} & webpack --mode ${mode} -p --progress --colors --config ${configFile} --bail`;
 else
     throw new Error("Unsupported OS found: " + os.type());
 console.log(command);

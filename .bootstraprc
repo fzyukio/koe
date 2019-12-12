@@ -1,18 +1,26 @@
 ---
 # Output debugging info
-# loglevel: debug
+loglevel: debug
 
 # Major version of Bootstrap: 3 or 4
 bootstrapVersion: 3
 
 # If Bootstrap version 3 is used - turn on/off custom icon font path
-useCustomIconFontPath: false
+useCustomIconFontPath: true
+
+//$icon-font-path: ~bootswatch/fonts // relative to your Sass file
+//$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/'
+$icon-font-path: 'asdasdas asd asd asdasdas~bootswatch/fonts/'
+//$icon-font-name: 'glyphicons' // you'll typically want to change this too.
+
+# ./node_modules/bootstrap-sass/assets/fonts/bootstrap/glyphicons-halflings-regular.eot
+# ./node_modules/bootswatch/fonts/glyphicons-halflings-regular.eot
 
 # Webpack loaders, order matters
 styleLoaders:
-  - style
-  - css
-  - sass
+  - style-loader
+  - css-loader
+  - sass-loader
 
 # Extract styles to stand-alone css file
 # Different settings for different environments can be used,
@@ -33,7 +41,7 @@ extractStyles: false
 #
 # preBootstrapCustomizations: ./path/to/bootstrap/pre-customizations.scss
 # Don't forget to change // Main Style in style.scss
-preBootstrapCustomizations: ./node_modules/bootswatch/simplex/_variables.scss
+preBootstrapCustomizations: ~bootswatch/simplex/_variables.scss
 
 # This gets loaded after bootstrap/variables is loaded
 # Thus, you may customize Bootstrap variables
@@ -45,7 +53,7 @@ preBootstrapCustomizations: ./node_modules/bootswatch/simplex/_variables.scss
 # Import your custom styles here
 # Usually this endpoint-file contains list of @imports of your application styles
 #
-appStyles: ./assets/sass/style.scss
+#appStyles: ./assets/sass/style.scss
 
 ### Bootstrap styles
 styles:
