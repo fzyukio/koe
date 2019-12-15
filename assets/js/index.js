@@ -455,9 +455,9 @@ $(document).ready(function () {
     if (pageName === '/dashboard/') {
         page = require('dashboard-page');
     }
-    else if (pageName === '/dashboard2/') {
-        page = require('dashboard2-page');
-    }
+    // else if (pageName === '/dashboard2/') {
+    //     page = require('dashboard2-page');
+    // }
     else if (pageName.startsWith('/song-partition/')) {
         page = require('song-partition-page');
     }

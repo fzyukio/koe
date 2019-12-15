@@ -1,0 +1,42 @@
+{% extends 'base-with-sidebar-and-grid.html' %}
+
+{% block title %}Manage database{% endblock %}
+
+{% block extra-css %}
+    <link rel="stylesheet" href="//jqwidgets.com/public/jqwidgets/styles/jqx.base.css" type="text/css" />
+{% endblock %}
+
+{% block main-content-classes %}no-padding{% endblock %}
+
+{% block content-grid %}
+
+    <div id="mainSplitter">
+        <div>
+            <div id="firstNested">
+                <div>
+                    <div id="secondNested">
+                        <div>
+                            <span>Panel 1</span></div>
+                        <div>
+                            <span>Panel 2</span></div>
+                    </div>
+                </div>
+                <div>
+                    <span>Panel 3</span></div>
+            </div>
+        </div>
+        <div>
+            <div id="thirdNested">
+                <div>
+                    <span>Panel 4</span></div>
+                <div>
+                    <span>Panel 5</span></div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block modal-dialog %}
+    {% include 'partials/modal.html' with order='yes-no' yes='OK' no='Cancel' %}
+{% endblock %}
