@@ -5,6 +5,7 @@ import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryA
 import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 import {CsvUploader} from './csv-uploader';
+import {renderSlickGrid, initFilter, updateSlickGridData} from "./grid-utils";
 require('bootstrap-slider/dist/bootstrap-slider.js');
 const JSZip = require('jszip/dist/jszip.min.js');
 const filesaver = require('file-saver/dist/FileSaver.min.js');
@@ -24,6 +25,19 @@ class Grid extends FlexibleGrid {
         });
 
         this.granularity = granularity;
+    }
+
+    reinitMainGridHeader(defaultArgs) {
+        const self = this;
+        self.columns = columns;
+
+        renderSlickGrid(self.mainGridSelector, self.mainGrid, self.rows, self.columns, defaultArgs);
+
+        // self.postMainGridHeader();
+        // self.addHeaderMenu();
+
+        // initFilter(self.filterSelector, self.mainGrid, self.defaultFilterField);
+        // updateSlickGridData(self.mainGrid, self.rows);
     }
 }
 
@@ -58,6 +72,8 @@ const downloadProgressBar = downloadSongsModal.find('.progress-bar');
 const totalFilesCount = $('#total-files-count');
 const currentFileNumber = $('#current-file-no');
 const currentFileName = $('#current-file-name');
+
+const songNameEdit = $('#song-name-edit-enabled');
 
 const databaseId = uploadSongsModal.attr('database');
 let ce;
@@ -567,6 +583,7 @@ export const run = function (commonElements) {
     grid.init(granularity);
 
     return new Promise(function(resolve) {
+        // HERE 123
         grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
             subscribeSlickEvents();
             subscribeFlexibleEvents();
@@ -588,6 +605,18 @@ export const run = function (commonElements) {
 };
 
 
+const initSongNameEdit = function () {
+    songNameEdit.click(function () {
+        let self = this;
+        grid.columns
+        grid.reinitMainGridHeader();
+        if (self.checked) {
+        }
+        else {
+        }
+    });
+};
+
 const initUploadCsv = function() {
     let csvUploader = new SongCsvUploader();
     csvUploader.init(grid, ['filename'], 'change-properties-table');
@@ -598,6 +627,7 @@ export const postRun = function () {
     initDeleteSongsBtn();
     initCopySongsBtn();
     initUploadCsv();
+    initSongNameEdit();
     return Promise.resolve();
 };
 

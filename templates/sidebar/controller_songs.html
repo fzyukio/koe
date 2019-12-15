@@ -9,6 +9,14 @@
     {% include "sidebar/speed-slider.html" %}
 </div>
 
+{% if db_assignment.can_delete_files %}
+<div class="sidebar-controllers">
+    <div class="input-group row no-margin">
+        <span class="input-group-addon no-padding-left">Enable song name edit</span>
+        <input id="song-name-edit-enabled" type="checkbox" class="pull-right"/>
+    </div>
+</div>
+{% endif %}
 
 {% if db_assignment.can_copy_files %}
 <div class="sidebar-controllers">
