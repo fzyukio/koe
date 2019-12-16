@@ -257,10 +257,11 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
     return retval
 
 
-def get_wav_info(file):
+def get_wav_info(file, return_noc=False):
     """
     Return fs and length of an audio without readng the entire file
-    :param audio_file:
+    :param return_noc: True to return number of channels
+    :param file: a string or file pointer
     :return:
     """
     if hasattr(file, 'read'):
@@ -269,8 +270,10 @@ def get_wav_info(file):
         fid = open(file, 'rb')
 
     fsize = _read_riff_chunk(fid)
-    rate = None
-    size = None
+    rate = 0
+    size = 0
+    noc = 0
+    ba = 0
 
     while fid.tell() < fsize:
         chunk_id = fid.read(4)
@@ -286,10 +289,12 @@ def get_wav_info(file):
             else:
                 break
 
-    assert rate is not None, 'Unable to read FMT block from file ' + fid.name
-    assert size is not None, 'Unable to read DATA block from file ' + fid.name
+    assert rate != 0 and ba != 0 and noc != 0, 'Unable to read FMT block from file ' + fid.name
+    assert size != 0, 'Unable to read DATA block from file ' + fid.name
 
     length = size // ba
+    if return_noc:
+        return rate, length, noc
     return rate, length
 
 

@@ -240,6 +240,8 @@ class AudioFile(SimpleModel):
     # WAV file is stored with original fs, but mp3 file is converted with the faked fs one to circumvent the MP3 specs
     fake_fs = models.IntegerField(null=True, blank=True)
     length = models.IntegerField()
+
+    noc = models.IntegerField(null=False, blank=False)
     name = models.CharField(max_length=255)
     # file_name = models.CharField(max_length=255)
     track = models.ForeignKey(AudioTrack, null=True, blank=True, on_delete=models.SET_NULL)
