@@ -193,7 +193,7 @@ def showcase_segmentation(variables, segmenter):
     normalise = variables['normalise']
 
     database = get_or_error(Database, dict(name__iexact=database_name))
-    audio_files = AudioFile.objects.filter(database=database)
+    audio_files = AudioFile.objects.filter(database=database).filter(id=19413)
 
     segmentation_results = {}
     segmentation_extra = {}

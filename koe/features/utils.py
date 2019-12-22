@@ -17,7 +17,7 @@ def _cached_get_window(name, nfft):
         return tapers[:, type]
 
     else:
-        return signal.get_window(name, nfft)
+        return signal.get_window(name, nfft, fftbins=False)
 
 
 # @profile
@@ -26,8 +26,9 @@ def stft_from_sig(sig, nfft, noverlap, win_length, window_name, center):
     hopsize = win_length - noverlap
     center |= len(sig) < win_length
 
-    return stft(y=sig, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
-                dtype=np.complex128)
+    stft_ = stft(y=sig, n_fft=nfft, win_length=win_length, hop_length=hopsize, window=window, center=center,
+                 dtype=np.complex128)
+    return stft_
 
 
 # @profile

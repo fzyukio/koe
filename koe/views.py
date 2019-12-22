@@ -1,4 +1,5 @@
 import json
+import os
 from copy import copy
 
 from django.conf import settings
@@ -9,21 +10,55 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.generic import TemplateView, FormView
 
+from koe import wavfile
+from koe import spect_utils
 from koe.celery_init import delay_in_production
 from koe.feature_utils import extract_database_measurements, construct_ordination, calculate_similarity
 from koe.forms import SongPartitionForm, FeatureExtrationForm, ContactUsForm, OrdinationExtractionForm,\
     SimilarityExtractionForm
 from koe.model_utils import get_user_databases, get_or_error
 from koe.models import AudioFile, AudioTrack,\
-    DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination, SimilarityIndex
+    DerivedTensorData, Database, TemporaryDatabase, DataMatrix, Task, TaskProgressStage, Ordination, SimilarityIndex,\
+    RnnSegmentor
 from koe.request_handlers.templates import populate_context
 from maintenance import get_config
 from root.models import ExtraAttrValue
-from root.utils import SendEmailThread, get_referrer_pathname
+from root.utils import SendEmailThread, get_referrer_pathname, data_path
 from root.views import can_have_exception
-
+from koe.utils import wav_path
 
 envconf = get_config()
+
+
+def get_best_segmentor(audio_file):
+    """
+    Find the best segmentor for this audio file in the following order until one is found:
+       + segmentor created for this database and whose input dimension matches (usually half of FFT plus one)
+       + segmentor whose input dimension matches (usually half of FFT plus one)
+       + any segmentor
+
+    :param audio_file:
+    :return:
+    """
+    input_dim = spect_utils.nfft // 2 + 1
+    database = audio_file.database
+    segmentor = RnnSegmentor.objects.filter(database=database, input_dim=input_dim).first()
+    if segmentor is None:
+        segmentor = RnnSegmentor.objects.filter(input_dim=input_dim).first()
+
+    if segmentor is None:
+        segmentor = RnnSegmentor.objects.first()
+
+    retval = {}
+    if segmentor:
+        retval['load_path'] = data_path('tfjs-models', segmentor.name, for_url=True)
+        retval['input_dim'] = segmentor.input_dim
+        retval['window_len'] = segmentor.window_len
+        retval['nfft'] = segmentor.nfft
+        retval['noverlap'] = segmentor.noverlap
+        retval['format'] = segmentor.format
+
+    return retval
 
 
 class SegmentationView(TemplateView):
@@ -51,9 +86,24 @@ class SegmentationView(TemplateView):
         context['length'] = audio_file.length
         context['fs'] = audio_file.fs
         context['database'] = audio_file.database.id
+        context['segmentor'] = get_best_segmentor(audio_file)
 
-        context['song_info'] = {
+        if not os.path.isfile('user_data/tmp/{}.json'.format(file_id)):
+            from koe.spect_utils import extract_spect, extract_log_spect
+            wav_file_path = wav_path(audio_file)
+            sig = wavfile.read_segment(wav_file_path, 0, None, normalised=True, mono=True)
+            spectrogram = extract_spect(wav_file_path, audio_file.fs, 0, None).T
+            log_spect = extract_log_spect(wav_file_path, audio_file.fs, 0, None).T
+
+            with open('user_data/tmp/{}.json'.format(file_id), 'w') as f:
+                json.dump(dict(spectrogram=spectrogram, log_spect=log_spect, sig=sig), f)
+
+        songinfo = {
             'Length': '{:5.2f} secs'.format(audio_file.length / audio_file.fs),
+            'Number of channels': audio_file.noc,
+            'WAV sample rate': audio_file.fs,
+            'MP3 sample rate': audio_file.fake_fs or audio_file.fs,
+            'Browser\'s sample rate': '__MAX_SAMPLE_RATE',
             'Name': audio_file.name,
             'Species': str(species) if species else 'Unknown',
             'Date': date.strftime(settings.DATE_INPUT_FORMAT) if date else 'Unknown',
@@ -68,7 +118,9 @@ class SegmentationView(TemplateView):
             .values_list('attr__name', 'value')
 
         for attr, value in song_extra_attr_values_list:
-            context['song_info']['Song\'s {}'.format(attr)] = value
+            songinfo['Song\'s {}'.format(attr)] = value
+
+        context['song_info'] = json.dumps(songinfo)
 
         return context
 

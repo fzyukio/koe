@@ -2,6 +2,7 @@
 Convert audio file to spectrogram. Then use the trained segmentation encoder to detect syllables.
 Then display the segmentation on a webpage
 """
+import json
 import numpy as np
 
 from koe.management.commands.run_rnn_encoder import read_variables
@@ -16,11 +17,13 @@ def run_segmentation(duration_frames, psd, encoder, session, window_len, step_si
     mask = np.zeros((duration_frames,), dtype=np.float32)
     windoweds = []
     lengths = [window_len] * nwindows
+    psd = psd.T
     for beg, end in windows:
-        windowed = psd[:, beg:end].T
+        windowed = psd[beg:end, :]
         windoweds.append(windowed)
 
     predicteds = encoder.predict(windoweds, session, res_len=lengths)
+
     for predicted, (beg, end) in zip(predicteds, windows):
         predicted_binary = predicted.reshape(window_len) > 0.5
         mask[beg: end] += predicted_binary
@@ -44,6 +47,10 @@ def run_segmentation(duration_frames, psd, encoder, session, window_len, step_si
             syllables.append(current_syl)
             current_syl = None
 
+    with open('user_data/tmp/psd.json', 'w') as f:
+        json.dump(dict(psd=psd, windoweds=np.array(windoweds).tolist(), predicteds=np.array(predicteds).tolist(),
+                       lengths=lengths, syllables=syllables), f)
+
     return syllables, None
 
 
@@ -57,6 +64,15 @@ class SeqAutoEncoderSegmenter(Segmenter):
         self.session = session
 
     def get_segment(self, af_psd, audio_file):
+        # segmentation_results = {}
+        # bar = Bar('Extracting spectrogram and show segmentation...', max=len(audio_files))
+        # for audio_file in audio_files:
+        #     af_id = audio_file.id
+        #     af_psd = extract_psd(extractor, audio_file)
+        #
+        #     with open('user_data/tmp/psd.json', 'w') as f:
+        #         json.dump(dict(psd=np.array(af_psd).tolist(), id=af_id), f)
+
         _, duration_frames = af_psd.shape
         return run_segmentation(duration_frames, af_psd, self.encoder, self.session, self.window_len)
 

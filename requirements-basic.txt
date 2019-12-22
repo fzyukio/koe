@@ -1,1 +1,5 @@
 tensorflow==1.13.1
+tensorflow-estimator==1.13.0
+tensorflow-hub==0.1.1
+tensorflowjs==0.8.6
+keras==2.2.4

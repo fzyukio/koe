@@ -1,3 +1,10 @@
+const log = Math.log10;
+const sqrt = Math.sqrt;
+
+export const POST_PROCESS_PSD = (x) => 10 * log(x);
+
+export const POST_PROCESS_NOOP = (x) => x;
+
 /**
  * Calculate spectrogram from raw data
  * @param sig
@@ -6,13 +13,11 @@
  * @param fftComplexArray
  * @param window
  */
-export const calcSpect = function (sig, segs, fft, fftComplexArray, window, windowed) {
+export const calcSpect = function (sig, segs, fft, fftComplexArray, window, windowed, postProcessFunc = POST_PROCESS_PSD) {
     const nfft = segs[0][1] - segs[0][0];
     const nframes = segs.length;
     const spect = [];
     let fbeg, fend, i, j;
-
-    const log = Math.log10;
 
     for (i = 0; i < nframes; i++) {
         fbeg = segs[i][0];
@@ -25,15 +30,19 @@ export const calcSpect = function (sig, segs, fft, fftComplexArray, window, wind
         fft.realTransform(fftComplexArray, windowed);
 
         const frameFTArr = [];
+        let real, imag, absValue;
 
         /*
          * fft.realTransform returns only half the spectrum, but the array frameFT is always 2*nfft elements,
          * so the second half is rubbish. In addition, a 'Complex Array' is basically a normal array with odd elements
          * being the real and even element being the complex part. So the array is 4 times as large as the actual one-sided
-         * spectrum. The power density spectra is calculated as 10*log10(real^2 + complex^2), or 10*log10(even^2 + odd^2)
+         * spectrum.
          */
-        for (j = 0; j < fftComplexArray.length / 4; j++) {
-            frameFTArr.push(10 * log(fftComplexArray[2 * j] * fftComplexArray[2 * j] + fftComplexArray[2 * j + 1] * fftComplexArray[2 * j + 1]));
+        for (j = 0; j < fftComplexArray.length / 4 + 1; j++) {
+            real = fftComplexArray[2 * j];
+            imag = fftComplexArray[2 * j + 1];
+            absValue = sqrt(real * real + imag * imag);
+            frameFTArr.push(postProcessFunc(absValue));
         }
         spect.push(frameFTArr);
     }
