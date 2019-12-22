@@ -1,6 +1,6 @@
 require('../vendor/AudioContextMonkeyPatch');
 const bufferToWav = require('audiobuffer-to-wav');
-import {isNull, noop, logError} from './utils';
+import {isNull, noop, logError, setCache} from './utils';
 import {handleResponse, postRequest, createSpinner} from './ajax-handler';
 import {WAVDecoder} from '../vendor/audiofile';
 
@@ -11,6 +11,8 @@ import {WAVDecoder} from '../vendor/audiofile';
  */
 let audioContext = new AudioContext();
 export const BROWSER_FS = audioContext.sampleRate;
+
+setCache('MAX_SAMPLE_RATE', undefined, MAX_SAMPLE_RATE);
 
 
 /**

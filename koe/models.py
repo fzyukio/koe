@@ -860,6 +860,18 @@ class MergingInfo(SimpleModel):
     info = models.TextField()
 
 
+class RnnSegmentor(SimpleModel):
+    database = models.ForeignKey(Database, on_delete=models.SET_NULL, default=None, null=True, blank=True)
+    input_dim = models.IntegerField()
+    window_len = models.IntegerField()
+    nfft = models.IntegerField()
+    noverlap = models.IntegerField()
+
+    model_path = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
+    format = models.CharField(max_length=255)
+
+
 @receiver(post_delete, sender=HistoryEntry)
 def _history_delete(sender, instance, **kwargs):
     """

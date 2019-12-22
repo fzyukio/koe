@@ -1,11 +1,17 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, loadSongById} from './audio-handler';
-import {deepCopy, setCache, getCache, isNumber, isNull, getUrl} from './utils';
-import {postRequest} from './ajax-handler';
+import {createSpinner, postRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation';
 
+import {deepCopy, setCache, getCache, isNumber, isNull, calcSegments, extractLogSpect, uuid4} from './utils';
+import {calcSpect, POST_PROCESS_NOOP} from './dsp';
+import {replaceSlickGridData} from './grid-utils';
+
 require('bootstrap-slider/dist/bootstrap-slider.js');
+const tf = require('@tensorflow/tfjs');
+
+const FFT = require('fft.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -21,8 +27,31 @@ const speedSlider = $('#speed-slider');
 let spectViz;
 const saveSegmentationBtn = $('#save-segmentations-btn');
 const deleteSegmentsBtn = $('#delete-segments-btn');
-const audioData = {};
+const segSongBtn = $('#seg-song-btn');
+const segmentorLoadPath = segSongBtn.attr('load-path');
+const segmentorWindowLen = parseInt(segSongBtn.attr('window-len'));
+const segmentorNfft = parseInt(segSongBtn.attr('nfft'));
+const segmentorNoverlap = parseInt(segSongBtn.attr('noverlap'));
+// const segmentorInputDim = parseInt(segSongBtn.attr('input-dim'));
+// const segmentorFormat = segSongBtn.attr('format');
+const segmentorStepSize = 1;
 
+const fft = new FFT(segmentorNfft);
+const fftComplexArray = fft.createComplexArray();
+
+const window = new Float32Array(segmentorNfft);
+const cos = Math.cos;
+const PI = Math.PI;
+
+/*
+ * This is Hann window
+ */
+for (let i = 0; i < segmentorNfft; i++) {
+    window[i] = 0.5 * (1 - cos(PI * 2 * i / (segmentorNfft - 1)));
+}
+
+
+const audioData = {};
 
 class Grid extends FlexibleGrid {
     init() {
@@ -273,12 +302,27 @@ let gridArgs = {
     doCacheSelectableOptions: false
 };
 
+const convertJsonToTable = function() {
+    let tableBody = $('#song-info tbody');
+    let jsonData = tableBody.attr('json-data');
+    let data = JSON.parse(jsonData);
+    tableBody.attr('json-data', undefined);
+    $.each(data, function (attr, value) {
+        if (typeof value === 'string' && value.startsWith('__')) {
+            let rowId = value.substr(2);
+            value = getCache(rowId);
+        }
+        tableBody.append(`<tr><td>${attr}</td><td>${value}</td></tr>`);
+    })
+}
+
 export const preRun = function (commonElements) {
     ce = commonElements;
     let zoom = ce.argDict._zoom || 100;
     let colourMap = ce.argDict._cm || 'Green';
 
     initController();
+    convertJsonToTable();
     spectViz = new Visualiser(vizContainerId);
     spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
     spectViz.initScroll();
@@ -361,9 +405,125 @@ export const run = function () {
 };
 
 
+const initSegmentationButton = function() {
+    const spectXScaleInvert = spectViz.spectXScale.invert;
+    let spinner = createSpinner();
+
+    segSongBtn.one('click', function () {
+        spinner.start();
+        const MODEL_URL = `${segmentorLoadPath}/model.json`;
+        const loadGraphPromise = tf.loadGraphModel(MODEL_URL);
+
+        const outputDim = 1;
+        const goToken = -1;
+
+
+        const extractLogPromise = new Promise(function (resolve) {
+            const sig = audioData.dataArrays[0];
+            const segs = calcSegments(sig.length, segmentorNfft, segmentorNoverlap);
+
+            const spectrogram = calcSpect(sig, segs, fft, fftComplexArray, window, POST_PROCESS_NOOP);
+            const logSpect = extractLogSpect(spectrogram);
+            resolve(logSpect);
+        });
+
+        let runSegmentationPrimise = Promise.all([loadGraphPromise, extractLogPromise]).then(function (values) {
+            const [model, logSpect] = [...values];
+
+            const windows = calcSegments(logSpect.length, segmentorWindowLen, segmentorWindowLen - segmentorStepSize);
+            const windoweds = [];
+            for (const window_ of windows) {
+                let [start, end] = [...window_];
+                const windowed = logSpect.slice(start, end);
+                windoweds.push(windowed);
+            }
+            const inputBatch = tf.tensor(windoweds);
+            const batchSize = windoweds.length;
+
+            const actualStartToken = tf.fill([batchSize, outputDim], goToken);
+            const targetSequenceLength = tf.fill([batchSize], segmentorWindowLen).toInt();
+            const sourceSequenceLength = tf.fill([batchSize], segmentorWindowLen).toInt();
+
+            const mask = new Array(logSpect.length).fill(0);
+
+            const executionPromise = model.executeAsync([targetSequenceLength, sourceSequenceLength, actualStartToken, inputBatch]);
+            return executionPromise.then((value) => value.array()).then(function (predicteds) {
+                for (let i = 0; i < windows.length; i++) {
+                    let predicted = predicteds[i];
+                    let frameBegin = windows[i][0];
+                    $.each(predicted, function (j, frameOutput) {
+                        if (frameOutput > 0.5) {
+                            mask[frameBegin + j]++;
+                        }
+                    });
+                }
+
+                const threshold = segmentorWindowLen * 0.3;
+                const syllableFrames = [];
+                for (const maskFrame of mask) {
+                    syllableFrames.push(maskFrame > threshold);
+                }
+
+                const syllables = [];
+                let currentSyllable = null;
+                let opening = false;
+
+                for (let i = 0; i < logSpect.length - 1; i++) {
+                    let thisFrame = syllableFrames[i];
+                    let nextFrame = syllableFrames[i + 1];
+                    if (thisFrame && nextFrame) {
+                        if (!opening) {
+                            opening = true;
+                            currentSyllable = [i];
+                        }
+                    }
+                    else if (thisFrame && opening) {
+                        opening = false;
+                        currentSyllable.push(i);
+                        syllables.push(currentSyllable);
+                        currentSyllable = null;
+                    }
+                }
+
+                return syllables;
+            });
+        });
+
+        runSegmentationPrimise.then(function (syllables) {
+            const syllablesMs = [];
+            const syllableDict = {};
+            for (const syllable of syllables) {
+                const startMs = Math.round(spectXScaleInvert(syllable[0]));
+                const endMs = Math.round(spectXScaleInvert(syllable[1]));
+
+                let uuid = uuid4();
+                let newId = `new:${uuid}`;
+
+                let syllableMs = {
+                    duration: endMs - startMs,
+                    end: endMs,
+                    id: newId,
+                    start: startMs
+                };
+                syllablesMs.push(syllableMs);
+                syllableDict[newId] = syllableMs
+            }
+            replaceSlickGridData(grid.mainGrid, syllablesMs);
+            setCache('syllableArray', undefined, syllablesMs);
+            setCache('syllableDict', undefined, syllableDict);
+
+            spectViz.clearAllSegments();
+            spectViz.displaySegs();
+
+            spinner.clear();
+        });
+    });
+}
+
 export const postRun = function () {
     initKeyboardHooks();
     initDeleteSegmentsBtn();
+    initSegmentationButton();
     subscribeFlexibleEvents();
     return Promise.resolve();
 };

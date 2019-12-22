@@ -10,7 +10,7 @@ from pymlfunc import tictoc
 
 class KoeUtilsTest(TestCase):
     def setUp(self):
-        with h5py.File('tests/spectrogram.h5', 'r') as hf:
+        with h5py.File('tests/spectrogram1.h5', 'r') as hf:
             self.sig = hf['sig'].value.ravel()
             self.nfft = int(hf['nfft'].value[0][0])
             self.fs = int(hf['fs'].value[0][0])

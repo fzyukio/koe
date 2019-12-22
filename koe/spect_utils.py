@@ -44,10 +44,9 @@ def extract_log_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=No
                           center=False)
     eps = 1e-3
     # find maximum
-    psd_abs = abs(psd)
-    psd_max = psd_abs.max()
+    psd_max = psd.max()
     # compute 20*log magnitude, scaled to the max
-    value = 20.0 * np.log10(psd_abs / psd_max + eps)
+    value = 20.0 * np.log10(psd / psd_max + eps)
 
     if filepath:
         with open(filepath, 'wb') as f:

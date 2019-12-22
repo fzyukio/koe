@@ -281,6 +281,7 @@ export class Visualiser {
                     spect = transposeFlipUD(calcSpect(self.sig, subSegs, self.fft, self.fftComplexArray, self.window, self.windowed));
                     renderStatus.spect = spect;
                     renderStatus.state = stateCalculated;
+
                     return spect;
                 }
                 else if (renderStatus.state !== stateDisplayed) {
@@ -464,13 +465,21 @@ export class Visualiser {
             attr('display', 'none');
     }
 
+    /**
+     *
+     * @param func callback for each chunk after it is rendered
+     */
+    setRenderingHook(func) {
+        const self = this;
+        self.renderingHook = func;
+    }
+
     setData(audioData) {
         const self = this;
         self.audioData = audioData;
 
-        if (self.audioData.durationRatio !== 1) {
+        if (self.audioData.durationRatio !== 1)
             self.tickInterval /= self.audioData.durationRatio;
-        }
 
         let nChannels = self.audioData.dataArrays.length;
         self.setChannel(0);
@@ -478,8 +487,6 @@ export class Visualiser {
                                                   zoom={self.zoom}/>,
                 document.getElementById('spectrogram-control-button-wrapper'));
 
-
-        // self.populateChannelOptions();
     }
 
     // populateChannelOptions() {
@@ -525,7 +532,7 @@ export class Visualiser {
          * And then incrementally add frames to it
          */
         self.imgWidth = Math.floor((self.audioData.browserLength - self.nfft) / self.frameSize) + 1;
-        self.imgHeight = self.nfft / 2;
+        self.imgHeight = self.nfft / 2 + 1;
 
         self.spectrogramSvg = d3.select(self.spectrogramId);
         self.spectrogramSvg.selectAll('*').remove();

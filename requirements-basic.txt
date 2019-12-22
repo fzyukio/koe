@@ -19,3 +19,6 @@ termcolor==1.1.0
 typing-extensions==3.7.4.3
 Werkzeug==1.0.1
 zipp==3.4.1
+tensorflow-hub==0.1.1
+tensorflowjs==0.8.6
+keras==2.2.4

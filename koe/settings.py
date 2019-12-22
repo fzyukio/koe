@@ -5,6 +5,7 @@ from json import JSONEncoder
 
 import decimal
 import dj_database_url
+import numpy
 
 from maintenance import get_config
 
@@ -209,6 +210,8 @@ def JSONEncoder_newdefault(self, obj):
         return obj.strftime(DATE_INPUT_FORMAT)
     elif isinstance(obj, decimal.Decimal):
         return fakefloat(obj)
+    elif isinstance(obj, numpy.ndarray):
+        return obj.tolist()
     return JSONEncoder_olddefault(self, obj)
 
 

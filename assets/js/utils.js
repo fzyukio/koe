@@ -1054,3 +1054,48 @@ export function indicesOf(arr, val) {
     }
     return indices;
 }
+
+
+const log10 = Math.log10;
+
+export const extractLogSpect = function (psd, normalised = true) {
+    let logSpectJs = [];
+
+    let eps = 1e-3;
+
+    // find maximum
+    let psdMax = 0;
+    let psdMin = 999999999;
+
+    for (let i = 0; i < psd.length; i++) {
+        let frameJs = psd[i];
+        for (let j = 0; j < frameJs.length; j++) {
+            let value = frameJs[j];
+            if (value > psdMax) {
+                psdMax = value;
+            }
+            if (value < psdMin) {
+                psdMin = value;
+            }
+        }
+    }
+
+    const logSpectMin = 20.0 * log10(psdMin / psdMax + eps);
+    const logSpectMax = 20.0 * log10(psdMax / psdMax + eps);
+    const logSpectRange = logSpectMax - logSpectMin;
+
+    for (let i = 0; i < psd.length; i++) {
+        let frame = psd[i];
+        let logFrameJs = [];
+        for (let j = 0; j < frame.length; j++) {
+            let logVal = 20.0 * log10(frame[j] / psdMax + eps);
+            if (normalised) {
+                logVal = (logVal - logSpectMin) / logSpectRange;
+            }
+            logFrameJs.push(logVal);
+        }
+        logSpectJs.push(logFrameJs);
+    }
+
+    return logSpectJs;
+}

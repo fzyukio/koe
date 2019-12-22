@@ -27,14 +27,7 @@
                     <th class="col-md-8">Value</th>
                 </tr>
                 </thead>
-                <tbody>
-                {% for attr, value in song_info.items %}
-                    <tr>
-                        <td>{{ attr }}</td>
-                        <td>{{ value }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
+                <tbody json-data="{{ song_info }}"></tbody>
             </table>
         </div>
 
