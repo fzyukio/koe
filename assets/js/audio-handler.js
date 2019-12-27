@@ -12,7 +12,7 @@ import {WAVDecoder} from '../vendor/audiofile';
 let audioContext = new AudioContext();
 export const BROWSER_FS = audioContext.sampleRate;
 
-setCache('MAX_SAMPLE_RATE', undefined, MAX_SAMPLE_RATE);
+// setCache('MAX_SAMPLE_RATE', undefined, MAX_SAMPLE_RATE);
 
 
 /**
@@ -281,6 +281,7 @@ const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
         if (fileId) {
             let onSuccess = function (fileUrl) {
                 let url = fileUrl.url;
+                let realFs = fileUrl['real-fs'];
                 queryAndHandleAudioGetOrPost({
                     url: url,
                     cacheKey,
