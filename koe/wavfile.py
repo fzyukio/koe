@@ -71,7 +71,7 @@ def _read_riff_chunk(fid):
         raise ValueError("Not a WAV file.")
     fsize = struct.unpack('<I', fid.read(4))[0] + 8
     str2 = fid.read(4)
-    if (str2 != b'WAVE'):
+    if str2 != b'WAVE':
         raise ValueError("Not a WAV file.")
     return fsize
 
@@ -101,7 +101,7 @@ def read_wav_info(file):
         fid = file
     else:
         fid = open(file, 'rb')
-    _read_riff_chunk(fid)
+    fsize = _read_riff_chunk(fid)
 
     # read the next chunk
     chunk_id = fid.read(4)
@@ -121,7 +121,7 @@ def read_wav_info(file):
         dtype = 'float32'
 
     fid.close()
-    return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
+    return fsize, size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
 
 
 def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True, retype=True,
