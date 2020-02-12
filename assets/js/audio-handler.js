@@ -273,8 +273,10 @@ const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
         }
         if (fileId) {
             let onSuccess = function (fileUrl) {
+                let url = fileUrl.url;
+                let realFs = fileUrl['real-fs'];
                 queryAndHandleAudioGetOrPost({
-                    url: fileUrl,
+                    url: url,
                     cacheKey,
                     callback
                 });
