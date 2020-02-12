@@ -338,18 +338,6 @@ def bulk_get_song_sequences(all_songs, extras):
 
     seg_id_to_label = {x: y for x, y in labels}
 
-    extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
-    extra_attr_values_list = ExtraAttrValue.objects \
-        .filter(user__username=viewas, attr__in=extra_attrs, owner_id__in=song_ids) \
-        .values_list('owner_id', 'attr__name', 'value')
-
-    extra_attr_values_lookup = {}
-    for id, attr, value in extra_attr_values_list:
-        if id not in extra_attr_values_lookup:
-            extra_attr_values_lookup[id] = {}
-        extra_attr_dict = extra_attr_values_lookup[id]
-        extra_attr_dict[attr] = value
-
     ids = []
     rows = []
 
@@ -398,10 +386,6 @@ def bulk_get_song_sequences(all_songs, extras):
         row['sequence-ends'] = sequence_ends
         row['sequence-tids'] = sequence_tids
 
-        extra_attr_dict = extra_attr_values_lookup.get(song_id, {})
-        for attr in extra_attr_dict:
-            row[attr] = extra_attr_dict[attr]
-
         ids.append(song_id)
         rows.append(row)
 
@@ -411,6 +395,23 @@ def bulk_get_song_sequences(all_songs, extras):
     _ids, _rows = get_sequence_info_empty_songs(empty_songs)
     ids += _ids
     rows += _rows
+
+    extra_attrs = ExtraAttr.objects.filter(klass=AudioFile.__name__)
+    extra_attr_values_list = ExtraAttrValue.objects\
+        .filter(user__username=viewas, attr__in=extra_attrs, owner_id__in=song_ids)\
+        .values_list('owner_id', 'attr__name', 'value')
+
+    extra_attr_values_lookup = {}
+    for id, attr, value in extra_attr_values_list:
+        if id not in extra_attr_values_lookup:
+            extra_attr_values_lookup[id] = {}
+        extra_attr_dict = extra_attr_values_lookup[id]
+        extra_attr_dict[attr] = value
+
+    for song_id, row in zip(ids, rows):
+        extra_attr_dict = extra_attr_values_lookup.get(song_id, {})
+        for attr in extra_attr_dict:
+            row[attr] = extra_attr_dict[attr]
 
     return ids, rows
 
