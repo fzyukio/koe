@@ -114,7 +114,7 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     with open(wav_name, 'wb') as wav_file:
         wav_file.write(file.read())
 
-    _fs, length = get_wav_info(wav_name)
+    _fs, length, noc = get_wav_info(wav_name, return_noc=True)
 
     # If real_fs is provided, it is absolute -- otherwise it is what we can really read from the file
     if real_fs is None:
@@ -145,7 +145,7 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
 
     if audio_file is None:
         audio_file = AudioFile(name=name, length=length, fs=real_fs, database=database, track=track, start=start,
-                               end=end, fake_fs=fake_fs, added=timezone.now())
+                               end=end, fake_fs=fake_fs, added=timezone.now(), noc=noc)
     else:
         audio_file.start = start
         audio_file.end = end
