@@ -391,22 +391,23 @@ class SimilarityExtrationView(FormView):
             form.add_error('data_matrix', 'Either ordination or data matrix must be chosen, but not both')
             has_error = True
 
-        if dm_id:
-            dm = get_or_error(DataMatrix, dict(id=dm_id))
-            si = SimilarityIndex.objects.filter(dm=dm).first()
-            if si is not None:
-                form.add_error('data_matrix', 'Already extracted')
-                has_error = True
+        if not has_error:
+            if dm_id:
+                dm = get_or_error(DataMatrix, dict(id=dm_id))
+                si = SimilarityIndex.objects.filter(dm=dm).first()
+                if si is not None:
+                    form.add_error('data_matrix', 'Already extracted')
+                    has_error = True
+                else:
+                    si = SimilarityIndex(dm=dm)
             else:
-                si = SimilarityIndex(dm=dm)
-        else:
-            ord = get_or_error(Ordination, dict(id=ord_id))
-            si = SimilarityIndex.objects.filter(ord=ord).first()
-            if si is not None:
-                form.add_error('ordination', 'Already extracted')
-                has_error = True
-            else:
-                si = SimilarityIndex(ord=ord, dm=ord.dm)
+                ord = get_or_error(Ordination, dict(id=ord_id))
+                si = SimilarityIndex.objects.filter(ord=ord).first()
+                if si is not None:
+                    form.add_error('ordination', 'Already extracted')
+                    has_error = True
+                else:
+                    si = SimilarityIndex(ord=ord, dm=ord.dm)
 
         if has_error:
             context = self.get_context_data()
@@ -415,7 +416,6 @@ class SimilarityExtrationView(FormView):
             return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
 
         si.save()
-
         task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__name__, si.id))
         task.save()
         si.task = task
