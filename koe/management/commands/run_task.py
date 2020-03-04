@@ -45,7 +45,7 @@ def run_task(task, use_celery, force, send_email, remove_dead):
                 warning('Task {} is invalid and cannot resume'.format(task.id))
         except FileNotFoundError as e:
             warning('Task {} is invalid and cannot resume'.format(task.id))
-        except:
+        except Exception as e:
             dead = False
             raise
         finally:

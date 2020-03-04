@@ -528,8 +528,10 @@ def _calculate_similarity(sim, runner):
     dm = sim.dm
     ord = sim.ord
 
-    assert dm.task is None or dm.task.is_completed()
-    assert ord is None or ord.task is None or ord.task.is_completed()
+    assert dm.task is None or dm.task.is_completed(), \
+        'Cannot calculate similarity because previous error occurred when extracting features'
+    assert ord is None or ord.task is None or ord.task.is_completed(),\
+        'Cannot calculate similarity because previous error occutred when constructing ordination'
 
     if ord:
         sids_path = ord.get_sids_path()
@@ -562,6 +564,7 @@ def calculate_similarity(task_id, send_email='always', raise_err=False, *args, *
     task = get_or_wait(task_id)
 
     runner = TaskRunner(task, send_email=send_email)
+    sim = None
 
     try:
         runner.preparing()
@@ -575,6 +578,8 @@ def calculate_similarity(task_id, send_email='always', raise_err=False, *args, *
 
         runner.complete()
     except Exception as e:
+        if sim is not None:
+            sim.delete()
         if raise_err:
             raise e
         runner.error(e)

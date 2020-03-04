@@ -481,12 +481,13 @@ def extra_syllables_context(request, context):
     database = context['current_database']
     user = request.user
     if database:
+        similarities = SimilarityIndex.objects.filter(Q(task=None) | Q(task__stage=TaskProgressStage.COMPLETED))
         if isinstance(database, Database):
-            similarities = SimilarityIndex.objects.filter(Q(dm__database=database) | Q(ord__dm__database=database))
+            similarities = similarities.filter(Q(dm__database=database) | Q(ord__dm__database=database))
             cur_sim_val = ExtraAttrValue.objects\
                 .filter(attr=settings.ATTRS.user.database_sim_attr, user=user, owner_id=database.id).first()
         else:
-            similarities = SimilarityIndex.objects.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
+            similarities = similarities.filter(Q(dm__tmpdb=database) | Q(ord__dm__tmpdb=database))
             cur_sim_val = ExtraAttrValue.objects\
                 .filter(attr=settings.ATTRS.user.tmpdb_sim_attr, user=user, owner_id=database.id).first()
 
