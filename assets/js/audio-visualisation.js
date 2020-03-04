@@ -397,7 +397,7 @@ export class Visualiser {
             }
             else {
                 let endpoints = d3.event.selection.map(self.spectXScale.invert);
-                let start = Math.floor(endpoints[0]);
+                let start = Math.floor(Math.max(0, endpoints[0]));
                 let end = Math.ceil(endpoints[1]);
 
                 debug('start= ' + start + ' end=' + end);
