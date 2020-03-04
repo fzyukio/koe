@@ -392,7 +392,7 @@ def copy_audio_files(request):
             'There\'s a mismatch between the song IDs you provided and the actual songs in the database')
 
     song_values = source_audio_files \
-        .values_list('id', 'fs', 'fake_fs', 'length', 'name', 'track', 'individual', 'quality', 'original')
+        .values_list('id', 'fs', 'fake_fs', 'length', 'name', 'track', 'individual', 'quality', 'original', 'noc')
     old_song_id_to_name = {x[0]: x[3] for x in song_values}
     old_song_names = old_song_id_to_name.values()
     old_song_ids = old_song_id_to_name.keys()
@@ -407,7 +407,7 @@ def copy_audio_files(request):
     songs_old_id_to_new_id = {}
 
     # Create Song objects one by one because they can't be bulk created
-    for old_id, fs, fake_fs, length, name, track, individual, quality, original in song_values:
+    for old_id, fs, fake_fs, length, name, track, individual, quality, original, noc in song_values:
         # Make sure that we always point to the true original. E.g if AudioFile #2 is a copy of #1 and someone makes
         # a copy of AudioFile #2, the new AudioFile must still reference #1 as its original
 
@@ -415,7 +415,7 @@ def copy_audio_files(request):
 
         audio_file = AudioFile.objects.create(fs=fs, fake_fs=fake_fs, length=length, name=name, track_id=track,
                                               individual_id=individual, quality=quality, original_id=original_id,
-                                              database=target_database, added=timezone.now())
+                                              database=target_database, added=timezone.now(), noc=noc)
 
         songs_old_id_to_new_id[old_id] = audio_file.id
 
