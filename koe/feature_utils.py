@@ -485,6 +485,11 @@ def _construct_ordination(ord, runner):
     sids = bytes_to_ndarray(dm_sids_path, np.int32)
     dm_data = get_rawdata_from_binary(dm_bytes_path, len(sids))
 
+    dm_dims = dm_data.shape[1]
+
+    assert dm_data.shape[1] >= ndims, \
+        'Data has only {} dimension(s), not enough to construct a {}-dimensional ordination'.format(dm_dims, ndims)
+
     data = zscore(dm_data)
     data[np.where(np.isnan(data))] = 0
     data[np.where(np.isinf(data))] = 0

@@ -37,8 +37,7 @@ def run_task(task, use_celery, force, send_email, remove_dead):
                 warning('Task {} is invalid and cannot resume'.format(task.id))
         except AssertionError as e:
             errmsg = str(e)
-            if errmsg == 'Cannot construct ordination because its DataMatrix failed':
-                warning('Task {} is invalid and cannot resume'.format(task.id))
+            warning('Task {} is invalid and cannot resume. Error: {}'.format(task.id, errmsg))
         except ValueError as e:
             errmsg = str(e)
             if 'must be between 0 and min' in errmsg:
