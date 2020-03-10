@@ -2,6 +2,8 @@ import hashlib
 from abc import abstractmethod
 from logging import warning
 
+import numpy as np
+
 from koe.model_utils import get_labels_by_sids
 
 
@@ -106,4 +108,7 @@ def get_syllable_labels(annotator, label_level, sids, on_no_label='warning'):
                 exit(0)
         elif on_no_label == 'error':
             raise Exception('Syllables with no labels found')
+        elif on_no_label == 'set_blank':
+            none_pos = np.where(np.isnan(labels.astype(float)))
+            labels[none_pos] = ''
     return labels

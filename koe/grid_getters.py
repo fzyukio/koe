@@ -740,7 +740,7 @@ def get_syntactically_similar_pairs(request):
 
     sids, tids = get_sids_tids(database)
 
-    label_arr = get_syllable_labels(user, granularity, sids, on_no_label='none')
+    label_arr = get_syllable_labels(user, granularity, sids, on_no_label='set_blank')
     cls_labels, syl_label_enum_arr = np.unique(label_arr, return_inverse=True)
 
     enum2label = {enum: label for enum, label in enumerate(cls_labels)}
