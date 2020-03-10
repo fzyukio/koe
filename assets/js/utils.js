@@ -299,6 +299,16 @@ export const isEmpty = function (str) {
     return str === undefined || str === null || str === '';
 };
 
+/**
+ * If an invalid date e.g. 2020-01-33 is used to construct a Date object, what we get is an Invalid Date instance
+ * Use this to check
+ * @param date
+ * @returns {boolean}
+ */
+export const isValidDate = function(date) {
+  return !isNaN(date.getTime());
+};
+
 
 export const extractHeader = function (columns, permission, importKeys) {
     let columnHeadings = [];

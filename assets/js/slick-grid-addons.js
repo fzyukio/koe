@@ -3,7 +3,7 @@ require('slickgrid/slick.core');
 require('slickgrid/slick.editors');
 require('slickgrid/slick.formatters');
 
-import {isNull, getValue} from './utils';
+import {isNull, getValue, isEmpty, isValidDate} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 
 export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
@@ -288,109 +288,6 @@ const FloatEditorRewritten = function (args) {
 FloatEditorRewritten.DefaultDecimalPlaces = null;
 FloatEditorRewritten.AllowEmptyValue = false;
 
-
-/**
- * Rewrite this because the default DateEditor doesn't work very well with bootstrap.
- * Essentially we're replacing Jquery UI's datepicker by bootstrap-datepicker
- * @source: http://www.eyecon.ro/bootstrap-datepicker/
- * @readthedoc: https://bootstrap-datepicker.readthedocs.io/en/stable/options.html
- *
- * @constructor
- */
-const DateEditorRewritten = function (args) {
-    let inputElement;
-    let defaultValue;
-    let calendarOpen = false;
-
-    this.init = function () {
-        let defaultDate = args.item[args.column.field];
-
-        inputElement = $('<input type="text" class="editor-text" value="' + defaultDate + '"/>');
-        inputElement.appendTo(args.container);
-
-        if (defaultDate) {
-            let defaultDateParts = defaultDate.split('-');
-            defaultDate = {
-                year: parseInt(defaultDateParts[0]),
-                month: parseInt(defaultDateParts[1]),
-                day: parseInt(defaultDateParts[2])
-            }
-        }
-
-        inputElement.bootstrapDP({
-            format: 'yyyy-mm-dd',
-            autoclose: true,
-            todayHighlight: true,
-            todayBtn: true,
-            defaultViewDate: defaultDate,
-            templates: {
-                leftArrow: '<i class="fa fa-arrow-circle-left"></i>',
-                rightArrow: '<i class="fa fa-arrow-circle-right"></i>'
-            }
-        });
-        calendarOpen = true;
-    };
-
-    this.destroy = function () {
-        inputElement.bootstrapDP('destroy');
-        inputElement.remove();
-        calendarOpen = false;
-    };
-
-    this.show = function () {
-        if (!calendarOpen) {
-            inputElement.bootstrapDP('show');
-            calendarOpen = true;
-        }
-    };
-
-    this.hide = function () {
-        if (calendarOpen) {
-            inputElement.bootstrapDP('hide');
-            calendarOpen = false;
-        }
-    };
-
-    this.focus = function () {
-        inputElement.focus();
-    };
-
-    this.loadValue = function (item) {
-        defaultValue = item[args.column.field];
-        inputElement.val(defaultValue);
-        inputElement[0].defaultValue = defaultValue;
-        inputElement.select();
-    };
-
-    this.serializeValue = function () {
-        return inputElement.val();
-    };
-
-    this.applyValue = function (item, state) {
-        item[args.column.field] = state;
-    };
-
-    this.isValueChanged = function () {
-        return (!(inputElement.val() === '' && isNull(defaultValue))) && (inputElement.val() !== defaultValue);
-    };
-
-    this.validate = function () {
-        if (args.column.validator) {
-            let validationResults = args.column.validator(inputElement.val());
-            if (!validationResults.valid) {
-                return validationResults;
-            }
-        }
-
-        return {
-            valid: true,
-            msg: null
-        };
-    };
-
-    this.init();
-};
-
 /**
  * A validator against zero length text
  */
@@ -409,6 +306,10 @@ const NonBlankValidator = function (value) {
     }
 };
 
+
+const validDateRegEx = /^\d{4}-\d{2}-\d{2}$/;
+
+
 /**
  * Validate date against yyyy-mm-dd
  * @constructor
@@ -417,16 +318,25 @@ const NonBlankValidator = function (value) {
  * @param dateString
  */
 export const IsoDateValidator = function (dateString) {
-    let regEx = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateString.match(regEx)) return {
-        valid: false,
-        msg: 'The format must be like 2016-01-20 (YYYY-MM-DD)'
-    };
-    let d;
-    if (!((d = new Date(dateString)) || 0)) return {
-        valid: false,
-        msg: 'This date is invalid'
-    };
+    if (isEmpty(dateString)) {
+        return {
+            valid: true,
+            msg: null
+        };
+    }
+    if (!dateString.match(validDateRegEx)) {
+        return {
+            valid: false,
+            msg: 'The format must be like 2016-01-20 (YYYY-MM-DD)'
+        };
+    }
+    let d = new Date(dateString);
+    if (! isValidDate(d)) {
+        return {
+            valid: false,
+            msg: 'This date is invalid'
+        };
+    }
     if (d.toISOString().slice(0, 10) !== dateString) {
         return {
             valid: false,
@@ -515,7 +425,7 @@ export const SLickValidator = {
  * Make a copy of Slick.Editor and then add new editors
  */
 export const SlickEditors = $.extend({}, Slick.Editors);
-SlickEditors.Date = DateEditorRewritten;
+SlickEditors.Date = SlickEditors.Text;
 SlickEditors.Float = FloatEditorRewritten;
 SlickEditors.Select = SelectizeEditor;
 SlickEditors.Species = SpeciesEditor;
