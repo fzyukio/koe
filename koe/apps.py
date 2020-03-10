@@ -55,9 +55,10 @@ class KoeConfig(AppConfig):
         """
         run_main = os.environ.get('RUN_MAIN', None) == 'true'
         run_command = os.environ.get('RUN_COMMAND', None) == 'true'
+        run_celery = getattr(settings, 'IS_CELERY', False)
 
         in_production = not settings.DEBUG
-        if in_production or run_main or run_command:
+        if in_production or run_main or run_command or run_celery:
             is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
 
             if not is_importing_fixture:

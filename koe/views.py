@@ -178,6 +178,44 @@ def get_incomplete_tasks(target_class):
     return dms2tasks
 
 
+def recreate_associated_ordination_tasks(dmid, user):
+    """
+    This is to facilitate datamatrix recreation: if the datamatrix is to be created, it will invalidate all associated
+     ordinations. They need to be rerun as well.
+    :param dmid: id of the datamatrix
+    :return: a list of task ids
+    """
+    tasks = []
+    for ord in Ordination.objects.filter(dm=dmid):
+        task = ord.task
+        if task is None or task.user != user:
+            task = Task(user=user, target='{}:{}'.format(Ordination.__name__, ord.id))
+            task.save()
+            ord.task = task
+            ord.save()
+        tasks.append(task)
+    return tasks
+
+
+def recreate_associated_similarity_tasks(dmid, user):
+    """
+    This is to facilitate datamatrix recreation: if the datamatrix is to be created, it will invalidate all associated
+     similarity indices.
+    :param dmid: id of the datamatrix
+    :return: a list of task ids
+    """
+    tasks = []
+    for si in SimilarityIndex.objects.filter(dm=dmid):
+        task = si.task
+        if task is None or task.user != user:
+            task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__name__, si.id))
+            task.save()
+            si.task = task
+            si.save()
+        tasks.append(task)
+    return tasks
+
+
 class FeatureExtrationView(FormView):
     form_class = FeatureExtrationForm
     page_name = 'feature-extraction'
@@ -217,9 +255,11 @@ class FeatureExtrationView(FormView):
         dmid = form_data.get('data_matrix', None)
 
         has_error = False
+        is_recreating = False
 
         if dmid:
             dm = get_or_error(DataMatrix, dict(id=dmid))
+            is_recreating = True
 
         else:
             if 'database' in post_data:
@@ -258,6 +298,14 @@ class FeatureExtrationView(FormView):
         dm.save()
 
         delay_in_production(extract_database_measurements, task.id)
+        if is_recreating:
+            ord_tasks = recreate_associated_ordination_tasks(dmid, user)
+            for task in ord_tasks:
+                delay_in_production(construct_ordination, task.id)
+
+            sim_tasks = recreate_associated_similarity_tasks(dmid, user)
+            for task in sim_tasks:
+                delay_in_production(calculate_similarity, task.id)
 
         context = self.get_context_data()
         context['task'] = task

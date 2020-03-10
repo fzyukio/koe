@@ -103,7 +103,8 @@ def get_ordination_metadata(request, ord_id, viewas):
         metadata, headers = extract_tensor_metadata(sids, viewas)
     except KeyError as e:
         err_message = 'Syllable #{} has been deleted from the database since the creation of this ordination and ' \
-                      'thus renders it invalid. Please choose another one.'.format(str(e))
+                      'thus renders it invalid. Please choose another one or rerun the datamatrix named "{}"'\
+                      .format(str(e), ord.dm)
         raise CustomAssertionError(err_message)
 
     content = write_metadata(metadata, sids, headers)
