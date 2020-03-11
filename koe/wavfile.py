@@ -114,7 +114,12 @@ def read_wav_info(file):
     _read_riff_chunk(fid)
 
     # read the next chunk
-    fid.read(4)
+    chunk_id = fid.read(4)
+    while chunk_id != b'fmt ':
+        warnings.warn('Skipping {}'.format(chunk_id))
+        _skip_unknown_chunk(fid)
+        chunk_id = fid.read(4)
+
     size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
     if bits == 8 or bits == 24:
         dtype = 'u1'
@@ -130,7 +135,7 @@ def read_wav_info(file):
     return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
 
 
-def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True):
+def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True, retype=True):
     bits = fmt_info['bits']
     ba = fmt_info['ba']
     rate = fmt_info['rate']
@@ -168,45 +173,48 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     zero_pad = requested_end - end
 
     chunk_size = end - beg
-    data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+    if retype:
+        data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+        fid.close()
 
-    fid.close()
+        if bits == 24:
+            a = numpy.empty((len(data) // 3, 4), dtype='u1')
+            a[:, :3] = data.reshape((-1, 3))
+            a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
+            data = a.view('<i4').reshape(a.shape[:-1])
 
-    if bits == 24:
-        a = numpy.empty((len(data) // 3, 4), dtype='u1')
-        a[:, :3] = data.reshape((-1, 3))
-        a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
-        data = a.view('<i4').reshape(a.shape[:-1])
+        if noc > 1:
+            data = data.reshape(-1, noc)
 
-    if noc > 1:
-        data = data.reshape(-1, noc)
+            if mono:
+                data = data[:, 0]
 
-        if mono:
-            data = data[:, 0]
+        if zero_pad:
+            if len(data.shape) == 1:
+                zeros = numpy.zeros((zero_pad,), dtype=data.dtype)
+            else:
+                zeros = numpy.zeros((zero_pad, data.shape[1]), dtype=data.dtype)
+            data = numpy.concatenate((data, zeros), axis=0)
 
-    if zero_pad:
-        if len(data.shape) == 1:
-            zeros = numpy.zeros((zero_pad,), dtype=data.dtype)
+        if normalised:
+            normfactor = 1.0 / (2 ** (bits - 1))
+            data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
         else:
-            zeros = numpy.zeros((zero_pad, data.shape[1]), dtype=data.dtype)
-        data = numpy.concatenate((data, zeros), axis=0)
-
-    if normalised:
-        normfactor = 1.0 / (2 ** (bits - 1))
-        data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
+            data = numpy.ascontiguousarray(data, dtype=data.dtype)
     else:
-        data = numpy.ascontiguousarray(data, dtype=data.dtype)
-
+        data = numpy.fromfile(fid, dtype=numpy.ubyte, count=chunk_size)
     return data
 
 
-def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, return_fs=False):
+def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, return_fs=False, retype=True):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
     :param normalised: If true, return float32 array, otherwise return the raw ubyte array
     :param file: file name
     :param beg_ms: begin of the segment in milliseconds
     :param end_ms: end of the segment in milliseconds
+    :param retype: [True] to return data as numpy array that is appropriately reshaped and retyped.
+                   False to return raw unsigned byte data.
     :return: a np array
     """
     if hasattr(file, 'read'):
@@ -233,7 +241,7 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
         elif chunk_id == b'data':
             data_size = struct.unpack('<i', fid.read(4))[0]
             if fmt_info is not None:
-                retval = read_data(fid, None, fmt_info, data_size, beg_ms, end_ms, mono, normalised)
+                retval = read_data(fid, None, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype)
                 break
             else:
                 data_cursor = fid.tell()
@@ -249,7 +257,7 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
     assert data_size is not None, 'Unable to read DATA block from file ' + fid.name
 
     if retval is None:
-        retval = read_data(fid, data_cursor, fmt_info, data_size, beg_ms, end_ms, mono, normalised)
+        retval = read_data(fid, data_cursor, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype)
 
     if return_fs:
         retval = (retval, rate)

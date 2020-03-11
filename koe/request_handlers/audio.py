@@ -1,6 +1,7 @@
 import io
 import json
 import wave
+import numpy as np
 
 import pydub
 from coverage.annotate import os
@@ -15,7 +16,7 @@ from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
 from koe.utils import audio_path
-from koe.wavfile import get_wav_info
+from koe.wavfile import get_wav_info, read_segment, read_wav_info, write, write_24b
 
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
@@ -208,18 +209,18 @@ def change_fs_without_resampling(wav_file, new_fs, new_name):
     :param new_fs: the new sample rate
     :return: the path of the faked wav file
     """
-    spf = wave.open(wav_file, 'rb')
-    num_channels = spf.getnchannels()
-    swidth = spf.getsampwidth()
-    signal = spf.readframes(-1)
-    spf.close()
+    size, comp, num_channels, rate, sbytes, block_align, bitrate, bytes, dtype = read_wav_info(wav_file)
+    ubyte_data = read_segment(wav_file, 0, None, normalised=False, retype=False)
+    byte_length = ubyte_data.size
+    nframes_per_channel = byte_length // block_align
+    byte_per_frame = bitrate // 8
 
-    wf = wave.open(new_name, 'wb')
-    wf.setnchannels(num_channels)
-    wf.setsampwidth(swidth)
-    wf.setframerate(new_fs)
-    wf.writeframes(signal)
-    wf.close()
+    uint8_data = ubyte_data.reshape((nframes_per_channel, num_channels, byte_per_frame)).astype(np.uint8)
+
+    if bitrate == 24:
+        write_24b(new_name, new_fs, uint8_data)
+    else:
+        write(new_name, new_fs, uint8_data, bitrate=bitrate)
 
 
 def import_audio_file(request):
