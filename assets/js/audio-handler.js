@@ -131,13 +131,18 @@ export const playAudioDataArray = function (sig, fs, playAudioArgs) {
 
 /**
  * Convert Float32Array into audio object
- * @param sig a Float32Array object
+ * @param sigArr a multi-channel signal in the form of a list, each list element is one channel in the form of a
+ *               Float32Array object
  * @param fs sampling rate
  * @return Blob audio blob
  */
-export const createAudioFromDataArray = function (sig, fs) {
-    audioBuffer = audioContext.createBuffer(1, sig.length, fs);
-    audioBuffer.getChannelData(0).set(sig);
+export const createAudioFromDataArray = function (sigArr, fs) {
+    let numChannels = sigArr.length;
+    let sigLength = sigArr[0].length;
+    audioBuffer = audioContext.createBuffer(numChannels, sigLength, fs);
+    $.each(sigArr, function (i, sig) {
+        audioBuffer.getChannelData(i).set(sig);
+    });
     let wav = bufferToWav(audioBuffer);
     return new window.Blob([new DataView(wav)], {type: 'audio/wav'});
 };
