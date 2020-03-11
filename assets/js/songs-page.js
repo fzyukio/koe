@@ -474,7 +474,7 @@ function setupDropZone() {
         url: getUrl('send-request', 'koe/import-audio-files'),
         maxFilesize,
         addRemoveLinks: false,
-        acceptedFiles: 'audio/wav',
+        acceptedFiles: 'audio/x-wav, audio/vnd.wave,audio/wav,audio/wave,audio/x-pn-wav',
         uploadMultiple: true,
         parallelUploads: 8,
         maxFiles,
