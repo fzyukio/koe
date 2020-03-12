@@ -330,10 +330,9 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
         noc = 1
     else:
         noc = data.shape[1]
-    bits = data.dtype.itemsize * 8 if bitrate != 24 else 24
-    sbytes = rate * (bits // 8) * noc
-    ba = noc * (bits // 8)
-    fid.write(struct.pack('<ihHIIHH', 16, 1, noc, rate, sbytes, ba, bits))
+    sbytes = rate * (bitrate // 8) * noc
+    ba = noc * (bitrate // 8)
+    fid.write(struct.pack('<ihHIIHH', 16, 1, noc, rate, sbytes, ba, bitrate))
 
     fid.write(b'data')
     fid.write(struct.pack('<i', data.nbytes))
