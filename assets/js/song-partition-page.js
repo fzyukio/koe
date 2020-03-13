@@ -293,7 +293,7 @@ const saveSongsToDb = function () {
         if (fsInBuffer > MAX_SAMPLE_RATE) {
             fsInBuffer = MAX_SAMPLE_RATE;
         }
-        let blob = createAudioFromDataArray(subSig, fsInBuffer);
+        let blob = createAudioFromDataArray([subSig], fsInBuffer);
 
         let formData = new FormData();
         formData.append('file', blob, item.name);
