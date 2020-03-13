@@ -461,7 +461,7 @@ let dropzone;
  */
 function setupDropZone() {
     let maxFiles = 100;
-    let maxFilesize = 50;
+    let maxFilesize = 1024;
 
     let dropzoneSelector = '#songs-upload';
 
@@ -471,12 +471,22 @@ function setupDropZone() {
     previewNode.parentNode.removeChild(previewNode);
 
     dropzone = new Dropzone(dropzoneSelector, {
-        url: getUrl('send-request', 'koe/import-audio-files'),
+        url: getUrl('send-request', 'koe/import-audio-chunk'),
         maxFilesize,
+        parallelUploads: 1,
+
+        chunking: true,
+        forceChunking: true,
+
+        // 1 MB
+        chunkSize: 1000000,
+        retryChunks: true,
+        retryChunksLimit: 3,
+
         addRemoveLinks: false,
         acceptedFiles: 'audio/x-wav, audio/vnd.wave,audio/wav,audio/wave,audio/x-pn-wav',
-        uploadMultiple: true,
-        parallelUploads: 8,
+        uploadMultiple: false,
+        // parallelUploads: 8,
         maxFiles,
         method: 'post',
         dictDefaultMessage: `Drag & drop or click to upload songs (WAV only, up to ${maxFiles} at once)`,
@@ -489,6 +499,27 @@ function setupDropZone() {
             return `File ${file.name} already exists in the upload list`;
         },
         preventDuplicates: true,
+
+        chunksUploaded(file, done) {
+            postRequest({
+                requestSlug: 'koe/merge-audio-chunks',
+                data: {
+                    name: file.name,
+                    database: databaseId,
+                    'max-fs': MAX_SAMPLE_RATE,
+                    chunkCount: file.upload.totalChunkCount
+                },
+                onSuccess(rows) {
+                    let lastRow = rows[rows.length - 1];
+                    grid.appendRows(rows);
+                    grid.mainGrid.gotoCell(lastRow.id, 0);
+                    grid.mainGrid.scrollCellIntoView(lastRow.id, 0);
+                    dropzone.removeFile(file);
+                    done();
+                }
+            });
+        },
+
         init () {
             let self = this;
 
@@ -513,27 +544,38 @@ function setupDropZone() {
                     clashAlert.show();
                 }
             });
+            // self.on('queuecomplete', function(file, response) {
+            //
+            // });
+        },
 
-            self.on('successmultiple', function(file, response) {
-                let rows = JSON.parse(response).message;
-                let lastRow = rows[rows.length - 1];
-                grid.appendRows(rows);
-                grid.mainGrid.gotoCell(lastRow.id, 0);
-                grid.mainGrid.scrollCellIntoView(lastRow.id, 0);
-                self.removeAllFiles(true);
-            });
-        }
+
+        params(files, xhr, chunk) {
+            if (chunk) {
+                return {
+                    // dzUuid : chunk.file.upload.uuid,
+                    dzChunkIndex: chunk.index,
+                    // dzTotalFileSize : chunk.file.size,
+                    // dzCurrentChunkSize : chunk.dataBlock.data.size,
+                    dzTotalChunkCount: chunk.file.upload.totalChunkCount,
+                    // dzChunkByteOffset : chunk.index * this.options.chunkSize,
+                    // dzChunkSize : this.options.chunkSize,
+                    dzFilename: chunk.file.name
+                };
+            }
+            return undefined;
+        },
     });
 
-    uploadSongsModal.find('.start').click(function() {
+    uploadSongsModal.find('.start').click(function () {
         dropzone.enqueueFiles(dropzone.getFilesWithStatus(Dropzone.ADDED));
     });
 
-    uploadSongsModal.find('.removel-all').click(function() {
+    uploadSongsModal.find('.removel-all').click(function () {
         dropzone.removeAllFiles(true);
     });
 
-    uploadSongsModal.find('.cancel').click(function() {
+    uploadSongsModal.find('.cancel').click(function () {
         uploadSongsModal.modal('hide');
     });
 }
@@ -551,7 +593,7 @@ function setupSongsUpload() {
 }
 
 
-export const preRun = function() {
+export const preRun = function () {
     initSlider();
 
     if (isNull(database) && isNull(tmpdb)) {

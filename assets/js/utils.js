@@ -305,8 +305,8 @@ export const isEmpty = function (str) {
  * @param date
  * @returns {boolean}
  */
-export const isValidDate = function(date) {
-  return !isNaN(date.getTime());
+export const isValidDate = function (date) {
+    return !isNaN(date.getTime());
 };
 
 

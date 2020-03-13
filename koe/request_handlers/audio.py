@@ -1,10 +1,10 @@
+import os
 import io
 import json
-import wave
-import numpy as np
+from io import BufferedWriter
 
+import numpy as np
 import pydub
-from coverage.annotate import os
 from django.conf import settings
 from django.core.files import File
 from django.http import HttpResponse
@@ -17,13 +17,12 @@ from koe.model_utils import assert_permission, get_or_error
 from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
 from koe.utils import audio_path
 from koe.wavfile import get_wav_info, read_segment, read_wav_info, write, write_24b
-
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists, data_path
 
-__all__ = ['get_segment_audio_data', 'import_audio_files', 'get_audio_file_url', 'import_audio_file',
-           'get_audio_files_urls']
+__all__ = ['get_segment_audio_data', 'import_audio_chunk', 'get_audio_file_url', 'import_audio_file',
+           'get_audio_files_urls', 'merge_audio_chunks']
 
 
 def _match_target_amplitude(sound, loudness=-10):
@@ -94,26 +93,35 @@ def get_segment_audio_data(request):
 def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_file=None, track=None, start=None,
                                    end=None):
 
-    name = file.name
-    if name.lower().endswith('.wav'):
-        name = name[:-4]
+    file_already_exists = False
+    if isinstance(file, BufferedWriter):
+        file_already_exists = True
+        name_ext = os.path.basename(file.name)
+    else:
+        name_ext = file.name
+
+    if name_ext.lower().endswith('.wav'):
+        name_no_ext = name_ext[:-4]
+    else:
+        name_no_ext = name_ext
 
     # Need a unique name (database-wide) for new file
     if audio_file is None:
-        is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
+        is_unique = not AudioFile.objects.filter(database=database, name=name_no_ext).exists()
         if not is_unique:
-            raise CustomAssertionError('File {} already exists'.format(name))
-    elif audio_file.name != name:
+            raise CustomAssertionError('File {} already exists'.format(name_no_ext))
+    elif audio_file.name != name_no_ext:
         raise CustomAssertionError('Impossible! File name in your table and in the database don\'t match')
 
-    wav_name = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name))
+    wav_name = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name_no_ext))
     name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
-                                '{}.{}'.format(name, settings.AUDIO_COMPRESSED_FORMAT))
+                                '{}.{}'.format(name_no_ext, settings.AUDIO_COMPRESSED_FORMAT))
 
     fake_wav_name = wav_name + '.bak'
 
-    with open(wav_name, 'wb') as wav_file:
-        wav_file.write(file.read())
+    if not file_already_exists:
+        with open(wav_name, 'wb') as wav_file:
+            wav_file.write(file.read())
 
     _fs, length, noc = get_wav_info(wav_name, return_noc=True)
 
@@ -145,7 +153,7 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
 
     if audio_file is None:
-        audio_file = AudioFile(name=name, length=length, fs=real_fs, database=database, track=track, start=start,
+        audio_file = AudioFile(name=name_no_ext, length=length, fs=real_fs, database=database, track=track, start=start,
                                end=end, fake_fs=fake_fs, added=timezone.now(), noc=noc)
     else:
         audio_file.start = start
@@ -157,48 +165,75 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     return audio_file
 
 
-def import_audio_files(request):
+def import_audio_chunk(request):
     """
-    Store uploaded files (only wav is accepted)
-    :param request: must contain a list of files and the id of the database to be stored against
+    To facilitate sending big files, Dropzone allows uploading by chunk
+    Each chunk is uploaded in one request. This function will save this chunk to the database
+    by using the chunk's index as enumeration appended to the file's name
+    :param request:
     :return:
     """
     user = request.user
-    files = request.FILES.values()
+    params = request.POST
 
     database_id = get_or_error(request.POST, 'database')
     database = get_or_error(Database, dict(id=database_id))
-    max_fs = int(request.POST.get('max-fs', 0))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
-    added_files = []
-    not_importable_filenames = []
-    importable_files = []
+    file = File(file=request.FILES['file'])
+    name = params['dzFilename']
+    chunk_index = int(params['dzChunkIndex'][0])
 
-    for f in files:
-        file = File(file=f)
-        name = file.name
-        if name.lower().endswith('.wav'):
-            name = name[:-4]
+    if name.lower().endswith('.wav'):
+        name = name[:-4]
 
+    wav_file_path = data_path('audio/wav/{}'.format(database_id), name + '.wav')
+
+    if chunk_index == 0:
         is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
 
         if not is_unique:
-            not_importable_filenames.append(name)
-        else:
-            importable_files.append(file)
+            raise CustomAssertionError('Error: file {} already exists in this database'.format(name))
 
-    if len(not_importable_filenames) > 0:
-        raise CustomAssertionError('Error: No files were imported because the following files already exist: {}'
-                                   .format(', '.join(not_importable_filenames)))
-    else:
-        for file in importable_files:
-            audio_file = _import_and_convert_audio_file(database, file, max_fs)
-            added_files.append(audio_file)
+    chunk_file_path = wav_file_path + '__' + str(chunk_index)
+    with open(chunk_file_path, 'wb') as f:
+        f.write(file.read())
 
-        added_files = AudioFile.objects.filter(database=database, name__in=[x.name for x in added_files])
-        _, rows = get_sequence_info_empty_songs(added_files)
-        return rows
+
+def merge_audio_chunks(request):
+    """
+    This action should be called after the last audio chunk is uploaded.
+    It will merge all the saved chunks (foo.wav__1, foo.wav__2, etc...) into foo.wav
+    And import to the database
+    :param request:
+    :return:
+    """
+    user = request.user
+    params = request.POST
+    name = params['name']
+    chunk_count = int(params['chunkCount'])
+    max_fs = int(request.POST.get('max-fs', 0))
+
+    if name.lower().endswith('.wav'):
+        name = name[:-4]
+
+    database_id = get_or_error(request.POST, 'database')
+    database = get_or_error(Database, dict(id=database_id))
+    assert_permission(user, database, DatabasePermission.ADD_FILES)
+
+    wav_file_path = data_path('audio/wav/{}'.format(database_id), name + '.wav')
+
+    with open(wav_file_path, 'wb') as combined_file:
+        for i in range(chunk_count):
+            chunk_file_path = wav_file_path + '__' + str(i)
+            with open(chunk_file_path, 'rb') as chunk_file:
+                combined_file.write(chunk_file.read())
+
+    audio_file = _import_and_convert_audio_file(database, combined_file, max_fs)
+
+    added_files = AudioFile.objects.filter(id=audio_file.id)
+    _, rows = get_sequence_info_empty_songs(added_files)
+    return rows
 
 
 def change_fs_without_resampling(wav_file, new_fs, new_name):

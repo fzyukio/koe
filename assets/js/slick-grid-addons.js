@@ -331,7 +331,7 @@ export const IsoDateValidator = function (dateString) {
         };
     }
     let d = new Date(dateString);
-    if (! isValidDate(d)) {
+    if (!isValidDate(d)) {
         return {
             valid: false,
             msg: 'This date is invalid'
