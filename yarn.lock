@@ -2204,9 +2204,10 @@ draw-svg-path@^1.0.0:
     abs-svg-path "~0.1.1"
     normalize-svg-path "~0.1.0"
 
-dropzone@5.5.1:
-  version "5.5.1"
-  resolved "https://registry.yarnpkg.com/dropzone/-/dropzone-5.5.1.tgz#06e2f513e61d6aa363d4b556f18574f47cf7ba26"
+dropzone@5.7.0:
+  version "5.7.0"
+  resolved "https://registry.yarnpkg.com/dropzone/-/dropzone-5.7.0.tgz#8d1007f3ebcc6e6d64096823f854d898f7564ef2"
+  integrity sha512-kOltiZXH5cO/72I22JjE+w6BoT6uaVLfWdFMsi1PMKFkU6BZWpqRwjnsRm0o6ANGTBuZar5Piu7m/CbKqRPiYg==
 
 dtype@^2.0.0:
   version "2.0.0"
