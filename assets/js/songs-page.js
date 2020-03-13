@@ -547,6 +547,9 @@ function setupDropZone() {
             // self.on('queuecomplete', function(file, response) {
             //
             // });
+            self.on('error', function (file, message, xhr) {
+                console.log(message);
+            })
         },
 
 

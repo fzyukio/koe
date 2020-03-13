@@ -43,9 +43,6 @@ import numpy
 class WavFileWarning(UserWarning):
     pass
 
-
-_ieee = False
-
 SEEK_ABSOLUTE = 0
 SEEK_RELATIVE = 1
 
@@ -57,8 +54,6 @@ def _read_fmt_chunk(fid):
     size, comp, noc, rate, sbytes, ba, bits = res
     if comp != 1 or size > 16:
         if comp == 3:
-            global _ieee
-            _ieee = True
             warnings.warn("IEEE format not supported", WavFileWarning)
         else:
             warnings.warn("Unfamiliar format bytes", WavFileWarning)
@@ -128,7 +123,7 @@ def read_wav_info(file):
         bytes = bits // 8
         dtype = '<i%d' % bytes
 
-    if bits == 32 and _ieee:
+    if bits == 32 and comp == 3:
         dtype = 'float32'
 
     fid.close()
@@ -140,6 +135,7 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     ba = fmt_info['ba']
     rate = fmt_info['rate']
     noc = fmt_info['noc']
+    comp = fmt_info['comp']
 
     if data_cursor:
         fid.seek(data_cursor, SEEK_ABSOLUTE)
@@ -150,7 +146,7 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
         bytes = bits // 8
         dtype = '<i%d' % bytes
 
-    if bits == 32 and _ieee:
+    if bits == 32 and comp == 3:
         dtype = 'float32'
 
     beg = int(beg_ms * rate * ba / 1000)
@@ -238,6 +234,7 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
             fmt_info['ba'] = ba
             fmt_info['bits'] = bits
             fmt_info['noc'] = noc
+            fmt_info['comp'] = comp
         elif chunk_id == b'data':
             data_size = struct.unpack('<i', fid.read(4))[0]
             if fmt_info is not None:

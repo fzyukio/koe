@@ -2,6 +2,7 @@ import os
 import io
 import json
 from io import BufferedWriter
+from logging import warning
 
 import numpy as np
 import pydub
@@ -228,6 +229,12 @@ def merge_audio_chunks(request):
             chunk_file_path = wav_file_path + '__' + str(i)
             with open(chunk_file_path, 'rb') as chunk_file:
                 combined_file.write(chunk_file.read())
+
+    size, comp, num_channels, fs, sbytes, block_align, bitrate, bytes, dtype = read_wav_info(wav_file_path)
+    if comp == 3:
+        warning('File is IEEE format. Convert to standard WAV')
+        audio = pydub.AudioSegment.from_file(wav_file_path)
+        audio.export(wav_file_path, format='wav')
 
     audio_file = _import_and_convert_audio_file(database, combined_file, max_fs)
 
