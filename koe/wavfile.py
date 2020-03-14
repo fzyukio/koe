@@ -52,13 +52,8 @@ SEEK_RELATIVE = 1
 def _read_fmt_chunk(fid):
     res = struct.unpack('<ihHIIHH', fid.read(20))
     size, comp, noc, rate, sbytes, ba, bits = res
-    if comp != 1 or size > 16:
-        if comp == 3:
-            warnings.warn("IEEE format not supported", WavFileWarning)
-        else:
-            warnings.warn("Unfamiliar format bytes", WavFileWarning)
-        if size > 16:
-            fid.read(size - 16)
+    if size > 16:
+        fid.read(size - 16)
     return size, comp, noc, rate, sbytes, ba, bits
 
 
@@ -111,7 +106,6 @@ def read_wav_info(file):
     # read the next chunk
     chunk_id = fid.read(4)
     while chunk_id != b'fmt ':
-        warnings.warn('Skipping {}'.format(chunk_id))
         _skip_unknown_chunk(fid)
         chunk_id = fid.read(4)
 
