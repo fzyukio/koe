@@ -77,14 +77,20 @@ class AudioTrack(SimpleModel):
 
 
 class Species(SimpleModel):
-    genus = models.CharField(max_length=32)
-    species = models.CharField(max_length=32)
-
-    class Meta:
-        unique_together = ['species', 'genus']
+    genus = models.CharField(max_length=32, null=True)
+    species = models.CharField(max_length=32, null=True)
+    name = models.CharField(max_length=255, unique=True, null=False)
 
     def __str__(self):
-        return '{} {}'.format(self.genus, self.species)
+        return self.name
+
+    def save(self, *args, **kwargs):
+        try:
+            self.genus, self.species = self.name.split(' ')
+        except:
+            pass
+
+        super(Species, self).save(*args, **kwargs)
 
 
 class Individual(SimpleModel):
@@ -278,12 +284,7 @@ class AudioFile(SimpleModel):
     def set_species(cls, objs, value, extras={}):
         value = value.strip()
         if value:
-            parts = value.split(' ')
-            if len(parts) != 2:
-                raise CustomAssertionError('Species name must consist of Genus and Species')
-
-            genus, species_code = parts
-            species, _ = Species.objects.get_or_create(genus=genus, species=species_code)
+            species, _ = Species.objects.get_or_create(name=value)
             Individual.objects.filter(audiofile__in=objs).update(species=species)
 
     @classmethod

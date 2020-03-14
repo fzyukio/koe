@@ -255,8 +255,7 @@ def get_sequence_info_empty_songs(empty_songs):
 
     if isinstance(empty_songs, QuerySet):
         values = empty_songs.values_list('name', 'id', 'quality', 'length', 'fs', 'added', 'track__name', 'track__date',
-                                         'individual__name', 'individual__gender', 'individual__species__genus',
-                                         'individual__species__species')
+                                         'individual__name', 'individual__gender', 'individual__species__name')
     else:
         values = []
         for x in empty_songs:
@@ -268,18 +267,16 @@ def get_sequence_info_empty_songs(empty_songs):
                        track.date if track else None,
                        individual.name if individual else None,
                        individual.gender if individual else None,
-                       species.genus if species else None,
-                       species.species if species else None]
+                       species.name if species else None]
             values.append(x_value)
 
-    for filename, song_id, quality, length, fs, added, track, date, indv, gender, genus, species in values:
+    for filename, song_id, quality, length, fs, added, track, date, indv, gender, species in values:
         url = reverse('segmentation', kwargs={'file_id': song_id})
         url = '[{}]({})'.format(url, filename)
         duration_ms = round(length * 1000 / fs)
-        species_str = '{} {}'.format(genus, species) if species and genus else ''
 
         row = dict(id=song_id, filename=url, track=track, individual=indv, gender=gender,
-                   quality=quality, record_date=date, added=added.date(), duration=duration_ms, species=species_str)
+                   quality=quality, record_date=date, added=added.date(), duration=duration_ms, species=species)
         ids.append(song_id)
         rows.append(row)
 
@@ -328,8 +325,7 @@ def bulk_get_song_sequences(all_songs, extras):
                               'audio_file__track__date',
                               'audio_file__individual__name',
                               'audio_file__individual__gender',
-                              'audio_file__individual__species__genus',
-                              'audio_file__individual__species__species')
+                              'audio_file__individual__species__name')
     seg_ids = segs.values_list('id', flat=True)
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=granularity)
@@ -344,15 +340,14 @@ def bulk_get_song_sequences(all_songs, extras):
     # Bagging song syllables by song name
     songs = {}
 
-    for seg_id, tid, start, end, filename, song_id, quality, length, fs, added, track, date, indv, gender, genus,\
-            species in values:
+    for seg_id, tid, start, end, filename, song_id, quality, length, fs, added, track, date, indv, gender, species \
+            in values:
         if song_id not in songs:
             url = reverse('segmentation', kwargs={'file_id': song_id})
             url = '[{}]({})'.format(url, filename)
             duration_ms = round(length * 1000 / fs)
-            species_str = '{} {}'.format(genus, species) if species and genus else ''
             song_info = dict(filename=url, track=track, individual=indv, sex=gender, quality=quality, record_date=date,
-                             added=added.date(), duration=duration_ms, species=species_str)
+                             added=added.date(), duration=duration_ms, species=species)
             segs_info = []
             songs[song_id] = dict(song=song_info, segs=segs_info)
         else:

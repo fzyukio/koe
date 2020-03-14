@@ -49,7 +49,7 @@ def import_audio_metadata(request):
     reader = csv.DictReader(io.StringIO(file_data))
 
     supplied_fields = reader.fieldnames
-    required_fields = ['filename', 'genus', 'species', 'quality', 'date', 'individual', 'gender', 'track']
+    required_fields = ['filename', 'species', 'quality', 'date', 'individual', 'gender', 'track']
     missing_fields = [x for x in required_fields if x not in supplied_fields]
 
     if missing_fields:
@@ -58,15 +58,14 @@ def import_audio_metadata(request):
 
     filename_to_metadata = {}
 
-    existing_individuals = {(x.name, x.species.genus, x.species.species): x for x in Individual.objects.all()
+    existing_individuals = {(x.name, x.species.name): x for x in Individual.objects.all()
                             if x.species is not None}
-    existing_species = {(x.genus, x.species): x for x in Species.objects.all()}
+    existing_species = {x.name: x for x in Species.objects.all()}
     existing_tracks = {x.name: x for x in AudioTrack.objects.all()}
 
     for row in reader:
         filename = row['filename']
-        species_code = row['species']
-        genus = row['genus']
+        species_name = row['species']
         quality = row['quality']
         individual_name = row['individual']
         gender = row['sex']
@@ -76,15 +75,15 @@ def import_audio_metadata(request):
         if date_str:
             date = datetime.datetime.strptime(date_str, settings.DATE_INPUT_FORMAT).date()
 
-        species_key = (genus, species_code)
-        if species_key in existing_species:
-            species = existing_species[species_key]
+        if species_name in existing_species:
+            species = existing_species[species_name]
         else:
-            species = Species(genus=genus, species=species_code)
-            species.save()
-            existing_species[species_key] = species
 
-        individual_key = (individual_name, genus, species_code)
+            species = Species(name=species_name)
+            species.save()
+            existing_species[species_name] = species
+
+        individual_key = (individual_name, species_name)
         if individual_key in existing_individuals:
             individual = existing_individuals[individual_key]
         else:
