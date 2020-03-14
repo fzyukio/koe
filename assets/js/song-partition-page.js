@@ -554,6 +554,8 @@ const initUploadSongsBtn = function () {
             }).then(function ({dataArrays, sampleRate, realSampleRate}) {
                 let filename = file.name;
                 resolve({dataArrays, sampleRate, realSampleRate, filename});
+            }).catch(function (error) {
+                uploadProgressBar.html(error);
             });
         });
     });

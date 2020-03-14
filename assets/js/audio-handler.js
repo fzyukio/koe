@@ -344,7 +344,7 @@ export const loadLocalAudioFile = function ({
     file, reader = new FileReader(), onProgress = noop, onAbort = noop, onError = noop, onLoadStart = noop,
     onLoad = noop
 }) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         reader.onload = function (e) {
             onLoad(e);
             let data = reader.result;
@@ -355,18 +355,24 @@ export const loadLocalAudioFile = function ({
             let decoder = new WAVDecoder();
             let decoded = decoder.decode(data);
 
-            let sampleRate = decoded.sampleRate;
-            let dataArrays = decoded.channels;
-            let realSampleRate = sampleRate;
-
-            if (sampleRate > MAX_SAMPLE_RATE) {
-                sampleRate = MAX_SAMPLE_RATE
+            if (decoded == null) {
+                reject(new TypeError('This file appears to be non-PCM which is currently not supported'));
             }
-            resolve({
-                dataArrays,
-                sampleRate,
-                realSampleRate
-            });
+            else {
+
+                let sampleRate = decoded.sampleRate;
+                let dataArrays = decoded.channels;
+                let realSampleRate = sampleRate;
+
+                if (sampleRate > MAX_SAMPLE_RATE) {
+                    sampleRate = MAX_SAMPLE_RATE
+                }
+                resolve({
+                    dataArrays,
+                    sampleRate,
+                    realSampleRate
+                });
+            }
         };
         reader.onprogress = onProgress;
         reader.onerror = onError;
