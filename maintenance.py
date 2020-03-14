@@ -153,7 +153,7 @@ def reset_mysql():
 
         # Now run those drop table queries
         run_command(cmd + ['-e', ''.join(drop_table_queries)])
-        return err == b''
+        return err == b'', err.decode('utf-8')
 
 
 def backup_mysql():
@@ -167,7 +167,7 @@ def backup_mysql():
         cmd = ['mysqldump', '--defaults-extra-file={}'.format(temp_conf.name), db_name, '--result-file', backup_file]
         out, err = run_command(cmd, suppress_output=True)
 
-        return err == b''
+        return err == b'', err.decode('utf-8')
 
 
 def restore_mysql():
@@ -186,7 +186,7 @@ def restore_mysql():
         ]
         out, err = run_command(cmd + ['--execute', 'source {}'.format(backup_file)], suppress_output=True)
 
-        return err == b''
+        return err == b'', err.decode('utf-8')
 
 
 def backup_sqlite():
@@ -197,10 +197,10 @@ def backup_sqlite():
     """
     try:
         copyfile(db_name, backup_file)
-        return True
+        return True, ''
     except FileNotFoundError:
         talk_to_user('File {} not found - no backup created.'.format(db_name))
-        return False
+        return False, 'File {} not found'.format(backup_file)
 
 
 def restore_sqlite():
@@ -211,10 +211,10 @@ def restore_sqlite():
     """
     try:
         copyfile(backup_file, db_name)
-        return True
+        return True, ''
     except FileNotFoundError:
         talk_to_user('File {} not found - no backup created.'.format(db_name))
-        return False
+        return False, 'File {} not found'.format(backup_file)
 
 
 def reset_sqlite():
@@ -230,7 +230,7 @@ def reset_sqlite():
         # Not a problem if file doesn't exist
         pass
 
-    return True
+    return True, ''
 
 
 @contextmanager
@@ -277,7 +277,7 @@ def reset_postgres():
     with create_tmp_postgre_conf():
         # Now run query DROP SCHEMA public CASCADE; CREATE SCHEMA public; to empty the database
         out, err = run_command(cmd + ['-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'], suppress_output=True)
-        return err != b''
+        return err == b'', err.decode('utf-8')
 
 
 def backup_postgres():
@@ -301,7 +301,7 @@ def backup_postgres():
         message, err = run_command(cmd, suppress_output=True)
 
     talk_to_user(message.decode('utf-8'))
-    return err != b''
+    return err == b'', err.decode('utf-8')
 
 
 def restore_postgres():
@@ -324,7 +324,7 @@ def restore_postgres():
         message, err = run_command(cmd, suppress_output=True)
 
     talk_to_user(message.decode('utf-8'))
-    return True
+    return True, ''
 
 
 def run_command(cmd, suppress_output=False, suppress_error=False):
@@ -420,7 +420,7 @@ def probe_sqlite():
 
     :return: None
     """
-    return True
+    return True, ''
 
 
 def probe_postgres():
@@ -436,7 +436,7 @@ def probe_postgres():
 
     err = err.decode('utf-8').strip().split('\n')
     error_messages = [x for x in err if x.find('Connection refused') != -1 or x.find('FATAL') != -1]
-    return len(error_messages) == 0
+    return len(error_messages) == 0, '\n'.join(error_messages)
 
 
 def probe_mysql():
@@ -455,7 +455,7 @@ def probe_mysql():
         out, err = run_command(cmd, suppress_output=True, suppress_error=True)
         err = err.decode('utf-8').strip().split('\n')
         error_messages = [x for x in err if x.startswith('ERROR')]
-        return len(error_messages) == 0
+        return len(error_messages) == 0, '\n'.join(error_messages)
 
 
 reset_db_functions = {
@@ -493,7 +493,7 @@ def wait_for_database():
         print('Connection is not ready, sleep for 1 sec')
         time.sleep(1)
 
-    return True
+    return True, ''
 
 
 def empty_database():
@@ -511,7 +511,7 @@ def apply_migrations():
     if err == b'':
         out, err = run_command('python manage.py migrate --database=default')
 
-    return err == b''
+    return err == b'', err.decode('utf-8')
 
 
 def backup_database_using_fixtures():
@@ -522,19 +522,19 @@ def backup_database_using_fixtures():
             out, err = run_command(command, suppress_output=True)
             zip_file.writestr(fixture_name, out.decode('utf-8'))
 
-    return True
+    return True, ''
 
 
 def backup_database_using_sql():
     talk_to_user('Backing up database...'.format(db_engine))
 
     backup_db_function = backup_db_functions[db_engine_short_name]
-    success = backup_db_function()
+    success, err = backup_db_function()
 
     if success:
         talk_to_user('Successfully backed up database to {}'.format(backup_file))
 
-    return success
+    return success, err
 
 
 def restore_database_using_fixtures():
@@ -557,31 +557,32 @@ def restore_database_using_fixtures():
             run_command(command)
 
             os.remove(temp_file_name)
-    return True
+    return True, ''
 
 
 def restore_database_using_sql():
     talk_to_user('Restoring database from {}'.format(backup_file))
     restore_db_function = restore_db_functions[db_engine_short_name]
-    success = restore_db_function()
+    success, err = restore_db_function()
 
     if success:
         talk_to_user('Successfully restored database')
 
-    return success
+    return success, err
 
 
 def handle_function(func: collections.Callable, *args, **kwargs):
     func_name = func.__name__
     start = time.time()
 
-    no_error = func(*args, **kwargs)
+    success, err = func(*args, **kwargs)
 
     end = time.time()
     talk_to_user('{0:s}: finished in {1: 9.9f} seconds'.format(func_name, end - start))
 
-    if not no_error:
-        talk_to_user('Terminated due to an error')
+    if not success:
+        talk_to_user('Terminated due to error:')
+        talk_to_user(err)
         exit(1)
 
 
