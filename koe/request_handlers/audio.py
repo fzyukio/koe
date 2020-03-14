@@ -154,14 +154,22 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     audio.export(name_compressed, format=settings.AUDIO_COMPRESSED_FORMAT)
 
     if audio_file is None:
+        if track is None:
+            track = AudioTrack.objects.get_or_create(name='TBD')[0]
+        individual = Individual.objects.get_or_create(name='TBD')[0]
         audio_file = AudioFile(name=name_no_ext, length=length, fs=real_fs, database=database, track=track, start=start,
-                               end=end, fake_fs=fake_fs, added=timezone.now(), noc=noc)
+                               end=end, fake_fs=fake_fs, added=timezone.now(), noc=noc, individual=individual)
+        audio_file.save()
+        if track.name == 'TBD':
+            track.name = str(audio_file.id)
+            track.save()
+        individual.name = str(audio_file.id)
+        individual.save()
     else:
         audio_file.start = start
         audio_file.end = end
         audio_file.length = length
-
-    audio_file.save()
+        audio_file.save()
 
     return audio_file
 
