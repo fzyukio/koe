@@ -3,9 +3,12 @@ import os
 from logging import warning
 from shutil import copyfile
 
+from django.conf import settings
 from django.db import migrations
 
-from koe.utils import spect_fft_path
+
+SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}.png')
+SPECT_FFT_BAK_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}-bak.png')
 
 
 def change_spectrogram_to_use_tid(apps, schema_editor):
@@ -23,8 +26,6 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
     tids = model.objects.using(db_alias).all().values_list('tid', flat=True)
     tid2ids = {x: [] for x in tids}
     to_delete = []
-    path_template = spect_fft_path('{}', 'syllable')
-    bak_path_template = spect_fft_path('{}-bak', 'syllable')
 
     for id, tid in vl:
         tid2ids[tid].append(id)
@@ -33,9 +34,9 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
         # The original syllable is always the one with smallest ID
         min_id = min(ids)
         for id in ids:
-            sid_path = path_template.format(id)
+            sid_path = SPECT_FFT_TEMPLATE.format(id)
             if id == min_id:
-                tid_path_bak = bak_path_template.format(tid)
+                tid_path_bak = SPECT_FFT_BAK_TEMPLATE.format(tid)
                 if os.path.isfile(sid_path):
                     copyfile(sid_path, tid_path_bak)
                 else:
@@ -51,8 +52,8 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
         min_id = min(ids)
         for id in ids:
             if id == min_id:
-                tid_path = path_template.format(tid)
-                tid_path_bak = bak_path_template.format(tid)
+                tid_path = SPECT_FFT_TEMPLATE.format(tid)
+                tid_path_bak = SPECT_FFT_BAK_TEMPLATE.format(tid)
                 if os.path.isfile(tid_path_bak):
                     os.rename(tid_path_bak, tid_path)
 

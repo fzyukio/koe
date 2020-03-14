@@ -7,7 +7,9 @@ const ResizeSensor = require('css-element-queries/src/ResizeSensor');
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
 import {updateSlickGridData} from './grid-utils';
 import {FlexibleGrid, defaultGridOptions} from './flexible-grid';
-import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort, isNumber, isNull, normalise} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError, debug, deepCopy, pdist, argsort, isNumber, isNull, normalise,
+    PAGE_CAPACITY
+} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -1034,12 +1036,15 @@ function clearHighlighted() {
 function addSylToHighlight(rowMetadata, container) {
     let segId = rowMetadata.id;
     let segTid = rowMetadata.tid;
+
+    let page = Math.floor(segTid / PAGE_CAPACITY);
+
     let element = highlighted[segId];
     if (element === undefined) {
 
         element = $(`
 <div class="syl-spect" id="${segId}">
-    <img src="/user_data/spect/fft/syllable/${segTid}.png"/>
+    <img src="/user_data/spect/syllable/${page}/${segTid}.png"/>
     <div class="syl-details">
         <span>${segId}</span>
     </div>

@@ -10,11 +10,11 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.celery_init import app
 from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.utils import wav_2_mono
+from koe.utils import wav_2_mono, get_abs_spect_path
 from koe.models import Database
 from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
     AudioFile
-from koe.utils import spect_fft_path, wav_path, audio_path
+from koe.utils import wav_path, audio_path
 from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
@@ -246,7 +246,7 @@ def extract_spectrogram(audio_file_id, *args, **kwargs):
     missing_segs_info = []
 
     for tid, start, end in segs_info:
-        seg_spect_path = spect_fft_path(tid, 'syllable')
+        seg_spect_path = get_abs_spect_path(tid)
         ensure_parent_folder_exists(seg_spect_path)
         if not os.path.isfile(seg_spect_path):
             missing_segs_info.append((seg_spect_path, start, end))
@@ -350,7 +350,6 @@ def delete_segments_async(*args, **kwargs):
     other_vl = Segment.fobjs.filter(tid__in=this_tids).values_list('id', 'tid')
 
     tid2ids = {x: [] for x in this_tids}
-    path_template = spect_fft_path('{}', 'syllable')
 
     for id, tid in other_vl:
         tid2ids[tid].append(id)
@@ -359,7 +358,7 @@ def delete_segments_async(*args, **kwargs):
     # if there is only one segment (ID) associated with the syllable's TID
     for tid, ids in tid2ids.items():
         if len(ids) == 1:
-            spect_path = path_template.format(tid)
+            spect_path = get_abs_spect_path(tid)
             if os.path.isfile(spect_path):
                 os.remove(spect_path)
 

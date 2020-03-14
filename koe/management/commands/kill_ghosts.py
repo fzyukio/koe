@@ -35,7 +35,7 @@ class Command(BaseCommand):
             except ValueError:
                 print('Found weird named files: {}/{}'.format(mask_path, existing_mask))
 
-        spect_path = os.path.join(settings.MEDIA_URL, 'spect', 'fft', 'syllable')[1:]
+        spect_path = os.path.join(settings.MEDIA_URL, 'spect', 'syllable')[1:]
 
         existing_spects = os.listdir(spect_path)
 

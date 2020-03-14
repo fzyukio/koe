@@ -3,7 +3,7 @@ require('bootstrap-slider/dist/bootstrap-slider.js');
 require('jquery.scrollintoview/jquery.scrollintoview.js');
 
 import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
-import {getUrl, getCache, setCache, isEmpty, logError} from './utils';
+import {getUrl, getCache, setCache, isEmpty, logError, PAGE_CAPACITY} from './utils';
 import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
 import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
 
@@ -489,6 +489,9 @@ function addSylToHighlight(point, override = false) {
     let rowMetadata = point.text;
     let segId = rowMetadata.id;
     let segTid = rowMetadata.tid;
+
+    let page = Math.floor(segTid / PAGE_CAPACITY);
+
     let element = highlighted[segId];
     let allow = override || !inLassoSelectionMode;
     if (element === undefined && allow) {
@@ -496,7 +499,7 @@ function addSylToHighlight(point, override = false) {
 
         element = $(`
 <div class="syl-spect" id="${segId}">
-    <img src="/user_data/spect/fft/syllable/${segTid}.png"/>
+    <img src="/user_data/spect/syllable/${page}/${segTid}.png"/>
     <div class="syl-details">
         <svg width="13px" height="13px">${legendSymbol}</svg>
         <span>${segId}</span>

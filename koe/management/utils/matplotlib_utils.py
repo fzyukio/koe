@@ -6,6 +6,8 @@ import numpy as np
 from PIL import Image
 from scipy.cluster import hierarchy
 
+from koe.utils import PAGE_CAPACITY
+
 
 def set_size(w, h, ax=None):
     import matplotlib.pyplot as plt
@@ -94,8 +96,8 @@ def show_highlighed_cls_syllables(highlighted_cls_names, syl_cls_names, syl_tids
 
         syl_inds = np.where(syl_cls_names == cls)
         selected_tids = syl_tids[syl_inds]
-        img_dir = 'user_data/spect/fft/syllable'
-        selected_syl_imgpth = [img_dir + '/{}.png'.format(tid) for tid in selected_tids]
+        img_dir = 'user_data/spect/syllable'
+        selected_syl_imgpth = [img_dir + str(tid // PAGE_CAPACITY) + '/{}.png'.format(tid) for tid in selected_tids]
 
         images = [Image.open(i) for i in selected_syl_imgpth]
         widths, heights = zip(*(i.size for i in images))
@@ -180,8 +182,8 @@ def show_highlighed_syllables(highlighted_syls_name, highlighted_syl_tids, pdf=N
 
     row_count = 1
 
-    img_dir = 'user_data/spect/fft/syllable'
-    selected_syl_imgpth = [img_dir + '/{}.png'.format(tid) for tid in highlighted_syl_tids]
+    img_dir = 'user_data/spect/syllable'
+    selected_syl_imgpth = [img_dir + str(tid // PAGE_CAPACITY) + '/{}.png'.format(tid) for tid in highlighted_syl_tids]
 
     images = [Image.open(i) for i in selected_syl_imgpth]
     widths, heights = zip(*(i.size for i in images))

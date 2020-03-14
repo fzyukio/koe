@@ -3,7 +3,7 @@ require('slickgrid/slick.core');
 require('slickgrid/slick.editors');
 require('slickgrid/slick.formatters');
 
-import {isNull, getValue, isEmpty, isValidDate} from './utils';
+import {isNull, getValue, isEmpty, isValidDate, PAGE_CAPACITY} from './utils';
 import {SelectizeEditor} from './selectize-formatter';
 
 export const editabilityAwareFormatter = function (row, cell, value, columnDef, item) {
@@ -86,10 +86,9 @@ const ImageFormatter = function (row, cell, imgUrl) {
     return `<img src="${imgUrl}" height="100%"/>`;
 };
 
-
 /**
  * Render one or many images given the id or array of ids of the spectrograms
- * spetrogram images are located at /user_data/spect/fft/syllable/<ID>.png
+ * spetrogram images are located at /user_data/spect/syllable/<page>/<ID>.png
  * @returns {string}
  * @constructor
  */
@@ -98,7 +97,8 @@ const SpectsFormatter = function (row, cell, idsTids) {
     $.each(idsTids, function (idx, idsTid) {
         let id = idsTid[0];
         let tid = idsTid[1];
-        retval += `<img seg-id="${id}" src="/user_data/spect/fft/syllable/${tid}.png" height="100%"/>`;
+        let page = Math.floor(tid / PAGE_CAPACITY);
+        retval += `<img seg-id="${id}" src="/user_data/spect/syllable/${page}/${tid}.png" height="100%"/>`;
     });
     return retval;
 };
@@ -106,12 +106,13 @@ const SpectsFormatter = function (row, cell, idsTids) {
 
 /**
  * Render one or many images given the id or array of ids of the spectrograms
- * spetrogram images are located at /user_data/spect/fft/syllable/<ID>.png
+ * spetrogram images are located at /user_data/spect/syllable/<page>/<ID>.png
  * @returns {string}
  * @constructor
  */
 const SpectFormatter = function (row, cell, value, columnDef, dataContext) {
-    return `<img seg-id="${dataContext.id}" src="/user_data/spect/fft/syllable/${value}.png" height="100%"/>`;
+    let page = Math.floor(value / PAGE_CAPACITY);
+    return `<img seg-id="${dataContext.id}" src="/user_data/spect/syllable/${page}/${value}.png" height="100%"/>`;
 };
 
 
@@ -176,7 +177,8 @@ const SequenceFormatter = function (row, cell, value, columnDef, song) {
         let end = segEnds[i];
         let segLabel = segLabels[i];
         let tid = tids[i];
-        retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/fft/syllable/${tid}.png">${segLabel}</div>`;
+        let page = Math.floor(tid / PAGE_CAPACITY);
+        retval += `<div class="syllable" start=${start} end=${end} imgsrc="/user_data/spect/syllable/${page}/${tid}.png">${segLabel}</div>`;
     }
     return retval;
 };

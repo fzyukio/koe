@@ -11,6 +11,7 @@ require('devtools-detect');
 
 const JSZip = require('jszip/dist/jszip.min.js');
 const filesaver = require('file-saver/dist/FileSaver.min.js');
+export const PAGE_CAPACITY = 1000;
 
 /**
  * slick.editors uses only this part of jquery-ui. Do this instead of loading the whole library

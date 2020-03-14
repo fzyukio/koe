@@ -10,6 +10,7 @@ import re
 from itertools import product
 
 import numpy as np
+from django.conf import settings
 
 from koe import wavfile
 from koe.wavfile import get_wav_info
@@ -475,20 +476,20 @@ def history_path(fullname, for_url=False):
     return data_path('history', fullname, for_url)
 
 
-def spect_fft_path(spect_id, subdir=None, for_url=False):
-    folder = 'spect/fft'
-    fullname = '{}.png'.format(spect_id)
-    if subdir:
-        folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, for_url)
+PAGE_CAPACITY = 1000
+SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}', '{}.png')
+URL_SPECT_FFT_TEMPLATE = SPECT_FFT_TEMPLATE[1:]
+ABS_SPECT_FFT_TEMPLATE = os.path.join(settings.BASE_DIR, URL_SPECT_FFT_TEMPLATE)
 
 
-def spect_mask_path(spect_id, subdir=None, for_url=False):
-    folder = 'spect/mask'
-    fullname = '{}.png'.format(spect_id)
-    if subdir:
-        folder = os.path.join(folder, subdir)
-    return data_path(folder, fullname, for_url)
+def get_abs_spect_path(spect_id):
+    page = spect_id // PAGE_CAPACITY
+    return ABS_SPECT_FFT_TEMPLATE.format(page, spect_id)
+
+
+def get_url_spect_path(spect_id):
+    page = spect_id // PAGE_CAPACITY
+    return URL_SPECT_FFT_TEMPLATE.format(page, spect_id)
 
 
 def get_closest_neighbours(distmat, labels, nneighbours=3):
