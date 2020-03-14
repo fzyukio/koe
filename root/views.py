@@ -458,8 +458,12 @@ def set_action_values(request):
 
             assert value is not None, 'actions_values = {}'.format(json.dumps(actions_values))
 
-            action_value = ColumnActionValue.objects.filter(user=user, action=action, column=column,
-                                                            table=grid_type).first()
+            action_values = ColumnActionValue.objects.filter(user=user, action=action, column=column, table=grid_type)
+            action_value = action_values.first()
+            if len(action_values) > 1:
+                for av in action_values[1:]:
+                    av.delete()
+
             if action_value is None:
                 action_value = ColumnActionValue()
                 action_value.action = action
