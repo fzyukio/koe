@@ -9,7 +9,7 @@ from progress.bar import Bar
 
 from koe.model_utils import extract_spectrogram
 from koe.models import Segment, AudioFile
-from utils import PAGE_CAPACITY
+from koe.utils import PAGE_CAPACITY
 
 
 class Command(BaseCommand):

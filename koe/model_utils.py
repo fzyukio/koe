@@ -1,6 +1,7 @@
 import os
 from collections import Counter
 
+import logging
 import numpy as np
 from PIL import Image
 from django.conf import settings
@@ -19,6 +20,10 @@ from koe.utils import triu2mat, mat2triu
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
+
+from celery.utils.log import get_task_logger
+
+celerylogger = get_task_logger(__name__)
 
 window_size = 256
 noverlap = 256 * 0.75
@@ -286,6 +291,7 @@ def extract_spectrogram(audio_file_id, *args, **kwargs):
             seg_spect_img = Image.fromarray(seg_spect_rgb)
 
             seg_spect_img.save(path, format='PNG')
+            celerylogger.info('spectrogram {} created'.format(path))
 
 
 def assert_permission(user, database, required_level):
@@ -361,6 +367,7 @@ def delete_segments_async(*args, **kwargs):
             spect_path = get_abs_spect_path(tid)
             if os.path.isfile(spect_path):
                 os.remove(spect_path)
+                celerylogger.info('Spectrogram {} deleted.'.format(spect_path))
 
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=this_sids).delete()
     segments.delete()

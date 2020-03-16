@@ -36,6 +36,7 @@ services:
       - db
     volumes:
       - ./user_data:/code/user_data
+      - ./logs:/code/logs
       - ./backups:/code/backups
       - ./notebooks:/code/notebooks
   cache:

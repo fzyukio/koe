@@ -25,7 +25,7 @@ fi
 # Always clear the cache
 python manage.py cache --action=clear --pattern='template.cache.*'
 
-celery -A koe worker -l info -c 1 &
+celery -A koe worker -l info -c 1 --logfile=logs/celery.log&
 sleep 1
 python manage.py resume_unfinished_task
 

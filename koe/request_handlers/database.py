@@ -291,8 +291,8 @@ def save_segmentation(request):
     segments = Segment.objects.filter(audio_file=audio_file)
     _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id, user=user))
 
-    delay_in_production(extract_spectrogram, audio_file.id)
     delay_in_production(delete_segments_async)
+    delay_in_production(extract_spectrogram, audio_file.id)
 
     return rows
 
