@@ -191,7 +191,7 @@ def import_audio_chunk(request):
 
     file = File(file=request.FILES['file'])
     name = params['dzFilename']
-    chunk_index = int(params['dzChunkIndex'][0])
+    chunk_index = int(params['dzChunkIndex'])
 
     if name.lower().endswith('.wav'):
         name = name[:-4]
