@@ -131,7 +131,7 @@ class ValueTypes(MagicChoices):
     _FILTER_TYPE = {
         SHORT_TEXT: 'String',
         LONG_TEXT: 'String',
-        DATE: None,
+        DATE: 'Date',
         INTEGER: 'Number',
         FLOAT: 'Number',
         BOOLEAN: 'Boolean',

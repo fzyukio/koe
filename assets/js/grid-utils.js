@@ -10,7 +10,7 @@ require('checkboxselectcolumn');
 require('radioselectcolumn');
 require('rowselectionmodel');
 import {hasActionsOfType, actionHandlers, isClickableOnRow, getHandlerOfActionType} from './property-actions';
-import {getCache, isNumber, setCache, isNull, deepCopy, convertRawUrl} from './utils';
+import {getCache, isNumber, setCache, isNull, deepCopy, convertRawUrl, isValidDate} from './utils';
 import {SlickFormatters, SLickValidator, SlickEditors, RowMoveableFormatter} from './slick-grid-addons';
 
 /**
@@ -19,6 +19,8 @@ import {SlickFormatters, SLickValidator, SlickEditors, RowMoveableFormatter} fro
  * @type {RegExp}
  */
 const filterRegex = /(.*?):(.*)+/;
+
+const dateFilterRegex = /(from\(\d{4}-\d{2}-\d{2}\))?(to\(\d{4}-\d{2}-\d{2}\))?/;
 
 /**
  * Accept anything that contain the substring
@@ -63,10 +65,38 @@ const booleanFilter = function (value) {
 };
 
 
+const dateFilter = function (value) {
+    let filter = this.filterValue;
+    if (filter === undefined) {
+        return true;
+    }
+
+    switch (filter.mode) {
+        case 0: {
+            return true;
+        }
+        case 1: {
+            return new Date(value) <= filter.to;
+        }
+        case 10: {
+            return new Date(value) >= filter.from;
+        }
+        case 11: {
+            let date = new Date(value);
+            return (filter.from <= date) && (date <= filter.to);
+        }
+        default: {
+            return false;
+        }
+    }
+};
+
+
 const filterFunctions = {
     'String': stringFilter,
     'Boolean': booleanFilter,
-    'Regex': regexFilter
+    'Regex': regexFilter,
+    'Date': dateFilter
 };
 
 
@@ -126,6 +156,29 @@ const filterGenerator = function (paramName, type, filterContent) {
     else if (type === 'Boolean') {
         filterContent = (filterContent == 'true');
         binding = {filterValue: filterContent};
+    }
+    else if (type === 'Date') {
+        let dateRange = dateFilterRegex.exec(filterContent);
+        let fromDate = dateRange[1];
+        let toDate = dateRange[2];
+        let filterValue = {mode: 0};
+
+        if (fromDate) {
+            fromDate = new Date(fromDate.substring(5, fromDate.length - 1));
+            if (isValidDate(fromDate)) {
+                filterValue.from = fromDate;
+                filterValue.mode += 10;
+            }
+        }
+        if (toDate) {
+            toDate = new Date(toDate.substring(3, toDate.length - 1));
+            if (isValidDate(toDate)) {
+                filterValue.to = toDate;
+                filterValue.mode += 1;
+            }
+        }
+
+        binding = {filterValue};
     }
     else if (type === 'Number') {
 
