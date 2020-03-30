@@ -3,6 +3,8 @@ Remove all ghost spectrograms / masks
 """
 import os
 
+import numpy as np
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from progress.bar import Bar
@@ -16,17 +18,23 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         spect_dir = os.path.join(settings.MEDIA_URL, 'spect', 'syllable')[1:]
 
-        missing_segment_audio_file_info = []
-        pages = os.listdir(spect_dir)
-        for page in pages:
-            try:
-                page = int(page)
-            except ValueError:
-                continue
-            page_min_id = page * PAGE_CAPACITY
-            page_max_id = page_min_id + PAGE_CAPACITY - 1
+        min_tid = Segment.objects.order_by('tid').first().tid
+        max_tid = Segment.objects.order_by('tid').last().tid
 
-            spect_files = os.listdir(os.path.join(spect_dir, str(page)))
+        min_page_id = int(np.ceil(min_tid / PAGE_CAPACITY))
+        max_page_id = int(np.ceil(max_tid / PAGE_CAPACITY)) + 1
+
+        missing_segment_audio_file_info = []
+
+        for page_id in range(min_page_id, max_page_id + 1):
+            page_dir = os.path.join(spect_dir, str(page_id))
+            page_min_id = (page_id - 1) * PAGE_CAPACITY + 1
+            page_max_id = page_id * PAGE_CAPACITY
+
+            if os.path.isfile(page_dir):
+                spect_files = os.listdir(page_dir)
+            else:
+                spect_files = []
             segment_ids = Segment.objects.filter(tid__lte=page_max_id, tid__gte=page_min_id)\
                 .values_list('tid', flat=True)
             segment_png = frozenset(['{}.png'.format(x) for x in segment_ids])
@@ -38,8 +46,6 @@ class Command(BaseCommand):
             missing_segment_audio_file_ids = missing_segments.values_list('audio_file', flat=True).distinct()
             missing_segment_audio_file = AudioFile.objects.filter(id__in=missing_segment_audio_file_ids)
             missing_segment_audio_file_info += list(missing_segment_audio_file.values_list('id', 'name'))
-
-        # missing_segment_audio_file = AudioFile.objects.filter(name='M23 16-8-19-SR.19.ch01-02.191210.130453.28.')
 
         print('Found missing spectrograms in {} audio files'.format(len(missing_segment_audio_file_info)))
 
