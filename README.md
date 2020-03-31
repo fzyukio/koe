@@ -15,7 +15,7 @@ For a comprehensive user manual, head over to the Koe [Wiki](https://github.com/
 
 ## How to install, run and deploy this on your own?
 
-I recommend using the official website at https://koe.io.ac.nz. However if you want to run Koe on your own computer/server, here's how:
+We recommend using the official website at https://koe.io.ac.nz. However if you want to run Koe on your own computer/server, here's how:
 
 [Install](docs/INSTALL.md)
 
@@ -35,4 +35,4 @@ Read the full [LICENCE](LICENCE.md) here
 Contact us if you want a different licence option.
 
 ## Copyright
-Copyright (c) 2013-9999 Yukio Fukuzawa. All rights reserved.
+Copyright (c) 2017-2020 Yukio Fukuzawa and Wesley Webb. All rights reserved.
