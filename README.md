@@ -3,7 +3,9 @@ Koe: open-source software to visualise, segment and classify acoustic units in a
 
 ## What is it?
 Koe is an application for classifying and analysing animal vocalisations.
-Koe offers bulk-labelling of units via interactive ordination plots, as well as visualisation and playback, segmentation, measurement, data filtering/exporting and new tools for analysing repertoire and sequence structure -- all in an integrated database.
+Koe offers bulk-labelling of units via interactive ordination plots, as well as visualisation and playback, segmentation, measurement, data filtering/exporting and new tools for analysing repertoire and sequence structure—all in an integrated database.
+
+For a comprehensive user manual, head over to the Koe [Wiki](https://github.com/fzyukio/koe/wiki).
 
 ![**Koe**'s unit table is designed for classifying, annotating and filtering units.  Each unit row contains a spectrogram which becomes enlarged during mouse-over.  Unit audio plays when a spectrogram is clicked. The table can be sorted/filtered by any columns. Sorting by the Similarity Index column arranges units by spectral similarity for expedited labelling. Example data are New Zealand bellbird *Anthornis melanura* song units.](docs/syllable-view.png)
 
