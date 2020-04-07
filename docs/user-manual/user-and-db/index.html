@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.68.3" />
+    <meta name="description" content="">
+<meta name="author" content="Infocare Solutions">
+
+    <link rel="icon" href="/images/favicon.png" type="image/png">
+
+    <title>User and database control :: Koe Documentation</title>
+
+    
+    <link href="/css/nucleus.css?1586291482" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1586291482" rel="stylesheet">
+    <link href="/css/hybrid.css?1586291482" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1586291482" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1586291482" rel="stylesheet">
+    <link href="/css/auto-complete.css?1586291482" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1586291482" rel="stylesheet">
+    <link href="/css/theme.css?1586291482" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1586291482" rel="stylesheet">
+    
+      <link href="/css/theme-red.css?1586291482" rel="stylesheet">
+    
+
+    <script src="/js/jquery-3.3.1.min.js?1586291482"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/user-manual/user-and-db/">
+    <nav id="sidebar" class="showVisitedLinks">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <img src="https://i.ibb.co/s608SrX/Koe-Logo-In-Circle-with-Word-next-to-it-SMALLER4.png"/>
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/js/lunr.min.js?1586291482"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1586291482"></script>
+<script type="text/javascript">
+    
+        var baseurl = "http:\/\/koe-wiki.github.io\/";
+    
+</script>
+<script type="text/javascript" src="/js/search.js?1586291482"></script>
+
+    
+  </div>
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/user-manual/" title="User&#39;s Manual" class="dd-item 
+        parent
+        
+        
+        ">
+      <a href="/user-manual/">
+          <b>1. </b>User&#39;s Manual
+          
+            <i class="fas fa-check read-icon"></i>
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/user-manual/why-use-koe/" title="Why use Koe?" class="dd-item ">
+        <a href="/user-manual/why-use-koe/">
+        <b>1.1 </b>Why use Koe?
+        <i class="fas fa-check read-icon"></i>
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/user-manual/overview-workflow/" title="Overview of Koe workflow" class="dd-item ">
+        <a href="/user-manual/overview-workflow/">
+        <b>1.2 </b>Overview of Koe workflow
+        <i class="fas fa-check read-icon"></i>
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/user-manual/navigating-koe/" title="Navigating Koe" class="dd-item ">
+        <a href="/user-manual/navigating-koe/">
+        <b>1.3 </b>Navigating Koe
+        <i class="fas fa-check read-icon"></i>
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/user-manual/user-and-db/" title="User and database control" class="dd-item active">
+        <a href="/user-manual/user-and-db/">
+        <b>1.4 </b>User and database control
+        <i class="fas fa-check read-icon"></i>
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/user-manual/songs-control/" title="Songs control" class="dd-item ">
+        <a href="/user-manual/songs-control/">
+        <b>1.5 </b>Songs control
+        <i class="fas fa-check read-icon"></i>
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+         
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li> 
+                  <a class="padding" href="http://koe-wiki.github.io/"><i class='fas fa-home'></i> Home page</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="prefooter">
+      <hr/>
+      <ul>
+      
+      
+      
+        <li><a class="padding" href="#" data-clear-history-toggle=""><i class="fas fa-history fa-fw"></i> Clear History</a></li>
+      
+      </ul>
+    </section>
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/'>Welcome to Koe's Wiki</a> > <a href='/user-manual/'>User's Manual</a> > User and database control
+          
+         
+          
+         
+          
+        
+                 
+                  </span>
+                </div>
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              User and database control
+            </h1>
+          
+
+        
+
+
+
+<h2 id="create-an-account">Create an account</h2>
+<p>Go to <a href="https://koe.io.ac.nz">koe.io.ac.nz</a> and click on <strong>Register</strong> to register an account.</p>
+<p>Choose a username, input your name and email address for purposes of <em>Koe</em> support correspondence, and choose a password. (We will never share your information with anyone).</p>
+<p><img src="https://i.ibb.co/xD1nLZ1/Sign-Up-Code-Removed.png" alt=""></p>
+<h2 id="create-a-new-database">Create a new database</h2>
+<p><a href="#table-of-contents">Back to table of contents</a></p>
+<p>Under Manage your database, click <strong>New database</strong> to create a new database.</p>
+<p><img src="https://i.ibb.co/0fSKJj6/Manage-Database.png" alt=""></p>
+<h2 id="add-collaborators-to-a-database-and-set-permission-levels">Add collaborators to a database and set permission levels</h2>
+<p><a href="#table-of-contents">Back to table of contents</a></p>
+<p>You can add collaborators at any stage.</p>
+<ol>
+<li>
+<p>Click on <em>Manage your database</em>.</p>
+</li>
+<li>
+<p>Select the round checkbox of the database you want to add collaborators to.</p>
+</li>
+<li>
+<p>Click <strong>Add collaborator</strong> and Type the <em>Koe</em> username or <em>Koe</em> account email address of your intended collaborator.</p>
+</li>
+<li>
+<p>Once added, you can set their permission level by double-clicking the <strong>Permission</strong> cell next to their username.</p>
+</li>
+</ol>
+<p><img src="https://i.ibb.co/drg4pMf/Manage-Database-Add-Collaborators.png" alt=""></p>
+<p>From lowest to highest permission level: View, Annotate, Import data, Copy files, Add files, Modify segmentation, Delete files, Assign user. Each subsequent permission level extends the permissions of the previous level as per the table below:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Permissions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>View</td>
+<td>User can view data</td>
+</tr>
+<tr>
+<td>Annotate</td>
+<td>User can view and annotate data</td>
+</tr>
+<tr>
+<td>Import data</td>
+<td>User can import, view and annotate data</td>
+</tr>
+<tr>
+<td>Copy files</td>
+<td>User can copy files, import, view and annotate data</td>
+</tr>
+<tr>
+<td>Add files</td>
+<td>User can add files, copy files, import, view and annotate data</td>
+</tr>
+<tr>
+<td>Modify segmentation</td>
+<td>User can modify segmentation, add files, copy files, import, view and annotate data</td>
+</tr>
+<tr>
+<td>Delete files</td>
+<td>User can delete files, modify segmentation, add files, copy files, import, view and annotate data</td>
+</tr>
+<tr>
+<td>Assign user</td>
+<td>User can assign additional users, delete files, modify segmentation, add files, copy files, import, view and annotate data</td>
+</tr>
+</tbody>
+</table>
+<h1 id="set-database-restore-points">Set database restore points</h1>
+<p><a href="#table-of-contents">Back to table of contents</a></p>
+<p>Changes are saved to the database as soon as they happen. If you want to be able to revert to a previous state you will want to save database restore points.</p>
+<ol>
+<li>
+<p>Click on <em>Manage your database</em>.</p>
+</li>
+<li>
+<p>Select the round checkbox of the database you want to set a restore point for.</p>
+</li>
+<li>
+<p>Click <strong>Quick save</strong> or <strong>Full save</strong> at the bottom of the window to create a restore point. <strong>Quick save</strong> saves label data associated with each unit. <strong>Full save</strong> saves both label data and segmentation start/end points.</p>
+</li>
+</ol>
+<p><em><strong>Please note</strong></em> that restore points do not affect which songs are in the database or which units are segmented. For example, if you make a save and then delete songs, reverting will not restore the songs to the database. Similarly, if you add songs, reverting will not remove the added songs. In the same way, if you add/delete units, reverting will not remove/restore the segmentation. What reverting <em>will</em> do is restore the label data and (for a full save) the segmentation start/end points for <em>currently existing</em> units. If you want to preserve all aspects of a database at a certain point, like a traditional &lsquo;Save As&rsquo;, then copy everything to a new database, as described in <a href="#copy-songs-to-another-database">Copy songs to another database</a> below.</p>
+
+
+<footer class="footline">
+	
+</footer>
+
+        
+        </div> 
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+        
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+        
+        
+
+
+	 
+	 
+    </div>
+
+    </section>
+    
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/js/clipboard.min.js?1586291482"></script>
+    <script src="/js/perfect-scrollbar.min.js?1586291482"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1586291482"></script>
+    <script src="/js/jquery.sticky.js?1586291482"></script>
+    <script src="/js/featherlight.min.js?1586291482"></script>
+    <script src="/js/highlight.pack.js?1586291482"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/js/modernizr.custom-3.6.0.js?1586291482"></script>
+    <script src="/js/learn.js?1586291482"></script>
+    <script src="/js/hugo-learn.js?1586291482"></script>
+
+    <link href="/mermaid/mermaid.css?1586291482" rel="stylesheet" />
+    <script src="/mermaid/mermaid.js?1586291482"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    
+
+  </body>
+</html>
+

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Welcome to Koe&#39;s Wiki on Koe Documentation</title>
+    <link>http://koe-wiki.github.io/</link>
+    <description>Recent content in Welcome to Koe&#39;s Wiki on Koe Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-nz</language>
+    <lastBuildDate>Fri, 03 Apr 2020 12:34:36 +1300</lastBuildDate>
+    
+	<atom:link href="http://koe-wiki.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Why use Koe?</title>
+      <link>http://koe-wiki.github.io/user-manual/why-use-koe/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/user-manual/why-use-koe/</guid>
+      <description>Acoustic communication is fundamental to the behaviour of many species. If we want to understand animal behaviour we need tools that allow us to objectively examine the details of vocalisations. What information are they sharing, and how is it encoded?
+Often, acoustic communication is structured as a temporal sequence of distinct acoustic units (e.g. syllables), where information is encoded in the types of units and sometimes their temporal arrangement (syntax). In such cases, this is the flowchart for acoustic analysis:</description>
+    </item>
+    
+    <item>
+      <title>Overview of Koe workflow</title>
+      <link>http://koe-wiki.github.io/user-manual/overview-workflow/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/user-manual/overview-workflow/</guid>
+      <description>We designed the Koe workflow to be intuitive and flexible. Here is a suggested workflow:
+  Import raw recordings and divide into “songs” (vocalisation bouts), then segment songs into their constituent acoustic units.
+  You can extract acoustic features from units. These features are used to calculate unit similarity and expedite classification in two ways: through interactive ordination, and similarity indices.
+  Interactive ordination is a major time saver for classification.</description>
+    </item>
+    
+    <item>
+      <title>Navigating Koe</title>
+      <link>http://koe-wiki.github.io/user-manual/navigating-koe/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/user-manual/navigating-koe/</guid>
+      <description>In Koe, on the left of the screen is a sidebar with program controls. At the top of the sidebar are User account controls for logging out / switching user; beneath that are controls specific to the active view. And beneath that is the workflow navigation pane with buttons to access different program views, labelled according to their function.</description>
+    </item>
+    
+    <item>
+      <title>User and database control</title>
+      <link>http://koe-wiki.github.io/user-manual/user-and-db/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/user-manual/user-and-db/</guid>
+      <description>Create an account Go to koe.io.ac.nz and click on Register to register an account.
+Choose a username, input your name and email address for purposes of Koe support correspondence, and choose a password. (We will never share your information with anyone).
+Create a new database Back to table of contents
+Under Manage your database, click New database to create a new database.
+Add collaborators to a database and set permission levels Back to table of contents</description>
+    </item>
+    
+    <item>
+      <title>Songs control</title>
+      <link>http://koe-wiki.github.io/user-manual/songs-control/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/user-manual/songs-control/</guid>
+      <description>Upload songs Click this link to download NZ bellbird songs to try out Upload songs feature and subsequent steps
+If you have already-divided song files on your computer, you can upload these directly. On the navigation pane, click Upload songs and select up to 100 WAV files at once to upload.
+For raw recordings that need to be divided into songs, see next step.
+Upload raw recordings and divide into songs Click this link to download raw (unsplit) recordings of bellbird song to try Upload &amp;amp; split raw recordings</description>
+    </item>
+    
+  </channel>
+</rss>

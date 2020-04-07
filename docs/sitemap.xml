@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/why-use-koe/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/overview-workflow/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/navigating-koe/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/user-and-db/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/user-manual/songs-control/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/categories/</loc>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/tags/</loc>
+  </url>
+  
+</urlset>

@@ -1,0 +1,64 @@
+[
+{
+	"uri": "http://koe-wiki.github.io/user-manual/",
+	"title": "User&#39;s Manual",
+	"tags": [],
+	"description": "",
+	"content": "Koe features tools for visualising, segmenting, measuring, classifying, data-filtering and exporting acoustic units, and analysing sequence structure (syntax). It is an end-to-end acoustic database solution, especially suitable for animal species with distinct acoustic units.\nYou can use it on any device at koe.io.ac.nz, which makes it ideal for collaboration, education, and citizen science.\nFor a quick overview and demonstration of program features, see this video:\n  Table of content \rWhy use Koe?\r\r\r\r\rOverview of Koe workflow\r\r\r\r\rNavigating Koe\r\r\r\r\rUser and database control\r\r\r\r\rSongs control\r\r\r\r\r"
+},
+{
+	"uri": "http://koe-wiki.github.io/",
+	"title": "Welcome to Koe&#39;s Wiki",
+	"tags": [],
+	"description": "",
+	"content": "Koe Wiki Koe is open-source web-based software for analysing animal vocalisations.\nRead the Methods in Ecology and Evolution paper here. Please cite this paper if you publish using Koe\nTable of content \rUser\u0026#39;s Manual\r\r\r\rWhy use Koe?\r\r\r\r\rOverview of Koe workflow\r\r\r\r\rNavigating Koe\r\r\r\r\rUser and database control\r\r\r\r\rSongs control\r\r\r\r\r\r"
+},
+{
+	"uri": "http://koe-wiki.github.io/user-manual/why-use-koe/",
+	"title": "Why use Koe?",
+	"tags": [],
+	"description": "",
+	"content": "Acoustic communication is fundamental to the behaviour of many species. If we want to understand animal behaviour we need tools that allow us to objectively examine the details of vocalisations. What information are they sharing, and how is it encoded?\nOften, acoustic communication is structured as a temporal sequence of distinct acoustic units (e.g. syllables), where information is encoded in the types of units and sometimes their temporal arrangement (syntax). In such cases, this is the flowchart for acoustic analysis:\nClassification is a key step, because once you have a dataset of labelled units, you can analyse repertoire size and sequence structure and compare between individuals, sexes, sites, and seasons.\nManual classification by human eye and ear remains the primary and most reliable method for most species, but is hindered by a lack of tools, especially for large and diverse datasets.\nThat’s where Koe comes in. By facilitating large-scale, high-resolution classification and analysis of acoustic units, Koe opens up many possibilities for bioacoustics research.\n"
+},
+{
+	"uri": "http://koe-wiki.github.io/user-manual/overview-workflow/",
+	"title": "Overview of Koe workflow",
+	"tags": [],
+	"description": "",
+	"content": "We designed the Koe workflow to be intuitive and flexible. Here is a suggested workflow:\n  Import raw recordings and divide into “songs” (vocalisation bouts), then segment songs into their constituent acoustic units.\n  You can extract acoustic features from units. These features are used to calculate unit similarity and expedite classification in two ways: through interactive ordination, and similarity indices.\n  Interactive ordination is a major time saver for classification. The user can encircle groups of points on the ordination to see spectrograms, hear playback, and bulk-label groups of units. Harnessing the interactive ordination in conjunction with human audio-visual perception, this technique offers a major advance in both speed and robustness over existing acoustic classification methods.\n  Units can also be viewed as an interactive unit table. A key feature of the unit table is the similarity index, which lets you sort by acoustic similarity. Because similar-sounding units are grouped together, units can easily be selected in bulk and classified.\n  A catalogue of class exemplars is generated automatically, displaying up to 10 randomly chosen exemplars for each class, which serves as a useful reference during classification.\n  Koe gives you full control of your databases, allowing you to add collaborators and set permission levels. This makes it straightforward to conduct a classification validation experiment: grant judges labelling access to your database, and once they have independently classified the units, compile their labels to examine concordance.\n  Once units have been classified, songs can be visualised as sequences of unit labels; you can filter by sequence to identify all instances of a specific song type, for example. You can also mine sequence structure in detail with association rule algorithms and network visualisations.\n  Export data from any program view as csv.\n  "
+},
+{
+	"uri": "http://koe-wiki.github.io/user-manual/navigating-koe/",
+	"title": "Navigating Koe",
+	"tags": [],
+	"description": "",
+	"content": "\r\rIn Koe, on the left of the screen is a sidebar with program controls. At the top of the sidebar are User account controls for logging out / switching user; beneath that are controls specific to the active view. And beneath that is the workflow navigation pane with buttons to access different program views, labelled according to their function.\n"
+},
+{
+	"uri": "http://koe-wiki.github.io/user-manual/user-and-db/",
+	"title": "User and database control",
+	"tags": [],
+	"description": "",
+	"content": "Create an account Go to koe.io.ac.nz and click on Register to register an account.\nChoose a username, input your name and email address for purposes of Koe support correspondence, and choose a password. (We will never share your information with anyone).\nCreate a new database Back to table of contents\nUnder Manage your database, click New database to create a new database.\nAdd collaborators to a database and set permission levels Back to table of contents\nYou can add collaborators at any stage.\n  Click on Manage your database.\n  Select the round checkbox of the database you want to add collaborators to.\n  Click Add collaborator and Type the Koe username or Koe account email address of your intended collaborator.\n  Once added, you can set their permission level by double-clicking the Permission cell next to their username.\n  From lowest to highest permission level: View, Annotate, Import data, Copy files, Add files, Modify segmentation, Delete files, Assign user. Each subsequent permission level extends the permissions of the previous level as per the table below:\n   Level Permissions     View User can view data   Annotate User can view and annotate data   Import data User can import, view and annotate data   Copy files User can copy files, import, view and annotate data   Add files User can add files, copy files, import, view and annotate data   Modify segmentation User can modify segmentation, add files, copy files, import, view and annotate data   Delete files User can delete files, modify segmentation, add files, copy files, import, view and annotate data   Assign user User can assign additional users, delete files, modify segmentation, add files, copy files, import, view and annotate data    Set database restore points Back to table of contents\nChanges are saved to the database as soon as they happen. If you want to be able to revert to a previous state you will want to save database restore points.\n  Click on Manage your database.\n  Select the round checkbox of the database you want to set a restore point for.\n  Click Quick save or Full save at the bottom of the window to create a restore point. Quick save saves label data associated with each unit. Full save saves both label data and segmentation start/end points.\n  Please note that restore points do not affect which songs are in the database or which units are segmented. For example, if you make a save and then delete songs, reverting will not restore the songs to the database. Similarly, if you add songs, reverting will not remove the added songs. In the same way, if you add/delete units, reverting will not remove/restore the segmentation. What reverting will do is restore the label data and (for a full save) the segmentation start/end points for currently existing units. If you want to preserve all aspects of a database at a certain point, like a traditional \u0026lsquo;Save As\u0026rsquo;, then copy everything to a new database, as described in Copy songs to another database below.\n"
+},
+{
+	"uri": "http://koe-wiki.github.io/user-manual/songs-control/",
+	"title": "Songs control",
+	"tags": [],
+	"description": "",
+	"content": "Upload songs Click this link to download NZ bellbird songs to try out Upload songs feature and subsequent steps\nIf you have already-divided song files on your computer, you can upload these directly. On the navigation pane, click Upload songs and select up to 100 WAV files at once to upload.\nFor raw recordings that need to be divided into songs, see next step.\nUpload raw recordings and divide into songs Click this link to download raw (unsplit) recordings of bellbird song to try Upload \u0026amp; split raw recordings\nTo upload a raw recording and divide it into song selections, do the following:\nOn the navigation pane, click Upload \u0026amp; split raw recording\n  In the Upload raw recording dialogue box, Click Upload (WAV only)\n  Select the recording you want to upload\n  Click Open\n  After selecting a file to upload, an Upload raw recording dialogue appears with Track name and Record date fields. The track name is automatically filled in based on the wav filename. For example, Raw_Recording_001.wav will by default appear as Raw_Recording_001.\n Click in the Track name field to modify the track name, if you wish.\n  Click in the Record date field to modify the date. By default, the record date is set as the date of recording upload to Koe.\n  Click Submit track info.\n   For recordings with more than one channel, select the desired channel.\n  Play the recording with the playback controls, looking for songs to segment. To play from the beginning, click Play button.\n  You can also play from a specific timepoint by clicking that point, then clicking Play.\n  With the controls beneath the spectrogram, you can:\n Adjust spectrogram zoom.\n  Adjust spectrogram colour map.\n  Adjust playback speed.\n  Adjust spectrogram contrast.\n  To create a song selection simply drag over the spectrogram to create a selection box.  Click the selection box to play it. Adjust the selection box endpoints by holding Shift and dragging the box handles that appear.\nFor each selection you make, a row appears in the table beneath.\nFill in annotation columns as desired by double-clicking in those cells.   You can set an automatic naming scheme for segmented songs. Click the Naming pattern box to create a naming scheme with any combination of the following components: Track name, Year, Month, Day, Order. You can also add custom components to the scheme, such as text strings, if you wish. Click Rename all to apply the naming scheme to all existing song selections.\n  Once you’ve finished making song selections, click Save to upload the songs to the database. The raw recording will not be saved, only songs – so make sure you finish partitioning all songs in one go.\n  \rRecordings too big to upload? Use this tool to automatically split your wav files\n\rSome bioacoustics researchers work with looong recordings (e.g. passive acoustic monitoring). Very large files can be cumbersome. But don\u0026rsquo;t worry! Yukio Fukuzawa has heard your cries and has come galloping to our rescue with a simple tool for automatically splitting large wav files into smaller wav files. You specify how long you want the audio sections to be, and how many seconds of overlap between sections.\nTo run the tool you will need to install Python. After that it\u0026rsquo;s just a simple line of code that you type into your command prompt.\nThe tool and instructions are found here: https://github.com/fzyukio/split-songs\n"
+},
+{
+	"uri": "http://koe-wiki.github.io/categories/",
+	"title": "Categories",
+	"tags": [],
+	"description": "",
+	"content": ""
+},
+{
+	"uri": "http://koe-wiki.github.io/tags/",
+	"title": "Tags",
+	"tags": [],
+	"description": "",
+	"content": ""
+}]
