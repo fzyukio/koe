@@ -12,6 +12,16 @@
     
     
     <item>
+      <title>Frequency domain features</title>
+      <link>http://koe-wiki.github.io/features/time-domain/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/features/time-domain/</guid>
+      <description>Spectral Flux Is the measure of the changes in the shape of the spectrum over time. SF is computed as the Euclidean ($L^2$) distance of two consecutive spectral frames with normalised PSD
+Spectral Slope For many natural audio signals, the energy of the spectrum tends to decrease towards the higher end of the frequency range, the &amp;ldquo;slope&amp;rdquo; of which is related to the nature of the sound source. This parameter can be found via linear regression of the magnitude: $$x(f) = slope \times f + intercept$$ where $x(f)$ is the magnitude function and $f$ is the frequency value.</description>
+    </item>
+    
+    <item>
       <title>Why use Koe?</title>
       <link>http://koe-wiki.github.io/user-manual/why-use-koe/</link>
       <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
@@ -34,12 +44,31 @@ Often, acoustic communication is structured as a temporal sequence of distinct a
     </item>
     
     <item>
+      <title>Time domain features</title>
+      <link>http://koe-wiki.github.io/features/frequency-domain/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/features/frequency-domain/</guid>
+      <description>The time domain represents changes in the signal over time, or more precisely, the changes in air pressure when the sound reaches a microphone, which is measured by voltage value. Features in this category are necessarily extracted directly from the oscillogram without any transformation. Thus, they tend to have excellent time resolution and low computational cost.
+Zero Crossing Rate (ZCR) Defined as the number of zero crossings within one second is an efficient way to approximate the dominant frequency</description>
+    </item>
+    
+    <item>
       <title>Navigating Koe</title>
       <link>http://koe-wiki.github.io/user-manual/navigating-koe/</link>
       <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
       
       <guid>http://koe-wiki.github.io/user-manual/navigating-koe/</guid>
       <description>In Koe, on the left of the screen is a sidebar with program controls. At the top of the sidebar are User account controls for logging out / switching user; beneath that are controls specific to the active view. And beneath that is the workflow navigation pane with buttons to access different program views, labelled according to their function.</description>
+    </item>
+    
+    <item>
+      <title>Perceptual based features</title>
+      <link>http://koe-wiki.github.io/features/perceptual-features/</link>
+      <pubDate>Fri, 03 Apr 2020 12:34:36 +1300</pubDate>
+      
+      <guid>http://koe-wiki.github.io/features/perceptual-features/</guid>
+      <description>Linear Predictive Cepstral Coefficients Is the Fourier transform of the log magnitude of the autoregressive power spectrum of the excitation source in a linear prediction model.</description>
     </item>
     
     <item>

@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>http://koe-wiki.github.io/features/time-domain/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://koe-wiki.github.io/user-manual/</loc>
     <lastmod>2020-04-03T12:34:36+13:00</lastmod>
   </url>
@@ -18,12 +23,27 @@
   </url>
   
   <url>
+    <loc>http://koe-wiki.github.io/features/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://koe-wiki.github.io/user-manual/overview-workflow/</loc>
     <lastmod>2020-04-03T12:34:36+13:00</lastmod>
   </url>
   
   <url>
+    <loc>http://koe-wiki.github.io/features/frequency-domain/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
     <loc>http://koe-wiki.github.io/user-manual/navigating-koe/</loc>
+    <lastmod>2020-04-03T12:34:36+13:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://koe-wiki.github.io/features/perceptual-features/</loc>
     <lastmod>2020-04-03T12:34:36+13:00</lastmod>
   </url>
   

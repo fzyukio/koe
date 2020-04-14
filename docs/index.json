@@ -1,5 +1,12 @@
 [
 {
+	"uri": "http://koe-wiki.github.io/features/time-domain/",
+	"title": "Frequency domain features",
+	"tags": [],
+	"description": "",
+	"content": "Spectral Flux Is the measure of the changes in the shape of the spectrum over time. SF is computed as the Euclidean ($L^2$) distance of two consecutive spectral frames with normalised PSD\nSpectral Slope For many natural audio signals, the energy of the spectrum tends to decrease towards the higher end of the frequency range, the \u0026ldquo;slope\u0026rdquo; of which is related to the nature of the sound source. This parameter can be found via linear regression of the magnitude: $$x(f) = slope \\times f + intercept$$ where $x(f)$ is the magnitude function and $f$ is the frequency value. In addition to slope, the intercept and regression error can also be used as features.\nSpectral Centroid is the centre of gravity of the spectrum, calculated as the weighted mean of the frequencies using their normalised magnitude as weights:\n$$SC = \\sum_{n=1}^{N} \\Big(f(n) \\times x(n)\\Big) \\Bigg/ \\sum_{n=1}^{N} x(n)$$\nWhere $N$ is the total number of frequency bins, $a(n)$ is the normalised magnitude of the spectrum at bin $n$ and $f(n)$ is the centre frequency of bin $n$. Value of SC is the frequency where most of the energy is concentrated in, which is usually where the dominant frequency is found.\nSpectral Centre Is the frequency where half of the energy in the magnitude spectrum is above and half is below\nSpectral Rolloff Is defined as the \\textit{N}% percentile of the power spectrum. In practice, the value of \\textit{N} is usually at the higher end (85, 95, etc).\nSpectral Centre is a Spectral Rolloff with $N=50$\nSpectral Flatness Also known as Wiener entropy is a measure of the noisiness of the spectrum, of which the higher value correspond to a more uniform distribution of power over all frequencies. It is computed as the ratio of the geometric mean over the arithmetic mean of the spectrum:\n$$SF = \\sqrt[N]{\\prod_{n=1}^{N}x(n)} \\Bigg/% \\frac{1}{N} \\sum_{n=1}^{N}x(n)$$\nSpectral Crest Is the opposite of Spectral Flatness. it measures how peaky the spectrum is. A noisy spectrum have low value of SCF compare to a clear tonal spectrum. It is calculated as the ratio of the peak over the mean frequency value:\n\\begin{equation*} SCF = \\max_{1 \\le n \\le N} x(n) \\Bigg/ \\frac{1}{N} \\sum_{n=1}^{N}x(n) \\end{equation*}\nBandwidth Also known as Spectral Spread, is usually defined as the magnitude-weighted average of the differences between the spectral components and the spectral centroid\n\\begin{equation*} BW = \\sum_{n=1}^{N} \\Big(\\big(f(n)-SC\\big) \\times x(n)\\Big) \\Bigg/ \\sum_{n=1}^{N} x(n) \\label{eq:bandwidth} \\end{equation*}\nFundamental Frequency Is the lowest frequency of a harmonic series. It concurs with the rate of oscillation of the sound source. The FF is the same as the dominant frequency in case of pure-tone signals, which makes it relatively straightforward to determine. However, this is not the case with speech and many bird\u0026rsquo;s vocalisations, which produce complex sound (having harmonic structure). The fundamental frequency of a harmonic series can be determined as either the lowest harmonic or more reliably (in the case of missing fundamental) by finding the largest common denominator of the harmonics.\nHarmonic Ratio Is the ratio of harmonic power to total power, it is computed in the autocorrelation domain and defined as the maximum value of the normalised autocorrelation function (after having ignored the zero-lag peak) within a frame of length $k$:\n\\begin{equation*} HR = \\max_k \\Bigg(\\sum\\nolimits_j \\Big(s(j)\\times s(j-k)\\Big) \\Big/ \\sqrt{\\sum\\nolimits_j s(j)^2 \\sum\\nolimits_j s(j-k)^2} \\Bigg) \\end{equation*}\nWhere $s(j)$ is the function of sound pressure in time domain.\n"
+},
+{
 	"uri": "http://koe-wiki.github.io/user-manual/",
 	"title": "User&#39;s Manual",
 	"tags": [],
@@ -11,7 +18,7 @@
 	"title": "Welcome to Koe&#39;s Wiki",
 	"tags": [],
 	"description": "",
-	"content": "Koe Wiki Koe is open-source web-based software for analysing animal vocalisations.\nRead the Methods in Ecology and Evolution paper here. Please cite this paper if you publish using Koe\nTable of content \rUser\u0026#39;s Manual\r\r\r\rWhy use Koe?\r\r\r\r\rOverview of Koe workflow\r\r\r\r\rNavigating Koe\r\r\r\r\rUser and database control\r\r\r\r\rSongs control\r\r\r\r\r\r"
+	"content": "Koe Wiki Koe is open-source web-based software for analysing animal vocalisations.\nRead the Methods in Ecology and Evolution paper here. Please cite this paper if you publish using Koe\nTable of content \rUser\u0026#39;s Manual\r\r\r\rWhy use Koe?\r\r\r\r\rOverview of Koe workflow\r\r\r\r\rNavigating Koe\r\r\r\r\rUser and database control\r\r\r\r\rSongs control\r\r\r\r\r\rAcoustic features\r\r\r\rFrequency domain features\r\r\r\r\rTime domain features\r\r\r\r\rPerceptual based features\r\r\r\r\r\r"
 },
 {
 	"uri": "http://koe-wiki.github.io/user-manual/why-use-koe/",
@@ -21,6 +28,13 @@
 	"content": "Acoustic communication is fundamental to the behaviour of many species. If we want to understand animal behaviour we need tools that allow us to objectively examine the details of vocalisations. What information are they sharing, and how is it encoded?\nOften, acoustic communication is structured as a temporal sequence of distinct acoustic units (e.g. syllables), where information is encoded in the types of units and sometimes their temporal arrangement (syntax). In such cases, this is the flowchart for acoustic analysis:\nClassification is a key step, because once you have a dataset of labelled units, you can analyse repertoire size and sequence structure and compare between individuals, sexes, sites, and seasons.\nManual classification by human eye and ear remains the primary and most reliable method for most species, but is hindered by a lack of tools, especially for large and diverse datasets.\nThat’s where Koe comes in. By facilitating large-scale, high-resolution classification and analysis of acoustic units, Koe opens up many possibilities for bioacoustics research.\n"
 },
 {
+	"uri": "http://koe-wiki.github.io/features/",
+	"title": "Acoustic features",
+	"tags": [],
+	"description": "",
+	"content": "Table of content \rFrequency domain features\r\r\r\r\rTime domain features\r\r\r\r\rPerceptual based features\r\r\r\r\r"
+},
+{
 	"uri": "http://koe-wiki.github.io/user-manual/overview-workflow/",
 	"title": "Overview of Koe workflow",
 	"tags": [],
@@ -28,11 +42,25 @@
 	"content": "We designed the Koe workflow to be intuitive and flexible. Here is a suggested workflow:\n  Import raw recordings and divide into “songs” (vocalisation bouts), then segment songs into their constituent acoustic units.\n  You can extract acoustic features from units. These features are used to calculate unit similarity and expedite classification in two ways: through interactive ordination, and similarity indices.\n  Interactive ordination is a major time saver for classification. The user can encircle groups of points on the ordination to see spectrograms, hear playback, and bulk-label groups of units. Harnessing the interactive ordination in conjunction with human audio-visual perception, this technique offers a major advance in both speed and robustness over existing acoustic classification methods.\n  Units can also be viewed as an interactive unit table. A key feature of the unit table is the similarity index, which lets you sort by acoustic similarity. Because similar-sounding units are grouped together, units can easily be selected in bulk and classified.\n  A catalogue of class exemplars is generated automatically, displaying up to 10 randomly chosen exemplars for each class, which serves as a useful reference during classification.\n  Koe gives you full control of your databases, allowing you to add collaborators and set permission levels. This makes it straightforward to conduct a classification validation experiment: grant judges labelling access to your database, and once they have independently classified the units, compile their labels to examine concordance.\n  Once units have been classified, songs can be visualised as sequences of unit labels; you can filter by sequence to identify all instances of a specific song type, for example. You can also mine sequence structure in detail with association rule algorithms and network visualisations.\n  Export data from any program view as csv.\n  "
 },
 {
+	"uri": "http://koe-wiki.github.io/features/frequency-domain/",
+	"title": "Time domain features",
+	"tags": [],
+	"description": "",
+	"content": "The time domain represents changes in the signal over time, or more precisely, the changes in air pressure when the sound reaches a microphone, which is measured by voltage value. Features in this category are necessarily extracted directly from the oscillogram without any transformation. Thus, they tend to have excellent time resolution and low computational cost.\nZero Crossing Rate (ZCR) Defined as the number of zero crossings within one second is an efficient way to approximate the dominant frequency\nTemporal Envelope Is the smoothed amplitude calculated by a moving window over the absolute value of the signal\u0026rsquo;s waveform. For signals that have relatively low and constant background noise, the temporal envelope provides a simple way to detect intervals of silence and thus could be used for audio segmentation.\nShort-time energy Is the mean square of the amplitude of the waveform over one frame\n$$p\\triangleq\\frac{\\sum_{i=t}^{t+d-1} {s_i}^2}{d}$$\nLoudness Is the root mean square of the amplitude of the waveform over one frame\n$$p\\triangleq\\sqrt{\\frac{\\sum_{i=t}^{t+d-1} {s_i}^2}{d}}$$\nTemporal Centroid Is the point in time where most of the signal energy is concentrated, calculated as the time average over the envelope of a signal in seconds\nLog Attack Time is the logarithm of time duration from the beginning of the sound to the point where the envelope reaches its first maximum. LAT characterises the attack of sound, which can be smooth or sudden.\n"
+},
+{
 	"uri": "http://koe-wiki.github.io/user-manual/navigating-koe/",
 	"title": "Navigating Koe",
 	"tags": [],
 	"description": "",
 	"content": "\r\rIn Koe, on the left of the screen is a sidebar with program controls. At the top of the sidebar are User account controls for logging out / switching user; beneath that are controls specific to the active view. And beneath that is the workflow navigation pane with buttons to access different program views, labelled according to their function.\n"
+},
+{
+	"uri": "http://koe-wiki.github.io/features/perceptual-features/",
+	"title": "Perceptual based features",
+	"tags": [],
+	"description": "",
+	"content": "Linear Predictive Cepstral Coefficients Is the Fourier transform of the log magnitude of the autoregressive power spectrum of the excitation source in a linear prediction model.\n"
 },
 {
 	"uri": "http://koe-wiki.github.io/user-manual/user-and-db/",
