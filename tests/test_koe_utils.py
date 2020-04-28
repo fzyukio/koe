@@ -48,6 +48,7 @@ class KoeUtilsTest(TestCase):
 
         fs, sig = wav_2_mono(filepath, normalised=True)
         full_siglen = len(sig)
+        max_end_ms = int(np.floor(full_siglen / fs * 1000))
 
         # Test read_segment for the full duration (end_ms = None, beg_ms = 0)
         segment0 = wavfile.read_segment(filepath, mono=True)
@@ -56,12 +57,25 @@ class KoeUtilsTest(TestCase):
         # Test reading segments of different length from different starting points.
         # The returned segment must have the prescribed length
         for beg_ms in [0, 1, 2, 20, 30, 100]:
-            for length_ms in [100, 150, 153, 200]:
+            for length_ms in [1, 100, 150, 153, 200, max_end_ms-beg_ms]:
                 end_ms = beg_ms + length_ms
                 segment1 = wavfile.read_segment(filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True)
                 segment1_len_ms = np.round(len(segment1) * 1000 / fs)
-
                 self.assertEqual(segment1_len_ms, length_ms)
+
+        framelength = 256
+
+        for beg_ms in [0, 1, 2, 20, 30, 100]:
+            for length_ms in [1, 100, 150, 153, 200, max_end_ms-beg_ms]:
+                correct_length = int(length_ms * fs / 1000)
+                if correct_length % framelength != 0:
+                    correct_length = np.ceil(correct_length / framelength) * framelength
+
+                end_ms = beg_ms + length_ms
+                segment1 = wavfile.read_segment(filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True,
+                                                winlen=framelength)
+
+                self.assertEqual(correct_length, len(segment1))
 
     def test_zscore(self):
         with h5py.File('tests/zscore.h5', 'r') as hf:

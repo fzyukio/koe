@@ -25,19 +25,18 @@
 
 
 """
-Module to read / write wav files using numpy arrays
+Module to read / write wav files using np arrays
 
 Functions
 ---------
 `read`: Return the sample rate (in samples/sec) and data from a WAV file.
 
-`write`: Write a numpy array as a WAV file.
+`write`: Write a np array as a WAV file.
 
 """
 import struct
-import warnings
 
-import numpy
+import numpy as np
 
 
 class WavFileWarning(UserWarning):
@@ -84,7 +83,7 @@ def nearest_multiple(from_number, factor, max_val=None):
     :param factor:
     :return:
     """
-    if max_val and from_number > max_val:
+    if max_val is not None and from_number > max_val:
         from_number = max_val
 
     residual = from_number % factor
@@ -124,12 +123,20 @@ def read_wav_info(file):
     return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
 
 
-def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True, retype=True):
+def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True, retype=True,
+              winlen=1):
     bits = fmt_info['bits']
     ba = fmt_info['ba']
     rate = fmt_info['rate']
     noc = fmt_info['noc']
     comp = fmt_info['comp']
+
+    if end_ms is not None:
+        if np.floor(end_ms * rate * ba / 1000) > data_size:
+            if np.floor((end_ms-1) * rate * ba / 1000) > data_size:
+                raise Exception("end_ms is bigger than the duration")
+            else:
+                end_ms -= 1
 
     if data_cursor:
         fid.seek(data_cursor, SEEK_ABSOLUTE)
@@ -152,23 +159,34 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     # Furthermore, if there are more than one channel, beg must be divisible by
     # (bytes per frame * number of channels)
     byte_per_frame = bits // 8
+    byte_per_window = byte_per_frame * noc * winlen
     beg = nearest_multiple(beg, byte_per_frame * noc)
-    fid.seek(beg, SEEK_RELATIVE)
 
     if end_ms is None:
-        requested_end = data_size
+        # end_ms = int(np.floor(data_size * 1000 / ba / rate))
+        end = data_size
     else:
-        requested_end = int(end_ms * rate * ba / 1000)
-    end = nearest_multiple(requested_end, byte_per_frame * noc, data_size)
-    zero_pad = requested_end - end
+
+        duration_ms = end_ms - beg_ms
+        duration_frame = duration_ms * rate * ba / 1000
+        duration_window = int(np.ceil(duration_frame / byte_per_window) * byte_per_window)
+        end = beg + duration_window
+
+    if end > data_size:
+        zero_pad = (end - data_size) // (bits // 8)
+        end = data_size
+    else:
+        zero_pad = 0
+
+    fid.seek(beg, SEEK_RELATIVE)
 
     chunk_size = end - beg
     if retype:
-        data = numpy.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
+        data = np.fromfile(fid, dtype=dtype, count=chunk_size // bytes)
         fid.close()
 
         if bits == 24:
-            a = numpy.empty((len(data) // 3, 4), dtype='u1')
+            a = np.empty((len(data) // 3, 4), dtype='u1')
             a[:, :3] = data.reshape((-1, 3))
             a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
             data = a.view('<i4').reshape(a.shape[:-1])
@@ -181,29 +199,30 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
 
         if zero_pad:
             if len(data.shape) == 1:
-                zeros = numpy.zeros((zero_pad,), dtype=data.dtype)
+                zeros = np.zeros((zero_pad,), dtype=data.dtype)
             else:
-                zeros = numpy.zeros((zero_pad, data.shape[1]), dtype=data.dtype)
-            data = numpy.concatenate((data, zeros), axis=0)
+                zeros = np.zeros((zero_pad, data.shape[1]), dtype=data.dtype)
+            data = np.concatenate((data, zeros), axis=0)
 
         if normalised:
             normfactor = 1.0 / (2 ** (bits - 1))
-            data = numpy.ascontiguousarray(data, dtype=numpy.float32) * normfactor
+            data = np.ascontiguousarray(data, dtype=np.float32) * normfactor
         else:
-            data = numpy.ascontiguousarray(data, dtype=data.dtype)
+            data = np.ascontiguousarray(data, dtype=data.dtype)
     else:
-        data = numpy.fromfile(fid, dtype=numpy.ubyte, count=chunk_size)
+        data = np.fromfile(fid, dtype=np.ubyte, count=chunk_size)
     return data
 
 
-def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, return_fs=False, retype=True):
+def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, return_fs=False, retype=True, winlen=1):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
+    :param min_nframe: minimum number of samples to be returned. Handy if a whole number is necessary e.g. for FFT
     :param normalised: If true, return float32 array, otherwise return the raw ubyte array
     :param file: file name
     :param beg_ms: begin of the segment in milliseconds
     :param end_ms: end of the segment in milliseconds
-    :param retype: [True] to return data as numpy array that is appropriately reshaped and retyped.
+    :param retype: [True] to return data as np array that is appropriately reshaped and retyped.
                    False to return raw unsigned byte data.
     :return: a np array
     """
@@ -232,7 +251,7 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
         elif chunk_id == b'data':
             data_size = struct.unpack('<i', fid.read(4))[0]
             if fmt_info is not None:
-                retval = read_data(fid, None, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype)
+                retval = read_data(fid, None, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype, winlen)
                 break
             else:
                 data_cursor = fid.tell()
@@ -248,7 +267,7 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
     assert data_size is not None, 'Unable to read DATA block from file ' + fid.name
 
     if retval is None:
-        retval = read_data(fid, data_cursor, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype)
+        retval = read_data(fid, data_cursor, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype, winlen)
 
     if return_fs:
         retval = (retval, rate)
@@ -305,8 +324,8 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
     :param data: a 3d array with shape: (number_of_samples, number_of_channels, byte_rate ) and dtype uint8
     :return: None
     """
-    assert data.dtype == numpy.uint8
-    shape = numpy.shape(data)
+    assert data.dtype == np.uint8
+    shape = np.shape(data)
     assert len(shape) == 3
     assert shape[2] * 8 == bitrate
 
@@ -367,7 +386,7 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
         if not loops:
             loops = []
         if pitch:
-            midiunitynote = 12 * numpy.log2(pitch * 1.0 / 440.0) + 69
+            midiunitynote = 12 * np.log2(pitch * 1.0 / 440.0) + 69
             midipitchfraction = int((midiunitynote - int(midiunitynote)) * (2 ** 32 - 1))
             midiunitynote = int(midiunitynote)
             # print(midipitchfraction, midiunitynote)
@@ -393,7 +412,7 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
 
 def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=None, normalized=False):
     """
-    Write a numpy array as a WAV file
+    Write a np array as a WAV file
 
     Parameters
     ----------
@@ -402,7 +421,7 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
     rate : int
         The sample rate (in samples/sec).
     data : ndarray
-        A 1-D or 2-D numpy array of integer data-type.
+        A 1-D or 2-D np array of integer data-type.
 
     Notes
     -----
@@ -413,25 +432,25 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
 
     """
     # normalization and 24-bit handling
-    if bitrate == 24:  # special handling of 24 bit wav, because there is no numpy.int24...
+    if bitrate == 24:  # special handling of 24 bit wav, because there is no np.int24...
         if normalized:
             data[data > 1.0] = 1.0
             data[data < -1.0] = -1.0
-            a32 = numpy.asarray(data * (2 ** 23 - 1), dtype=numpy.int32)
+            a32 = np.asarray(data * (2 ** 23 - 1), dtype=np.int32)
         else:
-            a32 = numpy.asarray(data, dtype=numpy.int32)
+            a32 = np.asarray(data, dtype=np.int32)
         if a32.ndim == 1:
             # Convert to a 2D array with a single column.
             a32.shape = a32.shape + (1,)
 
         # By shifting first 0 bits, then 8, then 16, the resulting output is 24 bit little-endian.
-        a8 = (a32.reshape(a32.shape + (1,)) >> numpy.array([0, 8, 16])) & 255
-        data = a8.astype(numpy.uint8)
+        a8 = (a32.reshape(a32.shape + (1,)) >> np.array([0, 8, 16])) & 255
+        data = a8.astype(np.uint8)
     else:
         if normalized:  # default to 32 bit int
             data[data > 1.0] = 1.0
             data[data < -1.0] = -1.0
-            data = numpy.asarray(data * (2 ** 31 - 1), dtype=numpy.int32)
+            data = np.asarray(data * (2 ** 31 - 1), dtype=np.int32)
 
     _write(filename, rate, data, bitrate, markers, loops, pitch)
 
@@ -444,8 +463,8 @@ def write_24b(filename, rate, data):
     :param data:
     :return:
     """
-    assert data.dtype == numpy.uint8
-    shape = numpy.shape(data)
+    assert data.dtype == np.uint8
+    shape = np.shape(data)
     assert len(shape) == 3
     assert shape[2] == 3
 

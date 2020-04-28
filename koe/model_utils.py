@@ -1,9 +1,9 @@
 import os
 from collections import Counter
 
-import logging
 import numpy as np
 from PIL import Image
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import models
 from scipy import signal
@@ -11,17 +11,16 @@ from scipy.cluster.hierarchy import linkage
 
 from koe.celery_init import app
 from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.utils import wav_2_mono, get_abs_spect_path
 from koe.models import Database
 from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
     AudioFile
-from koe.utils import wav_path, audio_path
+from koe.utils import get_abs_spect_path
 from koe.utils import triu2mat, mat2triu
+from koe.utils import wav_path, audio_path
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
-
-from celery.utils.log import get_task_logger
+from koe.wavfile import get_wav_info, read_segment
 
 celerylogger = get_task_logger(__name__)
 
@@ -238,60 +237,53 @@ def get_user_databases(user):
     return current_database
 
 
-@app.task(bind=False)
-def extract_spectrogram(audio_file_id, *args, **kwargs):
+def extract_spectrogram(audio_file, segs_info):
     """
     Extract raw sepectrograms for all segments (Not the masked spectrogram from Luscinia) of an audio file
-    :param audio_file_id:
+    :param audio_file:
     :return:
     """
-    audio_file = AudioFile.objects.get(id=audio_file_id)
-    segs_info = Segment.objects.filter(audio_file=audio_file).values_list('tid', 'start_time_ms', 'end_time_ms')
+    filepath = wav_path(audio_file)
 
-    missing_segs_info = []
+    fs, duration = get_wav_info(filepath)
+    if not os.path.isfile(filepath):
+        raise CustomAssertionError("File {} not found".format(audio_file.name))
 
     for tid, start, end in segs_info:
         seg_spect_path = get_abs_spect_path(tid)
         ensure_parent_folder_exists(seg_spect_path)
-        if not os.path.isfile(seg_spect_path):
-            missing_segs_info.append((seg_spect_path, start, end))
 
-    if len(missing_segs_info) > 0:
-        filepath = wav_path(audio_file)
-
-        fs, sig = wav_2_mono(filepath)
-        duration_ms = len(sig) * 1000 / fs
-
+        sig = read_segment(filepath, beg_ms=start, end_ms=end, mono=True, normalised=True, return_fs=False, retype=True, winlen=window_size)
         _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
-        file_spect = np.abs(s * scale)
+        spect = np.abs(s * scale)
 
-        height, width = np.shape(file_spect)
-        file_spect = np.flipud(file_spect)
+        height, width = np.shape(spect)
+        spect = np.flipud(spect)
 
-        file_spect = np.log10(file_spect)
-        file_spect = ((file_spect - global_min_spect_pixel) / interval64)
-        file_spect[np.isinf(file_spect)] = 0
-        file_spect = file_spect.astype(np.int)
+        spect = np.log10(spect)
+        spect = ((spect - global_min_spect_pixel) / interval64)
+        spect[np.isinf(spect)] = 0
+        spect = spect.astype(np.int)
 
-        file_spect = file_spect.reshape((width * height,), order='C')
-        file_spect[file_spect >= 64] = 63
-        file_spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
-        file_spect_rgb[:, :, 0] = cm_red[file_spect].reshape(
+        spect = spect.reshape((width * height,), order='C')
+        spect[spect >= 64] = 63
+        spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
+        spect_rgb[:, :, 0] = cm_red[spect].reshape(
             (height, width)) * 255
-        file_spect_rgb[:, :, 1] = cm_green[file_spect].reshape(
+        spect_rgb[:, :, 1] = cm_green[spect].reshape(
             (height, width)) * 255
-        file_spect_rgb[:, :, 2] = cm_blue[file_spect].reshape(
+        spect_rgb[:, :, 2] = cm_blue[spect].reshape(
             (height, width)) * 255
 
-        for path, start, end in missing_segs_info:
-            roi_start = int(start / duration_ms * width)
-            roi_end = int(np.ceil(end / duration_ms * width))
 
-            seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
-            seg_spect_img = Image.fromarray(seg_spect_rgb)
+        # roi_start = int(start / duration_ms * width)
+        # roi_end = int(np.ceil(end / duration_ms * width))
 
-            seg_spect_img.save(path, format='PNG')
-            celerylogger.info('spectrogram {} created'.format(path))
+        # seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
+        seg_spect_img = Image.fromarray(spect_rgb)
+
+        seg_spect_img.save(seg_spect_path, format='PNG')
+        celerylogger.info('spectrogram {} created'.format(seg_spect_path))
 
 
 def assert_permission(user, database, required_level):

@@ -257,10 +257,11 @@ def save_segmentation(request):
         id = segment.id
         if id in id_to_exiting_item:
             item = id_to_exiting_item[id]
-            segment.start_time_ms = item['start']
-            segment.end_time_ms = item['end']
+            if segment.start_time_ms != item['start'] or segment.end_time_ms != item['end']:
+                segment.start_time_ms = item['start']
+                segment.end_time_ms = item['end']
 
-            to_update.append(segment)
+                to_update.append(segment)
         else:
             to_delete_id.append(segment.id)
 
@@ -269,9 +270,12 @@ def save_segmentation(request):
     subfamily_attr = settings.ATTRS.segment.subfamily
     note_attr = settings.ATTRS.segment.note
 
+    segs_info_for_spectrogram = []
+
     with transaction.atomic():
         for segment in to_update:
             segment.save()
+            segs_info_for_spectrogram.append((segment.tid, segment.start_time_ms, segment.end_time_ms))
 
         Segment.objects.filter(id__in=to_delete_id).update(active=False)
 
@@ -279,6 +283,8 @@ def save_segmentation(request):
             segment.save()
             segment.tid = segment.id
             segment.save()
+            segs_info_for_spectrogram.append((segment.tid, segment.start_time_ms, segment.end_time_ms))
+
             if label:
                 ExtraAttrValue.objects.create(user=user, attr=label_attr, owner_id=segment.id, value=label)
             if family:
@@ -292,7 +298,7 @@ def save_segmentation(request):
     _, rows = bulk_get_segments_for_audio(segments, DotMap(file_id=file_id, user=user))
 
     delay_in_production(delete_segments_async)
-    delay_in_production(extract_spectrogram, audio_file.id)
+    extract_spectrogram(audio_file, segs_info_for_spectrogram)
 
     return rows
 
@@ -713,7 +719,7 @@ def update_segments_from_csv(request):
     key2tid = {(name, start, end): tid for name, start, end, tid in segs_all_db_vl}
 
     # This is used to re-extract segment's spectrograms for songs that have new segments added
-    new_segs_song_ids = set()
+    song_to_seg_ids = {name: [] for name in name2song.keys()}
 
     for key, row in key2row.items():
         (song_name, start, end) = key
@@ -724,15 +730,18 @@ def update_segments_from_csv(request):
             tid = key2tid.get(key, seg.id)
             seg.tid = tid
             seg.save()
-            new_segs_song_ids.add(song.id)
+
+            song_to_seg_ids[song_name].append((song, tid, start, end))
 
         # Although the ids of modified rows are sent back and stored at the end of each row,
         # We cannot rely on this ID because there might be errors in the uploaded CSV
         # We store the correct segment ID here
         row[-1] = seg.id
 
-    for song_id in new_segs_song_ids:
-        delay_in_production(extract_spectrogram, song_id)
+    for song_name, song_info in song_to_seg_ids.items():
+        if len(song_info) > 0:
+            segs_info = [(tid, start, end) for song, tid, start, end in song_info]
+            extract_spectrogram(song, segs_info)
 
     # Finally to change all other properties (label, family, note...)
     return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
