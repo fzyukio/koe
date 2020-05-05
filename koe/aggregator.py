@@ -97,9 +97,12 @@ class Aggregator(ABC):
 
 
 class StatsAggregator(Aggregator):
-    def __init__(self, method):
+    def __init__(self, method, name=None):
         self.method = method
-        self.name = method.__name__
+        if name is not None:
+            self.name = name
+        else:
+            self.name = method.__name__
 
     def get_name(self):
         return self.name
@@ -164,11 +167,56 @@ class DivideConquer(Aggregator):
         return False
 
 
+def get_first(arr, axis):
+    """
+    Get value at first index along axis.
+    For example:
+
+    >>> z = np.array([[1,2,3],[4,5,6]])
+    array([[1, 2, 3],
+           [4, 5, 6]])
+    >>> get_first(z, -1)
+    array([1, 4])
+
+
+    :param arr:
+    :param axis:
+    :return:
+    """
+    return np.take(arr, indices=0, axis=axis)
+
+
+def get_last(arr, axis):
+    """
+    Get value at  index along axis.
+    For example:
+
+    >>> z = np.array([[1,2,3],[4,5,6]])
+    array([[1, 2, 3],
+           [4, 5, 6]])
+    >>> get_last(z, -1)
+    array([3, 6])
+
+
+    :param arr:
+    :param axis:
+    :return:
+    """
+
+    return np.take(arr, indices=-1, axis=axis)
+
+
+
 enabled_aggregators = {
     'stats': [
         StatsAggregator(np.mean),
         StatsAggregator(np.median),
         StatsAggregator(np.std),
+        StatsAggregator(np.min, 'min'),
+        StatsAggregator(np.max, 'max'),
+        StatsAggregator(np.var, 'variance'),
+        StatsAggregator(get_first, 'begin'),
+        StatsAggregator(get_last, 'end'),
     ],
     'divcon-3': [
         DivideConquer(np.mean, 3),

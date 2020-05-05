@@ -134,7 +134,9 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     if end_ms is not None:
         if np.floor(end_ms * rate * ba / 1000) > data_size:
             if np.floor((end_ms-1) * rate * ba / 1000) > data_size:
-                raise Exception("end_ms is bigger than the duration")
+                duration = data_size * 1000 / rate / ba
+                error_msg = "end_ms is bigger than the duration: end_ms={} duration={}".format(end_ms, duration)
+                raise Exception(error_msg)
             else:
                 end_ms -= 1
 
