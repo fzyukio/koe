@@ -741,7 +741,10 @@ def update_segments_from_csv(request):
     for song_name, song_info in song_to_seg_ids.items():
         if len(song_info) > 0:
             segs_info = [(tid, start, end) for song, tid, start, end in song_info]
-            extract_spectrogram(song, segs_info)
+            try:
+                extract_spectrogram(song, segs_info)
+            except Exception as e:
+                pass
 
     # Finally to change all other properties (label, family, note...)
     return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
