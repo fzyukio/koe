@@ -246,6 +246,10 @@ def merge_audio_chunks(request):
 
     audio_file = _import_and_convert_audio_file(database, combined_file, max_fs)
 
+    for i in range(chunk_count):
+        chunk_file_path = wav_file_path + '__' + str(i)
+        os.remove(chunk_file_path)
+
     added_files = AudioFile.objects.filter(id=audio_file.id)
     _, rows = get_sequence_info_empty_songs(added_files)
     return rows
