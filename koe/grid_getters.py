@@ -444,6 +444,10 @@ def bulk_get_segments_for_audio(segs, extras):
         extra_attr_dict[attr] = value
 
     for id, start, end in values:
+
+        # start = start * 44100 / 44000
+        # end = end * 44100 / 44000
+
         ids.append(id)
         duration = end - start
         row = dict(id=id, start=start, end=end, duration=duration)

@@ -56,17 +56,31 @@ class Command(BaseCommand):
             help='Must be a .wav file. If exist, will run conversion test for this file only. '
                  'If not, convert everything.',
         )
-
+        parser.add_argument(
+            '--to-file',
+            action='store',
+            dest='tofile',
+            required=False,
+            type=str,
+        )
         parser.add_argument(
             '--format',
             action='store',
             dest='fmt',
-            required=True,
+            required=False,
             type=str,
             help='Audio format to convert, e.g. mp3,mp4,ogg. Not all formats are supported',
         )
 
-    def handle(self, testfile, fmt, *args, **options):
+    def handle(self, testfile, tofile, fmt, *args, **options):
+
+        if fmt is None:
+            if tofile is None:
+                raise Exception("Either format or --to-file must be provided")
+            else:
+                fmt = tofile.split('.')[-1]
+
+        print("Format = {}".format(fmt))
 
         if testfile is None:
             audio_files = AudioFile.objects.filter(original=None)
@@ -89,9 +103,12 @@ class Command(BaseCommand):
                 bar.next()
             bar.finish()
         else:
-            target_file_path = '/tmp/test-compress-wav.' + fmt
-            conversion_scheme = dict(wav=testfile, other=(fmt, target_file_path))
 
-            convert(conversion_scheme)
-
-            os.remove(target_file_path)
+            if tofile is None:
+                target_file_path = '/tmp/test-compress-wav.' + fmt
+                conversion_scheme = dict(wav=testfile, other=(fmt, target_file_path))
+                convert(conversion_scheme)
+                os.remove(target_file_path)
+            else:
+                conversion_scheme = dict(wav=testfile, other=(fmt, tofile))
+                convert(conversion_scheme)

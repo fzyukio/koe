@@ -10,16 +10,35 @@ from django.core.management.base import BaseCommand
 from progress.bar import Bar
 
 from koe.model_utils import extract_spectrogram
-from koe.models import Segment, AudioFile
+from koe.models import Segment, AudioFile, Database
 from koe.utils import PAGE_CAPACITY
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--database',
+            action='store',
+            dest='database_name',
+            required=False,
+            type=str,
+            help='Name of the database to reextract spectrogram. Omit to run for all databases'
+        )
+
+    def handle(self, database_name, *args, **options):
+        if database_name is not None:
+            database = Database.objects.filter(name=database_name).first()
+            if database is None:
+                raise Exception("Database {} not found!".format(database_name))
+
+            segments = Segment.objects.filter(audio_file__database=database)
+        else:
+            segments = Segment.objects.all()
+
         spect_dir = os.path.join(settings.MEDIA_URL, 'spect', 'syllable')[1:]
 
-        min_tid = Segment.objects.order_by('tid').first().tid
-        max_tid = Segment.objects.order_by('tid').last().tid
+        min_tid = segments.order_by('tid').first().tid
+        max_tid = segments.order_by('tid').last().tid
 
         min_page_id = int(np.ceil(min_tid / PAGE_CAPACITY)) - 1
         max_page_id = int(np.ceil(max_tid / PAGE_CAPACITY)) + 1
@@ -39,8 +58,7 @@ class Command(BaseCommand):
                 spect_files = os.listdir(page_dir)
             else:
                 spect_files = []
-            segment_ids = Segment.objects.filter(tid__lte=page_max_id, tid__gte=page_min_id)\
-                .values_list('tid', flat=True)
+            segment_ids = segments.filter(tid__lte=page_max_id, tid__gte=page_min_id).values_list('tid', flat=True)
             segment_png = frozenset(['{}.png'.format(x) for x in segment_ids])
 
             missing_spects = [x for x in segment_png if x not in spect_files]

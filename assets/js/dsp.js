@@ -6,12 +6,12 @@
  * @param fftComplexArray
  * @param window
  */
-export const calcSpect = function (sig, segs, fft, fftComplexArray, window) {
+export const calcSpect = function (sig, segs, fft, fftComplexArray, window, windowed) {
     const nfft = segs[0][1] - segs[0][0];
     const nframes = segs.length;
     const spect = [];
     let fbeg, fend, i, j;
-    const windowed = new Float32Array(nfft);
+
     const log = Math.log10;
 
     for (i = 0; i < nframes; i++) {

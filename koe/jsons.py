@@ -323,19 +323,19 @@ tables =\
                 {
                     "name": "Start",
                     "slug": "start",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "End",
                     "slug": "end",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "Duration",
                     "slug": "duration",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Family",
@@ -393,17 +393,17 @@ tables =\
                 {
                     "name": "Start",
                     "slug": "start",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "End",
                     "slug": "end",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Duration",
                     "slug": "duration",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Song name",
@@ -554,19 +554,19 @@ tables =\
                 {
                     "name": "Start",
                     "slug": "start_time_ms",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "End",
                     "slug": "end_time_ms",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "Duration",
                     "slug": "duration",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Song",

@@ -10,7 +10,7 @@ import {WAVDecoder} from '../vendor/audiofile';
  * @type {*}
  */
 let audioContext = new AudioContext();
-export const MAX_SAMPLE_RATE = audioContext.sampleRate;
+export const BROWSER_FS = audioContext.sampleRate;
 
 
 /**
@@ -279,7 +279,6 @@ const queryAndHandleAudio = function ({url, cacheKey, postData}, callback) {
         if (fileId) {
             let onSuccess = function (fileUrl) {
                 let url = fileUrl.url;
-                let realFs = fileUrl['real-fs'];
                 queryAndHandleAudioGetOrPost({
                     url: url,
                     cacheKey,
@@ -360,18 +359,21 @@ export const loadLocalAudioFile = function ({
             }
             else {
 
-                let sampleRate = decoded.sampleRate;
-                let dataArrays = decoded.channels;
-                let realSampleRate = sampleRate;
+                // dataArrays, realFs, realLength, browserFs
 
-                if (sampleRate > MAX_SAMPLE_RATE) {
-                    sampleRate = MAX_SAMPLE_RATE
+                let realFs = decoded.sampleRate;
+                let dataArrays = decoded.channels;
+                let realLength = dataArrays[0].length;
+                let browserFs = null;
+
+                if (realFs > BROWSER_FS) {
+                    browserFs = BROWSER_FS
                 }
-                resolve({
-                    dataArrays,
-                    sampleRate,
-                    realSampleRate
-                });
+                else {
+                    browserFs = realFs;
+                }
+
+                resolve({dataArrays, realFs, realLength, browserFs});
             }
         };
         reader.onprogress = onProgress;
@@ -401,6 +403,7 @@ export const loadSongById = function () {
             onSuccess(songData) {
                 let fileUrl = songData.url;
                 let realFs = songData['real-fs'];
+                let realLength = songData['length'];
 
                 let urlParts = fileUrl.split('/');
                 let filename = urlParts[urlParts.length - 1];
@@ -410,7 +413,7 @@ export const loadSongById = function () {
                     callback(sig, sampleRate) {
                         // The sampleRate the browser reads from this file might be faked.
                         // So we must provide the real fs
-                        resolve({dataArrays: sig, realFs, sampleRate, filename});
+                        resolve({dataArrays: sig, realFs, realLength, browserFs: sampleRate, filename});
                     }
                 });
             }

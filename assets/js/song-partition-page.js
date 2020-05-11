@@ -5,7 +5,7 @@ import {
     createAudioFromDataArray,
     loadLocalAudioFile,
     loadSongById,
-    MAX_SAMPLE_RATE
+    BROWSER_FS
 } from './audio-handler';
 import {deepCopy, setCache, getCache, uuid4, isNumber, showAlert, debug, pad} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
@@ -279,20 +279,20 @@ const saveSongsToDb = function () {
         let startMs = item.start;
         let endMs = item.end;
         let durationMs = audioData.durationMs;
-        let nSamples = audioData.length;
+        let nSamples = audioData.browserLength;
         let startSample = Math.floor(startMs * nSamples / durationMs);
         let endSample = Math.min(Math.ceil(endMs * nSamples / durationMs), nSamples);
 
         let subSig = spectViz.sig.slice(startSample, endSample);
-        let fsInBuffer = audioData.realSampleRate;
-        let realFs = audioData.realSampleRate;
+        let fsInBuffer = audioData.browserFs;
+        let realFs = audioData.realFs;
 
-        // techinically audiobuffer can be created for sample rate <= 384k. If exceeds, it fails
-        // So just to be safe we fake the sampling rate to max_sample_rate (48k) and tell the server that
-        // the file it receives doesn't have the correct sample rate
-        if (fsInBuffer > MAX_SAMPLE_RATE) {
-            fsInBuffer = MAX_SAMPLE_RATE;
-        }
+        // // techinically audiobuffer can be created for sample rate <= 384k. If exceeds, it fails
+        // // So just to be safe we fake the sampling rate to max_sample_rate (48k) and tell the server that
+        // // the file it receives doesn't have the correct sample rate
+        // if (fsInBuffer > BROWSER_FS) {
+        //     fsInBuffer = BROWSER_FS;
+        // }
         let blob = createAudioFromDataArray([subSig], fsInBuffer);
 
         let formData = new FormData();
@@ -301,7 +301,7 @@ const saveSongsToDb = function () {
         formData.append('database-id', database);
         formData.append('track-id', trackInfoForm.find('#id_track_id').attr('value'));
         formData.append('real-fs', realFs);
-        formData.append('max-fs', MAX_SAMPLE_RATE);
+        formData.append('browser-fs', BROWSER_FS);
 
         return promiseChain.then(function () {
             debug(`Sending audio data  #${i}`);
@@ -551,9 +551,9 @@ const initUploadSongsBtn = function () {
                 onLoad,
                 onAbort,
                 onLoadStart
-            }).then(function ({dataArrays, sampleRate, realSampleRate}) {
+            }).then(function ({dataArrays, realFs, realLength, browserFs}) {
                 let filename = file.name;
-                resolve({dataArrays, sampleRate, realSampleRate, filename});
+                resolve({dataArrays, realFs, realLength, browserFs, filename});
             }).catch(function (error) {
                 uploadProgressBar.html(error);
             });
@@ -849,7 +849,7 @@ export const run = function (commonElements) {
 
     spectViz = new Visualiser(vizContainerId);
 
-    loadSongPromise().then(function ({dataArrays, sampleRate, realSampleRate, filename}) {
+    loadSongPromise().then(function ({dataArrays, realFs, realLength, browserFs, filename}) {
         if (predefinedSongId) {
             populateTrackInfo(uuid4());
             uploadModal.find('.save-track-info').click();
@@ -859,15 +859,16 @@ export const run = function (commonElements) {
         }
 
         audioData.dataArrays = dataArrays;
-        audioData.fs = sampleRate;
-        audioData.realSampleRate = realSampleRate;
-        audioData.length = dataArrays[0].length;
-        audioData.durationMs = audioData.length * 1000 / realSampleRate;
+        audioData.realFs = realFs;
+        audioData.browserFs = browserFs;
+        audioData.realLength = realLength;
+        audioData.browserLength = dataArrays[0].length;
+        audioData.durationMs = realLength * 1000 / realFs;
 
         // If the audio has high sampling rate, it cannot be played back at original rate. So we have to artificially
         // lower the sampling rate, this will make the playback slower so we have to account for this later given the
         // ratio between real and fake sample rate
-        audioData.durationRatio = realSampleRate / sampleRate;
+        audioData.durationRatio = (realLength / realFs) / (audioData.browserLength / audioData.browserFs);
 
         spectViz.setData(audioData);
         spectViz.initScroll();

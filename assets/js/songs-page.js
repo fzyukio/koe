@@ -1,7 +1,7 @@
 /* global Dropzone */
 
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
-import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost, MAX_SAMPLE_RATE} from './audio-handler';
+import {changePlaybackSpeed, queryAndPlayAudio, createAudioFromDataArray, queryAndHandleAudioGetOrPost, BROWSER_FS} from './audio-handler';
 import {debug, deepCopy, getUrl, isNull} from './utils';
 import {postRequest} from './ajax-handler';
 import {CsvUploader} from './csv-uploader';
@@ -506,7 +506,7 @@ function setupDropZone() {
                 data: {
                     name: file.name,
                     database: databaseId,
-                    'max-fs': MAX_SAMPLE_RATE,
+                    'browser-fs': BROWSER_FS,
                     chunkCount: file.upload.totalChunkCount
                 },
                 onSuccess(rows) {
@@ -525,7 +525,7 @@ function setupDropZone() {
 
             self.on('sending', function (file, xhr, formData) {
                 formData.append('database', databaseId);
-                formData.append('max-fs', MAX_SAMPLE_RATE);
+                formData.append('browser-fs', BROWSER_FS);
             });
 
             self.on('maxfilesexceeded', function (file) {

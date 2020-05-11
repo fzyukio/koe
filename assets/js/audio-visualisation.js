@@ -105,8 +105,8 @@ export class Visualiser {
         this.spectWidth = this.$spectrogram.height() - this.margin.left - this.margin.right;
         this.spectHeight = this.$spectrogram.height() - this.margin.top - this.scrollbarHeight - this.axisHeight;
 
-        this.spectWidth = Math.round(this.spectWidth);
-        this.spectWidth = Math.round(this.spectWidth);
+        this.spectWidth = Math.min(50, Math.round(this.spectWidth));
+        this.spectHeight = Math.round(this.spectHeight);
 
         this.oscilloHeight = $(this.oscillogramId).height() - this.margin.top;
 
@@ -170,6 +170,7 @@ export class Visualiser {
             window[i] = 0.5 * (1 - cos(PI * 2 * i / (nfft - 1)));
         }
         self.window = window;
+        self.windowed = new Float32Array(nfft);
     }
 
     displayAsPromises() {
@@ -271,7 +272,7 @@ export class Visualiser {
                 if (spect === null) {
                     debug(`Calculate chunk: ${segBeg}`);
                     renderStatus.state = stateBeforeCalculation;
-                    spect = transposeFlipUD(calcSpect(self.sig, subSegs, self.fft, self.fftComplexArray, self.window));
+                    spect = transposeFlipUD(calcSpect(self.sig, subSegs, self.fft, self.fftComplexArray, self.window, self.windowed));
                     renderStatus.spect = spect;
                     renderStatus.state = stateCalculated;
                     return spect;
@@ -397,8 +398,8 @@ export class Visualiser {
             }
             else {
                 let endpoints = d3.event.selection.map(self.spectXScale.invert);
-                let start = Math.floor(Math.max(0, endpoints[0]));
-                let end = Math.ceil(endpoints[1]);
+                let start = Math.max(0, endpoints[0]);
+                let end = endpoints[1];
 
                 debug('start= ' + start + ' end=' + end);
 
@@ -456,16 +457,12 @@ export class Visualiser {
             attr('display', 'none');
     }
 
-    setData({dataArrays, fs, durationRatio, length, durationMs}) {
+    setData(audioData) {
         const self = this;
-        self.dataArrays = dataArrays;
-        self.fs = fs;
-        self.durationRatio = durationRatio;
-        self.durationMs = durationMs;
-        self.length = length;
+        self.audioData = audioData;
 
-        if (self.durationRatio !== 1) {
-            self.tickInterval /= self.durationRatio;
+        if (self.audioData.durationRatio !== 1) {
+            self.tickInterval /= self.audioData.durationRatio;
         }
 
         self.populateChannelOptions();
@@ -473,7 +470,7 @@ export class Visualiser {
 
     populateChannelOptions() {
         const self = this;
-        let nChannels = self.dataArrays.length;
+        let nChannels = self.audioData.dataArrays.length;
         const channelOptionUl = $('#channel-btn ul.dropdown-menu');
         for (let i = 0; i < nChannels; i++) {
             let option = `<li class="${i == 0 ? 'active' : ''}"><a class="select-channel" href="#" value=${i}>${i + 1}</a></li>`;
@@ -488,13 +485,13 @@ export class Visualiser {
 
     setChannel(channelIdx) {
         const self = this;
-        let sig = self.dataArrays[channelIdx];
+        let sig = self.audioData.dataArrays[channelIdx];
         self.sig = sig;
 
         let minY = 99999;
         let maxY = -99999;
         let y;
-        for (let i = 0; i < self.length; i++) {
+        for (let i = 0; i < self.audioData.browserLength; i++) {
             y = sig[i];
             if (minY > y) minY = y;
             if (maxY < y) maxY = y;
@@ -513,7 +510,7 @@ export class Visualiser {
          * Then create a canvas that can accommodate the entire image.
          * And then incrementally add frames to it
          */
-        self.imgWidth = Math.floor((self.length - self.nfft) / self.frameSize) + 1;
+        self.imgWidth = Math.floor((self.audioData.browserLength - self.nfft) / self.frameSize) + 1;
         self.imgHeight = self.nfft / 2;
 
         self.spectrogramSvg = d3.select(self.spectrogramId);
@@ -526,13 +523,13 @@ export class Visualiser {
         self.oscillogramSvg.attr('width', self.imgWidth);
         self.oscillogramSvg.attr('height', self.oscilloHeight);
 
-        let spectXExtent = [0, self.durationMs];
+        let spectXExtent = [0, self.audioData.durationMs];
         self.spectXScale = d3.scaleLinear().range([0, self.imgWidth]).domain(spectXExtent);
 
         /*
          * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
          */
-        let numTicks = self.durationMs / self.tickInterval;
+        let numTicks = self.audioData.durationMs / self.tickInterval;
         let xAxis = d3.axisBottom().scale(self.spectXScale).ticks(numTicks);
 
         self.spectrogramAxis = self.spectrogramSvg.append('g');
@@ -583,8 +580,8 @@ export class Visualiser {
         // on the spectrogram, e.g. 1 second of 96Khz audio should take 2 seconds if playback at 48Khz
         // therefore we must change the timestamp accordingly.
         let playAudioArgs = {
-            beginSec: begin * self.durationRatio / 1000,
-            endSec: endSec * self.durationRatio,
+            beginSec: begin * self.audioData.durationRatio / 1000,
+            endSec: endSec * self.audioData.durationRatio,
         };
 
         playAudioArgs.onStartCallback = function (_playbackSpeed) {
@@ -594,7 +591,7 @@ export class Visualiser {
             // If the durationRatio is not 1, meaning that the actual playback should take longer than it is shown
             // on the spectrogram, e.g. 1 second of 96Khz audio should take 2 seconds if playback at 48Khz
             // therefore we must change the speed of the indicator accordingly.
-            let durationAtSpeed = durationMs * 100 / playbackSpeed * self.durationRatio;
+            let durationAtSpeed = durationMs * 100 / playbackSpeed * self.audioData.durationRatio;
 
             self.playbackIndicator.interrupt();
             self.playbackIndicator.style('display', 'unset').attr('transform', `translate(${startX}, 0)`);
@@ -622,7 +619,7 @@ export class Visualiser {
         };
 
         resumeAudioContext().then(function () {
-            playAudioDataArray(self.sig, self.fs, playAudioArgs);
+            playAudioDataArray(self.sig, self.audioData.browserFs, playAudioArgs);
         })
     }
 

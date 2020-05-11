@@ -221,7 +221,7 @@ def merge_audio_chunks(request):
     params = request.POST
     name = params['name']
     chunk_count = int(params['chunkCount'])
-    max_fs = int(request.POST.get('max-fs', 0))
+    max_fs = int(request.POST.get('browser-fs', 0))
 
     if name.lower().endswith('.wav'):
         name = name[:-4]
@@ -289,7 +289,7 @@ def import_audio_file(request):
     database_id = get_or_error(request.POST, 'database-id')
     item = json.loads(get_or_error(request.POST, 'item'))
     real_fs = int(get_or_error(request.POST, 'real-fs'))
-    max_fs = int(get_or_error(request.POST, 'max-fs'))
+    max_fs = int(get_or_error(request.POST, 'browser-fs'))
     track_id = get_or_error(request.POST, 'track-id')
 
     database = get_or_error(Database, dict(id=database_id))
@@ -353,14 +353,14 @@ def get_audio_file_url(request):
     # in which case there is a difference in real_fs and what the browser can see.
     # In this case we must tell the browser to use 48000 as the real_fs of the mp3 file.
     # We do that by omitting real_fs (returning NULL to the browser)
-    real_fs = None
-    if audio_file.fake_fs is not None:
-        real_fs = audio_file.fs
+    # real_fs = None
+    # if audio_file.fake_fs is not None:
+    real_fs = audio_file.fs
 
-    if audio_file.fs > 48000:
-        real_fs = audio_file.fs
+    # if audio_file.fs > 48000:
+    #     real_fs = audio_file.fs
 
-    return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs}
+    return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs, 'length': audio_file.length}
 
 
 def get_audio_files_urls(request):
