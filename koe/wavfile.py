@@ -35,6 +35,7 @@ Functions
 
 """
 import struct
+import math
 
 import numpy as np
 
@@ -132,8 +133,8 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     comp = fmt_info['comp']
 
     if end_ms is not None:
-        if np.floor(end_ms * rate * ba / 1000) > data_size:
-            if np.floor((end_ms-1) * rate * ba / 1000) > data_size:
+        if math.floor(end_ms * rate * ba / 1000) > data_size:
+            if math.floor((end_ms-1) * rate * ba / 1000) > data_size:
                 duration = data_size * 1000 / rate / ba
                 error_msg = "end_ms is bigger than the duration: end_ms={} duration={}".format(end_ms, duration)
                 raise Exception(error_msg)
@@ -171,7 +172,7 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
 
         duration_ms = end_ms - beg_ms
         duration_frame = duration_ms * rate * ba / 1000
-        duration_window = int(np.ceil(duration_frame / byte_per_window) * byte_per_window)
+        duration_window = int(math.ceil(duration_frame / byte_per_window) * byte_per_window)
         end = beg + duration_window
 
     if end > data_size:

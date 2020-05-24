@@ -436,7 +436,7 @@ SlickEditors.Species = SpeciesEditor;
  * Make a copy of Slick.Formater and then add new formatter
  */
 export const SlickFormatters = $.extend({}, Slick.Formatters);
-SlickFormatters.DecimalPoint = DecimalPointFormatter.bind({numDecimal: 3});
+SlickFormatters.DecimalPoint = DecimalPointFormatter.bind({numDecimal: 2});
 SlickFormatters.Select = SelectionFormatter;
 SlickFormatters.Checkmark = CheckmarkFormatter;
 SlickFormatters.Image = ImageFormatter;

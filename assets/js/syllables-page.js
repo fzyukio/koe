@@ -24,7 +24,7 @@ class SegmentGrid extends FlexibleGrid {
 
 const KEY_CONVERTERS = {
     'Integer': (x) => parseInt(x),
-    'DecimalPoint': (x) => parseFloat(x),
+    'DecimalPoint': (x) => parseFloat(x).toFixed(2),
     '_': (x) => x
 };
 

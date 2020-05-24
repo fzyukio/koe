@@ -7,6 +7,7 @@ import uuid
 import numpy as np
 
 import csv
+from decimal import Decimal
 from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Count
@@ -723,6 +724,8 @@ def update_segments_from_csv(request):
 
     for key, row in key2row.items():
         (song_name, start, end) = key
+        start = Decimal(start)
+        end = Decimal(end)
         seg = key2seg.get(key, None)
         if seg is None:
             song = name2song[song_name]
@@ -745,7 +748,7 @@ def update_segments_from_csv(request):
             try:
                 extract_spectrogram(song, segs_info)
             except Exception as e:
-                pass
+                raise e
 
     # Finally to change all other properties (label, family, note...)
     return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)

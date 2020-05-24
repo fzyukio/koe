@@ -3,6 +3,7 @@ import os
 import traceback
 from json import JSONEncoder
 
+import decimal
 import dj_database_url
 
 from maintenance import get_config
@@ -187,6 +188,13 @@ DATABASES = {
 JSONEncoder_olddefault = JSONEncoder.default
 
 
+class fakefloat(float):
+    def __init__(self, value):
+        self._value = value
+    def __repr__(self):
+        return str(self._value)
+
+
 def JSONEncoder_newdefault(self, obj):
     """
     The original JSONEncoder doesn't handle datetime object.
@@ -199,6 +207,8 @@ def JSONEncoder_newdefault(self, obj):
         return obj.strftime(TIME_INPUT_FORMAT)
     elif isinstance(obj, datetime.date):
         return obj.strftime(DATE_INPUT_FORMAT)
+    elif isinstance(obj, decimal.Decimal):
+        return fakefloat(obj)
     return JSONEncoder_olddefault(self, obj)
 
 

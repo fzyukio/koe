@@ -23,19 +23,19 @@ tables =\
                 {
                     "name": "Start",
                     "slug": "start_time_ms",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "End",
                     "slug": "end_time_ms",
-                    "type": "INTEGER",
+                    "type": "FLOAT",
                     "is_attribute": True
                 },
                 {
                     "name": "Duration",
                     "slug": "duration",
-                    "type": "INTEGER"
+                    "type": "FLOAT"
                 },
                 {
                     "name": "Song",

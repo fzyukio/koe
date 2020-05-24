@@ -357,8 +357,8 @@ class Segment(SimpleModel):
     # Time ID - unique for each combination of (song name, start and end). Recalculate if end/begin changes
     tid = models.IntegerField(null=True, blank=False)
 
-    start_time_ms = models.FloatField()
-    end_time_ms = models.FloatField()
+    start_time_ms = models.DecimalField(max_digits=11, decimal_places=2)
+    end_time_ms = models.DecimalField(max_digits=11, decimal_places=2)
 
     audio_file = models.ForeignKey(AudioFile, on_delete=models.CASCADE)
 
