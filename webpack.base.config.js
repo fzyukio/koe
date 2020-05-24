@@ -16,7 +16,7 @@ module.exports = [{
             {
                 test: /\.jsx?$/,
                 exclude: [nodeModulesDir],
-                loader: 'babel?presets[]=es2015',
+                loaders: ['babel?presets[]=react,presets[]=es2015']
             },
             {
                 test: /jquery\/dist\/jquery\.js$/,
@@ -105,7 +105,7 @@ module.exports = [{
             {
                 test: /\.jsx?$/,
                 exclude: [nodeModulesDir],
-                loader: 'babel?presets[]=es2015',
+                loaders: ['babel?presets[]=react,presets[]=es2015']
             },
             {
                 test: /jquery\/dist\/jquery\.js$/,

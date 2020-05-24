@@ -674,12 +674,16 @@ def bulk_get_database(databases, extras):
     rows = []
 
     db_assignments = DatabaseAssignment.objects.filter(user=user)\
-        .values_list('database__id', 'database__name', 'permission')
+        .values_list('database__id', 'database__name', 'permission', 'database__nfft', 'database__noverlap',
+                     'database__hpf', 'database__lpf')
 
-    for id, dbname, permission in db_assignments:
+    for id, dbname, permission, nfft, noverlap, hpf, lpf in db_assignments:
         idx.append(id)
         permission_str = DatabasePermission.get_name(permission)
-        row = dict(id=id, name=dbname, permission=permission_str)
+        if lpf is None:
+            lpf = "No limit"
+        hpf = '{} Hz'.format(hpf)
+        row = dict(id=id, name=dbname, permission=permission_str, nfft=nfft, overlap=noverlap, hpf=hpf, lpf=lpf)
         rows.append(row)
 
     return idx, rows

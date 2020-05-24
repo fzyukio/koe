@@ -2,6 +2,9 @@ import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {deepCopy, getUrl, getCache, setCache} from './utils';
 import {postRequest, uploadRequest} from './ajax-handler';
 import {replaceSidebar} from './sidebar';
+import ReactDOM from "react-dom";
+import React from "react";
+import NewDatabaseButton from "react-components/NewDatabaseButton";
 
 const gridOptions = deepCopy(defaultGridOptions);
 gridOptions.rowHeight = 50;
@@ -22,7 +25,7 @@ const fileUploadBtn = fileUploadForm.find('input[type=submit]');
 const fileUploadInput = fileUploadForm.find('input[type=file]');
 const addCollaborator = $('#add-collaborator');
 const removeCollaborator = $('#remove-collaborator');
-const createDatabaseBtn = $('#create-database-btn');
+// const createDatabaseBtn = $('#create-database-btn');
 const deleteDatabaseBtn = $('#delete-database-btn');
 const enterInvitationCodeBtn = $('#enter-invitation-code-btn');
 
@@ -335,7 +338,6 @@ const dialogModalTitle = dialogModal.find('.modal-title');
 const dialogModalBody = dialogModal.find('.modal-body');
 const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 
-
 /**
  * When user clicks on the "create new database" button from the drop down menu, show a dialog
  * asking for name. Send the name to the server to check for duplicate. If there exists a database with the same name,
@@ -343,48 +345,8 @@ const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
  */
 function initCreateDatabaseButton() {
 
-    /**
-     * Repeat showing the dialog until the database name is valid
-     * param error to be shown in the modal if not undefined
-     */
-    function showDialog(error) {
-        dialogModalTitle.html('Creating a new database...');
-        dialogModalBody.html('<label>Give it a name</label>');
-        dialogModalBody.append(inputText);
-        if (error) {
-            dialogModalBody.append(`<p>${error.message}</p>`);
-        }
+    ReactDOM.render(<NewDatabaseButton databaseGrid={databaseGrid} />, document.getElementById('create-database-button-wrapper'));
 
-        dialogModal.modal('show');
-
-        dialogModalOkBtn.one('click', function () {
-            dialogModal.modal('hide');
-            let url = getUrl('send-request', 'koe/create-database');
-            let databaseName = inputText.val();
-            inputText.val('');
-
-            $.post(url, {name: databaseName}).done(function (data) {
-                data = JSON.parse(data);
-                let row = data.message;
-                dialogModal.one('hidden.bs.modal', function () {
-                    databaseGrid.appendRowAndHighlight(row);
-                });
-                replaceSidebar(viewPortChangeHandler);
-                dialogModal.modal('hide');
-            }).fail(function (response) {
-                dialogModal.one('hidden.bs.modal', function () {
-                    let errorMessage = JSON.parse(response.responseText);
-                    showDialog(errorMessage);
-                });
-                dialogModal.modal('hide');
-            });
-        });
-    }
-
-    createDatabaseBtn.on('click', function (e) {
-        e.preventDefault();
-        showDialog();
-    });
 
     deleteDatabaseBtn.on('click', function () {
         let grid_ = databaseGrid.mainGrid;

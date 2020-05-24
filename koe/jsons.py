@@ -506,6 +506,34 @@ tables =\
                     "slug": "permission",
                     "type": "SHORT_TEXT",
                     "editable": False
+                },
+                {
+                    "name": "FFT Window",
+                    "slug": "nfft",
+                    "type": "INTEGER",
+                    "is_attribute": True,
+                    "editable": True
+                },
+                {
+                    "name": "Overlap",
+                    "slug": "overlap",
+                    "type": "INTEGER",
+                    "is_attribute": True,
+                    "editable": True
+                },
+                {
+                    "name": "Low Pass Filter",
+                    "slug": "lpf",
+                    "type": "INTEGER",
+                    "is_attribute": True,
+                    "editable": True
+                },
+                {
+                    "name": "High Pass Filter",
+                    "slug": "hpf",
+                    "type": "INTEGER",
+                    "is_attribute": True,
+                    "editable": True
                 }
             ]
         },

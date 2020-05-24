@@ -146,30 +146,53 @@ def delete_audio_files(request):
 
 def create_database(request):
     user = request.user
-    name = get_or_error(request.POST, 'name')
+    name = get_or_error(request.POST, 'new-database-name')
+    nfft = int(get_or_error(request.POST, 'new-database-fft'))
+    noverlap = int(get_or_error(request.POST, 'new-database-overlap'))
+    hpf = int(get_or_error(request.POST, 'new-database-hpf'))
+    lpf = request.POST.get('new-database-lpf')
+
+    errors = {}
+
     if not re.match('^[a-zA-Z0-9_-]+$', name):
-        raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+        errors['new-database-name-error'] = 'Name can only contain alphabets, numbers, dashes and underscores'
 
     if Database.objects.filter(name__iexact=name).exists():
-        raise CustomAssertionError('Database with name {} already exists.'.format(name))
+        errors['new-database-name-error'] = 'Database with name {} already exists.'.format(name)
 
-    database = Database(name=name)
-    database.save()
+    if lpf:
+        lpf = int(lpf)
+        if lpf <= hpf:
+            errors['new-database-lpf-error'] = 'Low pass filter value must be > high pass value'
+    else:
+        lpf = None
 
-    media_dir = settings.MEDIA_URL[1:]
-    new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', str(database.id))
-    new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', settings.AUDIO_COMPRESSED_FORMAT,
-                                      str(database.id))
+    has_errors = len(errors) > 0
 
-    os.mkdir(new_wav_dir)
-    os.mkdir(new_compressed_dir)
+    if not has_errors:
 
-    # Now assign this database to this user, and switch the working database to this new one
-    da = DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)
-    da.save()
+        database = Database(name=name, nfft=nfft, noverlap=noverlap, hpf=hpf, lpf=lpf)
+        database.save()
 
-    permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
-    return dict(id=database.id, name=name, permission=permission_str)
+        media_dir = settings.MEDIA_URL[1:]
+        new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', str(database.id))
+        new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', settings.AUDIO_COMPRESSED_FORMAT,
+                                          str(database.id))
+
+        os.mkdir(new_wav_dir)
+        os.mkdir(new_compressed_dir)
+
+        # Now assign this database to this user, and switch the working database to this new one
+        da = DatabaseAssignment(user=user, database=database, permission=DatabasePermission.ASSIGN_USER)
+        da.save()
+
+        permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
+        payload = dict(id=database.id, name=name, permission=permission_str, nfft=nfft, overlap=noverlap, hpf=hpf, lpf=lpf)
+
+    else:
+        payload = errors
+
+    return dict(success=not has_errors, warning=None, payload=payload)
 
 
 def delete_database(request):

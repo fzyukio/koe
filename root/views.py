@@ -578,7 +578,9 @@ def send_request(request, *args, **kwargs):
             response = exception_handler(function, request)
             if isinstance(response, HttpResponse):
                 return response
-            return HttpResponse(json.dumps(dict(message=response)))
+            if isinstance(response, dict):
+                return HttpResponse(json.dumps(response))
+            return HttpResponse(json.dumps(dict(success=True, warning=None, message=response)))
 
     return HttpResponseNotFound()
 

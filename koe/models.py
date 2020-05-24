@@ -113,6 +113,10 @@ class Database(SimpleModel):
     """
 
     name = models.CharField(max_length=255, unique=True)
+    nfft = models.IntegerField(default=512)
+    noverlap = models.IntegerField(default=384)
+    hpf = models.IntegerField(default=0)
+    lpf = models.IntegerField(default=None, null=True, blank=True)
 
     active = models.BooleanField(default=True)
     objects = ActiveManager()
