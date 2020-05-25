@@ -47,10 +47,8 @@ def get_psd(args):
 def get_sig(args):
     wav_file_path, fs, start, end, win_length = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'win_length'])
 
-    if end and end - start < win_length:
-        end = start + win_length
     if wav_file_path:
-        sig = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=True)
+        sig = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=True, winlen=win_length)
     else:
         sig = args['sig']
     return sig
