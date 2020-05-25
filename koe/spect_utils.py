@@ -9,13 +9,13 @@ from koe import wavfile
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
 
-nfft = 512
-noverlap = nfft // 2
-win_length = nfft
-stepsize = nfft - noverlap
+# nfft = 512
+# noverlap = nfft // 2
+# win_length = nfft
+# stepsize = nfft - noverlap
 
 
-def extract_spect(wav_file_path, fs, start, end, filepath=None):
+def extract_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
     value = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
                             center=False)
 
@@ -26,9 +26,9 @@ def extract_spect(wav_file_path, fs, start, end, filepath=None):
         return value
 
 
-def extract_mfcc(wav_file_path, fs, start, end, filepath=None):
+def extract_mfcc(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
     sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
-    args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=fs, wav_file_path=None, start=0, end=None,
+    args = dict(nfft=nfft, noverlap=noverlap, win_length=nfft, fs=fs, wav_file_path=None, start=0, end=None,
                 sig=sig, center=True)
     value = mfcc(args)
 
@@ -39,7 +39,7 @@ def extract_mfcc(wav_file_path, fs, start, end, filepath=None):
         return value
 
 
-def extract_log_spect(wav_file_path, fs, start, end, filepath=None):
+def extract_log_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
     psd = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
                           center=False)
     eps = 1e-3

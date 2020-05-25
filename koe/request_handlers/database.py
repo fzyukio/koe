@@ -173,9 +173,10 @@ def create_database(request):
 
         database = Database(name=name, nfft=nfft, noverlap=noverlap, hpf=hpf, lpf=lpf)
         database.save()
+        dbid = database.id
 
         media_dir = settings.MEDIA_URL[1:]
-        new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', str(database.id))
+        new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', str(dbid))
         new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', settings.AUDIO_COMPRESSED_FORMAT,
                                           str(database.id))
 
@@ -187,7 +188,9 @@ def create_database(request):
         da.save()
 
         permission_str = DatabasePermission.get_name(DatabasePermission.ASSIGN_USER)
-        payload = dict(id=database.id, name=name, permission=permission_str, nfft=nfft, overlap=noverlap, hpf=hpf, lpf=lpf)
+
+        noverlap = nfft * noverlap // 100
+        payload = dict(id=dbid, name=name, permission=permission_str, nfft=nfft, overlap=noverlap, hpf=hpf, lpf=lpf)
 
     else:
         payload = errors

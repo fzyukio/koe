@@ -28,6 +28,9 @@ __all__ = [
 ]
 
 
+allowed_nffts = [128, 256, 512, 1024]
+
+
 class ActiveManager(models.Manager):
     def get_queryset(self):
         return ValidateOnUpdateQuerySet(self.model, using=self._db).filter(active=True)
@@ -132,6 +135,15 @@ class Database(SimpleModel):
         if not re.match("^[a-zA-Z0-9_]+$", self.name):
             raise CustomAssertionError('Database name must be non-empty and can only contain alphabets, digits and '
                                        'underscores')
+        if self.lpf is not None and self.lpf <= self.hpf:
+            raise CustomAssertionError('Low pass filter value must be > high pass value')
+
+        if self.noverlap >= self.nfft:
+            raise CustomAssertionError('Overlap must be less than nfft')
+
+        if self.nfft not in allowed_nffts:
+            raise CustomAssertionError('NFFT must be one of the following values: {}'.format(allowed_nffts))
+
         super(Database, self).save(**kwargs)
 
     def get_assigned_permission(self, user):

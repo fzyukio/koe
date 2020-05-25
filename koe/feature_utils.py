@@ -30,18 +30,12 @@ from koe.wavfile import get_wav_info
 from root.exceptions import CustomAssertionError
 from root.utils import mkdirp
 
-nfft = 512
-noverlap = nfft * 3 // 4
-win_length = nfft
-stepsize = nfft - noverlap
-
 
 @profile  # noqa F821
 def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **kwargs):
     fs, length = get_wav_info(wav_file_path)
 
-    args = dict(nfft=nfft, noverlap=noverlap, wav_file_path=wav_file_path, fs=fs, start=0, end=None,
-                win_length=win_length, center=False, order=44)
+    args = dict(wav_file_path=wav_file_path, fs=fs, start=0, end=None, center=False, order=44)
 
     for v, k in kwargs.items():
         args[v] = k
@@ -50,9 +44,15 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **
     tids = []
     fvals = []
 
-    for tid, beg, end in segs_info:
+    for tid, beg, end, nfft, noverlap, lpf, hpf in segs_info:
         args['start'] = beg
         args['end'] = end
+        args['nfft'] = nfft
+        args['noverlap'] = noverlap
+        args['lpf'] = lpf
+        args['hpf'] = hpf
+        args['win_length'] = nfft
+
         feature_value = extractor(args)
         tids.append(tid)
         fvals.append(feature_value)
@@ -93,13 +93,15 @@ def extract_segment_features_for_segments(runner, sids, features, force=False):
         af_to_segments = {}
 
         vl = segments.filter(tid__in=tids_target).order_by('audio_file', 'start_time_ms')\
-                     .values_list('tid', 'audio_file', 'start_time_ms', 'end_time_ms')
+                     .values_list('tid', 'audio_file', 'start_time_ms', 'end_time_ms',
+                                  'audio_file__database__nfft', 'audio_file__database__noverlap',
+                                  'audio_file__database__lpf', 'audio_file__database__hpf')
 
         if len(vl):
-            for tid, afid, start_time_ms, end_time_ms in vl:
+            for tid, afid, start_time_ms, end_time_ms, nfft, noverlap, lpf, hpf in vl:
                 if afid not in af_to_segments:
                     af_to_segments[afid] = []
-                af_to_segments[afid].append((tid, start_time_ms, end_time_ms))
+                af_to_segments[afid].append((tid, start_time_ms, end_time_ms, nfft, noverlap, lpf, hpf))
 
             f2af2segments[feature] = af_to_segments
             n_calculations += len(tids_target)

@@ -20,7 +20,8 @@ def spect_from_seg(seg, extractor):
     fs = af.fs
     start = seg.start_time_ms
     end = seg.end_time_ms
-    return extractor(wav_file_path, fs=fs, start=start, end=end)
+    database = af.database
+    return extractor(wav_file_path, fs=fs, start=start, end=end, nfft=database.nfft, noverlap=database.noverlap)
 
 
 def encode_syllables(variables, encoder, session, segs, kernel_only):

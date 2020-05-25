@@ -115,7 +115,9 @@ class Command(BaseCommand):
 
                 if not os.path.isfile(filepath):
                     if extractor is not None:
-                        extractor(wav_file_path, af.fs, start, end, filepath)
+                        database = af.database
+                        extractor(wav_file_path, fs=af.fs, start=start, end=end, nfft=database.nfft,
+                                  noverlap=database.noverlap, filepath=filepath)
                     else:
                         with open(filepath, 'wb') as f:
                             audio_segment.export(f, format=format)

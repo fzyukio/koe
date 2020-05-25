@@ -35,7 +35,8 @@ def extract_psd(extractor, audio_file, normalise=True):
     :return: the normalised spectrogram (spectrogram - wise, not dimension wise)
     """
     wav_file_path = wav_path(audio_file)
-    spect = extractor(wav_file_path, audio_file.fs, 0, None)
+    database = audio_file.database
+    spect = extractor(wav_file_path, audio_file.fs, start=0, end=None, nfft=database.nfft, noverlap=database.noverlap)
     spect_min = np.min(spect)
 
     if normalise:

@@ -47,13 +47,16 @@ def extract_syllables(database_name, spect_dir, format):
     for af, info in audio_file_dict.items():
         wav_file_path = wav_path(af)
         fs = af.fs
+        database = af.database
+        nfft = database.nfft
+        noverlap = database.noverlap
 
         for sid, start, end in info:
             spect_name = '{}.{}'.format(sid, format)
             spect_path = os.path.join(spect_dir, spect_name)
 
             if not os.path.isfile(spect_path):
-                extractor(wav_file_path, fs, start, end, spect_path)
+                extractor(wav_file_path, fs, start, end, nfft, noverlap, spect_path)
 
             bar.next()
     bar.finish()
