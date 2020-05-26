@@ -113,7 +113,7 @@ def save_history(request):
     tz = offset_to_timezone(tz_offset)
 
     _, rows = bulk_get_history_entries([he], DotMap(user=user, database=database_id, tz=tz))
-    return rows[0]
+    return dict(origin='save_history', success=True, warning=None, payload=rows[0])
 
 
 def delete_history(request):
@@ -129,7 +129,7 @@ def delete_history(request):
         raise CustomAssertionError('Only {} can delete this version'.format(creator.username))
 
     he.delete()
-    return True
+    return dict(origin='delete_history', success=True, warning=None, payload=None)
 
 
 def change_owner_and_attr_ids(entries, _extra_attrs, owner_old_to_new_id=None, owner_ids_are_int=False):
@@ -355,7 +355,8 @@ def import_history(request):
         raise CustomAssertionError('This file format is too old and not supported anymore.')
 
     if backup_type == 'segmentation':
-        return import_history_with_segmentation(current_database, user, filelist)
+        retval = import_history_with_segmentation(current_database, user, filelist)
+        return dict(origin='import_history', success=True, warning=None, payload=retval)
 
     try:
         contents = [
@@ -372,4 +373,5 @@ def import_history(request):
 
     new_entries = change_owner_and_attr_ids(new_entries, extra_attrs)
 
-    return update_extra_attr_values(user, new_entries)
+    retval = update_extra_attr_values(user, new_entries)
+    return dict(origin='import_history', success=True, warning=None, payload=retval)

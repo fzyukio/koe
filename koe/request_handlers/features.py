@@ -39,4 +39,5 @@ def get_datamatrix_file_paths(request):
     else:
         database_name = dm.tmpdb.name
 
-    return {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': database_name, 'cols-path': cols_path}
+    retval = {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': database_name, 'cols-path': cols_path}
+    return dict(origin='get_datamatrix_file_paths', success=True, warning=None, payload=retval)

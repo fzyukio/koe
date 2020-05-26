@@ -249,7 +249,7 @@ def get_grid_column_definition(request):
     columns.append({'id': 'actions', 'field': 'actions', 'name': 'Actions', 'actions': action_names,
                     'formatter': 'Action'})
 
-    return columns
+    return dict(origin='get_grid_column_definition', success=True, warning=None, payload=columns)
 
 
 def get_grid_content(request):
@@ -278,7 +278,7 @@ def get_grid_content(request):
     else:
         objs = filter(extras)
     rows = get_attrs(objs, table, extras)
-    return rows
+    return dict(origin='get_grid_content', success=True, warning=None, payload=rows)
 
 
 def set_property_bulk(request):
@@ -308,7 +308,7 @@ def set_property_bulk(request):
             setter = column['setter']
             setter(objs, value, DotMap(user=request.user))
 
-    return True
+    return dict(origin='set_property_bulk', success=True, warning=None, payload=True)
 
 
 def change_properties(request):
@@ -339,7 +339,7 @@ def change_properties(request):
                 setter = column['setter']
                 setter([obj], val, DotMap(user=request.user))
 
-    return True
+    return dict(origin='change_properties', success=True, warning=None, payload=True)
 
 
 def _change_properties_table(rows, grid_type, missing_attrs, attrs, user):
@@ -411,7 +411,8 @@ def change_properties_table(request):
     attrs = json.loads(request.POST['attrs'])
     user = request.user
 
-    return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
+    retval = _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
+    return dict(origin='change_properties_table', success=True, warning=None, payload=retval)
 
 
 def change_extra_attr_value(request):
@@ -434,7 +435,7 @@ def change_extra_attr_value(request):
     extra_attr_value.value = value
     extra_attr_value.save()
 
-    return True
+    return dict(origin='change_extra_attr_value', success=True, warning=None, payload=True)
 
 
 def set_action_values(request):
@@ -472,10 +473,10 @@ def set_action_values(request):
                 action_value.user = user
             action_value.value = val2str(value)
             action_value.save()
-    return True
+    return dict(origin='set_action_values', success=True, warning=None, payload=True)
 
 
-def reorder_columns_handler(action_name, table_name, user, modified_columns):
+def _reorder_columns_handler(action_name, table_name, user, modified_columns):
     """
     Change the order of the column according to the index stored in ColumnActionValue
     :param action_name: name of the action as stored in ColumnActionValue
@@ -503,7 +504,7 @@ def reorder_columns_handler(action_name, table_name, user, modified_columns):
     return modified_columns
 
 
-def set_column_width_handler(action_name, table_name, user, modified_columns):
+def _set_column_width_handler(action_name, table_name, user, modified_columns):
     """
     Change widths of the columns according to the values stored in ColumnActionValue
     :param action_name: name of the action as stored in ColumnActionValue
@@ -528,8 +529,8 @@ def set_column_width_handler(action_name, table_name, user, modified_columns):
 
 
 values_grid_action_handlers = {
-    'reorder-columns': reorder_columns_handler,
-    'set-column-width': set_column_width_handler
+    'reorder-columns': _reorder_columns_handler,
+    'set-column-width': _set_column_width_handler
 }
 
 
@@ -544,8 +545,8 @@ def exception_handler(function, request, *args, **kwargs):
             message = str(e)
 
         if isinstance(e, CustomAssertionError):
-            return HttpResponseBadRequest(json.dumps(dict(errid=error_id, message=message)))
-        return HttpResponseServerError(json.dumps(dict(errid=error_id, message=message)))
+            return HttpResponseBadRequest(json.dumps(dict(errid=error_id, payload=message)))
+        return HttpResponseServerError(json.dumps(dict(errid=error_id, payload=message)))
 
 
 def can_have_exception(function):
@@ -580,7 +581,7 @@ def send_request(request, *args, **kwargs):
                 return response
             if isinstance(response, dict):
                 return HttpResponse(json.dumps(response))
-            return HttpResponse(json.dumps(dict(success=True, warning=None, message=response)))
+            return HttpResponse(json.dumps(dict(success=True, warning=None, payload=response)))
 
     return HttpResponseNotFound()
 

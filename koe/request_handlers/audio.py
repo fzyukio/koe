@@ -136,14 +136,14 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     # back to the original and store the original file as .wav
     if real_fs != _fs:
         os.rename(wav_name, fake_wav_name)
-        change_fs_without_resampling(fake_wav_name, real_fs, wav_name)
+        _change_fs_without_resampling(fake_wav_name, real_fs, wav_name)
         audio = pydub.AudioSegment.from_file(fake_wav_name)
         os.remove(fake_wav_name)
 
     # Otherwise, if real_fs is more than max_fs, we must create a fake file for the sake of converting to mp3:
     elif real_fs > max_fs:
         fake_fs = max_fs
-        change_fs_without_resampling(wav_name, fake_fs, fake_wav_name)
+        _change_fs_without_resampling(wav_name, fake_fs, fake_wav_name)
         audio = pydub.AudioSegment.from_file(fake_wav_name)
         os.remove(fake_wav_name)
     # Otherwise the file is ordinary - no need to fake it
@@ -208,6 +208,8 @@ def import_audio_chunk(request):
     with open(chunk_file_path, 'wb') as f:
         f.write(file.read())
 
+    return dict(origin='import_audio_chunk', success=True, warning=None, payload=None)
+
 
 def merge_audio_chunks(request):
     """
@@ -252,10 +254,10 @@ def merge_audio_chunks(request):
 
     added_files = AudioFile.objects.filter(id=audio_file.id)
     _, rows = get_sequence_info_empty_songs(added_files)
-    return rows
+    return dict(origin='merge_audio_chunks', success=True, warning=None, payload=rows)
 
 
-def change_fs_without_resampling(wav_file, new_fs, new_name):
+def _change_fs_without_resampling(wav_file, new_fs, new_name):
     """
     Create a new wav file with the a new (fake) sample rate, without changing the actual data.
     This is necessary if the frequency of the wav file is higher than the maximum sample rate that the browser supports
@@ -337,7 +339,7 @@ def import_audio_file(request):
         extra_attr_value = ExtraAttrValue.objects.create(user=user, owner_id=audio_file.id, attr=audio_file_attrs.type)
         extra_attr_value.value = type
 
-    return dict(id=audio_file.id, name=audio_file.name)
+    return dict(origin='import_audio_file', success=True, warning=None, payload=dict(id=audio_file.id, name=audio_file.name))
 
 
 def get_audio_file_url(request):
@@ -360,7 +362,12 @@ def get_audio_file_url(request):
     # if audio_file.fs > 48000:
     #     real_fs = audio_file.fs
 
-    return {'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True), 'real-fs': real_fs, 'length': audio_file.length}
+    retval = {
+        'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True),
+        'real-fs': real_fs,
+        'length': audio_file.length
+    }
+    return dict(origin='get_audio_file_url', success=True, warning=None, payload=retval)
 
 
 def get_audio_files_urls(request):
@@ -380,4 +387,4 @@ def get_audio_files_urls(request):
         file_path = audio_path(audio_file, format, for_url=True)
         file_paths.append(file_path)
 
-    return file_paths
+    return dict(origin='get_audio_files_urls', success=True, warning=None, payload=file_paths)

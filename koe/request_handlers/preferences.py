@@ -9,9 +9,9 @@ def get_preference(request):
     key = get_or_error(request.POST, 'key')
     pref = Preference.objects.filter(user=user, key=key).first()
     if pref is None:
-        return None
+        return dict(origin='get_preference', success=True, warning=None, payload=None)
 
-    return pref.value
+    return dict(origin='get_preference', success=True, warning=None, payload=pref.value)
 
 
 def set_preference(request):
@@ -27,4 +27,4 @@ def set_preference(request):
         pref.value = value
         pref.save()
 
-    return True
+    return dict(origin='set_preference', success=True, warning=None, payload=True)

@@ -88,4 +88,5 @@ def get_sidebar(request):
     obj = DotMap(page_name=page, request=request)
 
     populate_context(obj, context)
-    return render_to_string('sidebar/sidebar.html', context=context)
+    retval = render_to_string('sidebar/sidebar.html', context=context)
+    return dict(origin='get_sidebar', success=True, warning=None, payload=retval)

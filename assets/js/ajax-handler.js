@@ -78,7 +78,7 @@ export const downloadRequest = function (url, ArrayClass = null) {
             if (this.readyState === 4) {
                 if (this.status !== 200) {
                     let responseJson = JSON.parse(this.response);
-                    let responseMessage = responseJson.message;
+                    let responseMessage = responseJson.payload;
                     reject(new Error(responseMessage));
                 }
             }
@@ -121,8 +121,8 @@ export const handleResponse = function ({
     let alertEl, delay;
     let responseJson = JSON.parse(response);
     let errorId = responseJson.errid;
-    let responseMessage = responseJson.message;
-    let message = msgGen(isSuccess, responseMessage) || defaultMsgGen(isSuccess, responseMessage);
+    let responsePayload = responseJson.payload;
+    let message = msgGen(isSuccess, responsePayload) || defaultMsgGen(isSuccess, responsePayload);
 
     if (isSuccess) {
         alertEl = alertSuccess;
@@ -146,7 +146,7 @@ export const handleResponse = function ({
 
         timerId = setTimeout(function () {
             alertEl.fadeOut(500, function () {
-                if (!immediate) callback(responseMessage);
+                if (!immediate) callback(responsePayload);
             });
         }, delay);
 
@@ -158,7 +158,7 @@ export const handleResponse = function ({
         immediate = true;
     }
 
-    if (immediate) callback(responseMessage);
+    if (immediate) callback(responsePayload);
 };
 
 

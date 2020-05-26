@@ -113,7 +113,7 @@ def import_audio_metadata(request):
             audio_file.track = track
             audio_file.save()
 
-    return True
+    return dict(origin='import_audio_metadata', success=True, warning=None, payload=None)
 
 
 def delete_audio_files(request):
@@ -141,7 +141,7 @@ def delete_audio_files(request):
     audio_files.update(active=False)
     delay_in_production(delete_audio_files_async)
 
-    return True
+    return dict(origin='delete_audio_files', success=True, warning=None, payload=None)
 
 
 def create_database(request):
@@ -195,7 +195,7 @@ def create_database(request):
     else:
         payload = errors
 
-    return dict(success=not has_errors, warning=None, payload=payload)
+    return dict(origin='create_database', success=not has_errors, warning=None, payload=payload)
 
 
 def delete_database(request):
@@ -209,6 +209,7 @@ def delete_database(request):
     database.save()
 
     delay_in_production(delete_database_async)
+    return dict(origin='delete_database', success=True, warning=None, payload=None)
 
 
 def redeem_invitation_code(request):
@@ -239,7 +240,8 @@ def redeem_invitation_code(request):
 
     editable = permission == DatabasePermission.ASSIGN_USER
     permission_str = DatabasePermission.get_name(permission)
-    return dict(id=database.id, name=database.name, permission=permission_str, __editable=editable)
+    retval = dict(id=database.id, name=database.name, permission=permission_str, __editable=editable)
+    return dict(origin='redeem_invitation_code', success=True, warning=None, payload=retval)
 
 
 def save_segmentation(request):
@@ -620,14 +622,14 @@ def make_tmpdb(request):
     chksum = IdOrderedModel.calc_chksum(ids)
     existing = TemporaryDatabase.objects.filter(chksum=chksum, user=request.user).first()
     if existing is not None:
-        return dict(name=existing.name, created=False)
+        return dict(origin='make_tmpdb', success=True, warning=None, payload=dict(name=existing.name, created=False))
 
     name = uuid.uuid4().hex
     tmpdb = TemporaryDatabase(name=name, user=request.user, _databases=database)
     tmpdb.ids = ids
     tmpdb.save()
 
-    return dict(name=name, created=True)
+    return dict(origin='make_tmpdb', success=True, warning=None, payload=dict(name=name, created=True))
 
 
 def change_tmpdb_name(request):
@@ -649,7 +651,7 @@ def change_tmpdb_name(request):
         tmpdb.name = new_name
         tmpdb.save()
 
-    return True
+    return dict(origin='change_tmpdb_name', success=True, warning=None, payload=None)
 
 
 def delete_collections(request):
@@ -662,7 +664,7 @@ def delete_collections(request):
         raise CustomAssertionError('ERROR: you\'re attempting to delete collections that don\'t belong to you.')
 
     tmpdbs.delete()
-    return True
+    return dict(origin='delete_collections', success=True, warning=None, payload=None)
 
 
 def bulk_merge_classes(request):
@@ -673,7 +675,7 @@ def bulk_merge_classes(request):
         for new_class, sids in new_classes.items():
             ExtraAttrValue.objects.filter(user=user, owner_id__in=sids, attr=label_attr).update(value=new_class)
 
-    return True
+    return dict(origin='bulk_merge_classes', success=True, warning=None, payload=None)
 
 
 def record_merge_classes(request):
@@ -688,7 +690,7 @@ def record_merge_classes(request):
                 merged=class1n2_name, username=username)
 
     MergingInfo.objects.create(user=request.user, info=info)
-    return True
+    return dict(origin='record_merge_classes', success=True, warning=None, payload=None)
 
 
 def update_segments_from_csv(request):
@@ -777,7 +779,8 @@ def update_segments_from_csv(request):
                 raise e
 
     # Finally to change all other properties (label, family, note...)
-    return _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
+    retval = _change_properties_table(rows, grid_type, missing_attrs, attrs, user)
+    return dict(origin='update_segments_from_csv', success=True, warning=None, payload=retval)
 
 
 def get_unsegmented_songs(request):
@@ -792,4 +795,5 @@ def get_unsegmented_songs(request):
         .values_list('audio_file__name', flat=True).distinct()
 
     af_with_no_segments = list(set(existing_file_names) - set(file_with_segments))
-    return af_with_no_segments
+    retval = af_with_no_segments
+    return dict(origin='get_unsegmented_songs', success=True, warning=None, payload=retval)
