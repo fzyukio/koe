@@ -516,7 +516,7 @@ tables =\
                 },
                 {
                     "name": "Overlap",
-                    "slug": "overlap",
+                    "slug": "noverlap",
                     "type": "INTEGER",
                     "is_attribute": True,
                     "editable": True
