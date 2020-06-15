@@ -329,7 +329,7 @@ def save_segmentation(request):
     delay_in_production(delete_segments_async)
     extract_spectrogram(audio_file, segs_info_for_spectrogram)
 
-    return rows
+    return dict(origin='request_database_access', success=True, warning=None, payload=rows)
 
 
 def request_database_access(request):
@@ -354,7 +354,7 @@ def request_database_access(request):
 
     access_request.permission = requested_permission
     access_request.save()
-    return True
+    return dict(origin='request_database_access', success=True, warning=None, payload=True)
 
 
 def add_collaborator(request):
@@ -378,7 +378,7 @@ def add_collaborator(request):
     database_assignment.save()
 
     _, rows = bulk_get_database_assignment([database_assignment], DotMap(database=database.id))
-    return rows[0]
+    return dict(origin='request_database_access', success=True, warning=None, payload=rows[0])
 
 
 def remove_collaborators(request):
@@ -400,7 +400,7 @@ def remove_collaborators(request):
         raise CustomAssertionError('ERROR: you can\'t remove other admins of this database.')
 
     dbassignments.delete()
-    return True
+    return dict(origin='request_database_access', success=True, warning=None, payload=True)
 
 
 def copy_audio_files(request):
@@ -535,7 +535,7 @@ def copy_audio_files(request):
     except IntegrityError as e:
         raise CustomAssertionError(e)
 
-    return True
+    return dict(origin='request_database_access', success=True, warning=None, payload=True)
 
 
 def delete_segments(request):
@@ -549,8 +549,7 @@ def delete_segments(request):
     segments.update(active=False)
 
     delay_in_production(delete_segments_async)
-
-    return True
+    return dict(origin='request_database_access', success=True, warning=None, payload=True)
 
 
 def get_label_options(request):
@@ -592,7 +591,7 @@ def get_label_options(request):
 
     retval = {'label': labels_to_counts, 'label_family': fams_to_counts, 'label_subfamily': subfams_to_counts}
 
-    return retval
+    return dict(origin='request_database_access', success=True, warning=None, payload=retval)
 
 
 def hold_ids(request):
@@ -610,7 +609,7 @@ def hold_ids(request):
 
     ids_holder.value = ids
     ids_holder.save()
-    return True
+    return dict(origin='request_database_access', success=True, warning=None, payload=True)
 
 
 def make_tmpdb(request):

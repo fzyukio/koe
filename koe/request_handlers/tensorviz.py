@@ -70,7 +70,7 @@ def get_data_matrix_config(request):
         ndims=dm.ndims,
     )
 
-    return selections
+    return dict(origin='request_database_access', success=True, warning=None, payload=selections)
 
 
 def get_metadata(request, tensor_name):
@@ -126,4 +126,5 @@ def get_tensor_data_file_paths(request):
     if not os.path.isfile(bytes_path):
         bytes_path = tensor.full_tensor.get_bytes_path()
 
-    return {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': tensor.database.name}
+    retval= {'bytes-path': bytes_path, 'sids-path': sids_path, 'database-name': tensor.database.name}
+    return dict(origin='request_database_access', success=True, warning=None, payload=retval)

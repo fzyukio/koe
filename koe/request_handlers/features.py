@@ -23,7 +23,8 @@ def get_sid_info(request):
     for aid, aname, start, end in value_list:
         seg_info.append((aid, start, end))
         song_info[aid] = aname
-    return seg_info, song_info
+    retval = seg_info, song_info
+    return dict(origin='request_database_access', success=True, warning=None, payload=retval)
 
 
 def get_datamatrix_file_paths(request):
