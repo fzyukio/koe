@@ -82,7 +82,7 @@ class Dropdown extends React.Component {
 
 class NewDatabaseForm extends React.Component {
     toggleSelected(selectedItem, itemKey, selectedKey) {
-        let list = this.state[itemKey];
+        let list = this.constant[itemKey];
         let selected;
 
         $.each(list, function (idx, item) {
@@ -138,7 +138,6 @@ class NewDatabaseForm extends React.Component {
         let state = self.state;
 
         let url = getUrl('send-request', 'koe/create-database');
-        console.log(state);
 
         $.post(url, state).done(function (response) {
             response = JSON.parse(response);
