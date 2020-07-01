@@ -30,7 +30,7 @@ __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'sa
            'request_database_access', 'add_collaborator', 'copy_audio_files', 'delete_segments', 'hold_ids',
            'make_tmpdb', 'change_tmpdb_name', 'delete_collections', 'remove_collaborators', 'redeem_invitation_code',
            'bulk_merge_classes', 'record_merge_classes', 'update_segments_from_csv', 'delete_database',
-           'get_unsegmented_songs']
+           'get_unsegmented_songs', 'get_database_spectrogram_preference', 'save_database_spectrogram_preference']
 
 
 def import_audio_metadata(request):
@@ -796,3 +796,48 @@ def get_unsegmented_songs(request):
     af_with_no_segments = list(set(existing_file_names) - set(file_with_segments))
     retval = af_with_no_segments
     return dict(origin='get_unsegmented_songs', success=True, warning=None, payload=retval)
+
+
+def save_database_spectrogram_preference(request):
+    file_id = get_or_error(request.POST, 'file-id')
+    cm_value = get_or_error(request.POST, 'colourmap')
+    zoom_value = get_or_error(request.POST, 'zoom')
+    user = request.user
+
+    database_id = AudioFile.objects.get(id=file_id).database.id
+
+    cm = ExtraAttrValue.objects.filter(user__username=user, attr=settings.ATTRS.database.cm, owner_id=database_id).first()
+    zoom = ExtraAttrValue.objects.filter(user__username=user, attr=settings.ATTRS.database.zoom, owner_id=database_id).first()
+
+    if cm is None:
+        cm = ExtraAttrValue(owner_id=database_id, value=cm_value, user=user, attr=settings.ATTRS.database.cm)
+
+    if zoom is None:
+        zoom = ExtraAttrValue(owner_id=database_id, value=zoom_value, user=user, attr=settings.ATTRS.database.zoom)
+
+    cm.value = cm_value
+    zoom.value = zoom_value
+    cm.save()
+    zoom.save()
+
+    return dict(origin='save_database_spectrogram_preference', success=True, warning=None, payload=True)
+
+
+def get_database_spectrogram_preference(request):
+    file_id = get_or_error(request.POST, 'file-id')
+    user = request.user
+
+    database_id = AudioFile.objects.get(id=file_id).database.id
+
+    cm = ExtraAttrValue.objects.filter(user__username=user, attr=settings.ATTRS.database.cm, owner_id=database_id).first()
+    zoom = ExtraAttrValue.objects.filter(user__username=user, attr=settings.ATTRS.database.zoom, owner_id=database_id).first()
+
+    retval = dict()
+
+    if cm is not None:
+        retval['cm'] = cm.value
+
+    if zoom is not None:
+        retval['zoom'] = int(zoom.value)
+
+    return dict(origin='get_database_spectrogram_preference', success=True, warning=None, payload=retval)

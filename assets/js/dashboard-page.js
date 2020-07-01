@@ -130,7 +130,7 @@ const initApplyVersionBtn = function () {
             let msgGen = function (isSuccess, response) {
                 return isSuccess ?
                     `Verison ${item.url} successfully imported` :
-                    `Something's wrong. The server says ${response}. Version not imported. 
+                    `Something's wrong. The server says ${response}. Version not imported.
                     But good news is your current data is still intact.`;
             };
             ce.dialogModal.modal('hide');
@@ -198,7 +198,7 @@ const initImportZipBtn = function () {
         let msgGen = function (isSuccess, response) {
             return isSuccess ?
                 `File ${filename} successfully imported` :
-                `Something's wrong. The server says "${response}". Version not imported. 
+                `Something's wrong. The server says "${response}". Version not imported.
                 But good news is your current data is still intact.`;
         };
 
@@ -346,7 +346,6 @@ const dialogModalOkBtn = dialogModal.find('#dialog-modal-yes-button');
 function initCreateDatabaseButton() {
 
     ReactDOM.render(<NewDatabaseButton databaseGrid={databaseGrid} />, document.getElementById('create-database-button-wrapper'));
-
 
     deleteDatabaseBtn.on('click', function () {
         let grid_ = databaseGrid.mainGrid;

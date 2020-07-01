@@ -12,7 +12,7 @@ def get_builtin_attrs():
     :return: None
     """
     from root.models import ExtraAttr, ValueTypes, User
-    from koe.models import AudioFile, Segment
+    from koe.models import AudioFile, Segment, Database
 
     goc = ExtraAttr.objects.get_or_create
 
@@ -27,10 +27,13 @@ def get_builtin_attrs():
     family_attr, _ = goc(klass=Segment.__name__, name='label_family', type=ValueTypes.SHORT_TEXT)
     subfamily_attr, _ = goc(klass=Segment.__name__, name='label_subfamily', type=ValueTypes.SHORT_TEXT)
     seg_note_attr, _ = goc(klass=Segment.__name__, name='note', type=ValueTypes.SHORT_TEXT)
+    db_cm_attr, _ = goc(klass=Database.__name__, name='cm', type=ValueTypes.SHORT_TEXT)
+    db_zoom_attr, _ = goc(klass=Database.__name__, name='zoom', type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
         user=DotMap(current_database=current_database_attr, database_sim_attr=database_sim_attr,
                     tmpdb_sim_attr=tmpdb_sim_attr, hold_ids_attr=hold_ids_attr),
+        database=DotMap(cm=db_cm_attr, zoom=db_zoom_attr),
         audio_file=DotMap(note=song_note_attr, type=type_attr),
         segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr),
     )

@@ -1,9 +1,10 @@
 /* global keyboardJS*/
 import {defaultGridOptions, FlexibleGrid} from './flexible-grid';
 import {changePlaybackSpeed, loadSongById} from './audio-handler';
-import {deepCopy, setCache, getCache, isNumber, isNull} from './utils';
+import {deepCopy, setCache, getCache, isNumber, isNull, getUrl} from './utils';
 import {postRequest} from './ajax-handler';
 import {Visualiser} from './audio-visualisation';
+
 require('bootstrap-slider/dist/bootstrap-slider.js');
 
 const gridOptions = deepCopy(defaultGridOptions);
@@ -310,54 +311,51 @@ export const run = function () {
     grid.init(fileId);
 
     let loadSongPromise = loadSongById.bind({predefinedSongId: fileId});
+    return new Promise(function (resolve, reject) {
+        postRequest({
+            requestSlug: 'koe/get-database-spectrogram-preference',
+            data: {'file-id': fileId},
+            immediate: true,
+            onSuccess({cm, zoom}) {
+                return loadSongPromise().then(function({dataArrays, realFs, realLength, browserFs}) {
+                    audioData.fileId = fileId;
+                    audioData.dataArrays = dataArrays;
+                    audioData.realFs = realFs;
+                    audioData.browserFs = browserFs;
+                    audioData.realLength = realLength;
+                    audioData.browserLength = dataArrays[0].length;
+                    audioData.durationMs = realLength * 1000 / realFs;
 
-    return loadSongPromise().then(function({dataArrays, realFs, realLength, browserFs}) {
-        audioData.dataArrays = dataArrays;
-        audioData.realFs = realFs;
-        audioData.browserFs = browserFs;
-        audioData.realLength = realLength;
-        audioData.browserLength = dataArrays[0].length;
-        audioData.durationMs = realLength * 1000 / realFs;
+                    audioData.durationRatio = (realLength / realFs) / (audioData.browserLength / audioData.browserFs);
+                    if (!isNull(zoom)){
+                        spectViz.resetArgs({zoom: zoom});
+                    }
+                    if (!isNull(cm)){
+                        spectViz.resetArgs({colourMap: cm});
+                    }
+                    spectViz.setData(audioData);
+                    spectViz.initCanvas();
+                    spectViz.initController();
+                    spectViz.visualiseSpectrogram();
+                    spectViz.drawBrush();
 
-        // audioData.dataArrays = dataArrays;
-        // audioData.fs = sampleRate;
-        //
-        // // If realFs is null, the sample rate read from the audio file is real
-        // if (isNull(realFs)) {
-        //     realFs = sampleRate;
-        // }
-        // audioData.realSampleRate = realFs;
-        // audioData.length = dataArrays[0].length;
-        // audioData.durationMs = audioData.length * 1000 / realFs;
-
-        // If the audio has high sampling rate, it cannot be played back at original rate. So we have to artificially
-        // lower the sampling rate, this will make the playback slower so we have to account for this later given the
-        // ratio between real and fake sample rate
-        // audioData.durationRatio = realFs / sampleRate;
-
-        audioData.durationRatio = (realLength / realFs) / (audioData.browserLength / audioData.browserFs);
-
-        spectViz.setData(audioData);
-        spectViz.initCanvas();
-        spectViz.initController();
-        spectViz.visualiseSpectrogram();
-        spectViz.drawBrush();
-
-        return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
-            return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
-                let syllableArray = grid.mainGrid.getData().getItems();
-                let syllableDict = {};
-                for (let i = 0; i < syllableArray.length; i++) {
-                    let item = syllableArray[i];
-                    syllableDict[item.id] = item;
-                }
-                setCache('syllableArray', undefined, syllableArray);
-                setCache('syllableDict', undefined, syllableDict);
-                spectViz.displaySegs();
-            });
+                    return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+                        return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
+                            let syllableArray = grid.mainGrid.getData().getItems();
+                            let syllableDict = {};
+                            for (let i = 0; i < syllableArray.length; i++) {
+                                let item = syllableArray[i];
+                                syllableDict[item.id] = item;
+                            }
+                            setCache('syllableArray', undefined, syllableArray);
+                            setCache('syllableDict', undefined, syllableDict);
+                            spectViz.displaySegs();
+                        });
+                    });
+                });
+            }
         });
     });
-
 };
 
 

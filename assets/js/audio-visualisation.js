@@ -1,10 +1,14 @@
 /* global d3*/
 /* eslint no-console: off */
+import ReactDOM from "react-dom";
+
 const FFT = require('fft.js');
 import {spectToUri, globalMinSpectPixel, globalMaxSpectPixel} from './visual-utils';
 import {stopAudio, playAudioDataArray, resumeAudioContext} from './audio-handler';
 import {getCache, calcSegments, setCache, uuid4, debug, smoothScrollTo, deepCopy} from './utils';
 import {transposeFlipUD, calcSpect} from './dsp';
+import SpectrogramControlButton from "react-components/SpectrogramControlButton";
+import React from "react";
 
 const stateEmpty = 0;
 const stateScheduled = 1;
@@ -25,8 +29,6 @@ const zoomOptions = $('.select-zoom');
 const zoomBtnText = $('#zoom-btn-text');
 const cmOptions = $('.select-cm');
 const cmBtnText = $('#cm-btn-text');
-let channelOptions = null;
-const channelBtnText = $('#channel-btn-text');
 
 let startPlaybackAt;
 let playbackSpeed;
@@ -115,6 +117,9 @@ export class Visualiser {
          * @type {*}
          */
         this.eventNotifier = $(document.createElement('div'));
+
+        this.setChannel = this.setChannel.bind(this);
+        this.resetArgs = this.resetArgs.bind(this);
     }
 
     /**
@@ -465,23 +470,30 @@ export class Visualiser {
             self.tickInterval /= self.audioData.durationRatio;
         }
 
-        self.populateChannelOptions();
+        let nChannels = self.audioData.dataArrays.length;
+        self.setChannel(0);
+        ReactDOM.render(<SpectrogramControlButton spectViz={this} nChannels={nChannels} colourMap={self.colourMap}
+                                                  zoom={self.zoom}/>,
+                document.getElementById('spectrogram-control-button-wrapper'));
+
+
+        // self.populateChannelOptions();
     }
 
-    populateChannelOptions() {
-        const self = this;
-        let nChannels = self.audioData.dataArrays.length;
-        const channelOptionUl = $('#channel-btn ul.dropdown-menu');
-        for (let i = 0; i < nChannels; i++) {
-            let option = `<li class="${i == 0 ? 'active' : ''}"><a class="select-channel" href="#" value=${i}>${i + 1}</a></li>`;
-            channelOptionUl.append(option);
-        }
-        if (nChannels > 1) {
-            $('#channel-btn button').prop('disabled', false);
-        }
-        channelOptions = $('.select-channel');
-        self.setChannel(0);
-    }
+    // populateChannelOptions() {
+    //     const self = this;
+    //     let nChannels = self.audioData.dataArrays.length;
+    //     const channelOptionUl = $('#channel-btn ul.dropdown-menu');
+    //     for (let i = 0; i < nChannels; i++) {
+    //         let option = `<li class="${i == 0 ? 'active' : ''}"><a class="select-channel" href="#" value=${i}>${i + 1}</a></li>`;
+    //         channelOptionUl.append(option);
+    //     }
+    //     if (nChannels > 1) {
+    //         $('#channel-btn button').prop('disabled', false);
+    //     }
+    //     channelOptions = $('.select-channel');
+    //     self.setChannel(0);
+    // }
 
     setChannel(channelIdx) {
         const self = this;
@@ -942,21 +954,21 @@ export class Visualiser {
             self.displaySegs();
         });
 
-        channelOptions.click(function () {
-            let $this = $(this);
-            let channel = $this.attr('value');
-            channelOptions.parent().removeClass('active');
-            $this.parent().addClass('active');
-            channelBtnText.html($this.html());
-
-            self.setChannel(channel);
-            self.initCanvas();
-            self.visualisationPromiseChainHead.cancel();
-            self.visualisationPromiseChainHead = undefined;
-            self.imagesAreInitialised = false;
-            self.visualiseSpectrogram();
-            self.drawBrush();
-            self.displaySegs();
-        });
+        // channelOptions.click(function () {
+        //     let $this = $(this);
+        //     let channel = $this.attr('value');
+        //     channelOptions.parent().removeClass('active');
+        //     $this.parent().addClass('active');
+        //     channelBtnText.html($this.html());
+        //
+        //     self.setChannel(channel);
+        //     self.initCanvas();
+        //     self.visualisationPromiseChainHead.cancel();
+        //     self.visualisationPromiseChainHead = undefined;
+        //     self.imagesAreInitialised = false;
+        //     self.visualiseSpectrogram();
+        //     self.drawBrush();
+        //     self.displaySegs();
+        // });
     }
 }
