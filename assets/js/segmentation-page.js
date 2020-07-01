@@ -311,49 +311,51 @@ export const run = function () {
     grid.init(fileId);
 
     let loadSongPromise = loadSongById.bind({predefinedSongId: fileId});
-    return new Promise(function (resolve, reject) {
+    let loadPreferencePromise = () => new Promise(function (resolve, reject) {
         postRequest({
             requestSlug: 'koe/get-database-spectrogram-preference',
             data: {'file-id': fileId},
             immediate: true,
-            onSuccess({cm, zoom}) {
-                return loadSongPromise().then(function({dataArrays, realFs, realLength, browserFs}) {
-                    audioData.fileId = fileId;
-                    audioData.dataArrays = dataArrays;
-                    audioData.realFs = realFs;
-                    audioData.browserFs = browserFs;
-                    audioData.realLength = realLength;
-                    audioData.browserLength = dataArrays[0].length;
-                    audioData.durationMs = realLength * 1000 / realFs;
+            onSuccess: resolve
+        });
+    });
 
-                    audioData.durationRatio = (realLength / realFs) / (audioData.browserLength / audioData.browserFs);
-                    if (!isNull(zoom)){
-                        spectViz.resetArgs({zoom: zoom});
-                    }
-                    if (!isNull(cm)){
-                        spectViz.resetArgs({colourMap: cm});
-                    }
-                    spectViz.setData(audioData);
-                    spectViz.initCanvas();
-                    spectViz.initController();
-                    spectViz.visualiseSpectrogram();
-                    spectViz.drawBrush();
+    return loadPreferencePromise().then(function ({cm, zoom}) {
+        return loadSongPromise().then(function ({dataArrays, realFs, realLength, browserFs}) {
+            audioData.fileId = fileId;
+            audioData.dataArrays = dataArrays;
+            audioData.realFs = realFs;
+            audioData.browserFs = browserFs;
+            audioData.realLength = realLength;
+            audioData.browserLength = dataArrays[0].length;
+            audioData.durationMs = realLength * 1000 / realFs;
 
-                    return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
-                        return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
-                            let syllableArray = grid.mainGrid.getData().getItems();
-                            let syllableDict = {};
-                            for (let i = 0; i < syllableArray.length; i++) {
-                                let item = syllableArray[i];
-                                syllableDict[item.id] = item;
-                            }
-                            setCache('syllableArray', undefined, syllableArray);
-                            setCache('syllableDict', undefined, syllableDict);
-                            spectViz.displaySegs();
-                        });
-                    });
-                });
+            audioData.durationRatio = (realLength / realFs) / (audioData.browserLength / audioData.browserFs);
+            if (!isNull(zoom)) {
+                spectViz.resetArgs({zoom: zoom});
             }
+            if (!isNull(cm)) {
+                spectViz.resetArgs({colourMap: cm});
+            }
+            spectViz.setData(audioData);
+            spectViz.initCanvas();
+            spectViz.initController();
+            spectViz.visualiseSpectrogram();
+            spectViz.drawBrush();
+
+            return grid.initMainGridHeader(gridArgs, extraArgs).then(function () {
+                return grid.initMainGridContent(gridArgs, extraArgs).then(function () {
+                    let syllableArray = grid.mainGrid.getData().getItems();
+                    let syllableDict = {};
+                    for (let i = 0; i < syllableArray.length; i++) {
+                        let item = syllableArray[i];
+                        syllableDict[item.id] = item;
+                    }
+                    setCache('syllableArray', undefined, syllableArray);
+                    setCache('syllableDict', undefined, syllableDict);
+                    spectViz.displaySegs();
+                });
+            });
         });
     });
 };
