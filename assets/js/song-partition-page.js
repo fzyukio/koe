@@ -848,6 +848,7 @@ export const run = function (commonElements) {
     let colourMap = ce.argDict._cm || 'Green';
 
     spectViz = new Visualiser(vizContainerId);
+    spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
 
     loadSongPromise().then(function ({dataArrays, realFs, realLength, browserFs, filename}) {
         if (predefinedSongId) {
@@ -873,7 +874,6 @@ export const run = function (commonElements) {
         spectViz.setData(audioData);
         spectViz.initScroll();
         spectViz.initController();
-        spectViz.resetArgs({zoom, contrast: 0, noverlap: 0, colourMap});
         spectViz.initCanvas();
         spectViz.visualiseSpectrogram();
         spectViz.drawBrush();

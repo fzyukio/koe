@@ -105,7 +105,8 @@ class SongPartitionView(FormView):
         context['form'] = form
         context['valid'] = False
         rendered = render_to_string('partials/track-info-form.html', context=context)
-        return HttpResponse(json.dumps(dict(message=rendered)))
+        retval = dict(origin='SongPartitionView.form_invalid', success=False, warning=None, payload=rendered)
+        return HttpResponse(json.dumps(retval))
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -147,7 +148,8 @@ class SongPartitionView(FormView):
         context['form'] = form
 
         rendered = render_to_string('partials/track-info-form.html', context=context)
-        return HttpResponse(json.dumps(dict(message=rendered)))
+        retval = dict(origin='SongPartitionView.form_valid', success=True, warning=None, payload=rendered)
+        return HttpResponse(json.dumps(retval))
 
 
 class TensorvizView(TemplateView):
@@ -245,7 +247,7 @@ class FeatureExtrationView(FormView):
         context = self.get_context_data()
         rendered = render_to_string('partials/feature-selection-form.html', context=context)
 
-        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
     def form_valid(self, form):
         post_data = self.request.POST
@@ -281,7 +283,7 @@ class FeatureExtrationView(FormView):
                 context = self.get_context_data()
                 context['form'] = form
                 rendered = render_to_string('partials/feature-selection-form.html', context=context)
-                return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+                return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
             features = form_data['features'].order_by('id')
             aggregations = form_data['aggregations'].order_by('id')
@@ -310,7 +312,7 @@ class FeatureExtrationView(FormView):
         context = self.get_context_data()
         context['task'] = task
         rendered = render_to_string('partials/feature-extraction-tasks.html', context=context)
-        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=True, html=rendered))))
 
 
 class OrdinationExtrationView(FormView):
@@ -346,7 +348,7 @@ class OrdinationExtrationView(FormView):
         context = self.get_context_data()
         rendered = render_to_string('partials/ordination-selection-form.html', context=context)
 
-        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=True, html=rendered))))
 
     def form_valid(self, form):
         user = self.request.user
@@ -374,7 +376,7 @@ class OrdinationExtrationView(FormView):
             context = self.get_context_data()
             context['form'] = form
             rendered = render_to_string('partials/ordination-selection-form.html', context=context)
-            return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+            return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
         ord = Ordination(dm=dm, method=method, ndims=ndims, params=params)
         ord.save()
@@ -389,7 +391,7 @@ class OrdinationExtrationView(FormView):
         context = self.get_context_data()
         context['task'] = task
         rendered = render_to_string('partials/ordination-extraction-tasks.html', context=context)
-        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=True, html=rendered))))
 
 
 class SimilarityExtrationView(FormView):
@@ -424,7 +426,7 @@ class SimilarityExtrationView(FormView):
         context = self.get_context_data()
         rendered = render_to_string('partials/similarity-selection-form.html', context=context)
 
-        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
     def form_valid(self, form):
         user = self.request.user
@@ -461,7 +463,7 @@ class SimilarityExtrationView(FormView):
             context = self.get_context_data()
             context['form'] = form
             rendered = render_to_string('partials/similarity-selection-form.html', context=context)
-            return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+            return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
         si.save()
         task = Task(user=user, target='{}:{}'.format(SimilarityIndex.__name__, si.id))
@@ -474,7 +476,7 @@ class SimilarityExtrationView(FormView):
         context = self.get_context_data()
         context['task'] = task
         rendered = render_to_string('partials/similarity-extraction-tasks.html', context=context)
-        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=True, html=rendered))))
 
 
 class ContactUsView(FormView):
@@ -492,7 +494,7 @@ class ContactUsView(FormView):
         context = self.get_context_data()
         rendered = render_to_string('partials/contact-us-form.html', context=context)
 
-        return HttpResponse(json.dumps(dict(message=dict(success=False, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=False, html=rendered))))
 
     def form_valid(self, form, **kwargs):
         data = form.cleaned_data
@@ -512,7 +514,7 @@ class ContactUsView(FormView):
             send_email_thread.start()
 
         rendered = render_to_string('support-confirmation.html')
-        return HttpResponse(json.dumps(dict(message=dict(success=True, html=rendered))))
+        return HttpResponse(json.dumps(dict(success=True, payload=dict(success=True, html=rendered))))
 
 
 def get_home_page(request):
