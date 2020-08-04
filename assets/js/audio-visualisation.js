@@ -64,6 +64,7 @@ export class Visualiser {
         this.height = null;
         this.width = null;
         this.spectXScale = null;
+        this.spectYScale = null;
         this.scrollbarHeight = 0;
         this.axisHeight = 20;
         this.vizContainerId = vizContainerId;
@@ -351,6 +352,7 @@ export class Visualiser {
     scroll(cursorPosition) {
         let self = this;
         let imageStartIndex = Math.floor(cursorPosition / self.spectWidth);
+        self.spectrogramYAxis.attr('transform', `translate(${cursorPosition},0)`);
 
         if (imageStartIndex !== self.currentImageIndex) {
             self.currentImageIndex = imageStartIndex;
@@ -536,13 +538,16 @@ export class Visualiser {
         self.oscillogramSvg.attr('height', self.oscilloHeight);
 
         let spectXExtent = [0, self.audioData.durationMs];
+        let spectYExtent = [0, self.audioData.realFs / 2 / 1000];
         self.spectXScale = d3.scaleLinear().range([0, self.imgWidth]).domain(spectXExtent);
+        self.spectYScale = d3.scaleLinear().range([self.spectHeight, 0]).domain(spectYExtent);
 
         /*
          * Show the time axis under the spectrogram. Draw one tick per interval (default 200ms per click)
          */
         let numTicks = self.audioData.durationMs / self.tickInterval;
         let xAxis = d3.axisBottom().scale(self.spectXScale).ticks(numTicks);
+        let yAxis = d3.axisRight().scale(self.spectYScale).ticks(3);
 
         self.spectrogramAxis = self.spectrogramSvg.append('g');
         self.spectrogramAxis.attr('class', 'x axis');
@@ -557,6 +562,11 @@ export class Visualiser {
 
         self.spectrogramSvg.append('line').attr('class', 'playback-indicator').attr('x1', 0).attr('y1', 0).attr('x2', 1).attr('y2', self.spectHeight).style('stroke-width', 2).style('stroke', 'black').style('fill', 'none').style('display', 'none');
         self.oscillogramSvg.append('line').attr('class', 'playback-indicator').attr('x1', 0).attr('y1', 0).attr('x2', 1).attr('y2', self.oscilloHeight).style('stroke-width', 2).style('stroke', 'black').style('fill', 'none').style('display', 'none');
+
+        self.spectrogramYAxis = self.spectrogramSvg.append('g');
+        self.spectrogramYAxis.attr('class', 'y axis');
+        self.spectrogramYAxis.attr('transform', 'translate(0,0)');
+        self.spectrogramYAxis.call(yAxis);
 
         self.playbackIndicator = d3.selectAll('.playback-indicator');
     }
