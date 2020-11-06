@@ -9,6 +9,58 @@ from spectrum import dpss
 
 
 @memoize(timeout=None)
+def _cached_butter_bandpass(lpf, hpf, fs):
+    nyquist = fs // 2
+    if lpf is None:
+        lpf = nyquist
+    if hpf is None:
+        hpf = 0
+
+    if lpf == nyquist and hpf == 0:
+        return None
+
+    band = 50
+
+    if lpf == nyquist:
+        # High pass filter
+        cut1 = hpf / nyquist
+        cut2 = (hpf + band) / nyquist
+        # calculate the best order
+        order, wN = signal.buttord(cut1, cut2, 3, band)
+        btype = 'highpass'
+
+    elif hpf == 0:
+        # # Low pass filter
+        cut1 = lpf / nyquist
+        cut2 = (lpf - band) / nyquist
+        # # calculate the best order
+        order, wN = signal.buttord(cut1, cut2, 3, band)
+        btype = 'lowpass'
+
+    else:
+        high = hpf / nyquist
+        high_cut = (hpf + band) / nyquist
+        low = lpf / nyquist
+        low_cut = (lpf - band) / nyquist
+        # # calculate the best order
+        order, wN = signal.buttord([low, low_cut], [high, high_cut], 3, band)
+        btype = 'bandpass'
+
+    order = min(10, order)
+    return signal.butter(order, wN, btype=btype)
+
+
+def butter_bandpass_filter(data, lpf, hpf, fs):
+    filter_args = _cached_butter_bandpass(lpf, hpf, fs)
+    if filter_args is None:
+        # No need to filter
+        return data
+
+    b, a = filter_args
+    return signal.filtfilt(b, a, data)
+
+
+@memoize(timeout=None)
 def _cached_get_window(name, nfft):
     if name.startswith('dpss'):
         assert name in ['dpss1', 'dpss2']
@@ -45,13 +97,15 @@ def get_psd(args):
 
 # @profile
 def get_sig(args):
-    wav_file_path, fs, start, end, win_length = unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'win_length'])
+    wav_file_path, fs, start, end, win_length, lpf, hpf = \
+        unroll_args(args, ['wav_file_path', 'fs', 'start', 'end', 'win_length', 'lpf', 'hpf'])
 
     if wav_file_path:
         sig = wavfile.read_segment(wav_file_path, start, end, mono=True, normalised=True, winlen=win_length)
     else:
         sig = args['sig']
-    return sig
+
+    return butter_bandpass_filter(sig, lpf, hpf, fs)
 
 
 # @profile

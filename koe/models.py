@@ -144,6 +144,9 @@ class Database(SimpleModel):
         if self.nfft not in allowed_nffts:
             raise CustomAssertionError('NFFT must be one of the following values: {}'.format(allowed_nffts))
 
+        if self.lpf is not None and self.lpf < self.hpf:
+            raise CustomAssertionError('Low pass filter value must be higher than high pass filter')
+
         super(Database, self).save(**kwargs)
 
     def get_assigned_permission(self, user):

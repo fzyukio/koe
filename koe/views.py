@@ -299,7 +299,7 @@ class FeatureExtrationView(FormView):
         dm.task = task
         dm.save()
 
-        delay_in_production(extract_database_measurements, task.id)
+        delay_in_production(extract_database_measurements, task.id, force=is_recreating)
         if is_recreating:
             ord_tasks = recreate_associated_ordination_tasks(dmid, user)
             for task in ord_tasks:

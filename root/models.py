@@ -330,6 +330,10 @@ class AutoSetterGetterMixin:
             for obj, val in zip(objs, value):
                 setattr(obj, attr, val)
             bulk_update(objs, update_fields=[attr], batch_size=10000)
+        elif len(objs) == 1:
+            obj = objs[0]
+            setattr(obj, attr, value)
+            obj.save()
         else:
             objs.update(**{attr: value})
 
