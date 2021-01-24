@@ -1,10 +1,15 @@
 .git
 .venv
 .idea
-node_modules
+node_modules/
 docker-compose.yml
 db/
 user_data/
 backups/
 notebooks/
 logs/
+ml_saved/
+__pycache__
+csv/
+docs/
+koe/ml/trained_models

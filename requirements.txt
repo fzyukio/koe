@@ -13,8 +13,8 @@ cffi==1.10.0
 click==6.7
 coverage==4.3.4
 cycler==0.10.0
-dask==0.14.1
-decorator==4.0.11
+dask
+decorator==4.3.0
 dj-database-url==0.4.2
 Django==2.0.4
 django-log-request-id==1.3.2
@@ -39,7 +39,7 @@ pbr==2.0.0
 pexpect==4.2.1
 pickleshare==0.7.4
 pre-commit==0.13.6
-prompt-toolkit==1.0.14
+prompt-toolkit==1.0.15
 psycopg2==2.7.1
 ptyprocess==0.5.1
 pycparser==2.17

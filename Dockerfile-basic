@@ -15,11 +15,11 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 # backports needed to install ffmpeg
-RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
-deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
+# RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
+# deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
 
 # Install extra packages.
-RUN apt-get update && apt-get install -y --no-install-recommends vim mysql-client ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends vim mariadb-client ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /
 
