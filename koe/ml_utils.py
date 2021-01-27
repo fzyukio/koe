@@ -12,9 +12,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
-from koe.neuralnet_models import ConvolutionalNeuralNetwork
 from koe.utils import accum
 from koe.utils import split_classwise
+
+
+__all__ = []
 
 
 def _calc_score(predict_y, true_y, nlabels, with_cfmat=False):
@@ -125,6 +127,7 @@ def nnet(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
 
 
 def cnn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
+    from koe.neuralnet_models import ConvolutionalNeuralNetwork
     model = ConvolutionalNeuralNetwork(**kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
     fake_importances = np.zeros((train_x.shape[1],))

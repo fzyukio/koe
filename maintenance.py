@@ -21,7 +21,6 @@ fixture_list = [
     'root.user',
     'root.extraattr',
     'root.columnactionvalue',
-    'cms',
     'koe.database',
     'koe.accessrequest',
     'koe.databaseassignment',
@@ -49,8 +48,8 @@ def get_config():
     :return: the config dictionary
     """
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    filename = os.path.join(base_dir, 'settings.yaml')
-    default_filename = os.path.join(base_dir, 'settings.default.yaml')
+    filename = os.path.join(base_dir, 'settings', 'settings.yaml')
+    default_filename = os.path.join(base_dir, 'settings', 'settings.default.yaml')
 
     if not os.path.isfile(filename):
         raise Exception('File {} not found, please make a copy of {}'.format(filename, default_filename))
@@ -99,7 +98,7 @@ def talk_to_user(message):
     :param message: the message
     :return: None
     """
-    print(Back.BLUE + Fore.WHITE + message + Style.RESET_ALL)
+    print(Fore.BLUE + message + Style.RESET_ALL)
 
 
 @contextmanager
@@ -487,11 +486,12 @@ def wait_for_database():
     talk_to_user('Testing database connection...')
     probe_db_function = probe_db_functions[db_engine_short_name]
 
-    connectable = probe_db_function()
+    connectable, message = probe_db_function()
     while not connectable:
-        connectable = probe_db_function()
-        print('Connection is not ready, sleep for 1 sec')
+        talk_to_user('Connection is not ready, sleep for 1 sec')
+        talk_to_user('Message = {}'.format(message))
         time.sleep(1)
+        connectable, message = probe_db_function()
 
     return True, ''
 
@@ -676,6 +676,7 @@ if __name__ == '__main__':
 
     if restore_db:
         handle_function(empty_database)
+        handle_function(apply_migrations)
         if backup_file.endswith('.zip'):
             handle_function(restore_database_using_fixtures)
         else:

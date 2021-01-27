@@ -26,7 +26,7 @@ COPY requirements.txt /
 
 ## Install any needed packages specified in requirements.txt
 RUN pip uninstall -y numpy scipy
-RUN pip install Cython numpy==1.16.3 scipy==1.2.1
+RUN pip install Cython numpy==1.19.5 scipy==1.2.1
 RUN pip install -r requirements.txt --no-cache-dir
 
 COPY requirements-tensorflow.txt /

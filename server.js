@@ -5,7 +5,7 @@ import config from './webpack.local.config';
 
 const yaml = require('yamljs');
 
-const settings = yaml.load('settings.yaml');
+const settings = yaml.load('settings/settings.yaml');
 const port = config[0].port;
 
 new WebpackDevServer(webpack(config), {

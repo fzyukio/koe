@@ -21,6 +21,7 @@ services:
       dockerfile: $DOCKER_FILE
       context: .
       network: host
+    #    image: crazyfffan/koe
     networks:
       - default
       - web
@@ -29,8 +30,8 @@ services:
     environment:
       - VIRTUAL_HOST=${DOMAIN}
       - VIRTUAL_PROTO=uwsgi
-# Uncomment below to DELETE and re-create the database from fixtures
-#      - RESET_DB=true
+#     Uncomment below to DELETE and re-create the database from fixtures
+      - RESET_DB=true
     restart: unless-stopped
     depends_on:
       - db
@@ -39,6 +40,7 @@ services:
       - ./logs:/code/logs
       - ./backups:/code/backups
       - ./notebooks:/code/notebooks
+      - ./settings:/code/settings
   cache:
     image: redis
     container_name: ${CONTAINER_CACHE_NAME}

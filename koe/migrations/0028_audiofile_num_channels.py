@@ -1,7 +1,7 @@
 import os
 import sys
 
-from bulk_update.helper import bulk_update
+from django_bulk_update.helper import bulk_update
 from django.conf import settings
 from django.db import migrations, models
 

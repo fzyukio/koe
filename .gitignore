@@ -18,7 +18,7 @@ mossop.db
 *.lprof
 *.db
 help.md
-settings.yaml
+settings/
 backups/
 *.h5
 **/management/commands/_*

@@ -4,7 +4,7 @@ import os
 import errno
 from logging import warning
 
-from bulk_update.helper import bulk_update
+from django_bulk_update.helper import bulk_update
 from django.conf import settings
 from django.db import migrations, models
 from django.db import transaction

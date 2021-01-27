@@ -6,7 +6,7 @@ const nodeModulesDir = path.resolve(__dirname, 'node_modules');
 
 const yaml = require('yamljs');
 
-const settings = yaml.load('settings.yaml');
+const settings = yaml.load('settings/settings.yaml');
 const port = settings.environment_variables.WEBPACK_SERVER_PORT;
 
 // baseConfig[1].devtool = '#source-map';
