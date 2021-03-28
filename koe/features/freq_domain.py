@@ -117,7 +117,7 @@ def frame_zcr(frame):
     """Computes zero crossing rate of frame"""
     count = len(frame)
     countZ = np.sum(np.abs(np.diff(np.sign(frame)))) / 2
-    return countZ / float(count)
+    return countZ / float(count - 1)
 
 
 @memoize(timeout=60)
@@ -141,7 +141,7 @@ def _harmonic_and_pitch(args):
         R = np.correlate(frame, frame, mode='full')
 
         g = R[len(frame) - 1]
-        R = R[len(frame):-1]
+        R = R[len(frame): -1]
 
         # estimate m0 (as the first zero crossing of R)
         [a, ] = np.nonzero(np.diff(np.sign(R)))
@@ -157,28 +157,22 @@ def _harmonic_and_pitch(args):
         CSum = np.cumsum(frame ** 2)
         Gamma[m0:M] = R[m0:M] / (np.sqrt((g * CSum[M:m0:-1])) + eps)
 
-        ZCR = frame_zcr(Gamma)
-
-        if ZCR > 0.15:
-            HR = 0.0
+        if len(Gamma) == 0:
+            hr = 1.0
             f0 = 0.0
         else:
-            if len(Gamma) == 0:
-                HR = 1.0
-                blag = 0.0
-                Gamma = np.zeros(M, dtype=np.float64)
-            else:
-                HR = np.max(Gamma)
-                blag = np.argmax(Gamma)
+            # Find the first 3 candidates, since there's lots of noise that can distort the result if we
+            # only consider the max
+            blags = np.argsort(Gamma)[-3:][::-1]
+            f0_candidates = fs / (blags + eps)
 
-            # Get fundamental frequency:
-            f0 = fs / (blag + eps)
-            if f0 > 5000:
-                f0 = 0.0
-            if HR < 0.1:
-                f0 = 0.0
+            # The FF should be the smallest of all candidates
+            smallest_f0_index = np.argmin(f0_candidates)
+            f0 = f0_candidates[smallest_f0_index]
+            blag = blags[smallest_f0_index]
+            hr = Gamma[blag]
 
-        HRs.append(HR)
+        HRs.append(hr)
         F0s.append(f0)
 
     return np.array(HRs), np.array(F0s)
