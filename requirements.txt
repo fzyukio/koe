@@ -26,7 +26,7 @@ matplotlib==3.3.4
 mysqlclient==1.4.2.post1
 nltk==3.4.3
 numba==0.53.0
-numpy==1.20.1
+numpy==1.19.5
 progress==1.5
 pycspade==0.6.6
 pydub==0.23.1
@@ -35,9 +35,9 @@ PyMySQL==1.0.2
 pytz==2016.10
 raven==6.10.0
 redis==3.2.0
-scikit-image==0.24.0
-scikit-learn==0.18.1
-scipy==1.6.1
+scikit-image==0.17.2
+scikit-learn==0.24.1
+scipy==1.2.1
 sortedcontainers==2.1.0
 spectrum@git+https://github.com/fzyukio/spectrum@51fdb7b8c8ce47fde4102c24b336193e16cbbad7
 whitenoise==3.3.0
