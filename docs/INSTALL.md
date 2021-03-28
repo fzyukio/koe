@@ -1,13 +1,13 @@
 If you're running Mac Big Sur and/or your Mac is running on an Apple Silicon chip), 
 you must follow the instructions to install for Conda-forge. The instructions for Mac with Intel chip will not work.
 
-[For Conda-forge (Mac with Apple Silicon chip)](docs/INSTALL-conda.md)
+[For Conda-forge (Mac with Apple Silicon chip)](INSTALL-conda.md)
 
-[For Mac with Intel chip](docs/INSTALL-mac.md)
+[For Mac with Intel chip](INSTALL-mac.md)
 
-[For Linux](docs/INSTALL-linux.md)
+[For Linux](INSTALL-linux.md)
 
-[For Windows](docs/INSTALL-windows.md)
+[For Windows](INSTALL-windows.md)
 
 ### Why are there so many requirements-*.txt?
 
