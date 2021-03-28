@@ -67,7 +67,7 @@ class TaskRunner:
         self.task.pc_complete = 100.
         self.task.save()
         self._advance(TaskProgressStage.COMPLETED)
-        if self.do_send_email:
+        if self.do_send_email == 'always' or self.do_send_email == 'success-only':
             send_email(self.task, True)
 
     def error(self, e):
@@ -75,7 +75,7 @@ class TaskRunner:
         error_tracker = settings.ERROR_TRACKER
         error_tracker.captureException()
         self._advance(TaskProgressStage.ERROR, str(e))
-        if self.do_send_email == 'always':
+        if self.do_send_email == 'always' or self.do_send_email == 'error-only':
             send_email(self.task, False)
 
     def _change_suffix(self):

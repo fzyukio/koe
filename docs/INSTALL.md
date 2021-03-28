@@ -1,143 +1,39 @@
-# Installation checklist:
-    * [ ] Install C++ compiler
-    * [ ] Install git, python, pip and virtualenv
-    * [ ] Import your public key to gitlab
-    * [ ] Configure Git and checkout the project
-    * [ ] Try the easy way to finish installation
-    * [ ] If anything goes wrong, try:
-      * [ ] Create a virtualenv
-      * [ ] Run the project, run migration
-    * [ ] Modify settings - Optional
+If you're running Mac Big Sur and/or your Mac is running on an Apple Silicon chip), 
+you must follow the instructions to install for Conda-forge. The instructions for Mac with Intel chip will not work.
 
-# Installation details:
-## Install C++ compiler
-### On Mac
-Install XCode
+[For Conda-forge (Mac with Apple Silicon chip)](docs/INSTALL-conda.md)
 
-### On Windows
-Install Microsoft Build Tools 2015: go to https://www.visualstudio.com/vs/older-downloads/.
-Then go to Redistributables and Build Tools. Download "Microsoft Build Tools 2015 Update 3"
-Check that the file you download is named "visualcppbuildtools_full.exe"
+[For Mac with Intel chip](docs/INSTALL-mac.md)
 
-## Install python 3.6
+[For Linux](docs/INSTALL-linux.md)
 
-Follow the instruction here: https://www.python.org/downloads/mac-osx/. Recommend installing to `C:\Python36`. On Windows, you might have to manually add the path to python (`C:\Python36` and `C:\Python36\Scripts`) to the environment variable `PATH`.
+[For Windows](docs/INSTALL-windows.md)
 
-Open a command line window (Windows) or a terminal and type in:
-```bash
-python --version
-pip --version
-```
+### Why are there so many requirements-*.txt?
 
-You should see something similar to this, or else you need to fix the problem before moving to the next step.
-```text
-python 3.6.5
-pip 9.0.2 from C:/Python36/Script (python 3.6)
-```
+Koe can run on any operating system, as well as running as a Docker image. So to maximise compatibility, I
+created different `requirements.txt` for different environments.
 
-## Install git
-### On Linux
-#### Debian based linux systems (e.g. Ubuntu)
-**Open a terminal. Copy & paste the following** into the terminal window and **hit `Return`**. You may be prompted to enter your password.
+ - `requirements.txt`: contains all the libraries that are necessary to compile and run Koe, except the machine-learning part
+ - `requirements-basic.txt`: contains the extra libraries necessary for the machine-learning part of Koe to run on a tensorflow image (CPU-only)
+ - `requirements-tensorflow.txt`: contains the extra libraries necessary for the machine-learning part of Koe oto run on a tensorflow image (GPU-enabled)
+ - `requirements-conda-forge.txt`: contains the libraries that can be installed by pip in a conda environment
+ - `requirements-dev.txt`: contains the extra libraries that are necessary to for development environment, mostly to run lint and profiler
+ - `requirements-production.txt`: contains the extra libraries that are necessary to deploy Koe as a webapp (using uWSGI)
 
-```bash
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install git
-```
-#### Red Hat based linux systems (e.g. CentOS)
-**Open a terminal. Copy & paste the following** into the terminal window and **hit `Return`**. You may be prompted to enter your password.
-```bash
-sudo yum upgrade
-sudo yum install git
-```
-### On MacOS
-**Open a terminal**
+#### For dev environment using conda-forge
+Many python libraries cannot be installed using pip in conda-forge environment, they must be installed using `conda install`.
+The remaining libraries can be installed normally with pip. So for conda-forge the steps to install all python libraries are:
+ - First install all the special libraries compiled specifically for conda-forge using `conda install` command
+ - Then, install the rest with `pip install requirements-conda-forge.txt`
+ - Finally, install the dev tools with `pip install requirements-dev.txt`
 
-#### Step 1 – Install Homebrew
-**Copy & paste the following** into the terminal window and **hit `Return`**.
-```bash
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-brew doctor
-```
-You will be offered to install the *Command Line Developer Tools* from *Apple*. **Confirm by clicking *Install***. After the installation finished, continue installing *Homebrew* by **hitting `Return`** again.
+#### For dev environment using native CPU
+ - First, install all necessary library with `pip install requirements.txt`
+ - Finally, install the dev tools with `pip install requirements-dev.txt`
 
-#### Step 2 – Install Git
-**Copy & paste the following** into the terminal window and **hit `Return`**.
-```bash
-brew install git
-```
-### On Windows
-**Download** Git from http://msysgit.github.io and **install it**.
+#### For docker image
+This section is quite advanced and difficult to get right. 
+Also might not be necessary as I'm maintaining an official Koe's Docker image on Docker Hub (https://hub.docker.com/repository/docker/crazyfffan/koe)
+So you shouldn't worry about this
 
-## Install virtualenv
-Open a terminal or cmd window and type:
-```bash
-pip install virtualenv
-```
-
-## Configure Git and checkout the project:
-### Configure Git
-Set your username and email for git if you haven't done so already:
-```bash
-git config --global user.name "John Doe"
-git config --global user.email "john@doe.com"
-```
-Generate a pair of SSH keys and import the public key to gitlab:
-> You must do this in a POSIX environment, so on Windows, instead of `cmd`, open Git Bash
-
-```bash
-ssh-keygen # Leave the passphrase empty. Default path to the keys is ~/.ssh/id_rsa.pub and ~/.ssh/id_rsa
-```
-Copy the content of `~/.ssh/id_rsa.pub` **NOT THE OTHER ONE** and import it to gitlab
-
-### Checkout the project:
-#### On Windows `cmd`:
-
-```shell
-md workspace
-cd workspace
-git clone git@gitlab.com:yukio/koe.git
-cd koe
-```
-#### In POSIX terminal
-```bash
-mkdir ~/workspace
-cd ~/workspace
-git clone git@gitlab.com:yukio/koe.git
-cd koe
-```
-### Create a virtual environment:
-> Note: if you use PyCharm, make sure you run this command BEFORE importing the project into Pycharm. Otherwise it will use the default interpreter and you'll have to change that
-
-```bash
-virtualenv .venv
-```
-
-### Run the project:
-#### Source the virtual environment.
-> Note: You only need to do this when you run commands from `cmd` or a terminal. On Pycharm, the virtualenv is automatically loaded.
-
-##### On windows:
-###### Using command line (`cmd`)
-```shell
-.venv\Scripts\activate.bat
-```
-###### Using POSIX terminal e.g. git bash, cygwin, Mingw
-```bash
-source .venv/Scripts/activate
-```
-##### On Linux and Mac
-```bash
-source .venv/bin/activate
-```
-
-### Now run
-```bash
-pip install -r requirements.txt
-python maintenance.py --generate-config
-python manage.py migrate
-```
-
-## Modify settings
-After running the project for the first time, a file named `settings.yaml` is created. If you want to change anything - edit this file and rerun the app. You don't have to modify it - the default settings should work fine.

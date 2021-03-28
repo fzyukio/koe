@@ -5,6 +5,7 @@ from time import sleep
 
 import csv
 import numpy as np
+from django.conf import settings
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform, pdist
 from scipy.stats import zscore
@@ -327,6 +328,7 @@ def extract_database_measurements(arg=None, force=False, send_email='always', ra
     else:
         task = arg
 
+    send_email = 'error-only' if settings.DEBUG else send_email
     runner = TaskRunner(task, send_email=send_email)
     try:
         runner.preparing()

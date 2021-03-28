@@ -24,6 +24,7 @@ from koe.models import AudioFile, Segment, Database, DatabaseAssignment, \
     InvitationCode, MergingInfo
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue, ExtraAttr, User
+from root.utils import ensure_parent_folder_exists
 from root.views import _change_properties_table
 
 __all__ = ['create_database', 'import_audio_metadata', 'delete_audio_files', 'save_segmentation', 'get_label_options',
@@ -180,6 +181,8 @@ def create_database(request):
         new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', settings.AUDIO_COMPRESSED_FORMAT,
                                           str(database.id))
 
+        ensure_parent_folder_exists(new_wav_dir)
+        ensure_parent_folder_exists(new_compressed_dir)
         os.mkdir(new_wav_dir)
         os.mkdir(new_compressed_dir)
 

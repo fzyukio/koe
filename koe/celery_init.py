@@ -10,6 +10,7 @@ import celery.platforms
 
 # set the default Django settings module for the 'celery' program.
 # from django.conf import settings
+from django.conf import settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'koe.celery_settings')
 
@@ -44,7 +45,9 @@ def celery_is_up():
 
 
 def delay_in_production(func, *args, **kwargs):
-    if celery_is_up():
+    if settings.DEBUG:
+        func(*args, **kwargs)
+    elif celery_is_up():
         func.delay(*args, **kwargs)
     else:
         func(*args, **kwargs)

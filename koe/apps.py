@@ -70,7 +70,10 @@ class KoeConfig(AppConfig):
                 from koe.aggregator import init as init_aggregators
                 from koe.features.feature_extract import init as init_features
 
-                is_database_empty = User.objects.all().count() == 0
+                try:
+                    is_database_empty = User.objects.all().count() == 0
+                except:
+                    is_database_empty = True
 
                 if not is_database_empty:
                     register_app_modules(self.name, 'request_handlers.history')

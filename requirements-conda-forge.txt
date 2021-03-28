@@ -1,5 +1,4 @@
 Django==2.0.4
-Pillow==8.1.2
 PyYAML==3.12
 celery==4.3.1
 colorama==0.4.1
@@ -22,11 +21,7 @@ django-widget-tweaks==1.4.1
 djangorestframework==3.8.2
 dotmap==1.3.8
 librosa==0.8.0
-matplotlib==3.3.4
-mysqlclient==1.4.2.post1
 nltk==3.4.3
-numba==0.53.0
-numpy==1.20.1
 progress==1.5
 pycspade==0.6.6
 pydub==0.23.1
@@ -35,9 +30,6 @@ PyMySQL==1.0.2
 pytz==2016.10
 raven==6.10.0
 redis==3.2.0
-scikit-image==0.24.0
-scikit-learn==0.18.1
-scipy==1.6.1
 sortedcontainers==2.1.0
 spectrum@git+https://github.com/fzyukio/spectrum@51fdb7b8c8ce47fde4102c24b336193e16cbbad7
 whitenoise==3.3.0
