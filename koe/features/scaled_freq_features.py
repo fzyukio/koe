@@ -1,9 +1,25 @@
 import numpy as np
 from librosa import filters
 from librosa import power_to_db
+from memoize import memoize
 
 from koe.features.utils import unroll_args, get_psd
-from memoize import memoize
+
+
+def dct(n_filters, n_input):
+    """
+    Copied from librosa.filters as it is deprecated from 0.7.0
+    """
+
+    basis = np.empty((n_filters, n_input))
+    basis[0, :] = 1.0 / np.sqrt(n_input)
+
+    samples = np.arange(1, 2*n_input, 2) * np.pi / (2.0 * n_input)
+
+    for i in range(1, n_filters):
+        basis[i, :] = np.cos(i*samples) * np.sqrt(2.0/n_input)
+
+    return basis
 
 
 @memoize(timeout=60 * 60 * 24)
@@ -26,7 +42,8 @@ def mfc(args):
 def mfcc(args):
     ncep = unroll_args(args, [('ncep', 20)])
     S = mfc(args)
-    return np.dot(filters.dct(ncep, S.shape[0]), S)
+    librosa_dct = dct(ncep, S.shape[0])
+    return np.dot(librosa_dct, S)
 
 
 def mfcc_delta(args):
