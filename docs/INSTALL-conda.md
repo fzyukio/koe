@@ -20,16 +20,16 @@ conda create --name py39 python=3.9
 conda activate py39
 
 # Install the following packages:
-conda install numpy==1.20.1
-conda install scikit-image==0.18.1
-conda install scikit-learn==0.24.0
-conda install scipy==1.6.1
-conda install matplotlib==3.3.4
-conda install pillow==8.1.2
-conda install llvmlite==0.36.0
-conda install numba==0.53.0
-conda install libsndfile==1.0.31
-conda install mysqlclient==1.4.2.post1
+conda install -y numpy==1.20.1
+conda install -y scikit-image==0.18.1
+conda install -y scikit-learn==0.24.0
+conda install -y scipy==1.6.1
+conda install -y matplotlib==3.3.4
+conda install -y pillow==8.1.2
+conda install -y llvmlite==0.36.0
+conda install -y numba==0.53.0
+conda install -y libsndfile==1.0.31
+conda install -y mysqlclient==1.4.2.post1
 ```
 
 ## Install MySQL (both conda and non-conda)
