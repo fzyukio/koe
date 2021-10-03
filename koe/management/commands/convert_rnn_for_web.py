@@ -10,7 +10,7 @@ import tensorflow as tf
 from django.core.management.base import BaseCommand
 from tensorflowjs.converters.converter import main as tfjs_converter
 
-import spect_utils
+from koe import spect_utils
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.models import RnnSegmentor
 from root.utils import data_path, mkdirp

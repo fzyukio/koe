@@ -58,7 +58,7 @@ def get_config():
         return CONF
 
     with open(filename, 'r', encoding='utf-8') as f:
-        conf = yaml.load(f)
+        conf = yaml.safe_load(f)
 
     if conf.get('secret_key', None) is None:
         import random
@@ -70,7 +70,7 @@ def get_config():
             f.write('secret_key: r\'{}\''.format(secret))
 
     with open(filename, 'r', encoding='utf-8') as f:
-        conf = yaml.load(f)
+        conf = yaml.safe_load(f)
 
     conf['base_dir'] = base_dir
     CONF.update(conf)
@@ -163,7 +163,7 @@ def backup_mysql():
     :return: None
     """
     with create_tmp_mysql_conf() as temp_conf:
-        cmd = ['mysqldump', '--defaults-extra-file={}'.format(temp_conf.name), db_name, '--result-file', backup_file]
+        cmd = ['mysqldump', '--defaults-extra-file={}'.format(temp_conf.name), db_name, '--result-file', backup_file, '--no-tablespaces', '--column-statistics=0']
         out, err = run_command(cmd, suppress_output=True)
 
         return err == b'', err.decode('utf-8')

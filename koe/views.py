@@ -40,7 +40,7 @@ def get_best_segmentor(audio_file):
     :param audio_file:
     :return:
     """
-    input_dim = spect_utils.nfft // 2 + 1
+    input_dim = audio_file.database.nfft // 2 + 1
     database = audio_file.database
     segmentor = RnnSegmentor.objects.filter(database=database, input_dim=input_dim).first()
     if segmentor is None:
@@ -88,12 +88,15 @@ class SegmentationView(TemplateView):
         context['database'] = audio_file.database.id
         context['segmentor'] = get_best_segmentor(audio_file)
 
+        nfft = audio_file.database.nfft
+        overlap = audio_file.database.noverlap
+
         if not os.path.isfile('user_data/tmp/{}.json'.format(file_id)):
             from koe.spect_utils import extract_spect, extract_log_spect
             wav_file_path = wav_path(audio_file)
             sig = wavfile.read_segment(wav_file_path, 0, None, normalised=True, mono=True)
-            spectrogram = extract_spect(wav_file_path, audio_file.fs, 0, None).T
-            log_spect = extract_log_spect(wav_file_path, audio_file.fs, 0, None).T
+            spectrogram = extract_spect(wav_file_path, audio_file.fs, 0, None, nfft, overlap).T
+            log_spect = extract_log_spect(wav_file_path, audio_file.fs, 0, None, nfft, overlap).T
 
             with open('user_data/tmp/{}.json'.format(file_id), 'w') as f:
                 json.dump(dict(spectrogram=spectrogram, log_spect=log_spect, sig=sig), f)
