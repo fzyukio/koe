@@ -58,7 +58,7 @@ def get_config():
         return CONF
 
     with open(filename, 'r', encoding='utf-8') as f:
-        conf = yaml.load(f)
+        conf = yaml.safe_load(f)
 
     if conf.get('secret_key', None) is None:
         import random
@@ -70,7 +70,7 @@ def get_config():
             f.write('secret_key: r\'{}\''.format(secret))
 
     with open(filename, 'r', encoding='utf-8') as f:
-        conf = yaml.load(f)
+        conf = yaml.safe_load(f)
 
     conf['base_dir'] = base_dir
     CONF.update(conf)

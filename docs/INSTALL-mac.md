@@ -72,6 +72,9 @@ pip install -r requirements-conda-forge.txt
 Before running the app you must provide a customised settings.yaml file (located inside `settings/` folder)
 Just open `settings.yaml` and replace `yourname` etc... with the appropriate values 
 
+### Create a new database
+Assuming you have mysql installed, login to the database as root and create a database named `koe`, a user named `koe` and password `koe`. Of course you can choose different names/values of these, but you will need to change the corresponding variable in `settings.yaml`
+
 ## Initialise the database:
 ```bash
 python maintenance.py --restore-database --file=initial.zip

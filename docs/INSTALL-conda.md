@@ -29,7 +29,8 @@ conda install -y pillow==8.1.2
 conda install -y llvmlite==0.36.0
 conda install -y numba==0.53.0
 conda install -y libsndfile==1.0.31
-conda install -y mysqlclient==1.4.2.post1
+conda install -y mysqlclient==2.0.3
+conda install -y ffmpeg==5.1.2
 ```
 
 ## Install MySQL (both conda and non-conda)
@@ -63,6 +64,9 @@ pip install -r requirements-conda-forge.txt
 ## Modify settings.yaml
 Before running the app you must provide a customised settings.yaml file (located inside `settings/` folder)
 Just open `settings.yaml` and replace `yourname` etc... with the appropriate values 
+
+### Create a new database
+Assuming you have mysql installed, login to the database as root and create a database named `koe`, a user named `koe` and password `koe`. Of course you can choose different names/values of these, but you will need to change the corresponding variable in `settings.yaml`
 
 ## Initialise the database:
 ```bash
