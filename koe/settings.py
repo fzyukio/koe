@@ -20,11 +20,7 @@ def base_dir_join(*args):
     return os.path.join(BASE_DIR, *args)
 
 
-ENV_DEBUG = os.environ.get("DEBUG", None)
-if ENV_DEBUG:
-    DEBUG = ENV_DEBUG == "True"
-else:
-    DEBUG = envconf["debug"]
+DEBUG = envconf["debug"]
 
 ALLOWED_HOSTS = envconf["allowed_hosts"]
 

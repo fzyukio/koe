@@ -54,7 +54,9 @@ def get_config():
     :return: the config dictionary
     """
 
-    setting_file = "settings.yaml" if os.getenv("DEBUG", None) == "False" else "settings-dev.yaml"
+    DEBUG_ENV = str(os.getenv("DEBUG", "")).lower()
+
+    setting_file = "settings.yaml" if DEBUG_ENV == "false" else "settings-dev.yaml"
 
     talk_to_user(f"Using settings: {setting_file}")
 
@@ -86,6 +88,7 @@ def get_config():
         conf = yaml.safe_load(f)
 
     conf["base_dir"] = base_dir
+    conf["debug"] = DEBUG_ENV
     CONF.update(conf)
 
     return CONF

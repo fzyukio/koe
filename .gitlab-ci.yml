@@ -53,6 +53,7 @@ build:
     DOCKER_BUILDKIT: '1'
     DOCKER_TLS_CERTDIR: ''
     IMAGE_TAG: ${CI_REGISTRY_IMAGE}:$CI_COMMIT_REF_SLUG
+    FE_TAG: ${CI_REGISTRY_IMAGE}:$CI_COMMIT_REF_SLUG-fe
   before_script:
     - git checkout-index --all --prefix umask-fix-checkout/
     - cd umask-fix-checkout
@@ -60,9 +61,19 @@ build:
   script:
     - |
       docker build \
+      --target frontend \
+      --cache-from $FE_TAG \
+      --tag $IMAGE_TAG \
+      --build-arg BUILDKIT_INLINE_CACHE=1 \
+      -f Dockerfile-basic \
+      "."
+    - |
+      docker build \
+      --target backend \
       --cache-from $IMAGE_TAG \
       --tag $IMAGE_TAG \
       --build-arg BUILDKIT_INLINE_CACHE=1 \
       -f Dockerfile-basic \
       "."
+    - docker push $FE_TAG
     - docker push $IMAGE_TAG

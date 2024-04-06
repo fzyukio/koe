@@ -18,9 +18,7 @@ from koe.utils import (
 
 @memoize(timeout=60)
 def _cached_foo(arg1, arg2, args):
-    key = "{}-{}-{}".format(
-        arg1, arg2, "-".join("{}={}".format(x, y) for x, y in args.items())
-    )
+    key = "{}-{}-{}".format(arg1, arg2, "-".join("{}={}".format(x, y) for x, y in args.items()))
     if key in _cached_foo.cached:
         _cached_foo.cached[key] += 1
     else:
@@ -68,9 +66,7 @@ class KoeUtilsTest(TestCase):
         for beg_ms in [0, 1, 2, 20, 30, 100]:
             for length_ms in [1, 100, 150, 153, 200, max_end_ms - beg_ms]:
                 end_ms = beg_ms + length_ms
-                segment1 = wavfile.read_segment(
-                    filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True
-                )
+                segment1 = wavfile.read_segment(filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True)
                 segment1_len_ms = np.round(len(segment1) * 1000 / fs)
                 self.assertEqual(segment1_len_ms, length_ms)
 
@@ -199,10 +195,7 @@ class KoeUtilsTest(TestCase):
         self.assertTrue(np.allclose(correct, encoded_labels))
 
     def test_get_closest_neighbours(self):
-        distmat = (
-            np.array([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]])
-            / 10.0
-        )
+        distmat = np.array([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]]) / 10.0
 
         labels = np.array(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
         get_closest_neighbours(distmat, labels)

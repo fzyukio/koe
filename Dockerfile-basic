@@ -1,12 +1,23 @@
-# Use an official Python runtime as a base image
-FROM python:3.9.19 as base
+FROM node:10-buster-slim as frontend
+LABEL Author="Yukio Fukuzawa"
 
+WORKDIR /code
+COPY package.json package.json 
+COPY package-lock.json package-lock.json 
+RUN apt-get update && apt-get install -y libvips-dev --no-install-recommends
+RUN apt-get install -y git
+RUN npm install
+COPY assets .babelrc webpack.base.config.js webpack.prod.config.js build.js server.js /code/
+COPY assets /code/assets
+RUN rm -rf /code/assets/bundles
+RUN npm run-script build-prod
+
+FROM python:3.9.19 as backend
 LABEL Author="Yukio Fukuzawa"
 
 ENV PYTHONUNBUFFERED 1
 
 ARG uid=1000
-
 ARG http_proxy=''
 ARG https_proxy=''
 ENV http_proxy=''
@@ -45,6 +56,17 @@ EXPOSE 8000
 WORKDIR /code
 
 COPY . .
+
+RUN rm -rf assets/bundles static
+COPY --from=frontend /code/assets/bundles /code/assets/bundles 
+COPY --from=frontend /code/jquery-webpack-stats.json /code/jquery-webpack-stats.json 
+COPY --from=frontend /code/webpack-stats.json /code/webpack-stats.json 
+COPY --from=frontend /code/node_modules /code/node_modules 
+
+ENV DEBUG=False
+ARG DEBUG=False
+RUN python manage.py collectstatic --noinput
+RUN rm -rf /code/node_modules
 
 ENTRYPOINT ["/bin/bash"]
 CMD ["run_koe_app.sh"]
