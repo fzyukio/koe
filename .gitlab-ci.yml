@@ -42,27 +42,27 @@ stages:
 build:
   stage: build
 
-  image: jdrouet/docker-with-buildx:stable
-  
+  image: docker:20.10.14-git
+  needs: []
   services:
-    - docker:dind
+    - docker:20.10.14-dind
 
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
+    DOCKER_BUILDKIT: '1'
+    DOCKER_TLS_CERTDIR: ''
     IMAGE_TAG: ${CI_REGISTRY_IMAGE}:$CI_COMMIT_REF_SLUG
-    
   before_script:
+    - git checkout-index --all --prefix umask-fix-checkout/
+    - cd umask-fix-checkout
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $IMAGE_TAG || true
   script:
-    - docker buildx create --use
     - |
-      docker buildx build \
-      --push \
-      --platform linux/arm64,linux/amd64 \
+      docker build \
+      --cache-from $IMAGE_TAG \
+      --tag $IMAGE_TAG \
       --build-arg BUILDKIT_INLINE_CACHE=1 \
-      --cache-from=$IMAGE_TAG \
       -f Dockerfile-basic \
-      -t $IMAGE_TAG \
-      .
+      "."
+    - docker push $IMAGE_TAG
