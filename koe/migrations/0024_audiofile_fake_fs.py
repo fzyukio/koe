@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0023_merginginfo'),
+        ("koe", "0023_merginginfo"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='audiofile',
-            name='fake_fs',
+            model_name="audiofile",
+            name="fake_fs",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

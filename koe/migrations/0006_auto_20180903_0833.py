@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0005_auto_20180820_0304'),
+        ("koe", "0005_auto_20180820_0304"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='segment',
-            name='tid',
+            model_name="segment",
+            name="tid",
             field=models.IntegerField(null=True),
         ),
     ]

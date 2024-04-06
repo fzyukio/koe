@@ -34,14 +34,16 @@ Functions
 `write`: Write a np array as a WAV file.
 
 """
-import struct
+
 import math
+import struct
 
 import numpy as np
 
 
 class WavFileWarning(UserWarning):
     pass
+
 
 SEEK_ABSOLUTE = 0
 SEEK_RELATIVE = 1
@@ -50,7 +52,7 @@ SEEK_RELATIVE = 1
 # assumes file pointer is immediately
 #  after the 'fmt ' id
 def _read_fmt_chunk(fid):
-    res = struct.unpack('<ihHIIHH', fid.read(20))
+    res = struct.unpack("<ihHIIHH", fid.read(20))
     size, comp, noc, rate, sbytes, ba, bits = res
     if size > 16:
         fid.read(size - 16)
@@ -59,7 +61,7 @@ def _read_fmt_chunk(fid):
 
 def _skip_unknown_chunk(fid):
     data = fid.read(4)
-    size = struct.unpack('<i', data)[0]
+    size = struct.unpack("<i", data)[0]
     if bool(size & 1):  # if odd number of bytes, move 1 byte further (data chunk is word-aligned)
         size += 1
     fid.seek(size, SEEK_RELATIVE)
@@ -67,11 +69,11 @@ def _skip_unknown_chunk(fid):
 
 def _read_riff_chunk(fid):
     str1 = fid.read(4)
-    if str1 != b'RIFF':
+    if str1 != b"RIFF":
         raise ValueError("Not a WAV file.")
-    fsize = struct.unpack('<I', fid.read(4))[0] + 8
+    fsize = struct.unpack("<I", fid.read(4))[0] + 8
     str2 = fid.read(4)
-    if (str2 != b'WAVE'):
+    if str2 != b"WAVE":
         raise ValueError("Not a WAV file.")
     return fsize
 
@@ -97,44 +99,54 @@ def read_wav_info(file):
     :param file: a file object or path to a file
     :return:
     """
-    if hasattr(file, 'read'):
+    if hasattr(file, "read"):
         fid = file
     else:
-        fid = open(file, 'rb')
+        fid = open(file, "rb")
     _read_riff_chunk(fid)
 
     # read the next chunk
     chunk_id = fid.read(4)
-    while chunk_id != b'fmt ':
+    while chunk_id != b"fmt ":
         _skip_unknown_chunk(fid)
         chunk_id = fid.read(4)
 
     size, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
     if bits == 8 or bits == 24:
-        dtype = 'u1'
+        dtype = "u1"
         bytes = 1
     else:
         bytes = bits // 8
-        dtype = '<i%d' % bytes
+        dtype = "<i%d" % bytes
 
     if bits == 32 and comp == 3:
-        dtype = 'float32'
+        dtype = "float32"
 
     fid.close()
     return size, comp, noc, rate, sbytes, ba, bits, bytes, dtype
 
 
-def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono=False, normalised=True, retype=True,
-              winlen=1):
-    bits = fmt_info['bits']
-    ba = fmt_info['ba']
-    rate = fmt_info['rate']
-    noc = fmt_info['noc']
-    comp = fmt_info['comp']
+def read_data(
+    fid,
+    data_cursor,
+    fmt_info,
+    data_size,
+    beg_ms=0,
+    end_ms=None,
+    mono=False,
+    normalised=True,
+    retype=True,
+    winlen=1,
+):
+    bits = fmt_info["bits"]
+    ba = fmt_info["ba"]
+    rate = fmt_info["rate"]
+    noc = fmt_info["noc"]
+    comp = fmt_info["comp"]
 
     if end_ms is not None:
         if math.floor(end_ms * rate * ba / 1000) > data_size:
-            if math.floor((end_ms-1) * rate * ba / 1000) > data_size:
+            if math.floor((end_ms - 1) * rate * ba / 1000) > data_size:
                 duration = data_size * 1000 / rate / ba
                 error_msg = "end_ms is bigger than the duration: end_ms={} duration={}".format(end_ms, duration)
                 raise Exception(error_msg)
@@ -144,14 +156,14 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     if data_cursor:
         fid.seek(data_cursor, SEEK_ABSOLUTE)
     if bits == 8 or bits == 24:
-        dtype = 'u1'
+        dtype = "u1"
         bytes = 1
     else:
         bytes = bits // 8
-        dtype = '<i%d' % bytes
+        dtype = "<i%d" % bytes
 
     if bits == 32 and comp == 3:
-        dtype = 'float32'
+        dtype = "float32"
 
     beg = int(beg_ms * rate * ba / 1000)
 
@@ -169,7 +181,6 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
         # end_ms = int(np.floor(data_size * 1000 / ba / rate))
         end = data_size
     else:
-
         duration_ms = end_ms - beg_ms
         duration_frame = duration_ms * rate * ba / 1000
         duration_window = int(math.ceil(duration_frame / byte_per_window) * byte_per_window)
@@ -189,10 +200,10 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
         fid.close()
 
         if bits == 24:
-            a = np.empty((len(data) // 3, 4), dtype='u1')
+            a = np.empty((len(data) // 3, 4), dtype="u1")
             a[:, :3] = data.reshape((-1, 3))
-            a[:, 3:] = (a[:, 3 - 1:3] >> 7) * 255
-            data = a.view('<i4').reshape(a.shape[:-1])
+            a[:, 3:] = (a[:, 3 - 1 : 3] >> 7) * 255
+            data = a.view("<i4").reshape(a.shape[:-1])
 
         if noc > 1:
             data = data.reshape(-1, noc)
@@ -217,7 +228,16 @@ def read_data(fid, data_cursor, fmt_info, data_size, beg_ms=0, end_ms=None, mono
     return data
 
 
-def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, return_fs=False, retype=True, winlen=1):
+def read_segment(
+    file,
+    beg_ms=0,
+    end_ms=None,
+    mono=False,
+    normalised=True,
+    return_fs=False,
+    retype=True,
+    winlen=1,
+):
     """
     Read only the chunk of data between a segment (faster than reading a whole file then select the wanted segment)
     :param min_nframe: minimum number of samples to be returned. Handy if a whole number is necessary e.g. for FFT
@@ -229,10 +249,10 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
                    False to return raw unsigned byte data.
     :return: a np array
     """
-    if hasattr(file, 'read'):
+    if hasattr(file, "read"):
         fid = file
     else:
-        fid = open(file, 'rb')
+        fid = open(file, "rb")
 
     fsize = _read_riff_chunk(fid)
     rate = None
@@ -244,33 +264,55 @@ def read_segment(file, beg_ms=0, end_ms=None, mono=False, normalised=True, retur
 
     while fid.tell() < fsize:
         chunk_id = fid.read(4)
-        if chunk_id == b'fmt ':
+        if chunk_id == b"fmt ":
             _, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
-            fmt_info['rate'] = rate
-            fmt_info['ba'] = ba
-            fmt_info['bits'] = bits
-            fmt_info['noc'] = noc
-            fmt_info['comp'] = comp
-        elif chunk_id == b'data':
-            data_size = struct.unpack('<i', fid.read(4))[0]
+            fmt_info["rate"] = rate
+            fmt_info["ba"] = ba
+            fmt_info["bits"] = bits
+            fmt_info["noc"] = noc
+            fmt_info["comp"] = comp
+        elif chunk_id == b"data":
+            data_size = struct.unpack("<i", fid.read(4))[0]
             if fmt_info is not None:
-                retval = read_data(fid, None, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype, winlen)
+                retval = read_data(
+                    fid,
+                    None,
+                    fmt_info,
+                    data_size,
+                    beg_ms,
+                    end_ms,
+                    mono,
+                    normalised,
+                    retype,
+                    winlen,
+                )
                 break
             else:
                 data_cursor = fid.tell()
                 fid.seek(data_size, SEEK_RELATIVE)
         else:
-            chunk_id = chunk_id.decode().rstrip('\0').encode()
+            chunk_id = chunk_id.decode().rstrip("\0").encode()
             if len(chunk_id) > 0:
                 _skip_unknown_chunk(fid)
             else:
                 break
 
-    assert rate is not None, 'Unable to read FMT block from file ' + fid.name
-    assert data_size is not None, 'Unable to read DATA block from file ' + fid.name
+    assert rate is not None, "Unable to read FMT block from file " + fid.name
+    assert data_size is not None, "Unable to read DATA block from file " + fid.name
 
     if retval is None:
-        retval = read_data(fid, data_cursor, fmt_info, data_size, beg_ms, end_ms, mono, normalised, retype, winlen)
+        retval = read_data(
+            fid,
+            data_cursor,
+            fmt_info,
+            data_size,
+            beg_ms,
+            end_ms,
+            mono,
+            normalised,
+            retype,
+            winlen,
+        )
 
     if return_fs:
         retval = (retval, rate)
@@ -285,10 +327,10 @@ def get_wav_info(file, return_noc=False):
     :param file: a string or file pointer
     :return:
     """
-    if hasattr(file, 'read'):
+    if hasattr(file, "read"):
         fid = file
     else:
-        fid = open(file, 'rb')
+        fid = open(file, "rb")
 
     fsize = _read_riff_chunk(fid)
     rate = 0
@@ -298,20 +340,20 @@ def get_wav_info(file, return_noc=False):
 
     while fid.tell() < fsize:
         chunk_id = fid.read(4)
-        if chunk_id == b'fmt ':
+        if chunk_id == b"fmt ":
             _, comp, noc, rate, sbytes, ba, bits = _read_fmt_chunk(fid)
-        elif chunk_id == b'data':
-            size = struct.unpack('<i', fid.read(4))[0]
+        elif chunk_id == b"data":
+            size = struct.unpack("<i", fid.read(4))[0]
             fid.seek(size, SEEK_RELATIVE)
         else:
-            chunk_id = chunk_id.decode().rstrip('\0').encode()
+            chunk_id = chunk_id.decode().rstrip("\0").encode()
             if len(chunk_id) > 0:
                 _skip_unknown_chunk(fid)
             else:
                 break
 
-    assert rate != 0 and ba != 0 and noc != 0, 'Unable to read FMT block from file ' + fid.name
-    assert size != 0, 'Unable to read DATA block from file ' + fid.name
+    assert rate != 0 and ba != 0 and noc != 0, "Unable to read FMT block from file " + fid.name
+    assert size != 0, "Unable to read DATA block from file " + fid.name
 
     length = size // ba
     if return_noc:
@@ -332,56 +374,58 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
     assert len(shape) == 3
     assert shape[2] * 8 == bitrate
 
-    fid = open(filename, 'wb')
-    fid.write(b'RIFF')
-    fid.write(b'\x00\x00\x00\x00')
-    fid.write(b'WAVE')
+    fid = open(filename, "wb")
+    fid.write(b"RIFF")
+    fid.write(b"\x00\x00\x00\x00")
+    fid.write(b"WAVE")
 
     # fmt chunk
-    fid.write(b'fmt ')
+    fid.write(b"fmt ")
     if data.ndim == 1:
         noc = 1
     else:
         noc = data.shape[1]
     sbytes = rate * (bitrate // 8) * noc
     ba = noc * (bitrate // 8)
-    fid.write(struct.pack('<ihHIIHH', 16, 1, noc, rate, sbytes, ba, bitrate))
+    fid.write(struct.pack("<ihHIIHH", 16, 1, noc, rate, sbytes, ba, bitrate))
 
-    fid.write(b'data')
-    fid.write(struct.pack('<i', data.nbytes))
+    fid.write(b"data")
+    fid.write(struct.pack("<i", data.nbytes))
     import sys
-    if data.dtype.byteorder == '>' or (data.dtype.byteorder == '=' and sys.byteorder == 'big'):
+
+    if data.dtype.byteorder == ">" or (data.dtype.byteorder == "=" and sys.byteorder == "big"):
         data = data.byteswap()
 
     data.tofile(fid)
     # cue chunk
     if markers:  # != None and != []
         if isinstance(markers[0], dict):  # then we have [{'position': 100, 'label': 'marker1'}, ...]
-            labels = [m['label'] for m in markers]
-            markers = [m['position'] for m in markers]
+            labels = [m["label"] for m in markers]
+            markers = [m["position"] for m in markers]
         else:
-            labels = ['' for m in markers]
+            labels = ["" for m in markers]
 
-        fid.write(b'cue ')
+        fid.write(b"cue ")
         size = 4 + len(markers) * 24
-        fid.write(struct.pack('<ii', size, len(markers)))
+        fid.write(struct.pack("<ii", size, len(markers)))
         for i, c in enumerate(markers):
-            s = struct.pack('<iiiiii', i + 1, c, 1635017060, 0, 0, c)  # 1635017060 is struct.unpack('<i',b'data')
+            s = struct.pack("<iiiiii", i + 1, c, 1635017060, 0, 0, c)  # 1635017060 is struct.unpack('<i',b'data')
             fid.write(s)
 
-        lbls = ''
+        lbls = ""
         for i, lbl in enumerate(labels):
-            lbls += b'labl'
-            label = lbl + ('\x00' if len(lbl) % 2 == 1 else '\x00\x00')
+            lbls += b"labl"
+            label = lbl + ("\x00" if len(lbl) % 2 == 1 else "\x00\x00")
             size = len(lbl) + 1 + 4  # because \x00
-            lbls += struct.pack('<ii', size, i + 1)
+            lbls += struct.pack("<ii", size, i + 1)
             lbls += label
 
-        fid.write(b'LIST')
+        fid.write(b"LIST")
         size = len(lbls) + 4
-        fid.write(struct.pack('<i', size))
+        fid.write(struct.pack("<i", size))
         fid.write(
-            b'adtl')  # https://web.archive.org/web/20141226210234/http://www.sonicspot.com/guide/wavefiles.html#list
+            b"adtl"
+        )  # https://web.archive.org/web/20141226210234/http://www.sonicspot.com/guide/wavefiles.html#list
         fid.write(lbls)
 
         # smpl chunk
@@ -390,30 +434,52 @@ def _write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=N
             loops = []
         if pitch:
             midiunitynote = 12 * np.log2(pitch * 1.0 / 440.0) + 69
-            midipitchfraction = int((midiunitynote - int(midiunitynote)) * (2 ** 32 - 1))
+            midipitchfraction = int((midiunitynote - int(midiunitynote)) * (2**32 - 1))
             midiunitynote = int(midiunitynote)
             # print(midipitchfraction, midiunitynote)
         else:
             midiunitynote = 0
             midipitchfraction = 0
-        fid.write(b'smpl')
+        fid.write(b"smpl")
         size = 36 + len(loops) * 24
         sampleperiod = int(1000000000.0 / rate)
 
         fid.write(
-            struct.pack('<iiiiiIiiii', size, 0, 0, sampleperiod, midiunitynote, midipitchfraction, 0, 0, len(loops), 0))
+            struct.pack(
+                "<iiiiiIiiii",
+                size,
+                0,
+                0,
+                sampleperiod,
+                midiunitynote,
+                midipitchfraction,
+                0,
+                0,
+                len(loops),
+                0,
+            )
+        )
         for i, loop in enumerate(loops):
-            fid.write(struct.pack('<iiiiii', 0, 0, loop[0], loop[1], 0, 0))
+            fid.write(struct.pack("<iiiiii", 0, 0, loop[0], loop[1], 0, 0))
 
     # Determine file size and place it in correct
     #  position at start of the file.
     size = fid.tell()
     fid.seek(4, SEEK_ABSOLUTE)
-    fid.write(struct.pack('<i', size - 8))
+    fid.write(struct.pack("<i", size - 8))
     fid.close()
 
 
-def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=None, normalized=False):
+def write(
+    filename,
+    rate,
+    data,
+    bitrate=None,
+    markers=None,
+    loops=None,
+    pitch=None,
+    normalized=False,
+):
     """
     Write a np array as a WAV file
 
@@ -439,7 +505,7 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
         if normalized:
             data[data > 1.0] = 1.0
             data[data < -1.0] = -1.0
-            a32 = np.asarray(data * (2 ** 23 - 1), dtype=np.int32)
+            a32 = np.asarray(data * (2**23 - 1), dtype=np.int32)
         else:
             a32 = np.asarray(data, dtype=np.int32)
         if a32.ndim == 1:
@@ -453,7 +519,7 @@ def write(filename, rate, data, bitrate=None, markers=None, loops=None, pitch=No
         if normalized:  # default to 32 bit int
             data[data > 1.0] = 1.0
             data[data < -1.0] = -1.0
-            data = np.asarray(data * (2 ** 31 - 1), dtype=np.int32)
+            data = np.asarray(data * (2**31 - 1), dtype=np.int32)
 
     _write(filename, rate, data, bitrate, markers, loops, pitch)
 

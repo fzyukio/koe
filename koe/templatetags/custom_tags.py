@@ -3,10 +3,10 @@ from os.path import splitext
 
 from django import template
 from django.conf import settings
-from django.urls import NoReverseMatch
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from root.models import MagicChoices
+
 
 register = template.Library()
 
@@ -15,7 +15,10 @@ register = template.Library()
 def shorten_name(name_ext):
     name, extension = splitext(name_ext)
     if name.__len__() > settings.MAX_FILE_NAME_LENGTH + 3:
-        return "%s...%s" % (name[0:settings.MAX_FILE_NAME_LENGTH / 2], name[-settings.MAX_FILE_NAME_LENGTH / 2:])
+        return "%s...%s" % (
+            name[0 : settings.MAX_FILE_NAME_LENGTH / 2],
+            name[-settings.MAX_FILE_NAME_LENGTH / 2 :],
+        )
     else:
         return name
 
@@ -32,10 +35,10 @@ class SetVarNode(template.Node):
             value = ""
         context[self.var_name] = value
 
-        return u""
+        return ""
 
 
-@register.tag(name='set')
+@register.tag(name="set")
 def set_var(parser, token):
     """
     {% set some_var = '123' %}
@@ -63,43 +66,101 @@ def get_server_constants():
                 alias_dict[key] = cl_aliases[key]
             aliases[cl.__name__] = alias_dict
 
-    url_names = ['send-request', 'send-request']
+    url_names = ["send-request", "send-request"]
     urls = {}
     for name in url_names:
         try:
             url = reverse(name)
         except NoReverseMatch:
-            url = reverse(name, kwargs={'type': 'arg'})
+            url = reverse(name, kwargs={"type": "arg"})
         urls[name] = url
 
-    return json.dumps({'literals': literals, 'aliases': aliases, 'urls': urls})
+    return json.dumps({"literals": literals, "aliases": aliases, "urls": urls})
 
 
 @register.simple_tag
 def get_navbar_urls():
     pages = [
-        dict(text='Syllables', is_single=False, url=reverse('syllables'), subpages=[
-            dict(text='Label syllables', is_single=True, url=reverse('syllables')),
-            dict(text='Restore version', is_single=True, url=reverse('version')),
-        ]),
-        dict(text='Exemplars', is_single=False, url=reverse('exemplars'), subpages=[
-            dict(text='By label', is_single=True, url=reverse('exemplars', args=['label'])),
-            dict(text='By family', is_single=True, url=reverse('exemplars', args=['label_family'])),
-            dict(text='By subfamily', is_single=True, url=reverse('exemplars', args=['label_subfamily'])),
-        ]),
-        dict(text='Songs', is_single=False, url=reverse('songs'), subpages=[
-            dict(text='Using label', is_single=True, url=reverse('songs', args=['label'])),
-            dict(text='Using family', is_single=True, url=reverse('songs', args=['label_family'])),
-            dict(text='Using subfamily', is_single=True, url=reverse('songs', args=['label_subfamily'])),
-        ]),
-        dict(text='Analysis', is_single=False, url=reverse('sequence-mining'), subpages=[
-            dict(text='Feature extraction & clustering', is_single=True, url=reverse('feature-extraction')),
-            dict(text='Sequence mining by label', is_single=True, url=reverse('sequence-mining', args=['label'])),
-            dict(text='Sequence mining by family', is_single=True,
-                 url=reverse('sequence-mining', args=['label_family'])),
-            dict(text='Sequence mining by subfamily', is_single=True,
-                 url=reverse('sequence-mining', args=['label_subfamily'])),
-        ]),
+        dict(
+            text="Syllables",
+            is_single=False,
+            url=reverse("syllables"),
+            subpages=[
+                dict(text="Label syllables", is_single=True, url=reverse("syllables")),
+                dict(text="Restore version", is_single=True, url=reverse("version")),
+            ],
+        ),
+        dict(
+            text="Exemplars",
+            is_single=False,
+            url=reverse("exemplars"),
+            subpages=[
+                dict(
+                    text="By label",
+                    is_single=True,
+                    url=reverse("exemplars", args=["label"]),
+                ),
+                dict(
+                    text="By family",
+                    is_single=True,
+                    url=reverse("exemplars", args=["label_family"]),
+                ),
+                dict(
+                    text="By subfamily",
+                    is_single=True,
+                    url=reverse("exemplars", args=["label_subfamily"]),
+                ),
+            ],
+        ),
+        dict(
+            text="Songs",
+            is_single=False,
+            url=reverse("songs"),
+            subpages=[
+                dict(
+                    text="Using label",
+                    is_single=True,
+                    url=reverse("songs", args=["label"]),
+                ),
+                dict(
+                    text="Using family",
+                    is_single=True,
+                    url=reverse("songs", args=["label_family"]),
+                ),
+                dict(
+                    text="Using subfamily",
+                    is_single=True,
+                    url=reverse("songs", args=["label_subfamily"]),
+                ),
+            ],
+        ),
+        dict(
+            text="Analysis",
+            is_single=False,
+            url=reverse("sequence-mining"),
+            subpages=[
+                dict(
+                    text="Feature extraction & clustering",
+                    is_single=True,
+                    url=reverse("feature-extraction"),
+                ),
+                dict(
+                    text="Sequence mining by label",
+                    is_single=True,
+                    url=reverse("sequence-mining", args=["label"]),
+                ),
+                dict(
+                    text="Sequence mining by family",
+                    is_single=True,
+                    url=reverse("sequence-mining", args=["label_family"]),
+                ),
+                dict(
+                    text="Sequence mining by subfamily",
+                    is_single=True,
+                    url=reverse("sequence-mining", args=["label_subfamily"]),
+                ),
+            ],
+        ),
     ]
 
     return pages
@@ -107,12 +168,12 @@ def get_navbar_urls():
 
 @register.simple_tag
 def get_granularity():
-    return ['label', 'label_subfamily', 'label_family']
+    return ["label", "label_subfamily", "label_family"]
 
 
 @register.simple_tag
 def get_auto_segment():
-    return ['Harma']
+    return ["Harma"]
 
 
 # @register.filter

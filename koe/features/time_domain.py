@@ -1,11 +1,11 @@
 import numpy as np
 from librosa import feature as rosaft
 
-from koe.features.utils import unroll_args, get_sig, _cached_get_window
+from koe.features.utils import _cached_get_window, get_sig, unroll_args
 
 
 def duration(args):
-    start, end = unroll_args(args, ['start', 'end'])
+    start, end = unroll_args(args, ["start", "end"])
     retval = np.ndarray((1, 1), dtype=np.float32)
     retval[0] = end - start
     return retval
@@ -13,7 +13,7 @@ def duration(args):
 
 def zero_crossing_rate(args):
     sig = get_sig(args)
-    nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
+    nfft, noverlap = unroll_args(args, ["nfft", "noverlap"])
     hopsize = nfft - noverlap
     zcr = rosaft.zero_crossing_rate(y=sig, frame_length=nfft, hop_length=hopsize, center=False)
     return zcr
@@ -21,7 +21,7 @@ def zero_crossing_rate(args):
 
 def time_axis(args):
     sig = get_sig(args)
-    fs = unroll_args(args, ['fs'])
+    fs = unroll_args(args, ["fs"])
     length = len(sig)
     t_end_sec = length / fs
     time = np.linspace(0, t_end_sec, length)
@@ -49,10 +49,10 @@ def log_attack_time(args):
 
 def energy_envelope(args):
     sig = get_sig(args)
-    nfft = unroll_args(args, ['nfft'])
+    nfft = unroll_args(args, ["nfft"])
     sig = np.abs(sig)
-    hann_window = _cached_get_window('hanning', nfft)
-    envelope = np.convolve(sig, hann_window, 'same')
+    hann_window = _cached_get_window("hanning", nfft)
+    envelope = np.convolve(sig, hann_window, "same")
     return envelope
 
 

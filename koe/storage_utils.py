@@ -1,12 +1,11 @@
 import os
 
-import numpy as np
 from django.conf import settings
-from django.db.models import Case
-from django.db.models import When
+from django.db.models import Case, When
 
-from koe.models import AudioFile
-from koe.models import Segment
+import numpy as np
+
+from koe.models import AudioFile, Segment
 
 
 def get_sids_tids(database, population_name=None):
@@ -19,7 +18,7 @@ def get_sids_tids(database, population_name=None):
     if population_name:
         audio_files = [x for x in audio_files if x.name.startswith(population_name)]
     segments = Segment.objects.filter(audio_file__in=audio_files)
-    segments_info = segments.values_list('id', 'tid')
+    segments_info = segments.values_list("id", "tid")
 
     tids = []
     sids = []
@@ -37,11 +36,11 @@ def get_sids_tids(database, population_name=None):
 
 def get_tids(sids):
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
-    tids = Segment.objects.filter(id__in=sids).order_by(preserved).values_list('tid', flat=True)
+    tids = Segment.objects.filter(id__in=sids).order_by(preserved).values_list("tid", flat=True)
     return np.array(tids, dtype=np.int32)
 
 
 def get_storage_loc_template():
-    slashed_url = os.path.join(settings.MEDIA_URL, 'binary', 'features3', '{}')
+    slashed_url = os.path.join(settings.MEDIA_URL, "binary", "features3", "{}")
     unslashed_url = slashed_url[1:]
     return os.path.join(settings.BASE_DIR, unslashed_url)

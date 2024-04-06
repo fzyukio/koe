@@ -3,11 +3,12 @@ import os
 import shutil
 import uuid
 
-import numpy as np
 from django.test import TestCase
+
+import koe.binstorage2 as bs
+import numpy as np
 from pymlfunc import tictoc
 
-import binstorage2 as bs
 
 NUM_POINTS = 1000
 
@@ -57,18 +58,28 @@ class BinStorageTest(TestCase):
         self.sorted_ids = np.array(self.ids)[ids_sorted_order]
         self.sorted_arrs = np.array(self.arrs)[ids_sorted_order]
 
-        path = '/tmp'
+        path = "/tmp"
         name = uuid.uuid4().hex
         self.loc = os.path.join(path, name)
-        self.index_file = os.path.join(self.loc, '.index')
+        self.index_file = os.path.join(self.loc, ".index")
         os.mkdir(self.loc)
 
     def test(self):
         try:
             self._test_store()
 
-            nselecteds = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
-            nupdates = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
+            nselecteds = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
+            nupdates = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
 
             for nselected in nselecteds:
                 self._test_retrieve(nselected)
@@ -82,17 +93,17 @@ class BinStorageTest(TestCase):
             shutil.rmtree(self.loc)
 
     def _test_store(self):
-        with tictoc('Test storing'):
+        with tictoc("Test storing"):
             bs.store(self.ids, self.arrs, self.loc)
 
-        with open(self.index_file, 'rb') as f:
+        with open(self.index_file, "rb") as f:
             index_arr = np.fromfile(f, dtype=np.int32)
             nids = len(index_arr) // bs.INDEX_FILE_NCOLS
 
             self.assertEqual(nids, len(self.ids))
 
             index_arr = index_arr.reshape((nids, bs.INDEX_FILE_NCOLS))
-            val_file_template = os.path.join(self.loc, '{}.val')
+            val_file_template = os.path.join(self.loc, "{}.val")
 
             for i in range(nids):
                 id = self.sorted_ids[i]
@@ -108,7 +119,7 @@ class BinStorageTest(TestCase):
                 self.assertEqual(dim1, arr.shape[1] if arr.ndim == 2 else 0)
                 self.assertEqual(max(1, dim0) * max(dim1, 1), arr_size)
 
-                with open(val_file, 'rb') as f:
+                with open(val_file, "rb") as f:
                     value_arr = np.fromfile(f, dtype=np.float32)
                     if dim1 == 0:
                         if dim0 == 0:
@@ -144,7 +155,7 @@ class BinStorageTest(TestCase):
 
         self.arrs = [id2arr[i] for i in self.ids]
 
-        with tictoc('Test update {} items'.format(nupdate)):
+        with tictoc("Test update {} items".format(nupdate)):
             bs.store(ids_for_update, arrs_for_update, self.loc)
 
         retrieved_arrs = bs.retrieve(self.ids, self.loc)
@@ -159,7 +170,7 @@ class BinStorageTest(TestCase):
         selected_ids_inds = [np.where(self.ids == x)[0][0] for x in selected_ids]
         selected_arrs = [self.arrs[i] for i in selected_ids_inds]
 
-        with tictoc('Test retrieving {} items'.format(nselected)):
+        with tictoc("Test retrieving {} items".format(nselected)):
             retrieved_arrs = bs.retrieve(selected_ids, self.loc)
 
         self.assertEqual(len(selected_ids), len(retrieved_arrs))

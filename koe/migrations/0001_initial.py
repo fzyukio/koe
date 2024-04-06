@@ -7,7 +7,6 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,199 +15,389 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AccessRequest',
+            name="AccessRequest",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('permission', models.IntegerField(choices=[(100, 'View'), (200, 'Annotate'), (300, 'Import Data'), (400, 'Copy Files'), (500, 'Add Files'), (600, 'Modify Segments'), (700, 'Delete Files'), (800, 'Assign User')], default=100)),
-                ('resolved', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "permission",
+                    models.IntegerField(
+                        choices=[
+                            (100, "View"),
+                            (200, "Annotate"),
+                            (300, "Import Data"),
+                            (400, "Copy Files"),
+                            (500, "Add Files"),
+                            (600, "Modify Segments"),
+                            (700, "Delete Files"),
+                            (800, "Assign User"),
+                        ],
+                        default=100,
+                    ),
+                ),
+                ("resolved", models.BooleanField(default=False)),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='AudioFile',
+            name="AudioFile",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('fs', models.IntegerField()),
-                ('length', models.IntegerField()),
-                ('name', models.CharField(max_length=255)),
-                ('quality', models.CharField(blank=True, max_length=255, null=True)),
-                ('start', models.IntegerField(blank=True, null=True)),
-                ('end', models.IntegerField(blank=True, null=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("fs", models.IntegerField()),
+                ("length", models.IntegerField()),
+                ("name", models.CharField(max_length=255)),
+                ("quality", models.CharField(blank=True, max_length=255, null=True)),
+                ("start", models.IntegerField(blank=True, null=True)),
+                ("end", models.IntegerField(blank=True, null=True)),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='AudioTrack',
+            name="AudioTrack",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('date', models.DateField(blank=True, null=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("date", models.DateField(blank=True, null=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='Coordinate',
+            name="Coordinate",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('algorithm', models.CharField(max_length=255)),
-                ('chksum', models.CharField(max_length=24)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("algorithm", models.CharField(max_length=255)),
+                ("chksum", models.CharField(max_length=24)),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='Database',
+            name="Database",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='DatabaseAssignment',
+            name="DatabaseAssignment",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('permission', models.IntegerField(choices=[(100, 'View'), (200, 'Annotate'), (300, 'Import Data'), (400, 'Copy Files'), (500, 'Add Files'), (600, 'Modify Segments'), (700, 'Delete Files'), (800, 'Assign User')])),
-                ('database', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "permission",
+                    models.IntegerField(
+                        choices=[
+                            (100, "View"),
+                            (200, "Annotate"),
+                            (300, "Import Data"),
+                            (400, "Copy Files"),
+                            (500, "Add Files"),
+                            (600, "Modify Segments"),
+                            (700, "Delete Files"),
+                            (800, "Assign User"),
+                        ]
+                    ),
+                ),
+                (
+                    "database",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ('user', 'database', 'permission'),
+                "ordering": ("user", "database", "permission"),
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='DistanceMatrix',
+            name="DistanceMatrix",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('algorithm', models.CharField(max_length=255)),
-                ('chksum', models.CharField(max_length=24)),
-                ('database', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("algorithm", models.CharField(max_length=255)),
+                ("chksum", models.CharField(max_length=24)),
+                (
+                    "database",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+                    ),
+                ),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='HistoryEntry',
+            name="HistoryEntry",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('version', models.IntegerField(default=1)),
-                ('note', models.TextField(blank=True, null=True)),
-                ('time', models.DateTimeField()),
-                ('filename', models.CharField(max_length=255)),
-                ('type', models.CharField(default='labels', max_length=32)),
-                ('database', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Database')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("version", models.IntegerField(default=1)),
+                ("note", models.TextField(blank=True, null=True)),
+                ("time", models.DateTimeField()),
+                ("filename", models.CharField(max_length=255)),
+                ("type", models.CharField(default="labels", max_length=32)),
+                (
+                    "database",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="koe.Database",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-time', 'user', 'database'],
+                "ordering": ["-time", "user", "database"],
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='Individual',
+            name="Individual",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('gender', models.CharField(blank=True, max_length=16, null=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("gender", models.CharField(blank=True, max_length=16, null=True)),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='Segment',
+            name="Segment",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('start_time_ms', models.IntegerField()),
-                ('end_time_ms', models.IntegerField()),
-                ('mean_ff', models.FloatField(null=True)),
-                ('min_ff', models.FloatField(null=True)),
-                ('max_ff', models.FloatField(null=True)),
-                ('audio_file', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.AudioFile')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("start_time_ms", models.IntegerField()),
+                ("end_time_ms", models.IntegerField()),
+                ("mean_ff", models.FloatField(null=True)),
+                ("min_ff", models.FloatField(null=True)),
+                ("max_ff", models.FloatField(null=True)),
+                (
+                    "audio_file",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.AudioFile"
+                    ),
+                ),
             ],
             options={
-                'ordering': ('audio_file', 'start_time_ms'),
+                "ordering": ("audio_file", "start_time_ms"),
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='Species',
+            name="Species",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('genus', models.CharField(max_length=32)),
-                ('species', models.CharField(max_length=32)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("genus", models.CharField(max_length=32)),
+                ("species", models.CharField(max_length=32)),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.AlterUniqueTogether(
-            name='species',
-            unique_together={('species', 'genus')},
+            name="species",
+            unique_together={("species", "genus")},
         ),
         migrations.AddField(
-            model_name='individual',
-            name='species',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Species'),
+            model_name="individual",
+            name="species",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.Species",
+            ),
         ),
         migrations.AddField(
-            model_name='coordinate',
-            name='database',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database'),
+            model_name="coordinate",
+            name="database",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+            ),
         ),
         migrations.AddField(
-            model_name='audiofile',
-            name='database',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database'),
+            model_name="audiofile",
+            name="database",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+            ),
         ),
         migrations.AddField(
-            model_name='audiofile',
-            name='individual',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Individual'),
+            model_name="audiofile",
+            name="individual",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.Individual",
+            ),
         ),
         migrations.AddField(
-            model_name='audiofile',
-            name='original',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.AudioFile'),
+            model_name="audiofile",
+            name="original",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.AudioFile",
+            ),
         ),
         migrations.AddField(
-            model_name='audiofile',
-            name='track',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.AudioTrack'),
+            model_name="audiofile",
+            name="track",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.AudioTrack",
+            ),
         ),
         migrations.AddField(
-            model_name='accessrequest',
-            name='database',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database'),
+            model_name="accessrequest",
+            name="database",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+            ),
         ),
         migrations.AddField(
-            model_name='accessrequest',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="accessrequest",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='individual',
-            unique_together={('name', 'species')},
+            name="individual",
+            unique_together={("name", "species")},
         ),
         migrations.AlterUniqueTogether(
-            name='distancematrix',
-            unique_together={('chksum', 'algorithm', 'database')},
+            name="distancematrix",
+            unique_together={("chksum", "algorithm", "database")},
         ),
         migrations.AlterUniqueTogether(
-            name='databaseassignment',
-            unique_together={('user', 'database', 'permission')},
+            name="databaseassignment",
+            unique_together={("user", "database", "permission")},
         ),
         migrations.AlterUniqueTogether(
-            name='coordinate',
-            unique_together={('chksum', 'algorithm', 'database')},
+            name="coordinate",
+            unique_together={("chksum", "algorithm", "database")},
         ),
         migrations.AlterUniqueTogether(
-            name='audiofile',
-            unique_together={('name', 'database')},
+            name="audiofile",
+            unique_together={("name", "database")},
         ),
         migrations.AlterUniqueTogether(
-            name='accessrequest',
-            unique_together={('user', 'database')},
+            name="accessrequest",
+            unique_together={("user", "database")},
         ),
     ]

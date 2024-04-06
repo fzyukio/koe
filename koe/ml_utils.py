@@ -3,7 +3,8 @@ import time
 from random import shuffle
 
 import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.manifold import TSNE
 from sklearn.metrics import confusion_matrix
@@ -12,8 +13,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
-from koe.utils import accum
-from koe.utils import split_classwise
+from koe.utils import accum, split_classwise
 
 
 __all__ = []
@@ -31,7 +31,7 @@ def _calc_score(predict_y, true_y, nlabels, with_cfmat=False):
              label_misses similar to label_hits but count the misses
              cf_matrix (optional) the confusion matrix (nlabels x nlabels)
     """
-    hits = (predict_y == true_y).astype(np.int)
+    hits = (predict_y == true_y).astype(int)
     misses = 1 - hits
     score = hits.sum() / len(true_y)
 
@@ -40,8 +40,8 @@ def _calc_score(predict_y, true_y, nlabels, with_cfmat=False):
 
     unique_test_labels = np.unique(true_y)
 
-    _label_hits = accum(true_y, hits, func=np.sum, dtype=np.int)
-    _label_misses = accum(true_y, misses, func=np.sum, dtype=np.int)
+    _label_hits = accum(true_y, hits, func=np.sum, dtype=int)
+    _label_misses = accum(true_y, misses, func=np.sum, dtype=int)
 
     label_hits[unique_test_labels] = _label_hits[unique_test_labels]
     label_misses[unique_test_labels] = _label_misses[unique_test_labels]
@@ -75,7 +75,7 @@ def dummy(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs)
 
 
 def svm_linear(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
-    model = SVC(kernel='linear', **kwargs)
+    model = SVC(kernel="linear", **kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
 
     fake_importances = np.zeros((train_x.shape[1],))
@@ -84,7 +84,7 @@ def svm_linear(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kw
 
 
 def svm_rbf(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
-    model = SVC(kernel='rbf', **kwargs)
+    model = SVC(kernel="rbf", **kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
 
     fake_importances = np.zeros((train_x.shape[1],))
@@ -110,7 +110,13 @@ def lda(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False):
 
 
 def qda(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False):
-    model = QDA(priors=None, reg_param=0.0, store_covariance=False, store_covariances=None, tol=0.0001)
+    model = QDA(
+        priors=None,
+        reg_param=0.0,
+        store_covariance=False,
+        store_covariances=None,
+        tol=0.0001,
+    )
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
     fake_importances = np.zeros((train_x.shape[1],))
     retval = list(retval) + [fake_importances]
@@ -128,6 +134,7 @@ def nnet(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
 
 def cnn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
     from koe.neuralnet_models import ConvolutionalNeuralNetwork
+
     model = ConvolutionalNeuralNetwork(**kwargs)
     retval = _classify(model, train_x, train_y, test_x, test_y, nlabels, with_cfmat)
     fake_importances = np.zeros((train_x.shape[1],))
@@ -144,31 +151,34 @@ def knn(train_x, train_y, test_x, test_y, nlabels, with_cfmat=False, **kwargs):
 
 
 classifiers = {
-    'rf': random_forest,
-    'svm_linear': svm_linear,
-    'svm_rbf': svm_rbf,
-    'gnb': gaussian_nb,
-    'lda': lda,
-    'qda': qda,
-    'nnet': nnet,
-    'dummy': dummy,
-    'knn': knn
+    "rf": random_forest,
+    "svm_linear": svm_linear,
+    "svm_rbf": svm_rbf,
+    "gnb": gaussian_nb,
+    "lda": lda,
+    "qda": qda,
+    "nnet": nnet,
+    "dummy": dummy,
+    "knn": knn,
 }
 
 
 def run_clustering(dataset, dim_reduce, n_components, n_dims=3):
-    assert 2 <= n_dims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
+    assert 2 <= n_dims <= 3, "TSNE can only produce 2 or 3 dimensional result"
     if dim_reduce:
         dim_reduce_func = dim_reduce(n_components=n_components)
         dataset = dim_reduce_func.fit_transform(dataset, y=None)
-        if hasattr(dim_reduce_func, 'explained_variance_ratio_'):
-            print('Cumulative explained variation for {} principal components: {}'
-                  .format(n_components, np.sum(dim_reduce_func.explained_variance_ratio_)))
+        if hasattr(dim_reduce_func, "explained_variance_ratio_"):
+            print(
+                "Cumulative explained variation for {} principal components: {}".format(
+                    n_components, np.sum(dim_reduce_func.explained_variance_ratio_)
+                )
+            )
 
     time_start = time.time()
     tsne = TSNE(n_components=n_dims, verbose=1, perplexity=10, n_iter=4000)
     tsne_results = tsne.fit_transform(dataset)
-    print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
+    print("t-SNE done! Time elapsed: {} seconds".format(time.time() - time_start))
     return tsne_results
 
 
@@ -190,8 +200,8 @@ def run_nfolds(data, nsyls, nfolds, niters, enum_labels, nlabels, classifier, ba
         folds = split_classwise(enum_labels, nfolds)
 
         for fold in folds:
-            test_syl_idx = fold['test']
-            train_syl_idx = fold['train']
+            test_syl_idx = fold["test"]
+            train_syl_idx = fold["train"]
 
             train_y = enum_labels[train_syl_idx]
             test_y = enum_labels[test_syl_idx]
@@ -228,19 +238,22 @@ def get_ratios(ratio, nparts=3):
     :return: a list of float numbers that add up to 1.0
     """
     assert 2 <= nparts <= 3
-    parts = ratio.split(':')
+    parts = ratio.split(":")
     if nparts == 3:
-        error_message = 'Ratio must be in format xx:yy:zz as positive percentages of the train, valid and test set. ' \
-                        'E.g.80:10:10'
+        error_message = (
+            "Ratio must be in format xx:yy:zz as positive percentages of the train, valid and test set. "
+            "E.g.80:10:10"
+        )
     else:
-        error_message = 'Ratio must be in format xx:yy as positive percentages of the train and valid set. '\
-                        'E.g.80:20'
+        error_message = (
+            "Ratio must be in format xx:yy as positive percentages of the train and valid set. " "E.g.80:20"
+        )
     assert len(parts) == nparts, error_message
 
     try:
         ratios = np.array(list(map(int, parts)))
         assert np.all(ratios >= 0)
         assert np.sum(ratios) == 100
-        return [x / 100. for x in ratios]
-    except Exception as e:
+        return [x / 100.0 for x in ratios]
+    except Exception:
         print(error_message, file=sys.stderr)

@@ -1,21 +1,22 @@
 """
 Utils for tensorflow
 """
+
+import io
 import json
 import os
 import uuid
 
-import io
-import numpy as np
 from django.conf import settings
 from django.urls import reverse
 
+import numpy as np
+from sklearn.decomposition import PCA, FastICA
+
 from koe.ml_utils import run_clustering
-from koe.models import Segment, DerivedTensorData
+from koe.models import DerivedTensorData, Segment
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
-
-from sklearn.decomposition import PCA, FastICA
 
 
 def tsne_reduce(data, n_components=50):
@@ -33,11 +34,11 @@ def ica_reduce(data, n_components=50):
 
 
 reduce_funcs = {
-    'ica': ica_reduce,
-    'pca': pca_reduce,
-    'tsne3': lambda data, n_components: run_clustering(data, PCA, n_components, 3),
-    'tsne2': lambda data, n_components: run_clustering(data, PCA, n_components, 2),
-    'none': None
+    "ica": ica_reduce,
+    "pca": pca_reduce,
+    "tsne3": lambda data, n_components: run_clustering(data, PCA, n_components, 3),
+    "tsne2": lambda data, n_components: run_clustering(data, PCA, n_components, 2),
+    "none": None,
 }
 
 
@@ -45,12 +46,12 @@ def ndarray_to_bytes(arr, filename):
     assert isinstance(arr, np.ndarray)
 
     ensure_parent_folder_exists(filename)
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         arr.tofile(f)
 
 
 def bytes_to_ndarray(filename, dtype=np.float32):
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         arr = np.fromfile(f, dtype=dtype)
 
     return arr
@@ -58,7 +59,7 @@ def bytes_to_ndarray(filename, dtype=np.float32):
 
 def load_config(config_file):
     if os.path.isfile(config_file):
-        with open(config_file, 'r', encoding='utf-8') as f:
+        with open(config_file, "r", encoding="utf-8") as f:
             config = json.load(f)
     else:
         config = dict(embeddings=[])
@@ -67,14 +68,14 @@ def load_config(config_file):
 
 
 def get_safe_tensors_name(config, tensors_name):
-    embeddings = config['embeddings']
+    embeddings = config["embeddings"]
 
-    existing_tensors = [x['tensorName'] for x in embeddings]
+    existing_tensors = [x["tensorName"] for x in embeddings]
     new_tensors_name = tensors_name
     appendix = 0
     while new_tensors_name in existing_tensors:
         appendix += 1
-        new_tensors_name = '{}_{}'.format(tensors_name, appendix)
+        new_tensors_name = "{}_{}".format(tensors_name, appendix)
 
     return new_tensors_name
 
@@ -82,23 +83,23 @@ def get_safe_tensors_name(config, tensors_name):
 def write_config(config, config_file):
     ensure_parent_folder_exists(config_file)
 
-    with open(config_file, 'w+') as f:
+    with open(config_file, "w+") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
 
 
 def write_metadata(metadata, sids, headers, filename=None):
     if filename:
         ensure_parent_folder_exists(filename)
-        output_stream = open(filename, 'w', encoding='utf-8')
+        output_stream = open(filename, "w", encoding="utf-8")
     else:
         output_stream = io.StringIO()
 
-    output_stream.write('\t'.join(headers))
-    output_stream.write('\n')
+    output_stream.write("\t".join(headers))
+    output_stream.write("\n")
     for sid in sids:
         row = metadata[sid]
-        output_stream.write('\n')
-        output_stream.write('\t'.join(row))
+        output_stream.write("\n")
+        output_stream.write("\t".join(row))
 
     if not filename:
         content = output_stream.getvalue()
@@ -107,21 +108,21 @@ def write_metadata(metadata, sids, headers, filename=None):
 
 
 def get_tensor_file_paths(config_name, tensors_name):
-    binary_path = os.path.join(settings.MEDIA_URL, 'oss_data', config_name, '{}.bytes'.format(tensors_name))[1:]
-    metadata_path = os.path.join(settings.MEDIA_URL, 'oss_data', config_name, '{}.tsv'.format(tensors_name))[1:]
-    config_file = os.path.join(settings.MEDIA_URL, 'oss_data', '{}.json'.format(config_name))[1:]
-    columns_path = os.path.join(settings.MEDIA_URL, 'oss_data', config_name, '{}.json'.format(tensors_name))[1:]
+    binary_path = os.path.join(settings.MEDIA_URL, "oss_data", config_name, "{}.bytes".format(tensors_name))[1:]
+    metadata_path = os.path.join(settings.MEDIA_URL, "oss_data", config_name, "{}.tsv".format(tensors_name))[1:]
+    config_file = os.path.join(settings.MEDIA_URL, "oss_data", "{}.json".format(config_name))[1:]
+    columns_path = os.path.join(settings.MEDIA_URL, "oss_data", config_name, "{}.json".format(tensors_name))[1:]
 
     return config_file, binary_path, metadata_path, columns_path
 
 
 def get_sids_from_metadata(filename):
     sids = []
-    with open(filename, 'r', encoding='utf-8') as f:
+    with open(filename, "r", encoding="utf-8") as f:
         f.readline()
         line = f.readline()
         while line:
-            id = int(line[:line.find('\t')])
+            id = int(line[: line.find("\t")])
             sids.append(id)
             line = f.readline()
     return sids
@@ -144,7 +145,7 @@ def cherrypick_tensor_data_by_feature_aggreation(full_data, col_inds, features, 
 
         else:
             for aggregation in aggregations:
-                start, end = col_inds['{}_{}'.format(feature.name, aggregation.name)]
+                start, end = col_inds["{}_{}".format(feature.name, aggregation.name)]
                 rawdata_stacked = full_data[:, start:end]
                 rawdata.append(rawdata_stacked)
 
@@ -159,7 +160,7 @@ def cherrypick_tensor_data_by_sids(full_data, full_sids, sids):
     non_existing_ids = sids[non_existing_idx]
 
     if len(non_existing_ids) > 0:
-        err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
+        err_msg = "These IDs don't exist: {}".format(",".join(list(map(str, non_existing_ids))))
         raise ValueError(err_msg)
 
     lookup_ids_rows = np.searchsorted(sorted_ids, sids)
@@ -178,7 +179,7 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
     sids = bytes_to_ndarray(full_sids_path, np.int32)
 
     full_data = get_rawdata_from_binary(full_bytes_path, len(sids))
-    with open(full_cols_path, 'r', encoding='utf-8') as f:
+    with open(full_cols_path, "r", encoding="utf-8") as f:
         col_inds = json.load(f)
 
     new_data = cherrypick_tensor_data_by_feature_aggreation(full_data, col_inds, features, aggregations)
@@ -186,13 +187,20 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
         new_data = reduce_func(new_data, n_components=ndims)
 
     new_tensor_name = uuid.uuid4().hex
-    features_hash = '-'.join(list(map(str, features.values_list('id', flat=True))))
-    aggregations_hash = '-'.join(list(map(str, aggregations.values_list('id', flat=True))))
+    features_hash = "-".join(list(map(str, features.values_list("id", flat=True))))
+    aggregations_hash = "-".join(list(map(str, aggregations.values_list("id", flat=True))))
 
-    new_tensor = DerivedTensorData(name=new_tensor_name, annotator=annotator, full_tensor=full_tensor,
-                                   database=full_tensor.database, features_hash=features_hash,
-                                   aggregations_hash=aggregations_hash, creator=user,
-                                   dimreduce=dimreduce, ndims=ndims)
+    new_tensor = DerivedTensorData(
+        name=new_tensor_name,
+        annotator=annotator,
+        full_tensor=full_tensor,
+        database=full_tensor.database,
+        features_hash=features_hash,
+        aggregations_hash=aggregations_hash,
+        creator=user,
+        dimreduce=dimreduce,
+        ndims=ndims,
+    )
 
     new_bytes_path = new_tensor.get_bytes_path()
     new_config_path = new_tensor.get_config_path()
@@ -202,8 +210,8 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
     embedding = dict(
         tensorName=new_tensor_name,
         tensorShape=new_data.shape,
-        tensorPath='/' + new_bytes_path,
-        metadataPath=reverse('tsne-meta', kwargs={'tensor_name': new_tensor_name}),
+        tensorPath="/" + new_bytes_path,
+        metadataPath=reverse("tsne-meta", kwargs={"tensor_name": new_tensor_name}),
     )
 
     config = dict(embeddings=[embedding])
@@ -215,32 +223,36 @@ def make_subtensor(user, full_tensor, annotator, features, aggregations, dimredu
 
 
 def extract_tensor_metadata(sids, annotator):
-    label_levels = ['label', 'label_subfamily', 'label_family']
-    headers = ['id', 'tid'] + label_levels + ['sex']
+    label_levels = ["label", "label_subfamily", "label_family"]
+    headers = ["id", "tid"] + label_levels + ["sex"]
 
-    metadata = {id: [str(id), str(tid)] for id, tid in Segment.objects.filter(id__in=sids).values_list('id', 'tid')}
+    metadata = {id: [str(id), str(tid)] for id, tid in Segment.objects.filter(id__in=sids).values_list("id", "tid")}
 
     for i in range(len(label_levels)):
         label_level = label_levels[i]
-        segment_to_label =\
-            {
-                x: y.lower() for x, y in ExtraAttrValue.objects
-                .filter(attr__name=label_level, attr__klass=Segment.__name__, owner_id__in=sids,
-                        user=annotator)
-                .order_by('owner_id')
-                .values_list('owner_id', 'value')
-            }
-
-        for sid in sids:
-            metadata[sid].append(segment_to_label.get(sid, ''))
-
-    sid_to_gender =\
-        {
-            x: y.lower() if y else 'unknown' for x, y in Segment.objects.filter(id__in=sids).order_by('id')
-            .values_list('id', 'audio_file__individual__gender')
+        segment_to_label = {
+            x: y.lower()
+            for x, y in ExtraAttrValue.objects.filter(
+                attr__name=label_level,
+                attr__klass=Segment.__name__,
+                owner_id__in=sids,
+                user=annotator,
+            )
+            .order_by("owner_id")
+            .values_list("owner_id", "value")
         }
 
+        for sid in sids:
+            metadata[sid].append(segment_to_label.get(sid, ""))
+
+    sid_to_gender = {
+        x: y.lower() if y else "unknown"
+        for x, y in Segment.objects.filter(id__in=sids)
+        .order_by("id")
+        .values_list("id", "audio_file__individual__gender")
+    }
+
     for sid in sids:
-        metadata[sid].append(sid_to_gender.get(sid, ''))
+        metadata[sid].append(sid_to_gender.get(sid, ""))
 
     return metadata, headers

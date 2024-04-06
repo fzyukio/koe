@@ -1,38 +1,42 @@
+import csv
 import json
 import os
 from logging import warning
 from time import sleep
 
-import csv
-import numpy as np
 from django.conf import settings
+
+import numpy as np
 from scipy.cluster.hierarchy import linkage
-from scipy.spatial.distance import squareform, pdist
+from scipy.spatial.distance import pdist, squareform
 from scipy.stats import zscore
-from sklearn.decomposition import FastICA
-from sklearn.decomposition import PCA
-from sklearn.manifold import MDS
-from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA, FastICA
+from sklearn.manifold import MDS, TSNE
 
 from koe import binstorage3 as bs
 from koe.aggregator import aggregator_map
 from koe.celery_init import app
 from koe.features.feature_extract import feature_extractors
 from koe.model_utils import natural_order
-from koe.models import Feature, Aggregation, SimilarityIndex, AudioFile
-from koe.models import Segment
-from koe.models import Task, DataMatrix, Ordination
+from koe.models import (
+    Aggregation,
+    AudioFile,
+    DataMatrix,
+    Feature,
+    Ordination,
+    Segment,
+    SimilarityIndex,
+    Task,
+)
 from koe.storage_utils import get_storage_loc_template
 from koe.task import TaskRunner
-from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
-from koe.ts_utils import ndarray_to_bytes
+from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary, ndarray_to_bytes
 from koe.utils import wav_path
 from koe.wavfile import get_wav_info
 from root.exceptions import CustomAssertionError
 from root.utils import mkdirp
 
 
-@profile  # noqa F821
 def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **kwargs):
     fs, length = get_wav_info(wav_file_path)
 
@@ -46,13 +50,13 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **
     fvals = []
 
     for tid, beg, end, nfft, noverlap, lpf, hpf in segs_info:
-        args['start'] = beg
-        args['end'] = end
-        args['nfft'] = nfft
-        args['noverlap'] = noverlap
-        args['lpf'] = lpf
-        args['hpf'] = hpf
-        args['win_length'] = nfft
+        args["start"] = beg
+        args["end"] = end
+        args["nfft"] = nfft
+        args["noverlap"] = noverlap
+        args["lpf"] = lpf
+        args["hpf"] = hpf
+        args["win_length"] = nfft
 
         feature_value = extractor(args)
         tids.append(tid)
@@ -61,10 +65,9 @@ def extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature, **
     return tids, fvals
 
 
-@profile  # noqa F821
 def extract_segment_features_for_segments(runner, sids, features, force=False):
     segments = Segment.objects.filter(id__in=sids)
-    tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
+    tids = np.array(segments.values_list("tid", flat=True), dtype=np.int32)
 
     if len(tids) == 0:
         return
@@ -93,10 +96,20 @@ def extract_segment_features_for_segments(runner, sids, features, force=False):
 
         af_to_segments = {}
 
-        vl = segments.filter(tid__in=tids_target).order_by('audio_file', 'start_time_ms')\
-                     .values_list('tid', 'audio_file', 'start_time_ms', 'end_time_ms',
-                                  'audio_file__database__nfft', 'audio_file__database__noverlap',
-                                  'audio_file__database__lpf', 'audio_file__database__hpf')
+        vl = (
+            segments.filter(tid__in=tids_target)
+            .order_by("audio_file", "start_time_ms")
+            .values_list(
+                "tid",
+                "audio_file",
+                "start_time_ms",
+                "end_time_ms",
+                "audio_file__database__nfft",
+                "audio_file__database__noverlap",
+                "audio_file__database__lpf",
+                "audio_file__database__hpf",
+            )
+        )
 
         if len(vl):
             for tid, afid, start_time_ms, end_time_ms, nfft, noverlap, lpf, hpf in vl:
@@ -122,8 +135,9 @@ def extract_segment_features_for_segments(runner, sids, features, force=False):
                 try:
                     __tids, __fvals = extract_segment_feature_for_audio_file(wav_file_path, segs_info, feature)
                 except Exception as e:
-                    raise Exception('Error extracting [{}] for file {}. Error message: {}'
-                                    .format(feature.name, af.name, str(e)))
+                    raise Exception(
+                        "Error extracting [{}] for file {}. Error message: {}".format(feature.name, af.name, str(e))
+                    )
                 #
                 _tids += __tids
                 _fvals += __fvals
@@ -152,7 +166,6 @@ def get_batches(items, batch_size=100):
     return batches
 
 
-# @profile
 def aggregate_feature_values(runner, tids, features, aggregators, force=False):
     """
     Compress all feature sequences into fixed-length vectors
@@ -162,7 +175,7 @@ def aggregate_feature_values(runner, tids, features, aggregators, force=False):
     :return:
     """
     if features is None or len(features) == 0:
-        raise Exception('must provide non-empty list of features')
+        raise Exception("must provide non-empty list of features")
 
     storage_loc_template = get_storage_loc_template()
 
@@ -182,7 +195,7 @@ def aggregate_feature_values(runner, tids, features, aggregators, force=False):
 
         jobs = []
         storage_loc = storage_loc_template.format(feature.name)
-        fa_storage_loc_template = os.path.join(storage_loc, '{}')
+        fa_storage_loc_template = os.path.join(storage_loc, "{}")
 
         if force:
             combined_tids = [tids]
@@ -248,14 +261,14 @@ def aggregate_feature_values(runner, tids, features, aggregators, force=False):
 
 
 def get_segment_ids_and_labels(csv_file):
-    with open(csv_file, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f, delimiter='\t')
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter="\t")
         supplied_fields = reader.fieldnames
 
         # The first field is always id, the second field is always the primary label type
         primary_label_level = supplied_fields[1]
 
-        return {int(row['id']): row[primary_label_level] for row in reader}
+        return {int(row["id"]): row[primary_label_level] for row in reader}
 
 
 def extract_tids_fvals(tid2fvals, features):
@@ -289,7 +302,7 @@ def extract_rawdata(ids, features, aggregators):
             col_inds[feature.name] = (col_inds_start, col_inds_start + ncols)
             col_inds_start += ncols
         else:
-            fa_storage_loc_template = os.path.join(storage_loc, '{}')
+            fa_storage_loc_template = os.path.join(storage_loc, "{}")
             for aggregator in aggregators:
                 fa_storage_loc = fa_storage_loc_template.format(aggregator.name)
                 rawdata_ = bs.retrieve(ids, fa_storage_loc, flat=True)
@@ -299,7 +312,10 @@ def extract_rawdata(ids, features, aggregators):
                     raise
                 rawdata.append(rawdata_stacked)
                 ncols = rawdata_stacked.shape[1]
-                col_inds['{}_{}'.format(feature.name, aggregator.name)] = (col_inds_start, col_inds_start + ncols)
+                col_inds["{}_{}".format(feature.name, aggregator.name)] = (
+                    col_inds_start,
+                    col_inds_start + ncols,
+                )
                 col_inds_start += ncols
     rawdata = np.concatenate(rawdata, axis=1)
 
@@ -316,32 +332,32 @@ def get_or_wait(task_id):
         task = Task.objects.filter(id=task_id).first()
 
     if task is None:
-        raise CustomAssertionError('Unable to get task #{} from database'.format(task_id))
+        raise CustomAssertionError("Unable to get task #{} from database".format(task_id))
 
     return task
 
 
 @app.task(bind=False)
-def extract_database_measurements(arg=None, force=False, send_email='always', raise_err=False, *args, **kwargs):
+def extract_database_measurements(arg=None, force=False, send_email="always", raise_err=False, *args, **kwargs):
     if isinstance(arg, int):
         task = get_or_wait(arg)
     else:
         task = arg
 
-    send_email = 'error-only' if settings.DEBUG else send_email
+    send_email = "error-only" if settings.DEBUG else send_email
     runner = TaskRunner(task, send_email=send_email)
     try:
         runner.preparing()
 
         if isinstance(task, Task):
-            cls, dm_id = task.target.split(':')
+            cls, dm_id = task.target.split(":")
             dm_id = int(dm_id)
             assert cls == DataMatrix.__name__
             dm = DataMatrix.objects.get(id=dm_id)
 
             if dm.database:
                 segments = Segment.objects.filter(audio_file__database=dm.database)
-                sids = segments.values_list('id', flat=True)
+                sids = segments.values_list("id", flat=True)
             else:
                 sids = dm.tmpdb.ids
             features_hash = dm.features_hash
@@ -353,26 +369,27 @@ def extract_database_measurements(arg=None, force=False, send_email='always', ra
 
         if len(sids) == 0:
             raise CustomAssertionError(
-                'Measurement cannot be extracted because your database doesn\'t contain any segments.')
+                "Measurement cannot be extracted because your database doesn't contain any segments."
+            )
 
         segments = Segment.objects.filter(id__in=sids)
-        tids = np.array(segments.values_list('tid', flat=True), dtype=np.int32)
+        tids = np.array(segments.values_list("tid", flat=True), dtype=np.int32)
 
-        features = Feature.objects.filter(id__in=features_hash.split('-'))
-        aggregations = Aggregation.objects.filter(id__in=aggregations_hash.split('-'))
+        features = Feature.objects.filter(id__in=features_hash.split("-"))
+        aggregations = Aggregation.objects.filter(id__in=aggregations_hash.split("-"))
 
         available_feature_names = feature_extractors.keys()
         disabled_features_names = [x.name for x in features if x.name not in available_feature_names]
 
         if len(disabled_features_names):
-            warning('Task #{}: Features {} are no longer available'.format(task.id, disabled_features_names))
+            warning("Task #{}: Features {} are no longer available".format(task.id, disabled_features_names))
             features = [x for x in features if x.name in available_feature_names]
 
         available_aggregator_names = aggregator_map.keys()
         disabled_aggregators_names = [x.name for x in aggregations if x.name not in available_aggregator_names]
 
         if len(disabled_aggregators_names):
-            warning('Task #{}: Aggregation {} are no longer available'.format(task.id, disabled_aggregators_names))
+            warning("Task #{}: Aggregation {} are no longer available".format(task.id, disabled_aggregators_names))
             aggregations = [x for x in aggregations if x.name in available_aggregator_names]
 
         aggregators = [aggregator_map[x.name] for x in aggregations]
@@ -398,7 +415,7 @@ def extract_database_measurements(arg=None, force=False, send_email='always', ra
             ndarray_to_bytes(data, full_bytes_path)
             ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
 
-            with open(full_cols_path, 'w', encoding='utf-8') as f:
+            with open(full_cols_path, "w", encoding="utf-8") as f:
                 json.dump(col_inds, f)
 
             dm.ndims = data.shape[1]
@@ -414,7 +431,7 @@ def extract_database_measurements(arg=None, force=False, send_email='always', ra
 def pca(data, ndims, **kwargs):
     params = dict(n_components=ndims)
     params.update(kwargs)
-    kwargs['n_components'] = ndims
+    kwargs["n_components"] = ndims
     dim_reduce_func = PCA(**params)
     return dim_reduce_func.fit_transform(data)
 
@@ -444,7 +461,7 @@ def pca_optimal(data, max_ndims, min_explained, min_ndims=2):
 
 
 def tsne(data, ndims, **kwargs):
-    assert 2 <= ndims <= 3, 'TSNE can only produce 2 or 3 dimensional result'
+    assert 2 <= ndims <= 3, "TSNE can only produce 2 or 3 dimensional result"
     pca_dims = min(50, data.shape[1], data.shape[0])
     if pca_dims < data.shape[1]:
         data = pca(data, pca_dims)
@@ -461,15 +478,21 @@ def mds(data, ndims, **kwargs):
     pca_dims = max(50, data.shape[1])
     data = pca(data, pca_dims)
 
-    params = dict(n_components=ndims, dissimilarity='precomputed', random_state=7, verbose=1, max_iter=1000)
+    params = dict(
+        n_components=ndims,
+        dissimilarity="precomputed",
+        random_state=7,
+        verbose=1,
+        max_iter=1000,
+    )
     params.update(kwargs)
-    similarities = squareform(pdist(data, 'euclidean'))
+    similarities = squareform(pdist(data, "euclidean"))
     model = MDS(**params)
     coordinate = model.fit_transform(similarities)
     return coordinate
 
 
-methods = {'pca': pca, 'ica': pca, 'tsne': tsne}
+methods = {"pca": pca, "ica": pca, "tsne": tsne}
 
 
 def _construct_ordination(ord, runner):
@@ -478,9 +501,9 @@ def _construct_ordination(ord, runner):
     ndims = ord.ndims
     param_kwargs = Ordination.params_to_kwargs(ord.params)
 
-    assert dm.task is None or dm.task.is_completed(), 'Cannot construct ordination because its DataMatrix failed'
-    assert method_name in methods.keys(), 'Unknown method {}'.format(method_name)
-    assert 2 <= ndims <= 3, 'Only support 2 or 3 dimensional ordination'
+    assert dm.task is None or dm.task.is_completed(), "Cannot construct ordination because its DataMatrix failed"
+    assert method_name in methods.keys(), "Unknown method {}".format(method_name)
+    assert 2 <= ndims <= 3, "Only support 2 or 3 dimensional ordination"
 
     runner.start()
     dm_sids_path = dm.get_sids_path()
@@ -491,8 +514,9 @@ def _construct_ordination(ord, runner):
 
     dm_dims = dm_data.shape[1]
 
-    assert dm_data.shape[1] >= ndims, \
-        'Data has only {} dimension(s), not enough to construct a {}-dimensional ordination'.format(dm_dims, ndims)
+    assert (
+        dm_data.shape[1] >= ndims
+    ), "Data has only {} dimension(s), not enough to construct a {}-dimensional ordination".format(dm_dims, ndims)
 
     data = zscore(dm_data)
     data[np.where(np.isnan(data))] = 0
@@ -512,14 +536,14 @@ def _construct_ordination(ord, runner):
 
 
 @app.task(bind=False)
-def construct_ordination(task_id, send_email='always', raise_err=False, *args, **kwargs):
+def construct_ordination(task_id, send_email="always", raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
     runner = TaskRunner(task, send_email=send_email)
 
     try:
         runner.preparing()
 
-        cls, ord_id = task.target.split(':')
+        cls, ord_id = task.target.split(":")
         ord_id = int(ord_id)
         assert cls == Ordination.__name__
         ord = Ordination.objects.get(id=ord_id)
@@ -537,10 +561,12 @@ def _calculate_similarity(sim, runner):
     dm = sim.dm
     ord = sim.ord
 
-    assert dm.task is None or dm.task.is_completed(), \
-        'Cannot calculate similarity because previous error occurred when extracting features'
-    assert ord is None or ord.task is None or ord.task.is_completed(),\
-        'Cannot calculate similarity because previous error occutred when constructing ordination'
+    assert (
+        dm.task is None or dm.task.is_completed()
+    ), "Cannot calculate similarity because previous error occurred when extracting features"
+    assert (
+        ord is None or ord.task is None or ord.task.is_completed()
+    ), "Cannot calculate similarity because previous error occutred when constructing ordination"
 
     if ord:
         sids_path = ord.get_sids_path()
@@ -554,7 +580,7 @@ def _calculate_similarity(sim, runner):
     coordinates[np.where(np.logical_not(np.isfinite(coordinates)))] = 0
 
     runner.start()
-    tree = linkage(coordinates, method='average')
+    tree = linkage(coordinates, method="average")
 
     order = natural_order(tree)
     sorted_order = np.argsort(order).astype(np.int32)
@@ -569,7 +595,7 @@ def _calculate_similarity(sim, runner):
 
 
 @app.task(bind=False)
-def calculate_similarity(task_id, send_email='always', raise_err=False, *args, **kwargs):
+def calculate_similarity(task_id, send_email="always", raise_err=False, *args, **kwargs):
     task = get_or_wait(task_id)
 
     runner = TaskRunner(task, send_email=send_email)
@@ -578,7 +604,7 @@ def calculate_similarity(task_id, send_email='always', raise_err=False, *args, *
     try:
         runner.preparing()
 
-        cls, sim_id = task.target.split(':')
+        cls, sim_id = task.target.split(":")
         sim_id = int(sim_id)
         assert cls == SimilarityIndex.__name__
         sim = SimilarityIndex.objects.get(id=sim_id)

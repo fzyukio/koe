@@ -69,9 +69,9 @@ class DataSet:
 
         next_batch_id = min(self.batch_id + batch_size, len(self.data))
 
-        batch_data = self.data[self.batch_id:next_batch_id]
-        batch_labels = self.labels[self.batch_id:next_batch_id]
-        batch_lens = self.lens[self.batch_id:next_batch_id]
+        batch_data = self.data[self.batch_id : next_batch_id]
+        batch_labels = self.labels[self.batch_id : next_batch_id]
+        batch_lens = self.lens[self.batch_id : next_batch_id]
         self.batch_id = next_batch_id
         return batch_data, batch_labels, batch_lens
 
@@ -88,14 +88,14 @@ class TrainableSet(DataSet):
 
     def make_folds(self, nfolds, ratio=None):
         if ratio is None:
-            ratio = 1. / nfolds
+            ratio = 1.0 / nfolds
         self.folds = split_classwise(self.enum_labels, ratio, nfolds)
         return self.folds
 
     def get_fold(self, k):
         fold = self.folds[k]
-        train = fold['train']
-        valid = fold['test']
+        train = fold["train"]
+        valid = fold["test"]
 
         trainset = inds2dataset(train, self.data, self.labels, self.lens)
         validset = inds2dataset(valid, self.data, self.labels, self.lens)
@@ -115,8 +115,8 @@ class DataProvider:
 
     def split(self, ratio, limits=None):
         fold = split_classwise(self.enum_labels, ratio, nfolds=1, balanced=self.balanced, limits=limits)
-        train = fold[0]['train']
-        test = fold[0]['test']
+        train = fold[0]["train"]
+        test = fold[0]["test"]
 
         trainable_enum_labels = self.enum_labels[train]
 

@@ -15,12 +15,14 @@ def populate_tids(apps, schema_editor):
     Any identical segment found after will have the same tid as the first found
     """
     db_alias = schema_editor.connection.alias
-    segment_model = apps.get_model('koe', 'Segment')
+    segment_model = apps.get_model("koe", "Segment")
 
     tid_dict = {}
 
-    segments = segment_model.objects.using(db_alias).only('id', 'start_time_ms', 'end_time_ms', 'audio_file__name')
-    bar = Bar('Updating segments...', max=segments.count())
+    segments = segment_model.objects.using(db_alias).only(
+        "id", "start_time_ms", "end_time_ms", "audio_file__name"
+    )
+    bar = Bar("Updating segments...", max=segments.count())
 
     for segment in segments:
         songname = segment.audio_file.name
@@ -43,24 +45,24 @@ def populate_tids(apps, schema_editor):
         bar.next()
     bar.finish()
 
-    bulk_update(segments, update_fields=['tid'], batch_size=10000)
+    bulk_update(segments, update_fields=["tid"], batch_size=10000)
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('koe', '0002_auto_20180615_1409'),
+        ("koe", "0002_auto_20180615_1409"),
     ]
 
     operations = [
         migrations.AddField(
-                model_name='segment',
-                name='tid',
-                field=models.IntegerField(default=None, null=True),
+            model_name="segment",
+            name="tid",
+            field=models.IntegerField(default=None, null=True),
         ),
         migrations.RunPython(populate_tids, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
-                model_name='segment',
-                name='tid',
-                field=models.IntegerField(),
-        )
+            model_name="segment",
+            name="tid",
+            field=models.IntegerField(),
+        ),
     ]

@@ -6,25 +6,50 @@ import re
 from abc import abstractmethod
 from logging import warning
 
-from django.utils import timezone
 import django.db.models.options as options
-import numpy as np
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
+
+import numpy as np
 from sortedcontainers import SortedDict
 
-from koe.utils import base64_to_array, array_to_base64
+from koe.utils import (
+    array_to_base64,
+    audio_path,
+    base64_to_array,
+    history_path,
+    pickle_path,
+    wav_path,
+)
 from root.exceptions import CustomAssertionError
-from root.models import SimpleModel, User, MagicChoices, ValidateOnUpdateQuerySet
+from root.models import MagicChoices, SimpleModel, User, ValidateOnUpdateQuerySet
 from root.utils import ensure_parent_folder_exists
-from koe.utils import history_path, pickle_path, wav_path, audio_path
+
 
 __all__ = [
-    'NumpyArrayField', 'AudioTrack', 'Species', 'Individual', 'Database', 'DatabasePermission', 'AccessRequest',
-    'DatabaseAssignment', 'AudioFile', 'Segment', 'DistanceMatrix', 'Coordinate', 'HistoryEntry', 'TemporaryDatabase',
-    'Task', 'DataMatrix', 'Ordination', 'SimilarityIndex', 'Preference', 'InvitationCode'
+    "NumpyArrayField",
+    "AudioTrack",
+    "Species",
+    "Individual",
+    "Database",
+    "DatabasePermission",
+    "AccessRequest",
+    "DatabaseAssignment",
+    "AudioFile",
+    "Segment",
+    "DistanceMatrix",
+    "Coordinate",
+    "HistoryEntry",
+    "TemporaryDatabase",
+    "Task",
+    "DataMatrix",
+    "Ordination",
+    "SimilarityIndex",
+    "Preference",
+    "InvitationCode",
 ]
 
 
@@ -63,7 +88,7 @@ class NumpyArrayField(models.TextField):
         if value is None:
             return None
         if not isinstance(value, np.ndarray):
-            raise TypeError('value must be a numpy array')
+            raise TypeError("value must be a numpy array")
         return array_to_base64(value)
 
 
@@ -89,8 +114,8 @@ class Species(SimpleModel):
 
     def save(self, *args, **kwargs):
         try:
-            self.genus, self.species = self.name.split(' ')
-        except:
+            self.genus, self.species = self.name.split(" ")
+        except Exception:
             pass
 
         super(Species, self).save(*args, **kwargs)
@@ -133,19 +158,20 @@ class Database(SimpleModel):
 
     def save(self, **kwargs):
         if not re.match("^[a-zA-Z0-9_]+$", self.name):
-            raise CustomAssertionError('Database name must be non-empty and can only contain alphabets, digits and '
-                                       'underscores')
+            raise CustomAssertionError(
+                "Database name must be non-empty and can only contain alphabets, digits and " "underscores"
+            )
         if self.lpf is not None and self.lpf <= self.hpf:
-            raise CustomAssertionError('Low pass filter value must be > high pass value')
+            raise CustomAssertionError("Low pass filter value must be > high pass value")
 
         if self.noverlap >= self.nfft:
-            raise CustomAssertionError('Overlap must be less than nfft')
+            raise CustomAssertionError("Overlap must be less than nfft")
 
         if self.nfft not in allowed_nffts:
-            raise CustomAssertionError('NFFT must be one of the following values: {}'.format(allowed_nffts))
+            raise CustomAssertionError("NFFT must be one of the following values: {}".format(allowed_nffts))
 
         if self.lpf is not None and self.lpf < self.hpf:
-            raise CustomAssertionError('Low pass filter value must be higher than high pass filter')
+            raise CustomAssertionError("Low pass filter value must be higher than high pass filter")
 
         super(Database, self).save(**kwargs)
 
@@ -158,25 +184,27 @@ class Database(SimpleModel):
 
     @classmethod
     def validate(cls, key_val_pairs):
-        if 'name' in key_val_pairs:
-            name = key_val_pairs['name']
-            if not re.match('^[a-zA-Z0-9_-]+$', name):
-                raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+        if "name" in key_val_pairs:
+            name = key_val_pairs["name"]
+            if not re.match("^[a-zA-Z0-9_-]+$", name):
+                raise CustomAssertionError("Name can only contain alphabets, numbers, dashes and underscores")
 
     @classmethod
     def filter(cls, extras):
         user = extras.user
 
-        assigned_db_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id')
+        assigned_db_ids = DatabaseAssignment.objects.filter(user=user).values_list("database__id")
         return Database.objects.filter(id__in=assigned_db_ids)
 
     @classmethod
     def get_row_editability(cls, databases, extras):
         user = extras.user
         retval = {database.id: False for database in databases}
-        editable_db = DatabaseAssignment.objects\
-            .filter(database__in=databases, user=user, permission__gte=DatabasePermission.ASSIGN_USER)\
-            .values_list('database__id', flat=True)
+        editable_db = DatabaseAssignment.objects.filter(
+            database__in=databases,
+            user=user,
+            permission__gte=DatabasePermission.ASSIGN_USER,
+        ).values_list("database__id", flat=True)
 
         for id in editable_db:
             retval[id] = True
@@ -206,13 +234,13 @@ class DatabaseAssignment(SimpleModel):
     expiry = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return 'Database {} assigned to user {} with {} permission'.format(
+        return "Database {} assigned to user {} with {} permission".format(
             self.database.name, self.user.username, self.get_permission_display()
         )
 
     class Meta:
-        unique_together = ('user', 'database', 'permission')
-        ordering = ('user', 'database', 'permission')
+        unique_together = ("user", "database", "permission")
+        ordering = ("user", "database", "permission")
 
     def can_view(self):
         return self.user.is_superuser or self.permission >= DatabasePermission.VIEW
@@ -280,14 +308,14 @@ class AudioFile(SimpleModel):
 
     # To facilitate copying database - when an AudioFile object is copied, another object is created
     # with the same name but different database, and reference this object as its original
-    original = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    original = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True)
 
     active = models.BooleanField(default=True)
     objects = ActiveManager()
     fobjs = models.Manager()
 
     class Meta:
-        unique_together = ['name', 'database']
+        unique_together = ["name", "database"]
 
     def __str__(self):
         return self.name
@@ -322,24 +350,24 @@ class AudioFile(SimpleModel):
 
     @classmethod
     def set_record_date(cls, objs, value, extras={}):
-        if value is None or value.strip() == '':
+        if value is None or value.strip() == "":
             date = None
         else:
             try:
                 date = datetime.datetime.strptime(value, settings.DATE_INPUT_FORMAT).date()
-            except Exception as e:
-                raise CustomAssertionError('Invalid date: {}'.format(value))
+            except Exception:
+                raise CustomAssertionError("Invalid date: {}".format(value))
 
         AudioTrack.objects.filter(audiofile__in=objs).update(date=date)
 
     @classmethod
     def set_name(cls, objs, name, extras={}):
         if len(objs) != 1:
-            raise CustomAssertionError('Can\'t set the same name to more than 1 song.')
+            raise CustomAssertionError("Can't set the same name to more than 1 song.")
         obj = objs[0]
 
         if obj.name != name and AudioFile.objects.filter(database=obj.database, name=name).exists():
-            raise CustomAssertionError('File {} already exists'.format(name))
+            raise CustomAssertionError("File {} already exists".format(name))
 
         # If audio file is original, change the actual audio files' names as well
         if obj.is_original():
@@ -355,10 +383,10 @@ class AudioFile(SimpleModel):
 
                 os.rename(old_name_wav, new_name_wav)
                 os.rename(old_name_compressed, new_name_compressed)
-            except Exception as e:
+            except Exception:
                 obj.name = old_name
                 obj.save()
-                raise CustomAssertionError('Error changing name')
+                raise CustomAssertionError("Error changing name")
         else:
             obj.name = name
             obj.save()
@@ -391,14 +419,14 @@ class Segment(SimpleModel):
     fobjs = models.Manager()
 
     def __str__(self):
-        return '{} - {}:{}'.format(self.audio_file.name, self.start_time_ms, self.end_time_ms)
+        return "{} - {}:{}".format(self.audio_file.name, self.start_time_ms, self.end_time_ms)
 
     class Meta:
-        ordering = ('audio_file', 'start_time_ms')
+        ordering = ("audio_file", "start_time_ms")
 
         indexes = [
-            models.Index(fields=['id']),
-            models.Index(fields=['tid']),
+            models.Index(fields=["id"]),
+            models.Index(fields=["tid"]),
         ]
 
     @classmethod
@@ -406,7 +434,7 @@ class Segment(SimpleModel):
         return set_editable_for_real_db(*args, **kwargs)
 
 
-options.DEFAULT_NAMES += 'attrs',
+options.DEFAULT_NAMES += ("attrs",)
 
 
 class PicklePersistedModel(SimpleModel):
@@ -441,7 +469,7 @@ class PicklePersistedModel(SimpleModel):
         for attr in self._meta.attrs:
             mdict[attr] = getattr(self, attr)
 
-        with open(fpath, 'wb') as f:
+        with open(fpath, "wb") as f:
             pickle.dump(mdict, f, pickle.HIGHEST_PROTOCOL)
 
     def load(self):
@@ -453,22 +481,23 @@ class PicklePersistedModel(SimpleModel):
         if self.id:
             fpath = pickle_path(self.id, self.__class__.__name__)
             if os.path.isfile(fpath):
-                with open(fpath, 'rb') as f:
+                with open(fpath, "rb") as f:
                     mdict = pickle.load(f)
                 for attr in self._meta.attrs:
                     # _attr = '_{}'.format(attr)
                     setattr(self, attr, mdict[attr])
                 self._loaded = True
             else:
-                warning('Can\'t restore data for {} #{}. File {} not found'
-                        .format(self.__class__.__name__, self.id, fpath))
+                warning(
+                    "Can't restore data for {} #{}. File {} not found".format(self.__class__.__name__, self.id, fpath)
+                )
 
     def __str__(self):
-        retval = ['{} #{}: '.format(self.__class__.__name__, self.id)]
+        retval = ["{} #{}: ".format(self.__class__.__name__, self.id)]
         for attr in self._meta.attrs:
-            retval.append('{}: {}'.format(attr, getattr(self, attr, None)))
+            retval.append("{}: {}".format(attr, getattr(self, attr, None)))
 
-        return ', '.join(retval)
+        return ", ".join(retval)
 
 
 class AlgorithmicModelMixin(models.Model):
@@ -484,8 +513,8 @@ class AlgorithmicModelMixin(models.Model):
 
     def __str__(self):
         standard_str = super(AlgorithmicModelMixin, self).__str__()
-        extras = 'Database: {} algorithm: {}'.format(self.database.name, self.algorithm)
-        return '{}, {}'.format(standard_str, extras)
+        extras = "Database: {} algorithm: {}".format(self.database.name, self.algorithm)
+        return "{}, {}".format(standard_str, extras)
 
 
 class IdOrderedModel(PicklePersistedModel):
@@ -502,8 +531,8 @@ class IdOrderedModel(PicklePersistedModel):
 
     @classmethod
     def calc_chksum(cls, ids):
-        ids_str = ''.join(map(str, ids))
-        return hashlib.md5(ids_str.encode('ascii')).hexdigest()[:24]
+        ids_str = "".join(map(str, ids))
+        return hashlib.md5(ids_str.encode("ascii")).hexdigest()[:24]
 
     def save(self, *args, **kwargs):
         self.chksum = IdOrderedModel.calc_chksum(self.ids)
@@ -516,8 +545,8 @@ class DistanceMatrix(AlgorithmicModelMixin, IdOrderedModel):
     """
 
     class Meta:
-        unique_together = ('chksum', 'algorithm', 'database')
-        attrs = ('ids', 'triu')
+        unique_together = ("chksum", "algorithm", "database")
+        attrs = ("ids", "triu")
 
 
 class Coordinate(AlgorithmicModelMixin, IdOrderedModel):
@@ -526,8 +555,8 @@ class Coordinate(AlgorithmicModelMixin, IdOrderedModel):
     """
 
     class Meta:
-        unique_together = ('chksum', 'algorithm', 'database')
-        attrs = ('ids', 'coordinates', 'tree', 'order')
+        unique_together = ("chksum", "algorithm", "database")
+        attrs = ("ids", "coordinates", "tree", "order")
 
 
 class TemporaryDatabase(IdOrderedModel):
@@ -540,21 +569,21 @@ class TemporaryDatabase(IdOrderedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = [('chksum', 'user'), ('user', 'name')]
-        attrs = ('ids',)
+        unique_together = [("chksum", "user"), ("user", "name")]
+        attrs = ("ids",)
 
     def get_databases(self):
         if not self._databases:
             ids = self.ids
-            databases = set(Segment.objects.filter(id__in=ids).values_list('audio_file__database', flat=True))
-            self._databases = ','.join(list(map(str, databases)))
+            databases = set(Segment.objects.filter(id__in=ids).values_list("audio_file__database", flat=True))
+            self._databases = ",".join(list(map(str, databases)))
             self.save()
 
-        return Database.objects.filter(id__in=list(map(int, self._databases.split(','))))
+        return Database.objects.filter(id__in=list(map(int, self._databases.split(","))))
 
     def get_assigned_permission(self, user):
         databases = self.get_databases()
-        ps = DatabaseAssignment.objects.filter(database__in=databases, user=user).values_list('permission', flat=True)
+        ps = DatabaseAssignment.objects.filter(database__in=databases, user=user).values_list("permission", flat=True)
         if len(ps) > 0:
             return min(ps)
         else:
@@ -562,14 +591,14 @@ class TemporaryDatabase(IdOrderedModel):
 
     @classmethod
     def validate(cls, key_val_pairs):
-        if 'name' in key_val_pairs:
-            name = key_val_pairs['name']
-            if not re.match('^[a-zA-Z0-9_-]+$', name):
-                raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+        if "name" in key_val_pairs:
+            name = key_val_pairs["name"]
+            if not re.match("^[a-zA-Z0-9_-]+$", name):
+                raise CustomAssertionError("Name can only contain alphabets, numbers, dashes and underscores")
 
     def save(self, *args, **kwargs):
-        if not re.match('^[a-zA-Z0-9_-]+$', self.name):
-            raise CustomAssertionError('Name can only contain alphabets, numbers, dashes and underscores')
+        if not re.match("^[a-zA-Z0-9_-]+$", self.name):
+            raise CustomAssertionError("Name can only contain alphabets, numbers, dashes and underscores")
         super(TemporaryDatabase, self).save(*args, **kwargs)
 
 
@@ -584,10 +613,10 @@ class HistoryEntry(SimpleModel):
     time = models.DateTimeField()
     filename = models.CharField(max_length=255)
     database = models.ForeignKey(Database, on_delete=models.SET_NULL, null=True, blank=False)
-    type = models.CharField(max_length=32, default='labels')
+    type = models.CharField(max_length=32, default="labels")
 
     class Meta:
-        ordering = ['-time', 'user', 'database']
+        ordering = ["-time", "user", "database"]
 
     def save(self, *args, **kwargs):
         """
@@ -597,7 +626,7 @@ class HistoryEntry(SimpleModel):
         :return:
         """
         if not self.filename:
-            self.filename = '{}-{}.zip'.format(self.user.username, self.time.strftime('%Y-%m-%d_%H-%M-%S_%Z'))
+            self.filename = "{}-{}.zip".format(self.user.username, self.time.strftime("%Y-%m-%d_%H-%M-%S_%Z"))
         super(HistoryEntry, self).save(*args, **kwargs)
 
     @classmethod
@@ -620,12 +649,15 @@ class AccessRequest(SimpleModel):
     resolved = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ['user', 'database']
+        unique_together = ["user", "database"]
 
     def __str__(self):
-        resolved_or_not = '[RESOLVED] ' if self.resolved else ''
-        return '{}{} requested {} permission on {}'.format(
-            resolved_or_not, self.user.username, self.get_permission_display(), self.database.name
+        resolved_or_not = "[RESOLVED] " if self.resolved else ""
+        return "{}{} requested {} permission on {}".format(
+            resolved_or_not,
+            self.user.username,
+            self.get_permission_display(),
+            self.database.name,
         )
 
 
@@ -658,13 +690,13 @@ class TaskProgressStage(MagicChoices):
 class NonDbTask:
     def __init__(self, **kwargs):
         self.id = 0
-        self.user = kwargs.get('user', None)
-        self.parent = kwargs.get('parent', None)
+        self.user = kwargs.get("user", None)
+        self.parent = kwargs.get("parent", None)
         self.stage = TaskProgressStage.NOT_STARTED
         self.created = timezone.now()
         self.started = None
         self.completed = None
-        self.pc_complete = 0.
+        self.pc_complete = 0.0
         self.message = None
         self.target = None
 
@@ -673,24 +705,28 @@ class NonDbTask:
 
 
 class Task(SimpleModel):
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     started = models.DateTimeField(null=True, default=None, blank=True)
     completed = models.DateTimeField(null=True, default=None, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     stage = models.IntegerField(choices=TaskProgressStage.as_choices(), default=TaskProgressStage.NOT_STARTED)
-    pc_complete = models.FloatField(default=0.)
+    pc_complete = models.FloatField(default=0.0)
     message = models.TextField(null=True, default=None, blank=True)
     target = models.CharField(max_length=255, null=True, default=None, blank=True)
 
     def __str__(self):
         if self.parent is None:
-            return 'Task #{} owner: {} Stage: {} - {:3.1f}pc completed'.format(
+            return "Task #{} owner: {} Stage: {} - {:3.1f}pc completed".format(
                 self.id, self.user.id, self.get_stage_display(), self.pc_complete
             )
         else:
-            return 'Subtask #{} from Task #{} owner: {} Stage: {} - {:3.1f}pc completed'.format(
-                self.id, self.parent.id, self.user.id, self.get_stage_display(), self.pc_complete
+            return "Subtask #{} from Task #{} owner: {} Stage: {} - {:3.1f}pc completed".format(
+                self.id,
+                self.parent.id,
+                self.user.id,
+                self.get_stage_display(),
+                self.pc_complete,
             )
 
     def is_completed(self):
@@ -703,13 +739,13 @@ class BinaryStoredMixin:
         pass
 
     def get_sids_path(self):
-        return self._get_path('ids')
+        return self._get_path("ids")
 
     def get_tids_path(self):
-        return self._get_path('tids')
+        return self._get_path("tids")
 
     def get_bytes_path(self):
-        return self._get_path('bytes')
+        return self._get_path("bytes")
 
 
 class DataMatrix(SimpleModel, BinaryStoredMixin):
@@ -727,37 +763,42 @@ class DataMatrix(SimpleModel, BinaryStoredMixin):
 
     def save(self, **kwargs):
         if self.database is None and self.tmpdb is None:
-            raise Exception('Either database or tmpdb must be provided')
+            raise Exception("Either database or tmpdb must be provided")
         super(DataMatrix, self).save(**kwargs)
 
     def _get_path(self, ext):
-        return os.path.join(settings.MEDIA_URL, 'measurement', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+        return os.path.join(
+            settings.MEDIA_URL,
+            "measurement",
+            str(self.id),
+            "{}.{}".format(self.id, ext),
+        )[1:]
 
     def get_cols_path(self):
-        return self._get_path('cols')
+        return self._get_path("cols")
 
     def __str__(self):
         if self.database:
-            return '{}: {}'.format(self.database.name, self.name)
+            return "{}: {}".format(self.database.name, self.name)
         else:
-            return '{}: {}'.format(self.tmpdb.name, self.name)
+            return "{}: {}".format(self.tmpdb.name, self.name)
 
 
 class Ordination(SimpleModel, BinaryStoredMixin):
     dm = models.ForeignKey(DataMatrix, on_delete=models.CASCADE)
     method = models.CharField(max_length=255)
     ndims = models.IntegerField()
-    params = models.CharField(max_length=255, default='')
+    params = models.CharField(max_length=255, default="")
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
 
     def _get_path(self, ext):
-        return os.path.join(settings.MEDIA_URL, 'ordination', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+        return os.path.join(settings.MEDIA_URL, "ordination", str(self.id), "{}.{}".format(self.id, ext))[1:]
 
     def __str__(self):
-        return '{}_{}_{}'.format(self.dm, self.method, self.ndims)
+        return "{}_{}_{}".format(self.dm, self.method, self.ndims)
 
     def get_name(self):
-        return '{}_{}_{}'.format(self.dm.name, self.method, self.ndims)
+        return "{}_{}_{}".format(self.dm.name, self.method, self.ndims)
 
     @classmethod
     def clean_params(cls, params):
@@ -769,8 +810,8 @@ class Ordination(SimpleModel, BinaryStoredMixin):
         param_dict = cls.params_to_kwargs(params)
         cleaned_params_list = []
         for key, value in param_dict.items():
-            cleaned_params_list.append('{}={}'.format(key, repr(value)))
-        return ','.join(cleaned_params_list)
+            cleaned_params_list.append("{}={}".format(key, repr(value)))
+        return ",".join(cleaned_params_list)
 
     @classmethod
     def params_to_kwargs(cls, params):
@@ -779,7 +820,7 @@ class Ordination(SimpleModel, BinaryStoredMixin):
         :param params:
         :return:
         """
-        param_dict = eval('dict(' + params + ')')
+        param_dict = eval("dict(" + params + ")")
         param_dict = SortedDict(param_dict)
         return param_dict
 
@@ -790,7 +831,7 @@ class SimilarityIndex(SimpleModel, BinaryStoredMixin):
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
 
     def _get_path(self, ext):
-        return os.path.join(settings.MEDIA_URL, 'similarity', str(self.id), '{}.{}'.format(self.id, ext))[1:]
+        return os.path.join(settings.MEDIA_URL, "similarity", str(self.id), "{}.{}".format(self.id, ext))[1:]
 
     def __str__(self):
         if self.ord:
@@ -811,24 +852,34 @@ class TensorData(SimpleModel):
 
 class FullTensorData(TensorData, BinaryStoredMixin):
     def _get_path(self, ext):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.name, '{}.{}'.format(self.name, ext))[1:]
+        return os.path.join(settings.MEDIA_URL, "oss_data", self.name, "{}.{}".format(self.name, ext))[1:]
 
     def get_cols_path(self):
-        return self._get_path('cols')
+        return self._get_path("cols")
 
 
 class DerivedTensorData(TensorData):
     full_tensor = models.ForeignKey(FullTensorData, on_delete=models.CASCADE, null=True, blank=True)
     dimreduce = models.CharField(max_length=255)
     ndims = models.IntegerField(null=True, blank=True)
-    annotator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annotator')
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='creator')
+    annotator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="annotator")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="creator")
 
     def get_config_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.json'.format(self.name))[1:]
+        return os.path.join(
+            settings.MEDIA_URL,
+            "oss_data",
+            self.full_tensor.name,
+            "{}.json".format(self.name),
+        )[1:]
 
     def get_bytes_path(self):
-        return os.path.join(settings.MEDIA_URL, 'oss_data', self.full_tensor.name, '{}.bytes'.format(self.name))[1:]
+        return os.path.join(
+            settings.MEDIA_URL,
+            "oss_data",
+            self.full_tensor.name,
+            "{}.bytes".format(self.name),
+        )[1:]
 
 
 class Preference(SimpleModel):
@@ -837,7 +888,7 @@ class Preference(SimpleModel):
     value = models.TextField()
 
     class Meta:
-        unique_together = ['user', 'key']
+        unique_together = ["user", "key"]
 
 
 class InvitationCode(SimpleModel):
@@ -851,7 +902,7 @@ class InvitationCode(SimpleModel):
     expiry = models.DateTimeField()
 
     def __str__(self):
-        return 'Code: {} expiry {}'.format(self.code, self.expiry)
+        return "Code: {} expiry {}".format(self.code, self.expiry)
 
 
 class MergingInfo(SimpleModel):
@@ -870,11 +921,11 @@ def _history_delete(sender, instance, **kwargs):
     :return:
     """
     filepath = history_path(instance.filename)
-    print('Delete {}'.format(filepath))
+    print("Delete {}".format(filepath))
     if os.path.isfile(filepath):
         os.remove(filepath)
     else:
-        warning('File {} doesnot exist.'.format(filepath))
+        warning("File {} doesnot exist.".format(filepath))
 
 
 @receiver(post_delete)
@@ -888,23 +939,23 @@ def _mymodel_delete(sender, instance, **kwargs):
     """
     if isinstance(instance, PicklePersistedModel):
         filepath = pickle_path(instance.id, instance.__class__.__name__)
-        print('Delete {}'.format(filepath))
+        print("Delete {}".format(filepath))
         if os.path.isfile(filepath):
             os.remove(filepath)
         else:
-            warning('File {} doesnot exist.'.format(filepath))
+            warning("File {} doesnot exist.".format(filepath))
 
 
 def set_editable_for_real_db(extras):
-    database_id = extras.get('database', None)
-    tmpdb_id = extras.get('tmpdb', None)
-    user = extras['user']
+    database_id = extras.get("database", None)
+    tmpdb_id = extras.get("tmpdb", None)
+    user = extras["user"]
 
     if database_id:
         permission = Database.objects.get(id=database_id).get_assigned_permission(user)
     elif tmpdb_id:
         permission = TemporaryDatabase.objects.get(id=tmpdb_id).get_assigned_permission(user)
     else:
-        raise CustomAssertionError('database or tmpdb is required')
+        raise CustomAssertionError("database or tmpdb is required")
 
     return permission >= DatabasePermission.ANNOTATE

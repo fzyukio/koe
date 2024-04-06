@@ -2,23 +2,25 @@ r"""
 Run classifiers and export a)The confusion matrix and b)list of frequently misclassified instances
 """
 
-import numpy as np
 from django.core.management.base import BaseCommand
+
+import numpy as np
 from dotmap import DotMap
 from progress.bar import Bar
+from pymlfunc import sub2ind
 from scipy.io import loadmat
 from scipy.stats import zscore
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis as QDA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
 from sklearn.tree import DecisionTreeClassifier
 
 from koe.utils import accum
-from pymlfunc import sub2ind
 
 
 def _calc_score(predict_y, test_y, nlabels):
-    hits = (predict_y == test_y).astype(np.int)
+    hits = (predict_y == test_y).astype(int)
     misses = 1 - hits
     score = hits.sum() / len(test_y)
 
@@ -27,8 +29,8 @@ def _calc_score(predict_y, test_y, nlabels):
 
     unique_test_labels = np.unique(test_y)
 
-    _label_hits = accum(test_y, hits, func=np.sum, dtype=np.int)
-    _label_misses = accum(test_y, misses, func=np.sum, dtype=np.int)
+    _label_hits = accum(test_y, hits, func=np.sum, dtype=int)
+    _label_misses = accum(test_y, misses, func=np.sum, dtype=int)
 
     label_hits[unique_test_labels] = _label_hits[unique_test_labels]
     label_misses[unique_test_labels] = _label_misses[unique_test_labels]
@@ -48,7 +50,7 @@ def random_forest(train_x, train_y, test_x):
 
 
 def svm(train_x, train_y, test_x):
-    model = SVC(kernel='linear')
+    model = SVC(kernel="linear")
     return _classify(model, train_x, train_y, test_x)
 
 
@@ -63,16 +65,22 @@ def lda(train_x, train_y, test_x):
 
 
 def qda(train_x, train_y, test_x):
-    model = QDA(priors=None, reg_param=0.0, store_covariance=False, store_covariances=None, tol=0.0001)
+    model = QDA(
+        priors=None,
+        reg_param=0.0,
+        store_covariance=False,
+        store_covariances=None,
+        tol=0.0001,
+    )
     return _classify(model, train_x, train_y, test_x)
 
 
 classifiers = {
-    'rf': random_forest,
-    'svm': svm,
-    'gnb': gaussian_nb,
-    'lda': lda,
-    'qda': qda
+    "rf": random_forest,
+    "svm": svm,
+    "gnb": gaussian_nb,
+    "lda": lda,
+    "qda": qda,
 }
 
 
@@ -87,15 +95,15 @@ def run_nfolds(data, sids, nfolds, niters, enum_labels, nlabels, classifier, bar
 
     ind = 0
 
-    misclassified_counts = np.zeros((nsyls,), dtype=np.int)
-    confusion_matrix = np.zeros((nlabels, nlabels), dtype=np.int)
+    misclassified_counts = np.zeros((nsyls,), dtype=int)
+    confusion_matrix = np.zeros((nlabels, nlabels), dtype=int)
     label_prediction_scores = [0] * ntrials
 
     for i in range(niters):
-        scrambled_syl_idx = np.arange(nsyls, dtype=np.int)
+        scrambled_syl_idx = np.arange(nsyls, dtype=int)
         np.random.shuffle(scrambled_syl_idx)
 
-        fold_inds = np.linspace(0, nsyls, nfolds + 1, dtype=np.int)
+        fold_inds = np.linspace(0, nsyls, nfolds + 1, dtype=int)
         fold_inds = list(zip(fold_inds[:-1], fold_inds[1:]))
 
         for k in range(nfolds):
@@ -136,33 +144,76 @@ def run_nfolds(data, sids, nfolds, niters, enum_labels, nlabels, classifier, bar
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--classifier', action='store', dest='clsf_type', required=True, type=str,
-                            help='Can be svm, rf (Random Forest), gnb (Gaussian Naive Bayes), lda', )
+        parser.add_argument(
+            "--classifier",
+            action="store",
+            dest="clsf_type",
+            required=True,
+            type=str,
+            help="Can be svm, rf (Random Forest), gnb (Gaussian Naive Bayes), lda",
+        )
 
-        parser.add_argument('--matfile', action='store', dest='matfile', required=True, type=str,
-                            help='Name of the .mat file that stores extracted feature values for Matlab', )
+        parser.add_argument(
+            "--matfile",
+            action="store",
+            dest="matfile",
+            required=True,
+            type=str,
+            help="Name of the .mat file that stores extracted feature values for Matlab",
+        )
 
-        parser.add_argument('--source', action='store', dest='source', required=True, type=str,
-                            help='Can be tsne, raw, norm', )
+        parser.add_argument(
+            "--source",
+            action="store",
+            dest="source",
+            required=True,
+            type=str,
+            help="Can be tsne, raw, norm",
+        )
 
-        parser.add_argument('--feature-index', action='store', dest='ft_idx', required=False, type=int)
+        parser.add_argument("--feature-index", action="store", dest="ft_idx", required=False, type=int)
 
-        parser.add_argument('--nfolds', action='store', dest='nfolds', required=False, default=100, type=int)
+        parser.add_argument(
+            "--nfolds",
+            action="store",
+            dest="nfolds",
+            required=False,
+            default=100,
+            type=int,
+        )
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=1, type=int)
+        parser.add_argument(
+            "--niters",
+            action="store",
+            dest="niters",
+            required=False,
+            default=1,
+            type=int,
+        )
 
-        parser.add_argument('--to-csv', dest='csv_filename', action='store', required=False)
+        parser.add_argument("--to-csv", dest="csv_filename", action="store", required=False)
 
-    def handle(self, clsf_type, matfile, source, ft_idx, nfolds, niters, csv_filename, *args, **options):
-        assert clsf_type in classifiers.keys(), 'Unknown _classify: {}'.format(clsf_type)
-        assert source in ['tsne', 'raw', 'norm']
+    def handle(
+        self,
+        clsf_type,
+        matfile,
+        source,
+        ft_idx,
+        nfolds,
+        niters,
+        csv_filename,
+        *args,
+        **options,
+    ):
+        assert clsf_type in classifiers.keys(), "Unknown _classify: {}".format(clsf_type)
+        assert source in ["tsne", "raw", "norm"]
 
         saved = DotMap(loadmat(matfile))
         sids = saved.sids.ravel()
         clusters = saved.clusters
         dataset = saved.dataset
         labels = saved.labels
-        haslabel_ind = np.where(labels != '                              ')[0]
+        haslabel_ind = np.where(labels != "                              ")[0]
 
         labels = labels[haslabel_ind]
         labels = np.array([x.strip() for x in labels])
@@ -175,11 +226,7 @@ class Command(BaseCommand):
 
         meas = zscore(dataset)
 
-        data_sources = {
-            'tsne': clusters,
-            'raw': dataset,
-            'norm': meas
-        }
+        data_sources = {"tsne": clusters, "raw": dataset, "norm": meas}
 
         data = data_sources[source]
 
@@ -188,35 +235,39 @@ class Command(BaseCommand):
         unique_labels, enum_labels = np.unique(labels, return_inverse=True)
         nlabels = len(unique_labels)
 
-        bar = Bar('Running {} on {}...'.format(clsf_type, source))
-        label_prediction_scores, misclassified_counts, confusion_matrix = \
-            run_nfolds(data, sids, nfolds, niters, enum_labels, nlabels, classifier, bar)
+        bar = Bar("Running {} on {}...".format(clsf_type, source))
+        label_prediction_scores, misclassified_counts, confusion_matrix = run_nfolds(
+            data, sids, nfolds, niters, enum_labels, nlabels, classifier, bar
+        )
 
         mean_label_prediction_scores = np.nanmean(label_prediction_scores)
         std_label_prediction_scores = np.nanstd(label_prediction_scores)
 
         if csv_filename:
             lines = []
-            with open(csv_filename, 'w', encoding='utf-8') as f:
+            with open(csv_filename, "w", encoding="utf-8") as f:
                 misclassified_counts_sorted_indx = np.argsort(misclassified_counts)[::-1]
                 misclassified_counts_sorted = misclassified_counts[misclassified_counts_sorted_indx]
                 sids_sorted = sids[misclassified_counts_sorted_indx]
                 labels_sorted = labels[misclassified_counts_sorted_indx]
 
-                lines.append('Label prediction mean, stdev,')
-                lines.append('{},{},'.format(mean_label_prediction_scores, std_label_prediction_scores))
+                lines.append("Label prediction mean, stdev,")
+                lines.append("{},{},".format(mean_label_prediction_scores, std_label_prediction_scores))
 
-                lines.append('ID,Label,Misclassification count')
+                lines.append("ID,Label,Misclassification count")
                 for sylid, label, count in zip(sids_sorted, labels_sorted, misclassified_counts_sorted):
-                    line = '{},{},{}'.format(sylid, label, count)
+                    line = "{},{},{}".format(sylid, label, count)
                     lines.append(line)
 
-                lines[0] += ',,,Confusion Matrix'
-                lines[1] += ',,,{}'.format(','.join(unique_labels))
+                lines[0] += ",,,Confusion Matrix"
+                lines[1] += ",,,{}".format(",".join(unique_labels))
 
                 for i in range(nlabels):
-                    lines[i + 2] += ',,{},{}'.format(unique_labels[i], ','.join(list(map(str, confusion_matrix[i, :]))))
+                    lines[i + 2] += ",,{},{}".format(
+                        unique_labels[i],
+                        ",".join(list(map(str, confusion_matrix[i, :]))),
+                    )
 
                 for line in lines:
                     f.write(line)
-                    f.write('\n')
+                    f.write("\n")

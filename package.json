@@ -34,7 +34,7 @@
         "compute-euclidean-distance": "^1.0.0",
         "config": "^1.29.2",
         "css-element-queries": "^1.2.1",
-        "css-loader": "^0.25.0",
+        "css-loader": "^0",
         "d3": "5.2.0",
         "dotenv-webpack": "^1.5.4",
         "dropzone": "5.7.0",

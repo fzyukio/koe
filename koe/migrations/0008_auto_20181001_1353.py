@@ -7,25 +7,39 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('koe', '0007_aggregation_enabled'),
+        ("koe", "0007_aggregation_enabled"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TemporaryDatabase',
+            name="TemporaryDatabase",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('chksum', models.CharField(max_length=24)),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("chksum", models.CharField(max_length=24)),
+                ("name", models.CharField(max_length=255, unique=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.AlterUniqueTogether(
-            name='temporarydatabase',
-            unique_together={('chksum', 'user')},
+            name="temporarydatabase",
+            unique_together={("chksum", "user")},
         ),
     ]

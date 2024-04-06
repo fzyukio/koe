@@ -3,14 +3,16 @@ General utils for the entire project.
 DO NOT import any project-related files here. NO Model, NO form, NO nothing.
 model_utils is there you can import those
 """
+
 import base64
 import contextlib
 import os
 import re
 from itertools import product
 
-import numpy as np
 from django.conf import settings
+
+import numpy as np
 
 from koe import wavfile
 from koe.wavfile import get_wav_info
@@ -18,16 +20,16 @@ from root.utils import data_path
 
 
 def array_to_base64(array):
-    return '{}{}::{}'.format(array.dtype, np.shape(array), base64.b64encode(array).decode("ascii"))
+    return "{}{}::{}".format(array.dtype, np.shape(array), base64.b64encode(array).decode("ascii"))
 
 
 def base64_to_array(string):
-    a = string.index('(')
-    b = string.index(')')
+    a = string.index("(")
+    b = string.index(")")
 
     dtype = string[:a]
-    shape = list(map(int, re.sub(r',?\)', '', string[a + 1:b + 1]).split(', ')))
-    encoded = string[b + 3:]
+    shape = list(map(int, re.sub(r",?\)", "", string[a + 1 : b + 1]).split(", ")))
+    encoded = string[b + 3 :]
 
     array = np.frombuffer(base64.decodebytes(encoded.encode()), dtype=np.dtype(dtype)).reshape(shape)
     return array
@@ -35,11 +37,11 @@ def base64_to_array(string):
 
 def triu2mat(triu):
     if np.size(np.shape(triu)) > 1:
-        raise Exception('dist must be array')
+        raise Exception("dist must be array")
 
     n = int(np.math.ceil(np.math.sqrt(np.size(triu) * 2)))
     if np.size(triu) != n * (n - 1) / 2:
-        raise Exception('dist must have n*(n-1)/2 elements')
+        raise Exception("dist must have n*(n-1)/2 elements")
 
     retval = np.zeros((n, n), dtype=triu.dtype)
     retval[np.triu_indices(n, 1)] = triu
@@ -49,11 +51,11 @@ def triu2mat(triu):
 
 def mat2triu(mat):
     if np.size(np.shape(mat)) == 1:
-        raise Exception('Argument must be a square matrix')
+        raise Exception("Argument must be a square matrix")
 
     n, m = np.shape(mat)
     if n != m:
-        raise Exception('Argument must be a square matrix')
+        raise Exception("Argument must be a square matrix")
 
     m1 = np.full((n, m), True, dtype=np.bool)
     m1 = np.triu(m1, 1)
@@ -204,7 +206,7 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
            [[-1, 8], [9]]], dtype=object)
     """
     # Check for bad arguments and handle the defaults.
-    if accmap.shape[:a.ndim] != a.shape:
+    if accmap.shape[: a.ndim] != a.shape:
         raise ValueError("The initial dimensions of accmap must be the same as a.shape")
     if func is None:
         func = np.sum
@@ -218,7 +220,7 @@ def accum(accmap, a, func=None, size=None, fill_value=0, dtype=None):
     size = np.atleast_1d(size)
 
     # Create an array of python lists of values.
-    vals = np.empty(size, dtype='O')
+    vals = np.empty(size, dtype="O")
     for s in product(*[range(k) for k in size]):
         vals[s] = []
     for s in product(*[range(k) for k in a.shape]):
@@ -247,7 +249,7 @@ def get_kfold_indices(labels, k):
     :param k:
     :return: k-item array. Each element is a dict(test=test_indices, train=train_indices). The indices are randomised
     """
-    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
+    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, "labels must be a 1-D numpy array"
 
     label_sorted_indices = np.argsort(labels)
     sorted_labels = labels[label_sorted_indices]
@@ -255,7 +257,7 @@ def get_kfold_indices(labels, k):
     uniques, counts = np.unique(sorted_labels, return_counts=True)
 
     if np.any(counts < k):
-        raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'.format(k, k))
+        raise ValueError("Value of k={} is too big - there are classes that have less than {} instances".format(k, k))
 
     nclasses = len(uniques)
 
@@ -277,7 +279,7 @@ def get_kfold_indices(labels, k):
             ntests = nremainings // (k - k_)
             nremainings -= ntests
 
-            kth_fold_instance_indices = instance_indices[test_ind_start: test_ind_start + ntests]
+            kth_fold_instance_indices = instance_indices[test_ind_start : test_ind_start + ntests]
 
             added += len(kth_fold_instance_indices)
             fold_indices[kth_fold_instance_indices] = k_
@@ -299,16 +301,16 @@ def split_classwise(labels, ratio, nfolds, balanced=False, limits=None):
     :param ratio: ratio of the test set over all instances. Must be > 0 and <= 0.5
     :return:
     """
-    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, 'labels must be a 1-D numpy array'
-    assert 0. <= ratio <= .5, 'Ratio must be within [0, 0.5]'
+    assert isinstance(labels, np.ndarray) and len(labels.shape) == 1, "labels must be a 1-D numpy array"
+    assert 0.0 <= ratio <= 0.5, "Ratio must be within [0, 0.5]"
 
     label_sorted_indices = np.argsort(labels)
     sorted_labels = labels[label_sorted_indices]
 
     uniques, counts = np.unique(sorted_labels, return_counts=True)
 
-    if ratio > 0.:
-        assert nfolds <= int(np.floor(1. / ratio + 0.01)), 'Ratio {} doesn\'t permit {} folds'.format(ratio, nfolds)
+    if ratio > 0.0:
+        assert nfolds <= int(np.floor(1.0 / ratio + 0.01)), "Ratio {} doesn't permit {} folds".format(ratio, nfolds)
 
     if balanced:
         if limits:
@@ -324,11 +326,14 @@ def split_classwise(labels, ratio, nfolds, balanced=False, limits=None):
     if np.any(counts < lolimit):
         if limits:
             raise ValueError(
-                'Lower limit of range[{},{}] is too big - there are classes that have less than {} instances'
-                .format(lolimit, uplimit, lolimit))
+                "Lower limit of range[{},{}] is too big - there are classes that have less than {} instances".format(
+                    lolimit, uplimit, lolimit
+                )
+            )
         else:
-            raise ValueError('Value of k={} is too big - there are classes that have less than {} instances'
-                             .format(nfolds, nfolds))
+            raise ValueError(
+                "Value of k={} is too big - there are classes that have less than {} instances".format(nfolds, nfolds)
+            )
 
     nclasses = len(uniques)
     folds = []
@@ -354,19 +359,25 @@ def split_classwise(labels, ratio, nfolds, balanced=False, limits=None):
             ntests = int(np.floor(ninstances * ratio))
             nremainings -= ntests
 
-            fold['test'].append(instance_indices[test_ind_start: test_ind_start + ntests])
-            fold['train'].append(
-                np.concatenate((instance_indices[0:test_ind_start], instance_indices[test_ind_start + ntests:])))
+            fold["test"].append(instance_indices[test_ind_start : test_ind_start + ntests])
+            fold["train"].append(
+                np.concatenate(
+                    (
+                        instance_indices[0:test_ind_start],
+                        instance_indices[test_ind_start + ntests :],
+                    )
+                )
+            )
 
             test_ind_start += ntests
         assert nremainings >= 0
 
     for fold in folds:
-        fold['test'] = np.concatenate(fold['test'])
-        fold['train'] = np.concatenate(fold['train'])
+        fold["test"] = np.concatenate(fold["test"])
+        fold["train"] = np.concatenate(fold["train"])
 
-        np.random.shuffle(fold['test'])
-        np.random.shuffle(fold['train'])
+        np.random.shuffle(fold["test"])
+        np.random.shuffle(fold["train"])
     return folds
 
 
@@ -445,8 +456,8 @@ def one_hot(labels):
 
 
 def pickle_path(objid, subdir=None, for_url=False):
-    fullname = '{}.pkl'.format(objid)
-    folder = 'pickle'
+    fullname = "{}.pkl".format(objid)
+    folder = "pickle"
     if subdir:
         folder = os.path.join(folder, subdir)
     return data_path(folder, fullname, for_url)
@@ -455,29 +466,29 @@ def pickle_path(objid, subdir=None, for_url=False):
 def wav_path(audio_file, for_url=False):
     if audio_file.is_original():
         database_id = str(audio_file.database.id)
-        file_name = audio_file.name + '.wav'
+        file_name = audio_file.name + ".wav"
     else:
         database_id = str(audio_file.original.database.id)
-        file_name = audio_file.original.name + '.wav'
-    return data_path('audio/wav/{}'.format(database_id), file_name, for_url)
+        file_name = audio_file.original.name + ".wav"
+    return data_path("audio/wav/{}".format(database_id), file_name, for_url)
 
 
 def audio_path(audio_file, ext, for_url=False):
     if audio_file.is_original():
         database_id = str(audio_file.database.id)
-        file_name = audio_file.name + '.' + ext
+        file_name = audio_file.name + "." + ext
     else:
         database_id = str(audio_file.original.database.id)
-        file_name = audio_file.original.name + '.' + ext
-    return data_path('audio/{}/{}'.format(ext, database_id), file_name, for_url)
+        file_name = audio_file.original.name + "." + ext
+    return data_path("audio/{}/{}".format(ext, database_id), file_name, for_url)
 
 
 def history_path(fullname, for_url=False):
-    return data_path('history', fullname, for_url)
+    return data_path("history", fullname, for_url)
 
 
 PAGE_CAPACITY = 1000
-SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}', '{}.png')
+SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, "spect", "syllable", "{}", "{}.png")
 URL_SPECT_FFT_TEMPLATE = SPECT_FFT_TEMPLATE[1:]
 ABS_SPECT_FFT_TEMPLATE = os.path.join(settings.BASE_DIR, URL_SPECT_FFT_TEMPLATE)
 
@@ -508,12 +519,8 @@ def get_closest_neighbours(distmat, labels, nneighbours=3):
     for i in range(num_data_points):
         this_neighbour_inds = neighbour_inds[i, :]
         this_distance_row = distmat[i, :]
-        distance_to_nearest_neighbours.append(
-            this_distance_row[this_neighbour_inds]
-        )
-        label_of_nearest_neighbours.append(
-            labels[this_neighbour_inds]
-        )
+        distance_to_nearest_neighbours.append(this_distance_row[this_neighbour_inds])
+        label_of_nearest_neighbours.append(labels[this_neighbour_inds])
 
     distmat[diagonal_indices] = 0
     return np.array(label_of_nearest_neighbours), np.array(distance_to_nearest_neighbours)

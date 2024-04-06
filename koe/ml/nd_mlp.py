@@ -1,13 +1,13 @@
 import json
 import os
 import shutil
+import time
 import zipfile
-from signal import signal, SIGABRT, SIGINT, SIGTERM, SIGUSR1
+from signal import SIGABRT, SIGINT, SIGTERM, SIGUSR1, signal
 from uuid import uuid4
 
-import tensorflow as tf
 import numpy as np
-import time
+import tensorflow as tf
 
 from koe.ml.learning_rate_funcs import lrfunc_classes
 from root.utils import mkdirp
@@ -31,14 +31,14 @@ def make_mlp(input_data, layer_sizes, keep_prob, output_dim):
 
 def extract_saved(tmp_folder, filepath):
     has_saved_checkpoint = False
-    with zipfile.ZipFile(filepath, 'r') as zip_file:
+    with zipfile.ZipFile(filepath, "r") as zip_file:
         namelist = zip_file.namelist()
         for name in namelist:
-            if name == 'checkpoint':
+            if name == "checkpoint":
                 has_saved_checkpoint = True
             filecontent = zip_file.read(name)
             filepath = os.path.join(tmp_folder, name)
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(filecontent)
     return has_saved_checkpoint
 
@@ -51,7 +51,7 @@ class NDMLPFactory:
         self.tmp_folder = None
         self.uuid_code = None
         self.keep_prob = None
-        self.lrtype = 'constant'
+        self.lrtype = "constant"
         self.lrargs = dict(lr=0.001)
         self.write_summary = True
         self._save_to = None
@@ -59,24 +59,24 @@ class NDMLPFactory:
     def set_output(self, filename):
         self._save_to = filename
         if os.path.isfile(filename):
-            with zipfile.ZipFile(filename, 'r') as zip_file:
+            with zipfile.ZipFile(filename, "r") as zip_file:
                 namelist = zip_file.namelist()
-                if 'meta.json' in namelist:
-                    meta = json.loads(str(zip_file.read('meta.json'), 'utf-8'))
+                if "meta.json" in namelist:
+                    meta = json.loads(str(zip_file.read("meta.json"), "utf-8"))
                     for k, v in list(meta.items()):
-                        if not callable(v) and not k.startswith('_'):
+                        if not callable(v) and not k.startswith("_"):
                             setattr(self, k, v)
 
     def build(self):
         if self._save_to is None:
-            raise Exception('Must call set_output(_save_to=...) first')
+            raise Exception("Must call set_output(_save_to=...) first")
 
         assert self.lrtype in list(lrfunc_classes.keys())
 
         if self.uuid_code is None:
             self.uuid_code = uuid4().hex
         if self.tmp_folder is None:
-            self.tmp_folder = os.path.join('/tmp', 'NDS2MLP-{}'.format(self.uuid_code))
+            self.tmp_folder = os.path.join("/tmp", "NDS2MLP-{}".format(self.uuid_code))
 
         if os.path.exists(self.tmp_folder):
             shutil.rmtree(self.tmp_folder)
@@ -88,8 +88,8 @@ class NDMLPFactory:
             build_anew = not has_saved_checkpoint
 
         params = {v: k for v, k in list(vars(self).items()) if not callable(k)}
-        meta_file = os.path.join(self.tmp_folder, 'meta.json')
-        with open(meta_file, 'w') as f:
+        meta_file = os.path.join(self.tmp_folder, "meta.json")
+        with open(meta_file, "w") as f:
             json.dump(params, f)
 
         lrfunc_class = lrfunc_classes[self.lrtype]
@@ -104,7 +104,7 @@ class NDMLPFactory:
 
 class _NDSMLP:
     def __init__(self, factory):
-        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        self.global_step = tf.Variable(0, name="global_step", trainable=False)
         self.input_dim = factory.input_dim
         self.output_dim = factory.output_dim
         self.layer_sizes = factory.layer_sizes
@@ -140,17 +140,17 @@ class _NDSMLP:
 
     def cleanup(self):
         if os.path.isdir(self.tmp_folder):
-            print(('Cleaned up temp folder {}'.format(self.tmp_folder)))
+            print(("Cleaned up temp folder {}".format(self.tmp_folder)))
             shutil.rmtree(self.tmp_folder)
 
     def copy_saved_to_zip(self):
-        save_to_bak = self._save_to + '.bak'
-        save_to_bak2 = self._save_to + '.bak2'
+        save_to_bak = self._save_to + ".bak"
+        save_to_bak2 = self._save_to + ".bak2"
 
-        with zipfile.ZipFile(save_to_bak, 'w', zipfile.ZIP_BZIP2, False) as zip_file:
+        with zipfile.ZipFile(save_to_bak, "w", zipfile.ZIP_BZIP2, False) as zip_file:
             for root, dirs, files in os.walk(self.tmp_folder):
                 for file in files:
-                    with open(os.path.join(root, file), 'rb') as f:
+                    with open(os.path.join(root, file), "rb") as f:
                         zip_file.writestr(file, f.read())
 
         if os.path.isfile(self._save_to):
@@ -231,17 +231,14 @@ class _NDSMLP:
 
             # Training step
             evaled = sess.run(
-                [
-                    self.train_op,
-                    self.cost,
-                    self.predictions
-                ],
+                [self.train_op, self.cost, self.predictions],
                 {
                     self.batch_size: batch_size,
                     self.learning_rate: 0,
                     self.input_data: X_batch,
                     self.output_data: y_batch,
-                })
+                },
+            )
             cost = evaled[1]
             predictions = evaled[2]
 
@@ -250,25 +247,32 @@ class _NDSMLP:
             diff = np.sum(np.square(diff), 1)
             true_cost = np.mean(diff)
 
-            assert np.allclose(true_cost, cost), 'Cost = {}, tru cost = {}'.format(cost, true_cost)
-            print(('Lost = {}'.format(cost)))
+            assert np.allclose(true_cost, cost), "Cost = {}, tru cost = {}".format(cost, true_cost)
+            print(("Lost = {}".format(cost)))
 
-    # @profile  # noqa F821
-    def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
+    def train(
+        self,
+        training_gen,
+        valid_gen,
+        n_iterations=1500,
+        batch_size=50,
+        display_step=1,
+        save_step=100,
+    ):
         display_step = 10
         self.construct_loss_function()
 
-        with tf.name_scope('summaries'):
-            tf.summary.scalar('learning_rate', self.learning_rate)
-            tf.summary.scalar('cost', self.cost)
+        with tf.name_scope("summaries"):
+            tf.summary.scalar("learning_rate", self.learning_rate)
+            tf.summary.scalar("cost", self.cost)
 
         saver = tf.train.Saver(max_to_keep=1)
         with tf.Session() as sess:
             # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
             if self.write_summary:
                 summary_merged = tf.summary.merge_all()
-                train_writer = tf.summary.FileWriter(self.tmp_folder + '/train', graph=sess.graph)
-                test_writer = tf.summary.FileWriter(self.tmp_folder + '/test')
+                train_writer = tf.summary.FileWriter(self.tmp_folder + "/train", graph=sess.graph)
+                test_writer = tf.summary.FileWriter(self.tmp_folder + "/test")
             init = tf.global_variables_initializer()
             init.run()
             if not self.build_anew:
@@ -294,7 +298,7 @@ class _NDSMLP:
                         self.batch_size: actual_batch_size,
                         self.learning_rate: current_lr,
                         self.input_data: X_batch,
-                        self.output_data: y_batch
+                        self.output_data: y_batch,
                     }
 
                     if final_batch:
@@ -306,8 +310,10 @@ class _NDSMLP:
                     #     train_op = self.train_op
 
                     if self.write_summary:
-                        _, loss, current_lr, summary = \
-                            sess.run([train_op, self.cost, self.learning_rate, summary_merged], feed_dict)
+                        _, loss, current_lr, summary = sess.run(
+                            [train_op, self.cost, self.learning_rate, summary_merged],
+                            feed_dict,
+                        )
                         train_writer.add_summary(summary, iteration)
                     else:
                         _, loss, current_lr = sess.run([train_op, self.cost, self.learning_rate], feed_dict)
@@ -330,7 +336,7 @@ class _NDSMLP:
                         self.batch_size: actual_batch_size,
                         self.learning_rate: current_lr,
                         self.input_data: X_batch,
-                        self.output_data: y_batch
+                        self.output_data: y_batch,
                     }
 
                     if self.write_summary:
@@ -346,15 +352,25 @@ class _NDSMLP:
                     start_time = end_time
                     start_iteration = iteration
 
-                    print(('Ep {:>4}/{} | Losses: {:>7.5f}/{:>7.5f} | LR: {:>6.5f} | Speed: {:>6.1f} ms/Ep'.
-                           format(iteration, n_iterations, loss, validation_loss, current_lr, mean_duration)))
+                    print(
+                        (
+                            "Ep {:>4}/{} | Losses: {:>7.5f}/{:>7.5f} | LR: {:>6.5f} | Speed: {:>6.1f} ms/Ep".format(
+                                iteration,
+                                n_iterations,
+                                loss,
+                                validation_loss,
+                                current_lr,
+                                mean_duration,
+                            )
+                        )
+                    )
 
                 if iteration % save_step == 0 or iteration == n_iterations - 1:
                     start_time_save = int(round(time.time() * 1000))
                     saver.save(sess, self.saved_session_name, global_step=self.global_step)
                     self.copy_saved_to_zip()
                     duration_save = int(round(time.time() * 1000)) - start_time_save
-                    print('Saved. Elapsed: {:>6.3f} ms'.format(duration_save))
+                    print("Saved. Elapsed: {:>6.3f} ms".format(duration_save))
 
     def recreate_session(self):
         saver = tf.train.Saver()

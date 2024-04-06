@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0035_auto_20200524_0435'),
+        ("koe", "0035_auto_20200524_0435"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='database',
-            name='hpf',
+            model_name="database",
+            name="hpf",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='database',
-            name='lpf',
+            model_name="database",
+            name="lpf",
             field=models.IntegerField(blank=True, default=None, null=True),
         ),
         migrations.AddField(
-            model_name='database',
-            name='nfft',
+            model_name="database",
+            name="nfft",
             field=models.IntegerField(default=512),
         ),
         migrations.AddField(
-            model_name='database',
-            name='noverlap',
+            model_name="database",
+            name="noverlap",
             field=models.IntegerField(default=384),
         ),
     ]

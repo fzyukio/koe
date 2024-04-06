@@ -11,14 +11,14 @@ from root.utils import mkdirp
 
 def extract_saved(tmp_folder, filepath):
     has_saved_checkpoint = False
-    with zipfile.ZipFile(filepath, 'r') as zip_file:
+    with zipfile.ZipFile(filepath, "r") as zip_file:
         namelist = zip_file.namelist()
         for name in namelist:
-            if name == 'checkpoint':
+            if name == "checkpoint":
                 has_saved_checkpoint = True
             filecontent = zip_file.read(name)
             filepath = os.path.join(tmp_folder, name)
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(filecontent)
     return has_saved_checkpoint
 
@@ -36,17 +36,17 @@ class VLS2SAutoEncoderFactory:
 
     def build(self, save_to):
         if os.path.isfile(save_to):
-            with zipfile.ZipFile(save_to, 'r') as zip_file:
+            with zipfile.ZipFile(save_to, "r") as zip_file:
                 namelist = zip_file.namelist()
-                if 'meta.json' in namelist:
-                    meta = json.loads(zip_file.read('meta.json'))
+                if "meta.json" in namelist:
+                    meta = json.loads(zip_file.read("meta.json"))
                     for k, v in meta.items():
                         setattr(self, k, v)
 
         if self.uuid_code is None:
             self.uuid_code = uuid4().hex
         if self.tmp_folder is None:
-            self.tmp_folder = os.path.join('/tmp', 'VLS2SAutoEncoderFactory-{}'.format(self.uuid_code))
+            self.tmp_folder = os.path.join("/tmp", "VLS2SAutoEncoderFactory-{}".format(self.uuid_code))
 
         if os.path.exists(self.tmp_folder):
             shutil.rmtree(self.tmp_folder)
@@ -58,8 +58,8 @@ class VLS2SAutoEncoderFactory:
             build_anew = not has_saved_checkpoint
 
         params = vars(self)
-        meta_file = os.path.join(self.tmp_folder, 'meta.json')
-        with open(meta_file, 'w') as f:
+        meta_file = os.path.join(self.tmp_folder, "meta.json")
+        with open(meta_file, "w") as f:
             json.dump(params, f)
 
         retval = _VLS2SAutoEncoder(self)
@@ -71,7 +71,7 @@ class VLS2SAutoEncoderFactory:
 
 class _VLS2SAutoEncoder:
     def __init__(self, factory):
-        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        self.global_step = tf.Variable(0, name="global_step", trainable=False)
         self.learning_rate = factory.learning_rate
         self.max_seq_len = factory.max_seq_len
         self.input_dim = factory.input_dim
@@ -101,13 +101,13 @@ class _VLS2SAutoEncoder:
         shutil.rmtree(self.tmp_folder)
 
     def copy_saved_to_zip(self):
-        save_to_bak = self.save_to + '.bak'
-        save_to_bak2 = self.save_to + '.bak2'
+        save_to_bak = self.save_to + ".bak"
+        save_to_bak2 = self.save_to + ".bak2"
 
-        with zipfile.ZipFile(save_to_bak, 'w', zipfile.ZIP_BZIP2, False) as zip_file:
+        with zipfile.ZipFile(save_to_bak, "w", zipfile.ZIP_BZIP2, False) as zip_file:
             for root, dirs, files in os.walk(self.tmp_folder):
                 for file in files:
-                    with open(os.path.join(root, file), 'rb') as f:
+                    with open(os.path.join(root, file), "rb") as f:
                         zip_file.writestr(file, f.read())
 
         if os.path.isfile(self.save_to):
@@ -125,33 +125,19 @@ class _VLS2SAutoEncoder:
 
         encode_layer_cells = []
         for encode_layer_size in self.layer_sizes:
-            encode_layer_cells.append(
-                tf.contrib.rnn.GRUCell(
-                    num_units=encode_layer_size,
-                    activation=tf.nn.relu
-                )
-            )
-        kernel_cell = [
-            tf.contrib.rnn.GRUCell(
-                num_units=self.kernel_size,
-                activation=tf.nn.relu
-            )
-        ]
+            encode_layer_cells.append(tf.contrib.rnn.GRUCell(num_units=encode_layer_size, activation=tf.nn.relu))
+        kernel_cell = [tf.contrib.rnn.GRUCell(num_units=self.kernel_size, activation=tf.nn.relu)]
 
         decode_layer_cells = []
         for decode_layer_size in self.layer_sizes:
-            decode_layer_cells.append(
-                tf.contrib.rnn.GRUCell(
-                    num_units=decode_layer_size,
-                    activation=tf.nn.relu
-                )
-            )
+            decode_layer_cells.append(tf.contrib.rnn.GRUCell(num_units=decode_layer_size, activation=tf.nn.relu))
 
         cells = encode_layer_cells + kernel_cell + decode_layer_cells
         cells = tf.contrib.rnn.MultiRNNCell(cells)
         cell = tf.contrib.rnn.OutputProjectionWrapper(cells, output_size=self.output_dim)
-        self.outputs, self.states = tf.nn.dynamic_rnn(cell, self.X, dtype=tf.float32,
-                                                      sequence_length=self.sequence_length)
+        self.outputs, self.states = tf.nn.dynamic_rnn(
+            cell, self.X, dtype=tf.float32, sequence_length=self.sequence_length
+        )
 
         diff = tf.reduce_sum(tf.square(self.outputs - self.y), 2)
         diff *= self.mask
@@ -177,16 +163,22 @@ class _VLS2SAutoEncoder:
                 sess.run(
                     self.training_op,
                     feed_dict={
-                        self.X: X_batch, self.y: y_batch, self.sequence_length: sequence_lens,
-                        self.mask: len_mask
-                    })
+                        self.X: X_batch,
+                        self.y: y_batch,
+                        self.sequence_length: sequence_lens,
+                        self.mask: len_mask,
+                    },
+                )
                 if iteration % 10 == 0 or iteration == n_iterations - 1:
                     mse = self.loss.eval(
                         feed_dict={
-                            self.X: X_batch, self.y: y_batch, self.sequence_length: sequence_lens,
-                            self.mask: len_mask
-                        })
-                    print('Iteration #{}/{} \t MSE: {}'.format(iteration + 1, n_iterations, mse))
+                            self.X: X_batch,
+                            self.y: y_batch,
+                            self.sequence_length: sequence_lens,
+                            self.mask: len_mask,
+                        }
+                    )
+                    print("Iteration #{}/{} \t MSE: {}".format(iteration + 1, n_iterations, mse))
                     saver.save(sess, self.saved_session_name, global_step=self.global_step)
                     self.copy_saved_to_zip()
 
@@ -205,10 +197,16 @@ class _VLS2SAutoEncoder:
             with tf.Session() as sess:
                 init.run()
                 saver.restore(sess, tf.train.latest_checkpoint(self.tmp_folder))
-                y_pred = sess.run(self.outputs, feed_dict={self.X: test_seq, self.sequence_length: test_seq_len})
+                y_pred = sess.run(
+                    self.outputs,
+                    feed_dict={self.X: test_seq, self.sequence_length: test_seq_len},
+                )
                 return y_pred
         else:
-            y_pred = session.run(self.outputs, feed_dict={self.X: test_seq, self.sequence_length: test_seq_len})
+            y_pred = session.run(
+                self.outputs,
+                feed_dict={self.X: test_seq, self.sequence_length: test_seq_len},
+            )
             return y_pred
 
     def encode(self, test_seq, test_seq_len, session=None):
@@ -218,7 +216,13 @@ class _VLS2SAutoEncoder:
             with tf.Session() as sess:
                 init.run()
                 saver.restore(sess, tf.train.latest_checkpoint(self.tmp_folder))
-                states = sess.run(self.states, feed_dict={self.X: test_seq, self.sequence_length: test_seq_len})
+                states = sess.run(
+                    self.states,
+                    feed_dict={self.X: test_seq, self.sequence_length: test_seq_len},
+                )
         else:
-            states = session.run(self.states, feed_dict={self.X: test_seq, self.sequence_length: test_seq_len})
+            states = session.run(
+                self.states,
+                feed_dict={self.X: test_seq, self.sequence_length: test_seq_len},
+            )
         return states[self.kernel_layer_idx]

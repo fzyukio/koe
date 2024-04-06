@@ -1,7 +1,9 @@
 """Provides an inteface to store and retrieve numpy arrays in binary file. Store each id as its own file"""
+
 import os
 
 import numpy as np
+
 
 INDEX_FILE_NCOLS = 3
 
@@ -23,7 +25,6 @@ def reshape(dim0, dim1, arr):
     return arr.reshape((dim0, dim1))
 
 
-# @profile
 def store(ids, arrs, loc):
     """
     If files don't exit, create new. Otherwise update existing
@@ -35,19 +36,19 @@ def store(ids, arrs, loc):
     :param value_filename:
     :return:
     """
-    assert len(ids) > 0, 'lists must be non-empty'
-    assert len(ids) == len(arrs), 'lists of ids and arrays must have the same length'
+    assert len(ids) > 0, "lists must be non-empty"
+    assert len(ids) == len(arrs), "lists of ids and arrays must have the same length"
 
-    index_file = os.path.join(loc, '.index')
+    index_file = os.path.join(loc, ".index")
     is_updating = os.path.isfile(index_file)
 
     update_index_arr = []
 
-    new_file_path_template = os.path.join(loc, '{}.val')
-    upd_file_path_template = os.path.join(loc, '{}.val.upd')
+    new_file_path_template = os.path.join(loc, "{}.val")
+    upd_file_path_template = os.path.join(loc, "{}.val.upd")
 
     for id, arr in zip(ids, arrs):
-        assert np.isscalar(arr) or arr.ndim < 3, 'Only scalar, one or two dims arrays are supported'
+        assert np.isscalar(arr) or arr.ndim < 3, "Only scalar, one or two dims arrays are supported"
 
         arr_len = np.size(arr)
         dim0, dim1 = get_dim(arr)
@@ -71,12 +72,12 @@ def store(ids, arrs, loc):
         update_index_arr.append([id, dim0, dim1])
 
     update_index_arr = np.array(update_index_arr, dtype=np.int32)
-    update_index_file = os.path.join(loc, '.index.update')
+    update_index_file = os.path.join(loc, ".index.update")
 
     if os.path.isfile(update_index_file):
-        mode = 'ab'
+        mode = "ab"
     else:
-        mode = 'wb'
+        mode = "wb"
     with open(update_index_file, mode) as f:
         update_index_arr.tofile(f)
 
@@ -84,11 +85,10 @@ def store(ids, arrs, loc):
         remake_index(loc)
 
 
-# @profile
 def remake_index(loc, return_index_arr=False):
-    index_file = os.path.join(loc, '.index')
-    tmp_index_file = os.path.join(loc, '.index.tmp')
-    update_index_file = os.path.join(loc, '.index.update')
+    index_file = os.path.join(loc, ".index")
+    tmp_index_file = os.path.join(loc, ".index.tmp")
+    update_index_file = os.path.join(loc, ".index.update")
 
     if not os.path.isfile(update_index_file):
         retval = None
@@ -127,18 +127,18 @@ def remake_index(loc, return_index_arr=False):
 
     organised_index_arr = organised_index_arr[ids_sorted_order, :]
 
-    with open(tmp_index_file, 'wb') as f:
+    with open(tmp_index_file, "wb") as f:
         organised_index_arr.tofile(f)
 
     # Turn on the dirty flag while we are updating files on disk.
     # To update: move all temp value files to actual value files (e.g 1234.val.tmp -> 1234.val)
-    dirty_flag_file = os.path.join(loc, '.dirty')
-    with open(dirty_flag_file, 'w') as f:
-        f.write('true')
+    dirty_flag_file = os.path.join(loc, ".dirty")
+    with open(dirty_flag_file, "w") as f:
+        f.write("true")
 
     update_ids = update_index_arr[:, 0]
-    upd_file_template = os.path.join(loc, '{}.val.upd')
-    val_file_template = os.path.join(loc, '{}.val')
+    upd_file_template = os.path.join(loc, "{}.val.upd")
+    val_file_template = os.path.join(loc, "{}.val")
 
     for update_id in update_ids:
         upd_file = upd_file_template.format(update_id)
@@ -167,13 +167,13 @@ def retrieve(lookup_ids, loc, flat=False):
     non_existing_idx = np.where(np.logical_not(np.isin(lookup_ids, all_ids)))
     non_existing_ids = lookup_ids[non_existing_idx]
     if len(non_existing_ids) > 0:
-        err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
+        err_msg = "These IDs don't exist: {}".format(",".join(list(map(str, non_existing_ids))))
         raise ValueError(err_msg)
 
     lookup_ids_rows = np.searchsorted(all_ids, lookup_ids)
     retval = []
 
-    path_template = os.path.join(loc, '{}.val')
+    path_template = os.path.join(loc, "{}.val")
 
     for ind, id_row in enumerate(lookup_ids_rows):
         id, dim0, dim1 = index_arr[id_row, :]

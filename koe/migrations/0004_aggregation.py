@@ -5,20 +5,28 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0003_segment_tid'),
+        ("koe", "0003_segment_tid"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Aggregation',
+            name="Aggregation",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),

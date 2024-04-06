@@ -36,7 +36,4 @@ class LRFuncExpDecay(LRFunc):
         return self.starter_learning_rate * pow(self.decay_rate, (global_step / self.decay_steps))
 
 
-lrfunc_classes = {
-    'constant': LRFuncConstant,
-    'expdecay': LRFuncExpDecay
-}
+lrfunc_classes = {"constant": LRFuncConstant, "expdecay": LRFuncExpDecay}

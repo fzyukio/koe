@@ -1,11 +1,9 @@
 import numpy as np
 from librosa import feature as rosaft
 
-from koe.features.utils import get_psd, get_sig, unroll_args
-from koe.features.utils import get_psddb
+from koe.features.utils import get_psd, get_psddb, get_sig, unroll_args
 
 
-# @profile
 def frame_entropy(args):
     psd = get_psd(args)
 
@@ -14,7 +12,6 @@ def frame_entropy(args):
     return np.sum(-newsg * np.log2(newsg), axis=0)
 
 
-# @profile
 def average_frame_power(args):
     """
     Average power = sum of PSD (in decibel) divided by number of pixels
@@ -25,7 +22,6 @@ def average_frame_power(args):
     return np.mean(psddb, axis=0)
 
 
-# @profile
 def max_frame_power(args):
     """
     Max power is the darkest pixel in the spectrogram
@@ -36,32 +32,28 @@ def max_frame_power(args):
     return np.max(psddb, axis=0)
 
 
-# @profile
 def tonnetz(args):
     sig = get_sig(args)
-    fs = args['fs']
+    fs = args["fs"]
     return rosaft.tonnetz(y=sig, sr=fs)
 
 
-# @profile
 def chroma_stft(args):
     psd = get_psd(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.chroma_stft(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
-# @profile
 def chroma_cqt(args):
     sig = get_sig(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.chroma_cqt(y=sig, sr=fs, hop_length=hopsize)
 
 
-# @profile
 def chroma_cens(args):
     sig = get_sig(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.chroma_cens(y=sig, sr=fs, hop_length=hopsize)

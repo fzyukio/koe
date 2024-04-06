@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0033_add_name_to_species'),
+        ("koe", "0033_add_name_to_species"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='segment',
-            name='end_time_ms',
+            model_name="segment",
+            name="end_time_ms",
             field=models.FloatField(),
         ),
         migrations.AlterField(
-            model_name='segment',
-            name='start_time_ms',
+            model_name="segment",
+            name="start_time_ms",
             field=models.FloatField(),
         ),
     ]

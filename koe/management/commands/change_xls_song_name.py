@@ -1,31 +1,33 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
+
 import re
 from logging import warning
 
-import psycopg2
 from django.core.management import BaseCommand
+
+import psycopg2
 from openpyxl import load_workbook
 
 from root.models import enum
 
-name_regex = re.compile(
-    '(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
 
-COLUMN_NAMES = ['Song name', 'Problem', 'Recommend name']
+name_regex = re.compile("(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav")
+
+COLUMN_NAMES = ["Song name", "Problem", "Recommend name"]
 
 ColumnName = enum(
-    POPULATION='Population',
-    SONG_NAME='Song Name',
-    SYL_START='Syllable Start',
-    SYL_END='Syllable End',
-    FAMILY='Family',
-    SUBFAMILY='Subfamily',
-    LABEL='Label'
+    POPULATION="Population",
+    SONG_NAME="Song Name",
+    SYL_START="Syllable Start",
+    SYL_END="Syllable End",
+    FAMILY="Family",
+    SUBFAMILY="Subfamily",
+    LABEL="Label",
 )
 
-LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def get_column_letter(col_idx):
@@ -33,7 +35,7 @@ def get_column_letter(col_idx):
     while col_idx:
         col_idx, rem = divmod(col_idx - 1, 26)
         result[:0] = LETTERS[rem]
-    return ''.join(result)
+    return "".join(result)
 
 
 def get_cell_address(col_idx, row_idx):
@@ -45,77 +47,73 @@ def get_cell_address(col_idx, row_idx):
     :param col_idx: based 1 column index
     :return: address of the cell
     """
-    return '{}{}'.format(get_column_letter(col_idx), row_idx)
+    return "{}{}".format(get_column_letter(col_idx), row_idx)
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-
         parser.add_argument(
-            '--db',
-            action='store',
-            dest='db',
+            "--db",
+            action="store",
+            dest="db",
             required=True,
             type=str,
-            help='Database name',
+            help="Database name",
         )
 
         parser.add_argument(
-            '--port',
-            action='store',
-            dest='port',
+            "--port",
+            action="store",
+            dest="port",
             required=True,
             type=str,
-            help='Port',
+            help="Port",
         )
 
         parser.add_argument(
-            '--host',
-            action='store',
-            dest='host',
+            "--host",
+            action="store",
+            dest="host",
             required=True,
             type=str,
-            help='Host',
+            help="Host",
         )
 
         parser.add_argument(
-            '--xls',
-            action='store',
-            dest='xls',
+            "--xls",
+            action="store",
+            dest="xls",
             required=True,
             type=str,
-            help='Full path to the xls/xlsx/xlsm... file',
+            help="Full path to the xls/xlsx/xlsm... file",
         )
 
         parser.add_argument(
-            '--label',
-            action='store',
-            dest='label',
+            "--label",
+            action="store",
+            dest="label",
             required=True,
             type=str,
-            help='Path to the label xls',
+            help="Path to the label xls",
         )
 
     def handle(self, db, port, host, xls, label, *args, **options):
-
         conn = None
 
         name_wb = load_workbook(filename=xls, read_only=True, data_only=True)
-        name_ws = name_wb['Labels']
+        name_ws = name_wb["Labels"]
 
-        label_wb = load_workbook(
-            filename=label, read_only=True, data_only=True)
-        label_ws = label_wb['Complete']
+        label_wb = load_workbook(filename=label, read_only=True, data_only=True)
+        label_ws = label_wb["Complete"]
 
         try:
             port = int(port)
-            conn = psycopg2.connect(
-                "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
-            conn.set_client_encoding('LATIN1')
+            conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+            conn.set_client_encoding("LATIN1")
 
             cur = conn.cursor()
 
-            cur.execute('select name from songdata')
+            cur.execute("select name from songdata")
             results = cur.fetchall()
 
             old_to_new = {}
@@ -140,8 +138,7 @@ class Command(BaseCommand):
 
                 matches = name_regex.match(corrected_name)
                 if matches is None:
-                    warning('Corrected name at row {} is still incorrect: {}'.format(
-                        idx, corrected_name))
+                    warning("Corrected name at row {} is still incorrect: {}".format(idx, corrected_name))
                     continue
             name_wb.close()
 
@@ -149,18 +146,20 @@ class Command(BaseCommand):
             old_24_to_old = {}
             for name in old_names:
                 name_24 = name[:24]
-                name_clean = name.replace(' ', '').replace('$', '')
+                name_clean = name.replace(" ", "").replace("$", "")
                 old_to_new[name_24] = old_to_new[name]
                 old_to_new[name_clean] = old_to_new[name]
                 old_24_to_old[name_24] = name
 
             old_names = list(old_to_new.keys())
 
-            col_idx = {cell.value: n for n, cell in enumerate(next(label_ws.rows)) if
-                       cell.value in ColumnName.values}
+            col_idx = {cell.value: n for n, cell in enumerate(next(label_ws.rows)) if cell.value in ColumnName.values}
             if len(col_idx) != len(ColumnName.values):
-                raise Exception('The excel file does not contain one or more of the mandatory columns: {}'
-                                .format(ColumnName.values))
+                raise Exception(
+                    "The excel file does not contain one or more of the mandatory columns: {}".format(
+                        ColumnName.values
+                    )
+                )
 
             rows = list(label_ws.rows)
             not_found = {}
@@ -188,19 +187,17 @@ class Command(BaseCommand):
             nlinesfound = 0
             nlinesnotfound = 0
             for name in not_found:
-                name_clean = name.replace(' ', '').replace('$', '')
+                name_clean = name.replace(" ", "").replace("$", "")
                 name_24 = name[:24]
 
                 nlines = len(not_found[name])
                 nlinesnotfound += nlines
                 # lines = ', '.join(list(map(str,not_found[name])))
-                print('Not found: {} in {} lines'.format(name, nlines))
+                print("Not found: {} in {} lines".format(name, nlines))
                 if name_clean in old_names:
-                    print(
-                        '--->But found as cleaned {}, change to {}'.format(name_clean, old_to_new[name_clean]))
+                    print("--->But found as cleaned {}, change to {}".format(name_clean, old_to_new[name_clean]))
                 elif name_24 in old_names:
-                    print('--->But found as :24 {}, change to {}'.format(
-                        old_24_to_old[name_24], old_to_new[name_24]))
+                    print("--->But found as :24 {}, change to {}".format(old_24_to_old[name_24], old_to_new[name_24]))
 
             # for name in found:
             #     nlines = len(found[name])
@@ -208,18 +205,15 @@ class Command(BaseCommand):
             #     # lines = ', '.join(list(map(str,not_found[name])))
             #     print('Found: {} in {} lines'.format(name, nlines))
 
-            print('-------------------------------')
-            print('Total found: {} files, {} lines'.format(
-                len(found.keys()), nlinesfound))
-            print('Total not found: {} files, {} lines'.format(
-                len(not_found.keys()), nlinesnotfound))
+            print("-------------------------------")
+            print("Total found: {} files, {} lines".format(len(found.keys()), nlinesfound))
+            print("Total not found: {} files, {} lines".format(len(not_found.keys()), nlinesnotfound))
 
             name_wb.close()
             label_wb.close()
 
-            label_wb = load_workbook(
-                filename=label, read_only=False, data_only=True)
-            label_ws = label_wb['Complete']
+            label_wb = load_workbook(filename=label, read_only=False, data_only=True)
+            label_ws = label_wb["Complete"]
 
             rows = list(label_ws.rows)
             for idx in range(len(rows)):
@@ -228,7 +222,7 @@ class Command(BaseCommand):
                 row = rows[idx]
                 cell = row[col_idx[ColumnName.SONG_NAME]]
                 name = cell.value
-                name_clean = name.replace(' ', '').replace('$', '')
+                name_clean = name.replace(" ", "").replace("$", "")
                 name_24 = name[:24]
 
                 if name in old_names:
@@ -238,12 +232,12 @@ class Command(BaseCommand):
                 elif name_24 in old_names:
                     new_name = old_to_new[name_24]
                 else:
-                    print('{} not found'.format(name))
+                    print("{} not found".format(name))
                     new_name = name
 
                 cell.value = new_name
 
-            label_wb.save('blah.xlsx')
+            label_wb.save("blah.xlsx")
             label_wb.close()
         finally:
             if conn is not None:

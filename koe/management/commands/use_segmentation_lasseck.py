@@ -2,14 +2,13 @@
 Convert audio file to spectrogram. Then use the trained segmentation encoder to detect syllables.
 Then display the segmentation on a webpage
 """
-from scipy import ndimage
-from skimage import morphology
-from skimage.measure import regionprops
-from scipy import signal
 
 import numpy as np
+from scipy import ndimage, signal
+from skimage import morphology
+from skimage.measure import regionprops
 
-from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
+from koe.management.abstract_commands.use_segmentation import Segmenter, UseSegmenter
 
 
 def get_median_clipping_mask(spectrogram):
@@ -129,5 +128,5 @@ class Command(UseSegmenter):
         return LasseckSegmenter()
 
     def create_variables(self, options) -> dict:
-        variables = {'format': 'spect', 'normalise': False}
+        variables = {"format": "spect", "normalise": False}
         return variables

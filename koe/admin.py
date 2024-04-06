@@ -3,7 +3,8 @@ from django.contrib import admin
 
 from root.admin_utils import generate_admin_class
 
-app = apps.get_app_config('koe')
+
+app = apps.get_app_config("koe")
 
 for model_name, model in app.models.items():
     model_admin_class = generate_admin_class(model)

@@ -1,11 +1,11 @@
 import numpy as np
 from librosa import feature as rosaft
-from scipy.stats import skew, kurtosis
-
-from koe.features.utils import get_sig
-from koe.features.utils import unroll_args, get_psd, get_psddb
-from koe.utils import split_segments
 from memoize import memoize
+from scipy.stats import kurtosis, skew
+
+from koe.features.utils import get_psd, get_psddb, get_sig, unroll_args
+from koe.utils import split_segments
+
 
 eps = 0.00000001
 
@@ -17,37 +17,34 @@ def spectrum(args):
 
 def spectral_bandwidth(args):
     psd = get_psd(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.spectral_bandwidth(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
 def spectral_flux(args):
     psd = get_psd(args)
-    diff = np.pad(np.diff(psd), ((0, 0), (1, 0)), 'constant', constant_values=0)
+    diff = np.pad(np.diff(psd), ((0, 0), (1, 0)), "constant", constant_values=0)
     return np.linalg.norm(diff, axis=0)
 
 
-# @profile
 def spectral_flatness(args):
     psd = get_psd(args)
-    nfft, noverlap = unroll_args(args, ['nfft', 'noverlap'])
+    nfft, noverlap = unroll_args(args, ["nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.spectral_flatness(y=None, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
-# @profile
 def spectral_centroid(args):
     psd = get_psd(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.spectral_centroid(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
 
-# @profile
 def spectral_contrast(args):
     psd = get_psd(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     if fs < 12800:
         n_bands = 6
@@ -57,10 +54,9 @@ def spectral_contrast(args):
     return rosaft.spectral_contrast(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize, fmin=fmin)
 
 
-# @profile
 def spectral_rolloff(args):
     psd = get_psd(args)
-    fs, nfft, noverlap = unroll_args(args, ['fs', 'nfft', 'noverlap'])
+    fs, nfft, noverlap = unroll_args(args, ["fs", "nfft", "noverlap"])
     hopsize = nfft - noverlap
     return rosaft.spectral_rolloff(y=None, sr=fs, S=psd, n_fft=nfft, hop_length=hopsize)
 
@@ -126,7 +122,7 @@ def _harmonic_and_pitch(args):
     Computes harmonic ratio and pitch
     """
     sig = get_sig(args)
-    fs, noverlap, win_length = unroll_args(args, ['fs', 'noverlap', 'win_length'])
+    fs, noverlap, win_length = unroll_args(args, ["fs", "noverlap", "win_length"])
     siglen = len(sig)
     nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
 
@@ -138,13 +134,15 @@ def _harmonic_and_pitch(args):
         frame = sig[seg_beg:seg_end]
 
         M = int(np.round(0.016 * fs) - 1)
-        R = np.correlate(frame, frame, mode='full')
+        R = np.correlate(frame, frame, mode="full")
 
         g = R[len(frame) - 1]
-        R = R[len(frame): -1]
+        R = R[len(frame) : -1]
 
         # estimate m0 (as the first zero crossing of R)
-        [a, ] = np.nonzero(np.diff(np.sign(R)))
+        [
+            a,
+        ] = np.nonzero(np.diff(np.sign(R)))
 
         if len(a) == 0:
             m0 = len(R) - 1
@@ -154,7 +152,7 @@ def _harmonic_and_pitch(args):
             M = len(R) - 1
 
         Gamma = np.zeros(M, dtype=np.float64)
-        CSum = np.cumsum(frame ** 2)
+        CSum = np.cumsum(frame**2)
         Gamma[m0:M] = R[m0:M] / (np.sqrt((g * CSum[M:m0:-1])) + eps)
 
         if len(Gamma) == 0:
@@ -188,9 +186,8 @@ def fundamental_frequency(args):
     return f0s
 
 
-# @profile
 def total_energy(args):
-    fs, nfft = unroll_args(args, ['fs', 'nfft'])
+    fs, nfft = unroll_args(args, ["fs", "nfft"])
     psd = get_psd(args)
 
     # This is a little bit unclear. Eq (6.1) of Raven is the calculation below, but then it says it is in decibels,
@@ -199,7 +196,6 @@ def total_energy(args):
     return energy
 
 
-# @profile
 def aggregate_entropy(args):
     psd = get_psd(args)
 
@@ -209,7 +205,6 @@ def aggregate_entropy(args):
     return np.sum(-ebin * np.log2(ebin))
 
 
-# @profile
 def average_entropy(args):
     psd = get_psd(args)
 
@@ -221,7 +216,6 @@ def average_entropy(args):
     return averaged_entropy
 
 
-# @profile
 def average_power(args):
     """
     Average power = sum of PSD (in decibel) divided by number of pixels
@@ -232,7 +226,6 @@ def average_power(args):
     return np.sum(psddb) / np.size(psddb)
 
 
-# @profile
 def max_power(args):
     """
     Max power is the darkest pixel in the spectrogram
@@ -243,7 +236,6 @@ def max_power(args):
     return np.max(psddb)
 
 
-# @profile
 def max_frequency(args):
     """
     Max frequency is the frequency at which max power occurs
@@ -251,13 +243,12 @@ def max_frequency(args):
     :return: float: max frequency over the entire duration
     """
     psddb = get_psddb(args)
-    fs = args['fs']
+    fs = args["fs"]
     max_index = np.argmax(np.max(psddb, axis=1))
     nyquist = fs / 2.0
     return max_index / psddb.shape[0] * nyquist
 
 
-# @profile
 def dominant_frequency(args):
     """
     Dominant frequency is the frequency at which max power occurs
@@ -265,7 +256,7 @@ def dominant_frequency(args):
     :return:
     """
     psddb = get_psddb(args)
-    fs = args['fs']
+    fs = args["fs"]
     max_indices = np.argmax(psddb, axis=0)
     nyquist = fs / 2.0
     return max_indices / psddb.shape[0] * nyquist

@@ -4,20 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0016_auto_20181019_0049'),
+        ("koe", "0016_auto_20181019_0049"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='accessrequest',
-            name='permission',
-            field=models.IntegerField(choices=[(100, 'View'), (200, 'Annotate'), (300, 'Import Data'), (400, 'Copy Files'), (450, 'Download Files'), (500, 'Add Files'), (600, 'Modify Segments'), (700, 'Delete Files'), (800, 'Assign User')], default=100),
+            model_name="accessrequest",
+            name="permission",
+            field=models.IntegerField(
+                choices=[
+                    (100, "View"),
+                    (200, "Annotate"),
+                    (300, "Import Data"),
+                    (400, "Copy Files"),
+                    (450, "Download Files"),
+                    (500, "Add Files"),
+                    (600, "Modify Segments"),
+                    (700, "Delete Files"),
+                    (800, "Assign User"),
+                ],
+                default=100,
+            ),
         ),
         migrations.AlterField(
-            model_name='databaseassignment',
-            name='permission',
-            field=models.IntegerField(choices=[(100, 'View'), (200, 'Annotate'), (300, 'Import Data'), (400, 'Copy Files'), (450, 'Download Files'), (500, 'Add Files'), (600, 'Modify Segments'), (700, 'Delete Files'), (800, 'Assign User')]),
+            model_name="databaseassignment",
+            name="permission",
+            field=models.IntegerField(
+                choices=[
+                    (100, "View"),
+                    (200, "Annotate"),
+                    (300, "Import Data"),
+                    (400, "Copy Files"),
+                    (450, "Download Files"),
+                    (500, "Add Files"),
+                    (600, "Modify Segments"),
+                    (700, "Delete Files"),
+                    (800, "Assign User"),
+                ]
+            ),
         ),
     ]

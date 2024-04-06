@@ -1,12 +1,15 @@
 """
 Train a LSTM on audio segments.
 """
+
 import math
 import os
 import pickle
 
-import numpy as np
 from django.conf import settings
+
+import numpy as np
+
 
 num_historical = 5
 
@@ -15,12 +18,8 @@ def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
     import tensorflow as tf
 
     # Define weights
-    weights = {
-        'out': tf.Variable(tf.random_normal([n_hidden, n_classes]), name='weights')
-    }
-    biases = {
-        'out': tf.Variable(tf.random_normal([n_classes]), name='biases')
-    }
+    weights = {"out": tf.Variable(tf.random_normal([n_hidden, n_classes]), name="weights")}
+    biases = {"out": tf.Variable(tf.random_normal([n_classes]), name="biases")}
 
     # Prepare data shape to match `rnn` function requirements
     # Current data input shape: (batch_size, n_steps, n_input)
@@ -56,10 +55,18 @@ def dynamicRNN(x, lens, seq_max_len, n_hidden, n_classes):
     outputs = tf.gather(tf.reshape(outputs, [-1, n_hidden]), index)
 
     # Linear activation, using outputs computed above
-    return tf.matmul(outputs, weights['out']) + biases['out']
+    return tf.matmul(outputs, weights["out"]) + biases["out"]
 
 
-def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='model', disable_gpu=False):
+def train(
+    dp,
+    eps=0.01,
+    nfolds=10,
+    learning_rate=0.01,
+    resumable=True,
+    name="model",
+    disable_gpu=False,
+):
     if disable_gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     import tensorflow as tf
@@ -73,16 +80,19 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
     n_hidden = 10 * dp.input_len  # hidden layer num of features - 10 times the size of inpur
 
     # tf Graph input
-    x = tf.placeholder('float', [None, dp.seq_max_len, dp.input_len], name='x')
-    y = tf.placeholder('float', [None, dp.n_classes], name='y')
+    x = tf.placeholder("float", [None, dp.seq_max_len, dp.input_len], name="x")
+    y = tf.placeholder("float", [None, dp.n_classes], name="y")
     # A placeholder for indicating each sequence length
-    lens = tf.placeholder(tf.int32, [None], name='lens')
+    lens = tf.placeholder(tf.int32, [None], name="lens")
 
     pred = dynamicRNN(x, lens, dp.seq_max_len, n_hidden, dp.n_classes)
 
     # Define loss and optimizer
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y, name='softmax'), name='rmean')
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost, name='minimise')
+    cost = tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y, name="softmax"),
+        name="rmean",
+    )
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost, name="minimise")
 
     # Evaluate model
     correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
@@ -97,22 +107,24 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
     # Start training
     with tf.Session() as sess:
         for k in range(nfolds):
-            backup_filename = os.path.join(settings.BASE_DIR, 'backups/tf/{}-{}.ckpt'.format(name, k))
+            backup_filename = os.path.join(settings.BASE_DIR, "backups/tf/{}-{}.ckpt".format(name, k))
 
-            backup_index_filename = '{}.index'.format(backup_filename)
-            backup_meta_filename = '{}.meta'.format(backup_filename)
-            backup_extra_filename = '{}.extra'.format(backup_filename)
+            backup_index_filename = "{}.index".format(backup_filename)
+            backup_meta_filename = "{}.meta".format(backup_filename)
+            backup_extra_filename = "{}.extra".format(backup_filename)
 
-            backup_exists = os.path.isfile(backup_index_filename) and\
-                            os.path.isfile(backup_meta_filename) and\
-                            os.path.isfile(backup_extra_filename)
+            backup_exists = (
+                os.path.isfile(backup_index_filename)
+                and os.path.isfile(backup_meta_filename)
+                and os.path.isfile(backup_extra_filename)
+            )
 
             if resumable and backup_exists:
-                with open(backup_extra_filename, 'rb') as f:
+                with open(backup_extra_filename, "rb") as f:
                     extra = pickle.load(f)
-                    step = extra['step']
-                    accuracies = extra['accuracies']
-                    losses = extra['losses']
+                    step = extra["step"]
+                    accuracies = extra["accuracies"]
+                    losses = extra["losses"]
                     acc_stdev = np.std(accuracies[-num_historical:])
                     loss_stdev = np.std(losses[-num_historical:])
                 saver.restore(sess, backup_filename)
@@ -133,15 +145,17 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
                 tr_batch_x, tr_batch_y, tr_batch_lens = trainset.next(batch_size)
 
                 # Run optimization op (backprop)
-                sess.run(optimizer, feed_dict={
-                    x: tr_batch_x, y: tr_batch_y,
-                    lens: tr_batch_lens
-                })
+                sess.run(
+                    optimizer,
+                    feed_dict={x: tr_batch_x, y: tr_batch_y, lens: tr_batch_lens},
+                )
                 if step % display_step == 0 or step == 1:
                     ts_batch_x, ts_batch_y, ts_batch_lens = testset.all()
                     # Calculate batch accuracy & loss
-                    acc, loss = sess.run([accuracy, cost],
-                                         feed_dict={x: ts_batch_x, y: ts_batch_y, lens: ts_batch_lens})
+                    acc, loss = sess.run(
+                        [accuracy, cost],
+                        feed_dict={x: ts_batch_x, y: ts_batch_y, lens: ts_batch_lens},
+                    )
 
                     accuracies.append(acc)
                     losses.append(loss)
@@ -149,11 +163,14 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
                         acc_stdev = np.std(accuracies[-num_historical:])
                         loss_stdev = np.std(losses[-num_historical:])
 
-                    print('\tFold {}, Step {}, Loss={:.6f}|{:.6f}, Accuracy={:.5f}|{:.5f}'
-                          .format(k + 1, step, loss, loss_stdev, acc, acc_stdev))
+                    print(
+                        "\tFold {}, Step {}, Loss={:.6f}|{:.6f}, Accuracy={:.5f}|{:.5f}".format(
+                            k + 1, step, loss, loss_stdev, acc, acc_stdev
+                        )
+                    )
                     if resumable:
                         saver.save(sess, backup_filename)
-                        with open(backup_extra_filename, 'wb') as f:
+                        with open(backup_extra_filename, "wb") as f:
                             pickle.dump(dict(losses=losses, accuracies=accuracies, step=step), f)
 
             # Calculate accuracy
@@ -161,4 +178,4 @@ def train(dp, eps=0.01, nfolds=10, learning_rate=0.01, resumable=True, name='mod
             vl_label = validset.labels
             vl_lens = validset.lens
             vl_accuracy = sess.run(accuracy, feed_dict={x: vl_data, y: vl_label, lens: vl_lens})
-            print('Fold {}, Valid Accuracy: {}'.format(k + 1, vl_accuracy))
+            print("Fold {}, Valid Accuracy: {}".format(k + 1, vl_accuracy))

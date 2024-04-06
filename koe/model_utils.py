@@ -1,32 +1,38 @@
 import os
 from collections import Counter
 
-import numpy as np
-from PIL import Image
-from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import models
+
+import numpy as np
+from celery.utils.log import get_task_logger
+from PIL import Image
 from scipy import signal
 from scipy.cluster.hierarchy import linkage
 
 from koe.celery_init import app
-from koe.colourmap import cm_red, cm_green, cm_blue
-from koe.models import Database
-from koe.models import DistanceMatrix, Segment, DatabaseAssignment, DatabasePermission, TemporaryDatabase,\
-    AudioFile
-from koe.utils import get_abs_spect_path
-from koe.utils import triu2mat, mat2triu
-from koe.utils import wav_path, audio_path
+from koe.colourmap import cm_blue, cm_green, cm_red
+from koe.models import (
+    AudioFile,
+    Database,
+    DatabaseAssignment,
+    DatabasePermission,
+    DistanceMatrix,
+    Segment,
+    TemporaryDatabase,
+)
+from koe.utils import audio_path, get_abs_spect_path, mat2triu, triu2mat, wav_path
+from koe.wavfile import get_wav_info, read_segment
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
 from root.utils import ensure_parent_folder_exists
-from koe.wavfile import get_wav_info, read_segment
+
 
 celerylogger = get_task_logger(__name__)
 
 window_size = 256
 noverlap = 256 * 0.75
-window = signal.get_window('hann', 256)
+window = signal.get_window("hann", 256)
 low_bound = 800
 scale = window.sum()
 global_min_spect_pixel = -9.421019554138184
@@ -51,9 +57,9 @@ def add_node(node, idx_2_seg_id, parent, root_triu):
 
     idx = node.id
     if idx in idx_2_seg_id:
-        new_node['seg-id'] = idx_2_seg_id[idx]
+        new_node["seg-id"] = idx_2_seg_id[idx]
 
-    if 'children' in parent:
+    if "children" in parent:
         parent["children"].append(new_node)
     else:
         for k in new_node:
@@ -96,7 +102,7 @@ def upgma_triu(segments_ids, dm):
     :param dm: ID of a DistanceMatrix
     :return: two arrays: indices is the positions of the leaves and distances the distances to the root
     """
-    all_segments_ids = np.array(list(Segment.objects.all().order_by('id').values_list('id', flat=True)))
+    all_segments_ids = np.array(list(Segment.objects.all().order_by("id").values_list("id", flat=True)))
     chksum = DistanceMatrix.calc_chksum(all_segments_ids)
 
     if dm is None:
@@ -110,7 +116,7 @@ def upgma_triu(segments_ids, dm):
     distmat[np.isnan(distmat)] = 0
     triu = mat2triu(distmat)
 
-    tree = linkage(triu, method='average')
+    tree = linkage(triu, method="average")
     indices, distances = dist_from_root(tree)
 
     return indices.tolist(), distances.tolist()
@@ -202,7 +208,7 @@ def natural_order(tree):
 
 
 def get_user_accessible_databases(user):
-    assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list('database__id', flat=True)
+    assigned_databases_ids = DatabaseAssignment.objects.filter(user=user).values_list("database__id", flat=True)
     databases = Database.objects.filter(id__in=assigned_databases_ids)
     return databases
 
@@ -213,13 +219,14 @@ def get_user_databases(user):
     :param user:
     :return:
     """
-    current_database_value = ExtraAttrValue.objects.filter(attr=settings.ATTRS.user.current_database, owner_id=user.id,
-                                                           user=user).first()
+    current_database_value = ExtraAttrValue.objects.filter(
+        attr=settings.ATTRS.user.current_database, owner_id=user.id, user=user
+    ).first()
     db_class = Database
     if current_database_value:
         current_database_value = current_database_value.value
-        if '_' in current_database_value:
-            db_class_name, current_database_id = current_database_value.split('_')
+        if "_" in current_database_value:
+            db_class_name, current_database_id = current_database_value.split("_")
             if db_class_name == TemporaryDatabase.__name__:
                 db_class = TemporaryDatabase
         else:
@@ -231,8 +238,12 @@ def get_user_databases(user):
         databases = get_user_accessible_databases(user)
         current_database = databases.first()
         if current_database is not None:
-            ExtraAttrValue.objects.create(attr=settings.ATTRS.user.current_database, owner_id=user.id, user=user,
-                                          value='{}_{}'.format(db_class, current_database.id))
+            ExtraAttrValue.objects.create(
+                attr=settings.ATTRS.user.current_database,
+                owner_id=user.id,
+                user=user,
+                value="{}_{}".format(db_class, current_database.id),
+            )
 
     return current_database
 
@@ -253,28 +264,40 @@ def extract_spectrogram(audio_file, segs_info):
         seg_spect_path = get_abs_spect_path(tid)
         ensure_parent_folder_exists(seg_spect_path)
 
-        sig = read_segment(filepath, beg_ms=start, end_ms=end, mono=True, normalised=True, return_fs=False, retype=True, winlen=window_size)
-        _, _, s = signal.stft(sig, fs=fs, window=window, noverlap=noverlap, nfft=window_size, return_onesided=True)
+        sig = read_segment(
+            filepath,
+            beg_ms=start,
+            end_ms=end,
+            mono=True,
+            normalised=True,
+            return_fs=False,
+            retype=True,
+            winlen=window_size,
+        )
+        _, _, s = signal.stft(
+            sig,
+            fs=fs,
+            window=window,
+            noverlap=noverlap,
+            nfft=window_size,
+            return_onesided=True,
+        )
         spect = np.abs(s * scale)
 
         height, width = np.shape(spect)
         spect = np.flipud(spect)
 
         spect = np.log10(spect)
-        spect = ((spect - global_min_spect_pixel) / interval64)
+        spect = (spect - global_min_spect_pixel) / interval64
         spect[np.isinf(spect)] = 0
-        spect = spect.astype(np.int)
+        spect = spect.astype(int)
 
-        spect = spect.reshape((width * height,), order='C')
+        spect = spect.reshape((width * height,), order="C")
         spect[spect >= 64] = 63
         spect_rgb = np.empty((height, width, 3), dtype=np.uint8)
-        spect_rgb[:, :, 0] = cm_red[spect].reshape(
-            (height, width)) * 255
-        spect_rgb[:, :, 1] = cm_green[spect].reshape(
-            (height, width)) * 255
-        spect_rgb[:, :, 2] = cm_blue[spect].reshape(
-            (height, width)) * 255
-
+        spect_rgb[:, :, 0] = cm_red[spect].reshape((height, width)) * 255
+        spect_rgb[:, :, 1] = cm_green[spect].reshape((height, width)) * 255
+        spect_rgb[:, :, 2] = cm_blue[spect].reshape((height, width)) * 255
 
         # roi_start = int(start / duration_ms * width)
         # roi_end = int(np.ceil(end / duration_ms * width))
@@ -282,8 +305,8 @@ def extract_spectrogram(audio_file, segs_info):
         # seg_spect_rgb = file_spect_rgb[:, roi_start:roi_end, :]
         seg_spect_img = Image.fromarray(spect_rgb)
 
-        seg_spect_img.save(seg_spect_path, format='PNG')
-        celerylogger.info('spectrogram {} created'.format(seg_spect_path))
+        seg_spect_img.save(seg_spect_path, format="PNG")
+        celerylogger.info("spectrogram {} created".format(seg_spect_path))
 
 
 def assert_permission(user, database, required_level):
@@ -297,19 +320,24 @@ def assert_permission(user, database, required_level):
     if database is None:
         return None
 
-    db_assignment = DatabaseAssignment.objects \
-        .filter(user=user, database=database, permission__gte=required_level).first()
+    db_assignment = DatabaseAssignment.objects.filter(
+        user=user, database=database, permission__gte=required_level
+    ).first()
     if db_assignment is None or db_assignment.permission < required_level:
-        raise CustomAssertionError('On database {} you ({}) don\'t have permission to {}'.format(
-            database.name, user.username, DatabasePermission.get_name(required_level).lower()
-        ))
+        raise CustomAssertionError(
+            "On database {} you ({}) don't have permission to {}".format(
+                database.name,
+                user.username,
+                DatabasePermission.get_name(required_level).lower(),
+            )
+        )
 
     return db_assignment
 
 
 def assert_values(value, value_range):
     if value not in value_range:
-        raise CustomAssertionError('Invalid value {}'.format(value))
+        raise CustomAssertionError("Invalid value {}".format(value))
 
 
 def get_or_error(obj, key, errmsg=None):
@@ -328,12 +356,13 @@ def get_or_error(obj, key, errmsg=None):
     if value is None:
         if errmsg is None:
             if isinstance(key, dict):
-                errmsg = 'No {} with {} exists'.format(
-                    obj.__name__.lower(), ', '.join(['{}={}'.format(k, v) for k, v in key.items()])
+                errmsg = "No {} with {} exists".format(
+                    obj.__name__.lower(),
+                    ", ".join(["{}={}".format(k, v) for k, v in key.items()]),
                 )
 
             else:
-                errmsg = '{} doesn\'t exist'.format(key)
+                errmsg = "{} doesn't exist".format(key)
         raise CustomAssertionError(errmsg)
     return value
 
@@ -341,11 +370,11 @@ def get_or_error(obj, key, errmsg=None):
 @app.task(bind=False)
 def delete_segments_async(*args, **kwargs):
     segments = Segment.fobjs.filter(active=False)
-    this_vl = segments.values_list('id', 'tid')
+    this_vl = segments.values_list("id", "tid")
     this_tids = [x[1] for x in this_vl]
     this_sids = [x[0] for x in this_vl]
 
-    other_vl = Segment.fobjs.filter(tid__in=this_tids).values_list('id', 'tid')
+    other_vl = Segment.fobjs.filter(tid__in=this_tids).values_list("id", "tid")
 
     tid2ids = {x: [] for x in this_tids}
 
@@ -359,7 +388,7 @@ def delete_segments_async(*args, **kwargs):
             spect_path = get_abs_spect_path(tid)
             if os.path.isfile(spect_path):
                 os.remove(spect_path)
-                celerylogger.info('Spectrogram {} deleted.'.format(spect_path))
+                celerylogger.info("Spectrogram {} deleted.".format(spect_path))
 
     ExtraAttrValue.objects.filter(attr__klass=Segment.__name__, owner_id__in=this_sids).delete()
     segments.delete()
@@ -375,7 +404,7 @@ def delete_audio_files_async(*args, **kwargs):
     delete_segments_async()
 
     # Now delete the audio files
-    audio_files_ids = audio_files.values_list('id', flat=True)
+    audio_files_ids = audio_files.values_list("id", flat=True)
 
     ExtraAttrValue.objects.filter(attr__klass=AudioFile.__name__, owner_id__in=audio_files_ids).delete()
 
@@ -385,7 +414,7 @@ def delete_audio_files_async(*args, **kwargs):
 
     for af in audio_files:
         if af.original is None:
-            clones = AudioFile.objects.filter(original=af).order_by('id')
+            clones = AudioFile.objects.filter(original=af).order_by("id")
             first_clone = clones.first()
 
             # If there are clones, make the first clone original of the remaining
@@ -430,9 +459,10 @@ def delete_database_async(*args, **kwargs):
 
 def get_labels_by_sids(sids, label_level, annotator, min_occur=None):
     sid2lbl = {
-        x: y.lower() for x, y in ExtraAttrValue.objects
-        .filter(attr__name=label_level, owner_id__in=sids, user=annotator)
-        .values_list('owner_id', 'value')
+        x: y.lower()
+        for x, y in ExtraAttrValue.objects.filter(
+            attr__name=label_level, owner_id__in=sids, user=annotator
+        ).values_list("owner_id", "value")
     }
 
     labels = []
@@ -482,8 +512,11 @@ def select_instances(sids, tids, labels, num_instances):
     uniques, counts = np.unique(sorted_labels, return_counts=True)
 
     if np.any(counts < num_instances):
-        raise ValueError('Value of num_instances={} is too big - there are classes that have less than {} instances'
-                         .format(num_instances, num_instances))
+        raise ValueError(
+            "Value of num_instances={} is too big - there are classes that have less than {} instances".format(
+                num_instances, num_instances
+            )
+        )
 
     nclasses = len(uniques)
     indices_to_add = []

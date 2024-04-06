@@ -16,4 +16,4 @@ class HandleBusinessExceptionMiddleware(MiddlewareMixin):
             messages.error(request, message)
 
             context = dict(message=message, status_code=400)
-            return HttpResponseBadRequest(render(request, 'errors/assertion-error.html', context=context))
+            return HttpResponseBadRequest(render(request, "errors/assertion-error.html", context=context))

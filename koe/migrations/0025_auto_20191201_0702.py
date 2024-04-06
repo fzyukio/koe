@@ -4,18 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0024_audiofile_fake_fs'),
+        ("koe", "0024_audiofile_fake_fs"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='segment',
-            index=models.Index(fields=['id'], name='koe_segment_id_f8c2f0_idx'),
+            model_name="segment",
+            index=models.Index(fields=["id"], name="koe_segment_id_f8c2f0_idx"),
         ),
         migrations.AddIndex(
-            model_name='segment',
-            index=models.Index(fields=['tid'], name='koe_segment_tid_0e3994_idx'),
+            model_name="segment",
+            index=models.Index(fields=["tid"], name="koe_segment_tid_0e3994_idx"),
         ),
     ]

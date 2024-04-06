@@ -2,8 +2,9 @@ r"""
 Test clustering by k-NN
 """
 
-import numpy as np
 from django.core.management.base import BaseCommand
+
+import numpy as np
 from dotmap import DotMap
 from ml_metrics import mapk
 from progress.bar import Bar
@@ -49,7 +50,7 @@ def k_nearest(distmat, train_labels, nlabels, k, map_order):
     for j in range(element_count):
         distances_from_j = distmat[j, :]
         sorted_indices = np.argsort(distances_from_j)
-        closests_indices = sorted_indices[1:k + 1]
+        closests_indices = sorted_indices[1 : k + 1]
         closests_labels = train_labels[closests_indices]
         closests_distances = distances_from_j[closests_indices]
 
@@ -60,17 +61,22 @@ def k_nearest(distmat, train_labels, nlabels, k, map_order):
 
     label_prediction_map_score = mapk(actual_labels, predicted_labels, map_order)
 
-    hits = np.array([1 if a in p else 0 for a, p in zip(actual_labels, predicted_labels)], dtype=np.int)
-    misses = np.array([0 if a in p else 1 for a, p in zip(actual_labels, predicted_labels)],
-                      dtype=np.int)
+    hits = np.array(
+        [1 if a in p else 0 for a, p in zip(actual_labels, predicted_labels)],
+        dtype=int,
+    )
+    misses = np.array(
+        [0 if a in p else 1 for a, p in zip(actual_labels, predicted_labels)],
+        dtype=int,
+    )
 
     label_hits = np.full((nlabels,), np.nan)
     label_misses = np.full((nlabels,), np.nan)
 
     unique_test_labels = np.unique(train_labels)
 
-    _label_hits = accum(train_labels, hits, func=np.sum, dtype=np.int)
-    _label_misses = accum(train_labels, misses, func=np.sum, dtype=np.int)
+    _label_hits = accum(train_labels, hits, func=np.sum, dtype=int)
+    _label_misses = accum(train_labels, misses, func=np.sum, dtype=int)
 
     label_hits[unique_test_labels] = _label_hits[unique_test_labels]
     label_misses[unique_test_labels] = _label_misses[unique_test_labels]
@@ -80,18 +86,37 @@ def k_nearest(distmat, train_labels, nlabels, k, map_order):
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--source', action='store', dest='source', required=True, type=str,
-                            help='Can be tsne, raw, norm', )
+        parser.add_argument(
+            "--source",
+            action="store",
+            dest="source",
+            required=True,
+            type=str,
+            help="Can be tsne, raw, norm",
+        )
 
-        parser.add_argument('--matfile', ction='store', dest='matfile', required=False, type=str,
-                            help='Name of the .mat file that stores extracted feature values for Matlab', )
+        parser.add_argument(
+            "--matfile",
+            ction="store",
+            dest="matfile",
+            required=False,
+            type=str,
+            help="Name of the .mat file that stores extracted feature values for Matlab",
+        )
 
-        parser.add_argument('--niters', action='store', dest='niters', required=False, default=1, type=int)
+        parser.add_argument(
+            "--niters",
+            action="store",
+            dest="niters",
+            required=False,
+            default=1,
+            type=int,
+        )
 
-        parser.add_argument('--to-csv', dest='csv_filename', action='store', required=False)
+        parser.add_argument("--to-csv", dest="csv_filename", action="store", required=False)
 
     def handle(self, source, matfile, niters, csv_filename, *args, **options):
-        assert source in ['tsne', 'raw', 'norm']
+        assert source in ["tsne", "raw", "norm"]
 
         saved = DotMap(loadmat(matfile))
         sids = saved.sids.ravel()
@@ -99,7 +124,7 @@ class Command(BaseCommand):
         dataset = saved.dataset
         meas = zscore(dataset)
         labels = saved.labels
-        haslabel_ind = np.where(labels != '                              ')[0]
+        haslabel_ind = np.where(labels != "                              ")[0]
 
         labels = labels[haslabel_ind]
         labels = np.array([x.strip() for x in labels])
@@ -109,11 +134,7 @@ class Command(BaseCommand):
         unique_labels, enum_labels = np.unique(labels, return_inverse=True)
         nlabels = len(unique_labels)
 
-        data_sources = {
-            'tsne': clusters,
-            'raw': dataset,
-            'norm': meas
-        }
+        data_sources = {"tsne": clusters, "raw": dataset, "norm": meas}
 
         data = data_sources[source]
         disttriu = pdist(data)
@@ -128,13 +149,13 @@ class Command(BaseCommand):
         num_left_in = int(len(sids) * 0.9)
 
         if not csv_filename:
-            csv_filename = 'knn_by_{}.csv'.format(source)
+            csv_filename = "knn_by_{}.csv".format(source)
 
-        with open(csv_filename, 'w', encoding='utf-8') as f:
-            f.write('Label prediction mean\tstdev\t{}\n'.format('\t'.join(unique_labels)))
-            scrambled_syl_idx = np.arange(len(sids), dtype=np.int)
+        with open(csv_filename, "w", encoding="utf-8") as f:
+            f.write("Label prediction mean\tstdev\t{}\n".format("\t".join(unique_labels)))
+            scrambled_syl_idx = np.arange(len(sids), dtype=int)
 
-            bar = Bar('Running knn...', max=niters)
+            bar = Bar("Running knn...", max=niters)
             for iteration in range(niters):
                 np.random.shuffle(scrambled_syl_idx)
                 train_syl_idx = scrambled_syl_idx[:num_left_in]
@@ -154,6 +175,10 @@ class Command(BaseCommand):
                 bar.next()
             bar.finish()
 
-            f.write('{}\t{}\t{}\n'.format(np.nanmean(label_prediction_scores),
-                                          np.nanstd(label_prediction_scores),
-                                          '\t'.join(map(str, np.nanmean(label_hitrates, 0)))))
+            f.write(
+                "{}\t{}\t{}\n".format(
+                    np.nanmean(label_prediction_scores),
+                    np.nanstd(label_prediction_scores),
+                    "\t".join(map(str, np.nanmean(label_hitrates, 0))),
+                )
+            )

@@ -1,51 +1,64 @@
 import os
 from uuid import uuid4
 
+from django.test import TestCase
+
 import h5py
 import numpy as np
-from django.test import TestCase
 from librosa import stft
-from scipy.io.wavfile import write
-
-from koe.features.mt_features import mtspect, amplitude, entropy, mean_frequency, goodness_of_pitch, \
-    frequency_modulation, amplitude_modulation, spectral_derivative, time_derivative, freq_derivative, find_zc, \
-    frequency_contours, spectral_continuity
-from spectrum import dpss
 from pymlfunc import tictoc
+from scipy.io.wavfile import write
+from spectrum import dpss
+
+from koe.features.mt_features import (
+    amplitude,
+    amplitude_modulation,
+    entropy,
+    find_zc,
+    freq_derivative,
+    frequency_contours,
+    frequency_modulation,
+    goodness_of_pitch,
+    mean_frequency,
+    mtspect,
+    spectral_continuity,
+    spectral_derivative,
+    time_derivative,
+)
 
 
 class KoeUtilsTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        with h5py.File('tests/mtspect.h5', 'r') as hf:
-            cls.noverlap = int(hf['noverlap'].value[0][0])
-            cls.nfft = int(hf['nfft'].value[0][0])
-            cls.window_length = int(hf['window_length'].value[0][0])
-            cls.tapers = hf['tapers'].value.T
-            cls.sig = hf['sig'].value.ravel()
-            cls.fm = hf['fm'].value.ravel()
-            cls.am = hf['am'].value.ravel()
+        with h5py.File("tests/mtspect.h5", "r") as hf:
+            cls.noverlap = int(hf["noverlap"].value[0][0])
+            cls.nfft = int(hf["nfft"].value[0][0])
+            cls.window_length = int(hf["window_length"].value[0][0])
+            cls.tapers = hf["tapers"].value.T
+            cls.sig = hf["sig"].value.ravel()
+            cls.fm = hf["fm"].value.ravel()
+            cls.am = hf["am"].value.ravel()
 
-            cls.fs = int(hf['fs'].value[0][0])
-            cls.s = hf['s'].value.T
-            cls.goodness = hf['goodness'].value.T
-            cls.amplitude = hf['amplitude'].value.T
-            cls.entropy = hf['entropy'].value.T
-            cls.mean_frequency = hf['mean_frequency'].value.T
+            cls.fs = int(hf["fs"].value[0][0])
+            cls.s = hf["s"].value.T
+            cls.goodness = hf["goodness"].value.T
+            cls.amplitude = hf["amplitude"].value.T
+            cls.entropy = hf["entropy"].value.T
+            cls.mean_frequency = hf["mean_frequency"].value.T
 
-            cls.time_deriv = hf['time_deriv'].value.T
-            cls.freq_deriv = hf['freq_deriv'].value.T
-            cls.derivs = hf['derivs'].value.T
-            cls.contours = hf['contours'].value.T.astype(np.bool)
-            cls.continuity = hf['continuity_frame'].value.T
+            cls.time_deriv = hf["time_deriv"].value.T
+            cls.freq_deriv = hf["freq_deriv"].value.T
+            cls.derivs = hf["derivs"].value.T
+            cls.contours = hf["contours"].value.T.astype(np.bool)
+            cls.continuity = hf["continuity_frame"].value.T
 
-            cls.peaks_x = (hf['peaks_x'].value.ravel().astype(np.int64) - 1)
-            cls.peaks_y = (hf['peaks_y'].value.ravel().astype(np.int64) - 1)
+            cls.peaks_x = hf["peaks_x"].value.ravel().astype(np.int64) - 1
+            cls.peaks_y = hf["peaks_y"].value.ravel().astype(np.int64) - 1
 
             cls.peaks_x.sort()
             cls.peaks_y.sort()
 
-            cls.wav_file_path = '/tmp/{}.wav'.format(uuid4().hex)
+            cls.wav_file_path = "/tmp/{}.wav".format(uuid4().hex)
             data = cls.sig.astype(np.float32)
 
             normfactor = 1.0 / (2 ** (16 - 1))
@@ -53,8 +66,16 @@ class KoeUtilsTest(TestCase):
             data = data.astype(np.int16)
 
             write(cls.wav_file_path, cls.fs, data)
-            cls.args = dict(wav_file_path=cls.wav_file_path, start=0, end=None, nfft=cls.nfft,
-                            win_length=cls.window_length, noverlap=cls.noverlap, fs=cls.fs, center=False)
+            cls.args = dict(
+                wav_file_path=cls.wav_file_path,
+                start=0,
+                end=None,
+                nfft=cls.nfft,
+                win_length=cls.window_length,
+                noverlap=cls.noverlap,
+                fs=cls.fs,
+                center=False,
+            )
 
     @classmethod
     def tearDownClass(cls):
@@ -68,9 +89,48 @@ class KoeUtilsTest(TestCase):
 
     def test_find_zc(self):
         x = np.array(
-            [-0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, 0.00011864,
-             -0.00010467, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, 0.001871,
-             0.014847, -0.016339, 0.0004225, -0.00034053, -5.5669e-05, -0.1, -0.1])
+            [
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                0.00011864,
+                -0.00010467,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                0.001871,
+                0.014847,
+                -0.016339,
+                0.0004225,
+                -0.00034053,
+                -5.5669e-05,
+                -0.1,
+                -0.1,
+            ]
+        )
 
         v_ = x * np.roll(x, 1, 0)
         idx = np.where((v_ < 0) & (x < 0))[0]
@@ -144,15 +204,29 @@ class KoeUtilsTest(TestCase):
 
     def test_spectral_derivatives(self):
         cls = self.__class__
-        with tictoc('test_spectral_derivatives'):
+        with tictoc("test_spectral_derivatives"):
             hopsize = cls.window_length - cls.noverlap
             taper1 = cls.tapers[:, 0]
             taper2 = cls.tapers[:, 1]
 
-            tapered1 = stft(y=cls.sig, n_fft=cls.nfft, win_length=cls.window_length, hop_length=hopsize,
-                            window=taper1, center=False, dtype=np.complex128)
-            tapered2 = stft(y=cls.sig, n_fft=cls.nfft, win_length=cls.window_length, hop_length=hopsize,
-                            window=taper2, center=False, dtype=np.complex128)
+            tapered1 = stft(
+                y=cls.sig,
+                n_fft=cls.nfft,
+                win_length=cls.window_length,
+                hop_length=hopsize,
+                window=taper1,
+                center=False,
+                dtype=np.complex128,
+            )
+            tapered2 = stft(
+                y=cls.sig,
+                n_fft=cls.nfft,
+                win_length=cls.window_length,
+                hop_length=hopsize,
+                window=taper2,
+                center=False,
+                dtype=np.complex128,
+            )
 
             real1 = np.real(tapered1)
             real2 = np.real(tapered2)
@@ -166,7 +240,7 @@ class KoeUtilsTest(TestCase):
             fm = np.arctan(pfm)
             cfm = np.cos(fm)
             sfm = np.sin(fm)
-            derivs = (time_deriv * sfm + freq_deriv * cfm)
+            derivs = time_deriv * sfm + freq_deriv * cfm
             derivs[0:3, :] = 0
 
             self.assertTrue(np.allclose(time_deriv, cls.time_deriv))
@@ -180,7 +254,7 @@ class KoeUtilsTest(TestCase):
 
             mask_row = derivs_abs <= row_thresh[None, :]
             mask_col = derivs_abs <= col_thresh[:, None]
-            mask = (mask_row | mask_col)
+            mask = mask_row | mask_col
             derivs[mask] = -0.1
 
             zcy, zcx = find_zc(derivs)

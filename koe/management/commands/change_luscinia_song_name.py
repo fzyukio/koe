@@ -1,64 +1,65 @@
 """
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
+
+import argparse
 import os
 import re
 from logging import warning
 
 import psycopg2.extras
 from openpyxl import load_workbook
-import argparse
 
-name_regex = re.compile(
-    '(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav')
 
-COLUMN_NAMES = ['Song name', 'Problem', 'Recommend name']
+name_regex = re.compile("(\w{3})_(\d{4})_(\d{2})_(\d{2})_([\w\d]+)_(\d+)_(\w+)\.(B|EX|VG|G|OK)(\..*)?\.wav")
 
-parser = argparse.ArgumentParser(description='Process some integers.')
+COLUMN_NAMES = ["Song name", "Problem", "Recommend name"]
+
+parser = argparse.ArgumentParser(description="Process some integers.")
 
 parser.add_argument(
-    '--db',
-    action='store',
-    dest='db',
+    "--db",
+    action="store",
+    dest="db",
     required=True,
     type=str,
-    help='Database name',
+    help="Database name",
 )
 
 parser.add_argument(
-    '--port',
-    action='store',
-    dest='port',
+    "--port",
+    action="store",
+    dest="port",
     required=True,
     type=int,
-    help='Port',
+    help="Port",
 )
 
 parser.add_argument(
-    '--host',
-    action='store',
-    dest='host',
+    "--host",
+    action="store",
+    dest="host",
     required=True,
     type=str,
-    help='Host',
+    help="Host",
 )
 
 parser.add_argument(
-    '--xls',
-    action='store',
-    dest='xls',
+    "--xls",
+    action="store",
+    dest="xls",
     required=True,
     type=str,
-    help='Full path to the xls/xlsx/xlsm... file',
+    help="Full path to the xls/xlsx/xlsm... file",
 )
 
 parser.add_argument(
-    '--folder',
-    action='store',
-    dest='folder',
+    "--folder",
+    action="store",
+    dest="folder",
     required=True,
     type=str,
-    help='Path to the root folder where the song wavs are stored',
+    help="Path to the root folder where the song wavs are stored",
 )
 
 args = parser.parse_args()
@@ -71,17 +72,15 @@ folder = args.folder
 conn = None
 
 wb = load_workbook(filename=xls, read_only=True, data_only=True)
-ws = wb['Labels']
+ws = wb["Labels"]
 
 try:
     port = int(port)
-    conn = psycopg2.connect(
-        "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
-    conn.set_client_encoding('LATIN1')
+    conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+    conn.set_client_encoding("LATIN1")
 
     cur = conn.cursor()
-    cur.execute(
-        'select s.id, s.name, w.filename, w.id from songdata s join wavs w on w.songid=s.id')
+    cur.execute("select s.id, s.name, w.filename, w.id from songdata s join wavs w on w.songid=s.id")
     songs = cur.fetchall()
     song_id_to_name = {}
     song_name_to_id = {}
@@ -119,8 +118,7 @@ try:
 
         matches = name_regex.match(corrected_name)
         if matches is None:
-            warning('Corrected name at row {} is still incorrect: {}'.format(
-                idx, corrected_name))
+            warning("Corrected name at row {} is still incorrect: {}".format(idx, corrected_name))
             continue
 
         old_name_to_new_name[original_name] = corrected_name
@@ -192,14 +190,15 @@ try:
 
                     original_file_name = os.path.join(path, name)
                     new_file_name = os.path.join(path, new_name)
-                    print('Change {} to {}'.format(
-                        original_file_name, new_file_name))
+                    print("Change {} to {}".format(original_file_name, new_file_name))
                     os.renames(original_file_name, new_file_name)
                 else:
                     matches = name_regex.match(name)
                     if matches is None:
-                        warning('File name {} in {} have non-conforming name pattern, '
-                                'but there is no correction in the Excel sheet '.format(name, path))
+                        warning(
+                            "File name {} in {} have non-conforming name pattern, "
+                            "but there is no correction in the Excel sheet ".format(name, path)
+                        )
             else:
                 # warning('File name {} in {} have does not exist in the database'.format(name, path))
                 pass
@@ -212,7 +211,7 @@ try:
 
     for new_name in old_name_to_new_name.values():
         if new_name.lower() not in files:
-            warning('File {} exists in the database but not on disk'.format(new_name))
+            warning("File {} exists in the database but not on disk".format(new_name))
 
     wb.close()
 

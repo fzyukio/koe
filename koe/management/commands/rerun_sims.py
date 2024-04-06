@@ -11,5 +11,5 @@ class Command(RecreateIdsPersistentObjects):
             need_recalculate = self.check_rebuild_necessary(sim, when)
 
             if need_recalculate:
-                runner = ConsoleTaskRunner(prefix='Recalculate similarity {}'.format(sim))
+                runner = ConsoleTaskRunner(prefix="Recalculate similarity {}".format(sim))
                 _calculate_similarity(sim, runner)

@@ -13,14 +13,16 @@ from django.db.models import F
 
 def create_database_folders_for_audio_files(apps, schema_editor):
     db_alias = schema_editor.connection.alias
-    model = apps.get_model('koe', 'Database')
+    model = apps.get_model("koe", "Database")
     media_dir = settings.MEDIA_URL[1:]
     compressed_format = settings.AUDIO_COMPRESSED_FORMAT
 
-    new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav')
-    new_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', compressed_format)
+    new_wav_dir = os.path.join(settings.BASE_DIR, media_dir, "audio", "wav")
+    new_compressed_dir = os.path.join(
+        settings.BASE_DIR, media_dir, "audio", compressed_format
+    )
 
-    for database_id in model.objects.using(db_alias).values_list('id', flat=True):
+    for database_id in model.objects.using(db_alias).values_list("id", flat=True):
         database_id = str(database_id)
         this_new_wav_dir = os.path.join(new_wav_dir, database_id)
         this_new_compressed_dir = os.path.join(new_compressed_dir, database_id)
@@ -43,39 +45,65 @@ def create_database_folders_for_audio_files(apps, schema_editor):
 
 
 def move_audio_files_to_respective_folders(apps, schema_editor):
-    """
-
-    """
+    """ """
     db_alias = schema_editor.connection.alias
-    model = apps.get_model('koe', 'AudioFile')
+    model = apps.get_model("koe", "AudioFile")
 
     media_dir = settings.MEDIA_URL[1:]
     compressed_format = settings.AUDIO_COMPRESSED_FORMAT
 
-    old_wav_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav')
-    old_compressed_dir = os.path.join(settings.BASE_DIR, media_dir, 'audio', compressed_format)
+    old_wav_dir = os.path.join(settings.BASE_DIR, media_dir, "audio", "wav")
+    old_compressed_dir = os.path.join(
+        settings.BASE_DIR, media_dir, "audio", compressed_format
+    )
 
-    values = model.objects.using(db_alias).filter(original=None).values_list('name', 'database__id')
+    values = (
+        model.objects.using(db_alias)
+        .filter(original=None)
+        .values_list("name", "database__id")
+    )
 
     for filename, database__id in values:
         database_id = str(database__id)
-        old_wav_filepath = os.path.join(old_wav_dir, '{}.wav'.format(filename))
-        old_compressed_filepath = os.path.join(old_compressed_dir, '{}.{}'.format(filename, compressed_format))
+        old_wav_filepath = os.path.join(old_wav_dir, "{}.wav".format(filename))
+        old_compressed_filepath = os.path.join(
+            old_compressed_dir, "{}.{}".format(filename, compressed_format)
+        )
 
-        new_wav_filepath = os.path.join(settings.BASE_DIR, media_dir, 'audio', 'wav', database_id,
-                                        '{}.wav'.format(filename))
-        new_compressed_filepath = os.path.join(settings.BASE_DIR, media_dir, 'audio', compressed_format, database_id,
-                                               '{}.{}'.format(filename, compressed_format))
+        new_wav_filepath = os.path.join(
+            settings.BASE_DIR,
+            media_dir,
+            "audio",
+            "wav",
+            database_id,
+            "{}.wav".format(filename),
+        )
+        new_compressed_filepath = os.path.join(
+            settings.BASE_DIR,
+            media_dir,
+            "audio",
+            compressed_format,
+            database_id,
+            "{}.{}".format(filename, compressed_format),
+        )
 
         if not os.path.isfile(old_wav_filepath):
             if not os.path.isfile(new_wav_filepath):
-                warning('File {} (from database {}) doesn\'t exist.'.format(old_wav_filepath, database_id))
+                warning(
+                    "File {} (from database {}) doesn't exist.".format(
+                        old_wav_filepath, database_id
+                    )
+                )
         else:
             os.rename(old_wav_filepath, new_wav_filepath)
 
         if not os.path.isfile(old_compressed_filepath):
             if not os.path.isfile(new_compressed_filepath):
-                warning('File {} (from database {}) doesn\'t exist.'.format(old_compressed_filepath, database_id))
+                warning(
+                    "File {} (from database {}) doesn't exist.".format(
+                        old_compressed_filepath, database_id
+                    )
+                )
         else:
             os.rename(old_compressed_filepath, new_compressed_filepath)
 
@@ -87,20 +115,20 @@ def remove_extension(apps, schema_editor):
     AudioFile objects that are not original will have this field changed to '{original_database_id}/{name}'
     """
     db_alias = schema_editor.connection.alias
-    audio_file_model = apps.get_model('koe', 'AudioFile')
+    audio_file_model = apps.get_model("koe", "AudioFile")
 
     audio_files = audio_file_model.objects.using(db_alias).all()
     updated = []
 
     for af in audio_files:
         name = af.name
-        if name.lower().endswith('.wav'):
+        if name.lower().endswith(".wav"):
             name = name[:-4]
             af.name = name
             updated.append(af)
 
     if len(updated) > 0:
-        bulk_update(updated, update_fields=['name'], batch_size=10000)
+        bulk_update(updated, update_fields=["name"], batch_size=10000)
 
 
 # def add_field_filename(apps, schema_editor):
@@ -133,9 +161,8 @@ def remove_extension(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0018_ordination_params'),
+        ("koe", "0018_ordination_params"),
     ]
 
     operations = [
@@ -151,6 +178,12 @@ class Migration(migrations.Migration):
         #     field=models.CharField(max_length=255, null=False),
         # ),
         migrations.RunPython(remove_extension, reverse_code=migrations.RunPython.noop),
-        migrations.RunPython(create_database_folders_for_audio_files, reverse_code=migrations.RunPython.noop),
-        migrations.RunPython(move_audio_files_to_respective_folders, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            create_database_folders_for_audio_files,
+            reverse_code=migrations.RunPython.noop,
+        ),
+        migrations.RunPython(
+            move_audio_files_to_respective_folders,
+            reverse_code=migrations.RunPython.noop,
+        ),
     ]

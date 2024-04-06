@@ -7,23 +7,37 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('koe', '0022_auto_20190808_0543'),
+        ("koe", "0022_auto_20190808_0543"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MergingInfo',
+            name="MergingInfo",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('date', models.DateTimeField(auto_now_add=True)),
-                ('info', models.TextField()),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("date", models.DateTimeField(auto_now_add=True)),
+                ("info", models.TextField()),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),

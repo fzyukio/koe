@@ -8,89 +8,217 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('koe', '0008_auto_20181001_1353'),
+        ("koe", "0008_auto_20181001_1353"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DataMatrix',
+            name="DataMatrix",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('features_hash', models.CharField(max_length=255)),
-                ('aggregations_hash', models.CharField(max_length=255)),
-                ('ndims', models.IntegerField()),
-                ('database', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Database')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("features_hash", models.CharField(max_length=255)),
+                ("aggregations_hash", models.CharField(max_length=255)),
+                ("ndims", models.IntegerField()),
+                (
+                    "database",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="koe.Database",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
-            bases=(models.Model, root.models.AutoSetterGetterMixin, koe.models.BinaryStoredMixin),
+            bases=(
+                models.Model,
+                root.models.AutoSetterGetterMixin,
+                koe.models.BinaryStoredMixin,
+            ),
         ),
         migrations.CreateModel(
-            name='Ordination',
+            name="Ordination",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('method', models.CharField(max_length=255)),
-                ('ndims', models.IntegerField()),
-                ('dm', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.DataMatrix')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("method", models.CharField(max_length=255)),
+                ("ndims", models.IntegerField()),
+                (
+                    "dm",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.DataMatrix"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
-            bases=(models.Model, root.models.AutoSetterGetterMixin, koe.models.BinaryStoredMixin),
+            bases=(
+                models.Model,
+                root.models.AutoSetterGetterMixin,
+                koe.models.BinaryStoredMixin,
+            ),
         ),
         migrations.CreateModel(
-            name='SimilarityIndex',
+            name="SimilarityIndex",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('dm', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.DataMatrix')),
-                ('ord', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='koe.Ordination')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "dm",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.DataMatrix"
+                    ),
+                ),
+                (
+                    "ord",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="koe.Ordination",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
-            bases=(models.Model, root.models.AutoSetterGetterMixin, koe.models.BinaryStoredMixin),
+            bases=(
+                models.Model,
+                root.models.AutoSetterGetterMixin,
+                koe.models.BinaryStoredMixin,
+            ),
         ),
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('completed', models.DateTimeField(blank=True, default=None, null=True)),
-                ('stage', models.IntegerField(choices=[(100, 'Not Started'), (200, 'Preparing'), (300, 'Running'), (400, 'Wrapping Up'), (500, 'Completed'), (600, 'Error')], default=100)),
-                ('pc_complete', models.FloatField(default=0.0)),
-                ('message', models.TextField(blank=True, default=None, null=True)),
-                ('target', models.CharField(blank=True, default=None, max_length=255, null=True)),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='koe.Task')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                (
+                    "completed",
+                    models.DateTimeField(blank=True, default=None, null=True),
+                ),
+                (
+                    "stage",
+                    models.IntegerField(
+                        choices=[
+                            (100, "Not Started"),
+                            (200, "Preparing"),
+                            (300, "Running"),
+                            (400, "Wrapping Up"),
+                            (500, "Completed"),
+                            (600, "Error"),
+                        ],
+                        default=100,
+                    ),
+                ),
+                ("pc_complete", models.FloatField(default=0.0)),
+                ("message", models.TextField(blank=True, default=None, null=True)),
+                (
+                    "target",
+                    models.CharField(
+                        blank=True, default=None, max_length=255, null=True
+                    ),
+                ),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="koe.Task",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.AddField(
-            model_name='similarityindex',
-            name='task',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Task'),
+            model_name="similarityindex",
+            name="task",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.Task",
+            ),
         ),
         migrations.AddField(
-            model_name='ordination',
-            name='task',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Task'),
+            model_name="ordination",
+            name="task",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.Task",
+            ),
         ),
         migrations.AddField(
-            model_name='datamatrix',
-            name='task',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.Task'),
+            model_name="datamatrix",
+            name="task",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.Task",
+            ),
         ),
         migrations.AddField(
-            model_name='datamatrix',
-            name='tmpdb',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='koe.TemporaryDatabase'),
+            model_name="datamatrix",
+            name="tmpdb",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="koe.TemporaryDatabase",
+            ),
         ),
     ]

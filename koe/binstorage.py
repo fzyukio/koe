@@ -1,9 +1,11 @@
 """Provides an inteface to store and retrieve numpy arrays in binary file"""
+
 import datetime
 import os
+from shutil import copyfile
 
 import numpy as np
-from shutil import copyfile
+
 
 INDEX_FILE_NCOLS = 5
 
@@ -27,12 +29,12 @@ def reshape(dim0, dim1, arr):
 
 def store_anew(ids, arrs, index_filename, value_filename):
     assert isinstance(ids, np.ndarray)
-    assert len(ids) > 0, 'lists must be non-empty'
-    assert len(ids) == len(arrs), 'lists of ids and arrays must have the same length'
+    assert len(ids) > 0, "lists must be non-empty"
+    assert len(ids) == len(arrs), "lists of ids and arrays must have the same length"
     assert ids.ndim == 1
     sorted_ids, sort_order = np.unique(ids, return_index=True)
-    assert len(sorted_ids) == len(ids), 'IDs must be unique'
-    assert sorted_ids[0] >= 0, 'IDs must be non-negative'
+    assert len(sorted_ids) == len(ids), "IDs must be unique"
+    assert sorted_ids[0] >= 0, "IDs must be non-negative"
 
     index_arr = []
     value_arr = []
@@ -40,7 +42,7 @@ def store_anew(ids, arrs, index_filename, value_filename):
     begin = 0
 
     for id, arr in zip(ids, arrs):
-        assert np.isscalar(arr) or arr.ndim < 3, 'Only scalar, one or two dims arrays are supported'
+        assert np.isscalar(arr) or arr.ndim < 3, "Only scalar, one or two dims arrays are supported"
 
         arr_len = np.size(arr)
         end = begin + arr_len
@@ -60,10 +62,10 @@ def store_anew(ids, arrs, index_filename, value_filename):
     index_arr = np.array(index_arr, dtype=np.int32)
     value_arr = np.concatenate(value_arr).astype(np.float32)
 
-    with open(index_filename, 'wb') as f:
+    with open(index_filename, "wb") as f:
         index_arr.tofile(f)
 
-    with open(value_filename, 'wb') as f:
+    with open(value_filename, "wb") as f:
         value_arr.tofile(f)
 
     return index_filename, value_filename
@@ -87,7 +89,7 @@ def store(new_ids, new_arrs, index_filename, value_filename):
     elif not index_file_exists and not value_file_exists:
         is_creating = True
     else:
-        raise RuntimeError('Index and value files must either both exist or both not exist')
+        raise RuntimeError("Index and value files must either both exist or both not exist")
 
     if is_creating:
         return store_anew(new_ids, new_arrs, index_filename, value_filename)
@@ -102,13 +104,13 @@ def store(new_ids, new_arrs, index_filename, value_filename):
 
 
 def update_by_modification(new_ids, new_arrs, index_filename, value_filename):
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
     nids = len(index_arr) // INDEX_FILE_NCOLS
     index_arr = index_arr.reshape((nids, INDEX_FILE_NCOLS))
     index_arr = index_arr.tolist()
 
-    with open(value_filename, 'rb') as f:
+    with open(value_filename, "rb") as f:
         value_bin = np.fromfile(f, dtype=np.float32)
 
     id2info = {}
@@ -160,24 +162,23 @@ def update_by_modification(new_ids, new_arrs, index_filename, value_filename):
     index_arr = np.array(index_arr, dtype=np.int32)
 
     # Make a backup before overwriting the file, then delete the backup if anything happens
-    time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    bak_index_file = '{}.bak_{}'.format(index_filename, time_str)
-    bak_value_file = '{}.bak_{}'.format(value_filename, time_str)
+    time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    bak_index_file = "{}.bak_{}".format(index_filename, time_str)
+    bak_value_file = "{}.bak_{}".format(value_filename, time_str)
 
     copyfile(index_filename, bak_index_file)
     copyfile(value_filename, bak_value_file)
 
     try:
-        with open(index_filename, 'wb') as f:
+        with open(index_filename, "wb") as f:
             index_arr.tofile(f)
 
-        with open(value_filename, 'r+b') as fid:
+        with open(value_filename, "r+b") as fid:
             for id, (start, end, dim0, dim1, new_arr) in to_update.items():
-
                 fid.seek(start * 4)
                 new_arr.tofile(fid)
 
-        with open(value_filename, 'ab') as fid:
+        with open(value_filename, "ab") as fid:
             for id, (start, end, dim0, dim1, new_arr) in to_append.items():
                 new_arr.tofile(fid)
 
@@ -201,19 +202,19 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
     :param value_filename:
     :return:
     """
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
     nids = len(index_arr) // INDEX_FILE_NCOLS
     index_arr = index_arr.reshape((nids, INDEX_FILE_NCOLS))
 
-    with open(value_filename, 'rb') as f:
+    with open(value_filename, "rb") as f:
         value_bin = np.fromfile(f, dtype=np.float32)
 
     new_id2arr = {x: y for x, y in zip(new_ids, new_arrs)}
 
     for id, start, end, dim0, dim1 in index_arr:
         if id not in new_id2arr:
-            arr = value_bin[start: end]
+            arr = value_bin[start:end]
             if dim0 > 0:
                 shape = (dim0, dim1) if dim1 != 0 else (dim0,)
                 arr = arr.reshape(shape)
@@ -226,9 +227,9 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
     arrs = list(new_id2arr.values())
 
     # Make a backup before overwriting the file, then delete the backup if anything happens
-    time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    bak_index_file = '{}.bak_{}'.format(index_filename, time_str)
-    bak_value_file = '{}.bak_{}'.format(value_filename, time_str)
+    time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    bak_index_file = "{}.bak_{}".format(index_filename, time_str)
+    bak_value_file = "{}.bak_{}".format(value_filename, time_str)
 
     os.replace(index_filename, bak_index_file)
     os.replace(value_filename, bak_value_file)
@@ -247,7 +248,7 @@ def update_by_recreating(new_ids, new_arrs, index_filename, value_filename):
 def retrieve_ids(index_filename):
     if not os.path.exists(index_filename):
         return np.array([], dtype=np.int32)
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
 
     nids = len(index_arr) // INDEX_FILE_NCOLS
@@ -257,7 +258,7 @@ def retrieve_ids(index_filename):
 
 
 def retrieve(lookup_ids, index_filename, value_filename, flat=False):
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
 
     nids = len(index_arr) // INDEX_FILE_NCOLS
@@ -270,7 +271,7 @@ def retrieve(lookup_ids, index_filename, value_filename, flat=False):
     non_existing_ids = lookup_ids[non_existing_idx]
 
     if len(non_existing_ids) > 0:
-        err_msg = 'These IDs don\'t exist: {}'.format(','.join(list(map(str, non_existing_ids))))
+        err_msg = "These IDs don't exist: {}".format(",".join(list(map(str, non_existing_ids))))
         raise ValueError(err_msg)
 
     lookup_ids_rows = np.searchsorted(sorted_ids, lookup_ids)
@@ -279,7 +280,7 @@ def retrieve(lookup_ids, index_filename, value_filename, flat=False):
     sort_order_by_start = np.argsort(index_arr[lookup_ids_rows, 1])
     retval = [None] * len(lookup_ids)
 
-    with open(value_filename, 'rb') as fid:
+    with open(value_filename, "rb") as fid:
         for sorted_i in sort_order_by_start:
             lookup_row_ind = sort_order[lookup_ids_rows[sorted_i]]
 

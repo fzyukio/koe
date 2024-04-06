@@ -20,7 +20,7 @@ class SimpleNameMerger(NameMerger):
         :param cls_names: a list of names
         :return:
         """
-        return ' -&- '.join(cls_names)
+        return " -&- ".join(cls_names)
 
 
 class Md5NameMerger(NameMerger):
@@ -28,15 +28,15 @@ class Md5NameMerger(NameMerger):
         self.md5s = []
 
     def merge(self, cls_names):
-        joined = ' -&- '.join(cls_names)
+        joined = " -&- ".join(cls_names)
         hash_object = hashlib.md5(joined.encode())
         md5_full = hash_object.hexdigest()
 
         start_index = 0
-        md5 = md5_full[start_index:start_index + 6]
+        md5 = md5_full[start_index : start_index + 6]
         while md5 in self.md5s:
             start_index += 1
-            md5 = md5_full[start_index:start_index + 6]
+            md5 = md5_full[start_index : start_index + 6]
         self.md5s.append(md5)
         return md5
 
@@ -95,20 +95,22 @@ def merge_labels(clusters, classes_info, sids, enum2label, class_name_merge_func
     return sid_to_cluster_base_1, merged_enum2label_base1
 
 
-def get_syllable_labels(annotator, label_level, sids, on_no_label='warning'):
+def get_syllable_labels(annotator, label_level, sids, on_no_label="warning"):
     if label_level is None:
-        label_level = 'label'
+        label_level = "label"
     labels, no_label_ids = get_labels_by_sids(sids, label_level, annotator, min_occur=None)
     if len(no_label_ids) > 0:
-        if on_no_label == 'warning':
-            warning('Syllables with no labels found!. These will be given label "__NONE__" but this will affect the'
-                    ' accuracy of the network graph')
-            continue_option = input('Continue with this warning in mind? Y/n')
-            if continue_option != 'Y':
+        if on_no_label == "warning":
+            warning(
+                'Syllables with no labels found!. These will be given label "__NONE__" but this will affect the'
+                " accuracy of the network graph"
+            )
+            continue_option = input("Continue with this warning in mind? Y/n")
+            if continue_option != "Y":
                 exit(0)
-        elif on_no_label == 'error':
-            raise Exception('Syllables with no labels found')
-        elif on_no_label == 'set_blank':
+        elif on_no_label == "error":
+            raise Exception("Syllables with no labels found")
+        elif on_no_label == "set_blank":
             none_pos = np.where(np.isnan(labels.astype(float)))
-            labels[none_pos] = ''
+            labels[none_pos] = ""
     return labels

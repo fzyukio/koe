@@ -1,15 +1,15 @@
 import json
 import os
 import shutil
+import time
 import zipfile
-from signal import signal, SIGABRT, SIGINT, SIGTERM, SIGUSR1
+from signal import SIGABRT, SIGINT, SIGTERM, SIGUSR1, signal
 from uuid import uuid4
 
-import tensorflow as tf
 import numpy as np
-import time
+import tensorflow as tf
 from tensorboard.compat.tensorflow_stub import dtypes
-from tensorflow.contrib.seq2seq import dynamic_decode, TrainingHelper, InferenceHelper, BasicDecoder
+from tensorflow.contrib.seq2seq import BasicDecoder, InferenceHelper, TrainingHelper, dynamic_decode
 from tensorflow.nn import dynamic_rnn, relu
 
 from koe.ml.learning_rate_funcs import lrfunc_classes
@@ -23,13 +23,15 @@ regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
 def make_cell(layer_sizes, keep_prob=None):
     cells = []
     for layer_size in layer_sizes:
-        cell = tf.contrib.rnn.GRUCell(layer_size,
-                                      # bias_initializer=tf.initializers.he_normal(),
-                                      # kernel_initializer=tf.initializers.he_normal(),
-                                      bias_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
-                                      kernel_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
-                                      # kernel_regularizer=regularizer,
-                                      activation=relu)
+        cell = tf.contrib.rnn.GRUCell(
+            layer_size,
+            # bias_initializer=tf.initializers.he_normal(),
+            # kernel_initializer=tf.initializers.he_normal(),
+            bias_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
+            kernel_initializer=tf.random_uniform_initializer(-0.1, 0.1, seed=2),
+            # kernel_regularizer=regularizer,
+            activation=relu,
+        )
         cells.append(cell)
 
     lstm = tf.contrib.rnn.MultiRNNCell(cells)
@@ -41,14 +43,14 @@ def make_cell(layer_sizes, keep_prob=None):
 
 def extract_saved(tmp_folder, filepath):
     has_saved_checkpoint = False
-    with zipfile.ZipFile(filepath, 'r') as zip_file:
+    with zipfile.ZipFile(filepath, "r") as zip_file:
         namelist = zip_file.namelist()
         for name in namelist:
-            if name == 'checkpoint':
+            if name == "checkpoint":
                 has_saved_checkpoint = True
             filecontent = zip_file.read(name)
             filepath = os.path.join(tmp_folder, name)
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(filecontent)
     return has_saved_checkpoint
 
@@ -63,10 +65,10 @@ class NDS2SAEFactory:
         self.stop_pad_length = 5
         self.stop_pad_token = 0
         self.pad_token = 100
-        self.go_token = -100.
+        self.go_token = -100.0
         self.keep_prob = None
         self.symmetric = True
-        self.lrtype = 'constant'
+        self.lrtype = "constant"
         self.lrargs = dict(lr=0.001)
         self.write_summary = False
         self._save_to = None
@@ -74,24 +76,24 @@ class NDS2SAEFactory:
     def set_output(self, filename):
         self._save_to = filename
         if os.path.isfile(filename):
-            with zipfile.ZipFile(filename, 'r') as zip_file:
+            with zipfile.ZipFile(filename, "r") as zip_file:
                 namelist = zip_file.namelist()
-                if 'meta.json' in namelist:
-                    meta = json.loads(str(zip_file.read('meta.json'), 'utf-8'))
+                if "meta.json" in namelist:
+                    meta = json.loads(str(zip_file.read("meta.json"), "utf-8"))
                     for k, v in list(meta.items()):
-                        if not callable(v) and not k.startswith('_'):
+                        if not callable(v) and not k.startswith("_"):
                             setattr(self, k, v)
 
     def build(self):
         if self._save_to is None:
-            raise Exception('Must call set_output(_save_to=...) first')
+            raise Exception("Must call set_output(_save_to=...) first")
 
         assert self.lrtype in list(lrfunc_classes.keys())
 
         if self.uuid_code is None:
             self.uuid_code = uuid4().hex
         if self.tmp_folder is None:
-            self.tmp_folder = os.path.join('/tmp', 'NDS2SAE-{}'.format(self.uuid_code))
+            self.tmp_folder = os.path.join("/tmp", "NDS2SAE-{}".format(self.uuid_code))
 
         if os.path.exists(self.tmp_folder):
             shutil.rmtree(self.tmp_folder)
@@ -103,8 +105,8 @@ class NDS2SAEFactory:
             build_anew = not has_saved_checkpoint
 
         params = {v: k for v, k in list(vars(self).items()) if not callable(k)}
-        meta_file = os.path.join(self.tmp_folder, 'meta.json')
-        with open(meta_file, 'w') as f:
+        meta_file = os.path.join(self.tmp_folder, "meta.json")
+        with open(meta_file, "w") as f:
             json.dump(params, f)
 
         lrfunc_class = lrfunc_classes[self.lrtype]
@@ -119,7 +121,7 @@ class NDS2SAEFactory:
 
 class _NDS2SAE:
     def __init__(self, factory):
-        self.global_step = tf.Variable(0, name='global_step', trainable=False)
+        self.global_step = tf.Variable(0, name="global_step", trainable=False)
         self.input_dim = factory.input_dim
         self.output_dim = factory.output_dim
         self.layer_sizes = factory.layer_sizes
@@ -173,17 +175,17 @@ class _NDS2SAE:
 
     def cleanup(self):
         if os.path.isdir(self.tmp_folder):
-            print(('Cleaned up temp folder {}'.format(self.tmp_folder)))
+            print(("Cleaned up temp folder {}".format(self.tmp_folder)))
             shutil.rmtree(self.tmp_folder)
 
     def copy_saved_to_zip(self):
-        save_to_bak = self._save_to + '.bak'
-        save_to_bak2 = self._save_to + '.bak2'
+        save_to_bak = self._save_to + ".bak"
+        save_to_bak2 = self._save_to + ".bak2"
 
-        with zipfile.ZipFile(save_to_bak, 'w', zipfile.ZIP_BZIP2, False) as zip_file:
+        with zipfile.ZipFile(save_to_bak, "w", zipfile.ZIP_BZIP2, False) as zip_file:
             for root, dirs, files in os.walk(self.tmp_folder):
                 for file in files:
-                    with open(os.path.join(root, file), 'rb') as f:
+                    with open(os.path.join(root, file), "rb") as f:
                         zip_file.writestr(file, f.read())
 
         if os.path.isfile(self._save_to):
@@ -200,11 +202,19 @@ class _NDS2SAE:
         self.go_tokens = tf.placeholder(tf.float32, [None, 1, self.output_dim])
         self.sequence_length = tf.placeholder(tf.int32, [None])
         self.mask = tf.placeholder(tf.float32, [None, None])
-        self.target_sequence_length = tf.placeholder(tf.int32, (None,), name='target_sequence_length')
-        self.max_target_sequence_length = tf.reduce_max(self.target_sequence_length, name='max_target_len')
-        self.source_sequence_length = tf.placeholder(tf.int32, (None,), name='source_sequence_length')
-        self.x_stopping = np.full((self.stop_pad_length, self.input_dim), self.stop_pad_token, dtype=np.float32)
-        self.y_stopping = np.full((self.stop_pad_length, self.output_dim), self.stop_pad_token, dtype=np.float32)
+        self.target_sequence_length = tf.placeholder(tf.int32, (None,), name="target_sequence_length")
+        self.max_target_sequence_length = tf.reduce_max(self.target_sequence_length, name="max_target_len")
+        self.source_sequence_length = tf.placeholder(tf.int32, (None,), name="source_sequence_length")
+        self.x_stopping = np.full(
+            (self.stop_pad_length, self.input_dim),
+            self.stop_pad_token,
+            dtype=np.float32,
+        )
+        self.y_stopping = np.full(
+            (self.stop_pad_length, self.output_dim),
+            self.stop_pad_token,
+            dtype=np.float32,
+        )
         self.learning_rate = tf.placeholder(tf.float32)
         self.batch_size = tf.placeholder(tf.float32)
 
@@ -219,8 +229,14 @@ class _NDS2SAE:
         self.target_sequence_length_padded = self.target_sequence_length + self.stop_pad_length
         max_target_sequence_length_padded = self.max_target_sequence_length + self.stop_pad_length
 
-        _, self.enc_state = dynamic_rnn(enc_cell, self.input_data, sequence_length=self.source_sequence_length_padded,
-                                        dtype=tf.float32, time_major=False, swap_memory=True)
+        _, self.enc_state = dynamic_rnn(
+            enc_cell,
+            self.input_data,
+            sequence_length=self.source_sequence_length_padded,
+            dtype=tf.float32,
+            time_major=False,
+            swap_memory=True,
+        )
         self.enc_state_centre = self.enc_state[-1]
 
         if self.symmetric:
@@ -231,10 +247,12 @@ class _NDS2SAE:
 
         # 3. Dense layer to translate the decoder's output at each time
         # step into a choice from the target vocabulary
-        projection_layer = tf.layers.Dense(units=self.output_dim,
-                                           # kernel_initializer=tf.initializers.he_normal(),
-                                           # kernel_regularizer=regularizer,
-                                           kernel_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.1))
+        projection_layer = tf.layers.Dense(
+            units=self.output_dim,
+            # kernel_initializer=tf.initializers.he_normal(),
+            # kernel_regularizer=regularizer,
+            kernel_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.1),
+        )
 
         # 4. Set up a training decoder and an inference decoder
         # Training Decoder
@@ -242,22 +260,26 @@ class _NDS2SAE:
             # During PREDICT mode, the output data is none so we can't have a training model.
             # Helper for the training process. Used by BasicDecoder to read inputs.
             dec_input = tf.concat([self.go_tokens, self.output_data], 1)
-            training_helper = TrainingHelper(inputs=dec_input,
-                                             sequence_length=self.target_sequence_length_padded,
-                                             time_major=False)
+            training_helper = TrainingHelper(
+                inputs=dec_input,
+                sequence_length=self.target_sequence_length_padded,
+                time_major=False,
+            )
 
             # Basic decoder
             training_decoder = BasicDecoder(dec_cell, training_helper, self.enc_state, projection_layer)
 
             # Perform dynamic decoding using the decoder
-            self.training_decoder_output\
-                = dynamic_decode(training_decoder,
-                                 # True because we're using variable length sequences, which have finish points
-                                 impute_finished=True,
-                                 maximum_iterations=max_target_sequence_length_padded)[0]
+            self.training_decoder_output = dynamic_decode(
+                training_decoder,
+                # True because we're using variable length sequences, which have finish points
+                impute_finished=True,
+                maximum_iterations=max_target_sequence_length_padded,
+            )[0]
         # 5. Inference Decoder
         # Reuses the same parameters trained by the training process
         with tf.variable_scope("decode", reuse=True):
+
             def end_fn(time_step_value):
                 # Ideally, the inferer should produce the stopping token
                 # Which can be assessed as being equal to the modelled stop token, and this should be return:
@@ -274,7 +296,7 @@ class _NDS2SAE:
                 sample_shape=[self.output_dim],
                 sample_dtype=dtypes.float32,
                 start_inputs=self.start_tokens,
-                end_fn=end_fn
+                end_fn=end_fn,
             )
 
             # Basic decoder
@@ -285,7 +307,8 @@ class _NDS2SAE:
                 inference_decoder,
                 # True because we're using variable length sequences, which have finish points
                 impute_finished=True,
-                maximum_iterations=max_target_sequence_length_padded)[0]
+                maximum_iterations=max_target_sequence_length_padded,
+            )[0]
 
     def proprocess_samples(self, xs, ys=None):
         batch_size = len(xs)
@@ -313,11 +336,17 @@ class _NDS2SAE:
                 y_padding = np.full((y_pad_length, self.output_dim), self.pad_token, dtype=np.float32)
                 padded_y = np.concatenate((y.astype(np.float32), self.y_stopping, y_padding))
                 padded_ys.append(padded_y)
-                mask_[:leny + self.stop_pad_length] = 1
+                mask_[: leny + self.stop_pad_length] = 1
 
             padded_ys = np.array(padded_ys)
 
-            return padded_xs, padded_ys, source_sequence_lens, target_sequence_lens, mask
+            return (
+                padded_xs,
+                padded_ys,
+                source_sequence_lens,
+                target_sequence_lens,
+                mask,
+            )
 
         target_sequence_lens = source_sequence_lens
         return padded_xs, source_sequence_lens, target_sequence_lens
@@ -332,19 +361,20 @@ class _NDS2SAE:
             if not self.build_anew:
                 saver.restore(sess, tf.train.latest_checkpoint(self.tmp_folder))
 
-            X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
-                = self.proprocess_samples(xs, ys)
+            (
+                X_batch,
+                y_batch,
+                source_sequence_lens,
+                target_sequence_lens,
+                len_mask,
+            ) = self.proprocess_samples(xs, ys)
 
             actual_start_tokens = np.full((batch_size, self.output_dim), self.go_token, dtype=np.float32)
             actual_go_tokens = np.full((batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
 
             # Training step
             evaled = sess.run(
-                [
-                    self.train_op,
-                    self.cost,
-                    self.predictions
-                ],
+                [self.train_op, self.cost, self.predictions],
                 {
                     self.batch_size: batch_size,
                     self.learning_rate: 0,
@@ -354,8 +384,9 @@ class _NDS2SAE:
                     self.start_tokens: actual_start_tokens,
                     self.go_tokens: actual_go_tokens,
                     self.target_sequence_length: target_sequence_lens,
-                    self.source_sequence_length: source_sequence_lens
-                })
+                    self.source_sequence_length: source_sequence_lens,
+                },
+            )
             cost = evaled[1]
             predictions = evaled[2]
 
@@ -365,11 +396,11 @@ class _NDS2SAE:
             diff *= len_mask
 
             cross_entropy = np.sum(diff, 1)
-            cross_entropy /= (target_sequence_lens + self.stop_pad_length)
+            cross_entropy /= target_sequence_lens + self.stop_pad_length
             true_cost = np.mean(cross_entropy)
 
-            assert np.allclose(true_cost, cost), 'Cost = {}, tru cost = {}'.format(cost, true_cost)
-            print(('Lost = {}'.format(cost)))
+            assert np.allclose(true_cost, cost), "Cost = {}, tru cost = {}".format(cost, true_cost)
+            print(("Lost = {}".format(cost)))
 
     def construct_loss_function(self):
         if self.train_op is None:
@@ -398,25 +429,34 @@ class _NDS2SAE:
 
             # Gradient Clipping
             gradients = optimizer.compute_gradients(self.cost)
-            capped_gradients = [(tf.clip_by_value(grad, -5., 5.), var) for grad, var in gradients if grad is not None]
+            capped_gradients = [
+                (tf.clip_by_value(grad, -5.0, 5.0), var) for grad, var in gradients if grad is not None
+            ]
             self.train_op = optimizer.apply_gradients(capped_gradients)
             self.train_op_eob = optimizer.apply_gradients(capped_gradients, global_step=self.global_step)
 
-    # @profile  # noqa F821
-    def train(self, training_gen, valid_gen, n_iterations=1500, batch_size=50, display_step=1, save_step=100):
+    def train(
+        self,
+        training_gen,
+        valid_gen,
+        n_iterations=1500,
+        batch_size=50,
+        display_step=1,
+        save_step=100,
+    ):
         self.construct_loss_function()
 
-        with tf.name_scope('summaries'):
-            tf.summary.scalar('learning_rate', self.learning_rate)
-            tf.summary.scalar('cost', self.cost)
+        with tf.name_scope("summaries"):
+            tf.summary.scalar("learning_rate", self.learning_rate)
+            tf.summary.scalar("cost", self.cost)
 
         saver = tf.train.Saver(max_to_keep=1)
         with tf.Session() as sess:
             # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
             if self.write_summary:
                 summary_merged = tf.summary.merge_all()
-                train_writer = tf.summary.FileWriter(self.tmp_folder + '/train', graph=sess.graph)
-                test_writer = tf.summary.FileWriter(self.tmp_folder + '/test')
+                train_writer = tf.summary.FileWriter(self.tmp_folder + "/train", graph=sess.graph)
+                test_writer = tf.summary.FileWriter(self.tmp_folder + "/test")
             init = tf.global_variables_initializer()
             init.run()
             if not self.build_anew:
@@ -430,11 +470,24 @@ class _NDS2SAE:
                 while not final_batch:
                     xs, ys, final_batch = training_gen(batch_size)
                     actual_batch_size = len(xs)
-                    X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
-                        = self.proprocess_samples(xs, ys)
+                    (
+                        X_batch,
+                        y_batch,
+                        source_sequence_lens,
+                        target_sequence_lens,
+                        len_mask,
+                    ) = self.proprocess_samples(xs, ys)
 
-                    actual_start_tokens = np.full((actual_batch_size, self.output_dim), self.go_token, dtype=np.float32)
-                    actual_go_tokens = np.full((actual_batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
+                    actual_start_tokens = np.full(
+                        (actual_batch_size, self.output_dim),
+                        self.go_token,
+                        dtype=np.float32,
+                    )
+                    actual_go_tokens = np.full(
+                        (actual_batch_size, 1, self.output_dim),
+                        self.go_token,
+                        dtype=np.float32,
+                    )
 
                     # Training step
                     feed_dict = {
@@ -446,7 +499,7 @@ class _NDS2SAE:
                         self.start_tokens: actual_start_tokens,
                         self.go_tokens: actual_go_tokens,
                         self.target_sequence_length: target_sequence_lens,
-                        self.source_sequence_length: source_sequence_lens
+                        self.source_sequence_length: source_sequence_lens,
                     }
 
                     if final_batch:
@@ -455,8 +508,10 @@ class _NDS2SAE:
                         train_op = self.train_op
 
                     if self.write_summary:
-                        _, loss, current_lr, summary = \
-                            sess.run([train_op, self.cost, self.learning_rate, summary_merged], feed_dict)
+                        _, loss, current_lr, summary = sess.run(
+                            [train_op, self.cost, self.learning_rate, summary_merged],
+                            feed_dict,
+                        )
                         train_writer.add_summary(summary, iteration)
                     else:
                         _, loss, current_lr = sess.run([train_op, self.cost, self.learning_rate], feed_dict)
@@ -465,10 +520,23 @@ class _NDS2SAE:
                 if iteration % display_step == 0 or iteration == n_iterations - 1:
                     xs, ys, _ = valid_gen(batch_size=None)
                     actual_batch_size = len(xs)
-                    X_batch, y_batch, source_sequence_lens, target_sequence_lens, len_mask\
-                        = self.proprocess_samples(xs, ys)
-                    actual_start_tokens = np.full((actual_batch_size, self.output_dim), self.go_token, dtype=np.float32)
-                    actual_go_tokens = np.full((actual_batch_size, 1, self.output_dim), self.go_token, dtype=np.float32)
+                    (
+                        X_batch,
+                        y_batch,
+                        source_sequence_lens,
+                        target_sequence_lens,
+                        len_mask,
+                    ) = self.proprocess_samples(xs, ys)
+                    actual_start_tokens = np.full(
+                        (actual_batch_size, self.output_dim),
+                        self.go_token,
+                        dtype=np.float32,
+                    )
+                    actual_go_tokens = np.full(
+                        (actual_batch_size, 1, self.output_dim),
+                        self.go_token,
+                        dtype=np.float32,
+                    )
 
                     # Calculate validation cost
                     feed_dict = {
@@ -480,7 +548,7 @@ class _NDS2SAE:
                         self.start_tokens: actual_start_tokens,
                         self.go_tokens: actual_go_tokens,
                         self.target_sequence_length: target_sequence_lens,
-                        self.source_sequence_length: source_sequence_lens
+                        self.source_sequence_length: source_sequence_lens,
                     }
 
                     if self.write_summary:
@@ -496,15 +564,25 @@ class _NDS2SAE:
                     start_time = end_time
                     start_iteration = iteration
 
-                    print(('Ep {:>4}/{} | Losses: {:>7.5f}/{:>7.5f} | LR: {:>6.5f} | Speed: {:>6.1f} ms/Ep'.
-                           format(iteration, n_iterations, loss, validation_loss, current_lr, mean_duration)))
+                    print(
+                        (
+                            "Ep {:>4}/{} | Losses: {:>7.5f}/{:>7.5f} | LR: {:>6.5f} | Speed: {:>6.1f} ms/Ep".format(
+                                iteration,
+                                n_iterations,
+                                loss,
+                                validation_loss,
+                                current_lr,
+                                mean_duration,
+                            )
+                        )
+                    )
 
                 if iteration % save_step == 0 or iteration == n_iterations - 1:
                     start_time_save = int(round(time.time() * 1000))
                     saver.save(sess, self.saved_session_name, global_step=self.global_step)
                     self.copy_saved_to_zip()
                     duration_save = int(round(time.time() * 1000)) - start_time_save
-                    print('Saved. Elapsed: {:>6.3f} ms'.format(duration_save))
+                    print("Saved. Elapsed: {:>6.3f} ms".format(duration_save))
 
     def recreate_session(self):
         saver = tf.train.Saver()
@@ -515,9 +593,9 @@ class _NDS2SAE:
         return session
 
     def _predict_or_encode(self, mode, test_seq, session=None):
-        if mode == 'predict':
+        if mode == "predict":
             ops = self.inference_decoder_output
-        elif mode == 'encode':
+        elif mode == "encode":
             ops = self.enc_state
         else:
             ops = self.enc_state_centre
@@ -530,7 +608,7 @@ class _NDS2SAE:
             self.input_data: X_batch,
             self.start_tokens: actual_start_tokens,
             self.target_sequence_length: target_sequence_lens,
-            self.source_sequence_length: source_sequence_lens
+            self.source_sequence_length: source_sequence_lens,
         }
         if session is None:
             saver = tf.train.Saver()
@@ -545,7 +623,7 @@ class _NDS2SAE:
         return result
 
     def predict(self, test_seq, session=None, res_len=None):
-        decoder_output = self._predict_or_encode('predict', test_seq, session)
+        decoder_output = self._predict_or_encode("predict", test_seq, session)
         padded_output = decoder_output.rnn_output
         if res_len is None:
             return padded_output
@@ -557,8 +635,8 @@ class _NDS2SAE:
 
     def encode(self, test_seq, session=None, kernel_only=False):
         if kernel_only:
-            states = self._predict_or_encode('encode-centre', test_seq, session)
+            states = self._predict_or_encode("encode-centre", test_seq, session)
             return states
         else:
-            states = self._predict_or_encode('encode', test_seq, session)
+            states = self._predict_or_encode("encode", test_seq, session)
             return np.concatenate(states, axis=1)

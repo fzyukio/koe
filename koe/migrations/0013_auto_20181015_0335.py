@@ -9,10 +9,10 @@ def consolidate_individual(apps, schema_editor):
     If individual name is '_', they come from an earlier import script. Set their name to the species name plus suffix
     """
     db_alias = schema_editor.connection.alias
-    indi_model = apps.get_model('koe', 'Individual')
-    af_model = apps.get_model('koe', 'AudioFile')
+    indi_model = apps.get_model("koe", "Individual")
+    af_model = apps.get_model("koe", "AudioFile")
 
-    vl = indi_model.objects.using(db_alias).all().values_list('id', 'name', 'species')
+    vl = indi_model.objects.using(db_alias).all().values_list("id", "name", "species")
     name2vals = {}
     for id, name, species in vl:
         if name not in name2vals:
@@ -21,9 +21,9 @@ def consolidate_individual(apps, schema_editor):
             name2vals[name].append((id, species))
     name2vals = {name: vals for name, vals in name2vals.items() if len(vals) > 1}
 
-    if '_' in name2vals:
+    if "_" in name2vals:
         suffixes = {}
-        vals = name2vals['_']
+        vals = name2vals["_"]
         for id, species in vals:
             if species not in suffixes:
                 suffix = 0
@@ -32,13 +32,15 @@ def consolidate_individual(apps, schema_editor):
             suffixes[species] = suffix
             indi = indi_model.objects.get(id=id)
             if indi.species:
-                new_name = '{}-{}_{}'.format(indi.species.genus, indi.species.species, suffix)
+                new_name = "{}-{}_{}".format(
+                    indi.species.genus, indi.species.species, suffix
+                )
             else:
-                new_name = 'Unknown-species_{}'.format(suffix)
+                new_name = "Unknown-species_{}".format(suffix)
             indi.name = new_name
             indi.save()
 
-        del name2vals['_']
+        del name2vals["_"]
 
     name2chosen = {}
     for name, vals in name2vals.items():
@@ -59,25 +61,28 @@ def consolidate_individual(apps, schema_editor):
                 replace[chosen].append(id)
 
     for chosen, replaced in replace.items():
-        af_model.objects.using(db_alias).filter(id__in=replaced).update(individual_id=chosen)
+        af_model.objects.using(db_alias).filter(id__in=replaced).update(
+            individual_id=chosen
+        )
         indi_model.objects.using(db_alias).filter(id__in=replaced).delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0012_auto_20181003_1357'),
+        ("koe", "0012_auto_20181003_1357"),
     ]
 
     operations = [
-        migrations.RunPython(consolidate_individual, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            consolidate_individual, reverse_code=migrations.RunPython.noop
+        ),
         migrations.AlterField(
-            model_name='individual',
-            name='name',
+            model_name="individual",
+            name="name",
             field=models.CharField(max_length=255, unique=True),
         ),
         migrations.AlterUniqueTogether(
-            name='individual',
+            name="individual",
             unique_together=set(),
         ),
     ]

@@ -8,49 +8,50 @@ from progress.bar import Bar
 
 def merge_species_name(apps, schema_editor):
     db_alias = schema_editor.connection.alias
-    Species = apps.get_model('koe', 'Species')
+    Species = apps.get_model("koe", "Species")
 
     species = Species.objects.using(db_alias).all()
 
-    bar = Bar('Merge genus and species into name', max=len(species))
+    bar = Bar("Merge genus and species into name", max=len(species))
     with transaction.atomic():
         for s in species:
-            s.name = s.genus + ' ' + s.species
+            s.name = s.genus + " " + s.species
             s.save()
             bar.next()
     bar.finish()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0032_add_individual_and_track'),
+        ("koe", "0032_add_individual_and_track"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='species',
-            name='name',
+            model_name="species",
+            name="name",
             field=models.CharField(max_length=255, null=True, unique=True),
         ),
         migrations.AlterUniqueTogether(
-            name='species',
+            name="species",
             unique_together=set(),
         ),
-        migrations.RunPython(merge_species_name, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            merge_species_name, reverse_code=migrations.RunPython.noop
+        ),
         migrations.AlterField(
-            model_name='species',
-            name='name',
+            model_name="species",
+            name="name",
             field=models.CharField(max_length=255, unique=True),
         ),
         migrations.AlterField(
-            model_name='species',
-            name='genus',
+            model_name="species",
+            name="genus",
             field=models.CharField(max_length=32, null=True),
         ),
         migrations.AlterField(
-            model_name='species',
-            name='species',
+            model_name="species",
+            name="species",
             field=models.CharField(max_length=32, null=True),
         ),
     ]

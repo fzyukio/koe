@@ -1,31 +1,19 @@
 """Provides an inteface to store and retrieve numpy arrays in binary file"""
+
 import datetime
+import os
 from shutil import copyfile
 
-import os
-import sys
 import numpy as np
+
 
 INDEX_FILE_NCOLS = 5
 BATCH_SIZE = 1000
 
-INDEX_PREFIX = 'index.'
-VALUE_PREFIX = 'value.'
+INDEX_PREFIX = "index."
+VALUE_PREFIX = "value."
 
 
-PY3 = sys.version_info[0] == 3
-if PY3:
-    import builtins
-else:
-    import __builtin__ as builtins
-
-try:
-    builtins.profile
-except AttributeError:
-    builtins.profile = lambda x: x
-
-
-# @profile
 def get_dim(arr):
     if np.isscalar(arr):
         return 0, 0
@@ -35,7 +23,6 @@ def get_dim(arr):
         return arr.shape
 
 
-# @profile
 def reshape(dim0, dim1, arr):
     if not dim0:
         return arr[0]
@@ -44,11 +31,10 @@ def reshape(dim0, dim1, arr):
     return arr.reshape((dim0, dim1))
 
 
-@profile  # noqa F821
 def _store_anew(ids, arrs, index_filename, value_filename):
     assert isinstance(ids, np.ndarray)
-    assert len(ids) > 0, 'lists must be non-empty'
-    assert len(ids) == len(arrs), 'lists of ids and arrays must have the same length'
+    assert len(ids) > 0, "lists must be non-empty"
+    assert len(ids) == len(arrs), "lists of ids and arrays must have the same length"
     assert ids.ndim == 1
     # sorted_ids, sort_order = np.unique(ids, return_index=True)
     # assert len(sorted_ids) == len(ids), 'IDs must be unique'
@@ -60,7 +46,7 @@ def _store_anew(ids, arrs, index_filename, value_filename):
     begin = 0
 
     for id, arr in zip(ids, arrs):
-        assert np.isscalar(arr) or arr.ndim < 3, 'Only scalar, one or two dims arrays are supported'
+        assert np.isscalar(arr) or arr.ndim < 3, "Only scalar, one or two dims arrays are supported"
 
         arr_len = np.size(arr)
         end = begin + arr_len
@@ -80,16 +66,15 @@ def _store_anew(ids, arrs, index_filename, value_filename):
     index_arr = np.array(index_arr, dtype=np.int32)
     value_arr = np.concatenate(value_arr).astype(np.float32)
 
-    with open(index_filename, 'wb') as f:
+    with open(index_filename, "wb") as f:
         index_arr.tofile(f)
 
-    with open(value_filename, 'wb') as f:
+    with open(value_filename, "wb") as f:
         value_arr.tofile(f)
 
     return index_filename, value_filename
 
 
-@profile  # noqa F821
 def _store(new_ids, new_arrs, index_filename, value_filename):
     """
     If files don't exit, create new. Otherwise update existing
@@ -108,7 +93,7 @@ def _store(new_ids, new_arrs, index_filename, value_filename):
     elif not index_file_exists and not value_file_exists:
         is_creating = True
     else:
-        raise RuntimeError('Index and value files must either both exist or both not exist')
+        raise RuntimeError("Index and value files must either both exist or both not exist")
 
     if is_creating:
         return _store_anew(new_ids, new_arrs, index_filename, value_filename)
@@ -116,12 +101,11 @@ def _store(new_ids, new_arrs, index_filename, value_filename):
     return _update_by_modification(new_ids, new_arrs, index_filename, value_filename)
 
 
-@profile  # noqa F821
 def store(ids, arrs, loc):
     sorted_ids, sorted_order = np.unique(ids, return_index=True)
 
-    assert len(sorted_ids) == len(ids), 'ids must be all unique'
-    assert sorted_ids[0] > 0, 'ids must be all positive'
+    assert len(sorted_ids) == len(ids), "ids must be all unique"
+    assert sorted_ids[0] > 0, "ids must be all positive"
 
     min_id = sorted_ids[0]
     min_batch_ind = min_id // BATCH_SIZE
@@ -157,20 +141,20 @@ def store(ids, arrs, loc):
     batches.append((batch_begin, batch_end, ids_batch, arrs_batch))
 
     for batch_begin, batch_end, ids_batch, arrs_batch in batches:
-        index_filename = os.path.join(loc, '{}{}-{}'.format(INDEX_PREFIX, batch_begin, batch_end))
-        value_filename = os.path.join(loc, '{}{}-{}'.format(VALUE_PREFIX, batch_begin, batch_end))
+        index_filename = os.path.join(loc, "{}{}-{}".format(INDEX_PREFIX, batch_begin, batch_end))
+        value_filename = os.path.join(loc, "{}{}-{}".format(VALUE_PREFIX, batch_begin, batch_end))
 
         ids_batch = np.array(ids_batch, dtype=np.int32)
         _store(ids_batch, arrs_batch, index_filename, value_filename)
 
 
 def _update_by_modification(new_ids, new_arrs, index_filename, value_filename):
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
     index_arr = index_arr.reshape((-1, INDEX_FILE_NCOLS))
     index_arr = index_arr.tolist()
 
-    with open(value_filename, 'rb') as f:
+    with open(value_filename, "rb") as f:
         value_bin = np.fromfile(f, dtype=np.float32)
 
     id2info = {}
@@ -222,23 +206,23 @@ def _update_by_modification(new_ids, new_arrs, index_filename, value_filename):
     index_arr = np.array(index_arr, dtype=np.int32)
 
     # Make a backup before overwriting the file, then delete the backup if anything happens
-    time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    bak_index_file = '{}.bak_{}'.format(index_filename, time_str)
-    bak_value_file = '{}.bak_{}'.format(value_filename, time_str)
+    time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    bak_index_file = "{}.bak_{}".format(index_filename, time_str)
+    bak_value_file = "{}.bak_{}".format(value_filename, time_str)
 
     copyfile(index_filename, bak_index_file)
     copyfile(value_filename, bak_value_file)
 
     try:
-        with open(index_filename, 'wb') as f:
+        with open(index_filename, "wb") as f:
             index_arr.tofile(f)
 
-        with open(value_filename, 'r+b') as fid:
+        with open(value_filename, "r+b") as fid:
             for id, (start, end, dim0, dim1, new_arr) in to_update.items():
                 fid.seek(start * 4)
                 new_arr.tofile(fid)
 
-        with open(value_filename, 'ab') as fid:
+        with open(value_filename, "ab") as fid:
             for id, (start, end, dim0, dim1, new_arr) in to_append.items():
                 new_arr.tofile(fid)
 
@@ -258,7 +242,7 @@ def retrieve_ids(loc, limit=None):
         if len(index_files) == 0:
             return np.empty((0, INDEX_FILE_NCOLS))
         for index_file in index_files:
-            batch_begin, batch_end = list(map(int, index_file[len(INDEX_PREFIX):].split('-')))
+            batch_begin, batch_end = list(map(int, index_file[len(INDEX_PREFIX) :].split("-")))
             batches[batch_begin] = (batch_begin, batch_end, index_file)
 
         batch_begins = sorted(list(batches.keys()))
@@ -279,7 +263,7 @@ def retrieve_ids(loc, limit=None):
         for batch_ind in range(min_batch_ind, max_batch_ind + 1):
             batch_begin = batch_ind * BATCH_SIZE + 1
             batch_end = batch_begin + BATCH_SIZE - 1
-            index_file = '{}{}-{}'.format(INDEX_PREFIX, batch_begin, batch_end)
+            index_file = "{}{}-{}".format(INDEX_PREFIX, batch_begin, batch_end)
             index_filename = os.path.join(loc, index_file)
             if os.path.isfile(index_filename):
                 batch_begins.append(batch_begin)
@@ -300,9 +284,8 @@ def retrieve_ids(loc, limit=None):
         return np.array([], dtype=np.int32)
 
 
-# @profile
 def _retrieve(lookup_ids, index_filename, value_filename, flat=False):
-    with open(index_filename, 'rb') as f:
+    with open(index_filename, "rb") as f:
         index_arr = np.fromfile(f, dtype=np.int32)
 
     index_arr = index_arr.reshape((-1, INDEX_FILE_NCOLS))
@@ -314,7 +297,9 @@ def _retrieve(lookup_ids, index_filename, value_filename, flat=False):
     non_existing_ids = lookup_ids[non_existing_idx]
 
     if len(non_existing_ids) > 0:
-        err_msg = 'Unable to retrieve IDs {} from {}'.format(','.join(list(map(str, non_existing_ids))), index_filename)
+        err_msg = "Unable to retrieve IDs {} from {}".format(
+            ",".join(list(map(str, non_existing_ids))), index_filename
+        )
         raise ValueError(err_msg)
 
     lookup_ids_rows = np.searchsorted(sorted_ids, lookup_ids)
@@ -338,7 +323,6 @@ def _retrieve(lookup_ids, index_filename, value_filename, flat=False):
     return retval
 
 
-# @profile
 def retrieve(lookup_ids, loc, flat=False):
     if len(lookup_ids) == 0:
         return []
@@ -379,8 +363,8 @@ def retrieve(lookup_ids, loc, flat=False):
     arrs = [None] * len(lookup_ids)
 
     for batch_begin, batch_end, ids_batch, inds_batch in batches:
-        index_filename = os.path.join(loc, '{}{}-{}'.format(INDEX_PREFIX, batch_begin, batch_end))
-        value_filename = os.path.join(loc, '{}{}-{}'.format(VALUE_PREFIX, batch_begin, batch_end))
+        index_filename = os.path.join(loc, "{}{}-{}".format(INDEX_PREFIX, batch_begin, batch_end))
+        value_filename = os.path.join(loc, "{}{}-{}".format(VALUE_PREFIX, batch_begin, batch_end))
 
         ids_batch = np.array(ids_batch, dtype=np.int32)
         arr = _retrieve(ids_batch, index_filename, value_filename, flat)
@@ -397,7 +381,7 @@ def retrieve_raw(loc):
         return np.empty((0, INDEX_FILE_NCOLS))
     batches = {}
     for index_file in index_files:
-        batch_begin, batch_end = list(map(int, index_file[len(INDEX_PREFIX):].split('-')))
+        batch_begin, batch_end = list(map(int, index_file[len(INDEX_PREFIX) :].split("-")))
         batches[batch_begin] = (batch_begin, batch_end)
 
     ids = []
@@ -406,8 +390,8 @@ def retrieve_raw(loc):
     batch_begins = sorted(list(batches.keys()))
     for batch_begin in batch_begins:
         batch_begin, batch_end = batches[batch_begin]
-        index_filename = os.path.join(loc, '{}{}-{}'.format(INDEX_PREFIX, batch_begin, batch_end))
-        value_filename = os.path.join(loc, '{}{}-{}'.format(VALUE_PREFIX, batch_begin, batch_end))
+        index_filename = os.path.join(loc, "{}{}-{}".format(INDEX_PREFIX, batch_begin, batch_end))
+        value_filename = os.path.join(loc, "{}{}-{}".format(VALUE_PREFIX, batch_begin, batch_end))
 
         index_arr = np.fromfile(index_filename, dtype=np.int32).reshape((-1, INDEX_FILE_NCOLS))
 

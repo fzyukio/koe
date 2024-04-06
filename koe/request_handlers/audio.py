@@ -1,29 +1,37 @@
-import os
 import io
 import json
+import os
 from io import BufferedWriter
 from logging import warning
 
-import numpy as np
-import pydub
 from django.conf import settings
 from django.core.files import File
 from django.http import HttpResponse
 from django.utils import timezone
+
+import numpy as np
+import pydub
 from memoize import memoize
 
 from koe import wavfile
 from koe.grid_getters import get_sequence_info_empty_songs
 from koe.model_utils import assert_permission, get_or_error
-from koe.models import AudioFile, Segment, Database, DatabasePermission, AudioTrack, Individual
+from koe.models import AudioFile, AudioTrack, Database, DatabasePermission, Individual, Segment
 from koe.utils import audio_path
 from koe.wavfile import get_wav_info, read_segment, read_wav_info, write, write_24b
 from root.exceptions import CustomAssertionError
 from root.models import ExtraAttrValue
-from root.utils import ensure_parent_folder_exists, data_path
+from root.utils import data_path, ensure_parent_folder_exists
 
-__all__ = ['get_segment_audio_data', 'import_audio_chunk', 'get_audio_file_url', 'import_audio_file',
-           'get_audio_files_urls', 'merge_audio_chunks']
+
+__all__ = [
+    "get_segment_audio_data",
+    "import_audio_chunk",
+    "get_audio_file_url",
+    "import_audio_file",
+    "get_audio_files_urls",
+    "merge_audio_chunks",
+]
 
 
 def _match_target_amplitude(sound, loudness=-10):
@@ -41,15 +49,10 @@ def _match_target_amplitude(sound, loudness=-10):
 
 @memoize(timeout=None)
 def _cached_get_segment_audio_data(audio_file_name, database_id, fs, start, end):
-    wav_file_path = data_path('audio/wav/{}'.format(database_id), '{}.wav'.format(audio_file_name))
+    wav_file_path = data_path("audio/wav/{}".format(database_id), "{}.wav".format(audio_file_name))
     chunk = wavfile.read_segment(wav_file_path, start, end, normalised=False, mono=True)
 
-    audio_segment = pydub.AudioSegment(
-        chunk.tobytes(),
-        frame_rate=fs,
-        sample_width=chunk.dtype.itemsize,
-        channels=1
-    )
+    audio_segment = pydub.AudioSegment(chunk.tobytes(), frame_rate=fs, sample_width=chunk.dtype.itemsize, channels=1)
 
     audio_segment = _match_target_amplitude(audio_segment)
 
@@ -60,8 +63,8 @@ def _cached_get_segment_audio_data(audio_file_name, database_id, fs, start, end)
 
     response = HttpResponse()
     response.write(binary_content)
-    response['Content-Type'] = 'audio/' + settings.AUDIO_COMPRESSED_FORMAT
-    response['Content-Length'] = len(binary_content)
+    response["Content-Type"] = "audio/" + settings.AUDIO_COMPRESSED_FORMAT
+    response["Content-Length"] = len(binary_content)
     return response
 
 
@@ -73,7 +76,7 @@ def get_segment_audio_data(request):
     """
     user = request.user
 
-    segment_id = get_or_error(request.POST, 'segment-id')
+    segment_id = get_or_error(request.POST, "segment-id")
     segment = get_or_error(Segment, dict(id=segment_id))
     audio_file = segment.audio_file
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
@@ -91,9 +94,16 @@ def get_segment_audio_data(request):
     return _cached_get_segment_audio_data(audio_file_name, database_id, audio_file.fs, start, end)
 
 
-def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_file=None, track=None, start=None,
-                                   end=None):
-
+def _import_and_convert_audio_file(
+    database,
+    file,
+    max_fs,
+    real_fs=None,
+    audio_file=None,
+    track=None,
+    start=None,
+    end=None,
+):
     file_already_exists = False
     if isinstance(file, BufferedWriter):
         file_already_exists = True
@@ -101,7 +111,7 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     else:
         name_ext = file.name
 
-    if name_ext.lower().endswith('.wav'):
+    if name_ext.lower().endswith(".wav"):
         name_no_ext = name_ext[:-4]
     else:
         name_no_ext = name_ext
@@ -110,18 +120,20 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
     if audio_file is None:
         is_unique = not AudioFile.objects.filter(database=database, name=name_no_ext).exists()
         if not is_unique:
-            raise CustomAssertionError('File {} already exists'.format(name_no_ext))
+            raise CustomAssertionError("File {} already exists".format(name_no_ext))
     elif audio_file.name != name_no_ext:
-        raise CustomAssertionError('Impossible! File name in your table and in the database don\'t match')
+        raise CustomAssertionError("Impossible! File name in your table and in the database don't match")
 
-    wav_name = data_path('audio/wav/{}'.format(database.id), '{}.wav'.format(name_no_ext))
-    name_compressed = data_path('audio/{}/{}'.format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
-                                '{}.{}'.format(name_no_ext, settings.AUDIO_COMPRESSED_FORMAT))
+    wav_name = data_path("audio/wav/{}".format(database.id), "{}.wav".format(name_no_ext))
+    name_compressed = data_path(
+        "audio/{}/{}".format(settings.AUDIO_COMPRESSED_FORMAT, database.id),
+        "{}.{}".format(name_no_ext, settings.AUDIO_COMPRESSED_FORMAT),
+    )
 
-    fake_wav_name = wav_name + '.bak'
+    fake_wav_name = wav_name + ".bak"
 
     if not file_already_exists:
-        with open(wav_name, 'wb') as wav_file:
+        with open(wav_name, "wb") as wav_file:
             wav_file.write(file.read())
 
     _fs, length, noc = get_wav_info(wav_name, return_noc=True)
@@ -155,12 +167,23 @@ def _import_and_convert_audio_file(database, file, max_fs, real_fs=None, audio_f
 
     if audio_file is None:
         if track is None:
-            track = AudioTrack.objects.get_or_create(name='TBD')[0]
-        individual = Individual.objects.get_or_create(name='TBD')[0]
-        audio_file = AudioFile(name=name_no_ext, length=length, fs=real_fs, database=database, track=track, start=start,
-                               end=end, fake_fs=fake_fs, added=timezone.now(), noc=noc, individual=individual)
+            track = AudioTrack.objects.get_or_create(name="TBD")[0]
+        individual = Individual.objects.get_or_create(name="TBD")[0]
+        audio_file = AudioFile(
+            name=name_no_ext,
+            length=length,
+            fs=real_fs,
+            database=database,
+            track=track,
+            start=start,
+            end=end,
+            fake_fs=fake_fs,
+            added=timezone.now(),
+            noc=noc,
+            individual=individual,
+        )
         audio_file.save()
-        if track.name == 'TBD':
+        if track.name == "TBD":
             track.name = str(audio_file.id)
             track.save()
         individual.name = str(audio_file.id)
@@ -185,30 +208,30 @@ def import_audio_chunk(request):
     user = request.user
     params = request.POST
 
-    database_id = get_or_error(request.POST, 'database')
+    database_id = get_or_error(request.POST, "database")
     database = get_or_error(Database, dict(id=database_id))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
-    file = File(file=request.FILES['file'])
-    name = params['dzFilename']
-    chunk_index = int(params['dzChunkIndex'])
+    file = File(file=request.FILES["file"])
+    name = params["dzFilename"]
+    chunk_index = int(params["dzChunkIndex"])
 
-    if name.lower().endswith('.wav'):
+    if name.lower().endswith(".wav"):
         name = name[:-4]
 
-    wav_file_path = data_path('audio/wav/{}'.format(database_id), name + '.wav')
+    wav_file_path = data_path("audio/wav/{}".format(database_id), name + ".wav")
 
     if chunk_index == 0:
         is_unique = not AudioFile.objects.filter(database=database, name=name).exists()
 
         if not is_unique:
-            raise CustomAssertionError('Error: file {} already exists in this database'.format(name))
+            raise CustomAssertionError("Error: file {} already exists in this database".format(name))
 
-    chunk_file_path = wav_file_path + '__' + str(chunk_index)
-    with open(chunk_file_path, 'wb') as f:
+    chunk_file_path = wav_file_path + "__" + str(chunk_index)
+    with open(chunk_file_path, "wb") as f:
         f.write(file.read())
 
-    return dict(origin='import_audio_chunk', success=True, warning=None, payload=None)
+    return dict(origin="import_audio_chunk", success=True, warning=None, payload=None)
 
 
 def merge_audio_chunks(request):
@@ -221,40 +244,50 @@ def merge_audio_chunks(request):
     """
     user = request.user
     params = request.POST
-    name = params['name']
-    chunk_count = int(params['chunkCount'])
-    max_fs = int(request.POST.get('browser-fs', 0))
+    name = params["name"]
+    chunk_count = int(params["chunkCount"])
+    max_fs = int(request.POST.get("browser-fs", 0))
 
-    if name.lower().endswith('.wav'):
+    if name.lower().endswith(".wav"):
         name = name[:-4]
 
-    database_id = get_or_error(request.POST, 'database')
+    database_id = get_or_error(request.POST, "database")
     database = get_or_error(Database, dict(id=database_id))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
-    wav_file_path = data_path('audio/wav/{}'.format(database_id), name + '.wav')
+    wav_file_path = data_path("audio/wav/{}".format(database_id), name + ".wav")
 
-    with open(wav_file_path, 'wb') as combined_file:
+    with open(wav_file_path, "wb") as combined_file:
         for i in range(chunk_count):
-            chunk_file_path = wav_file_path + '__' + str(i)
-            with open(chunk_file_path, 'rb') as chunk_file:
+            chunk_file_path = wav_file_path + "__" + str(i)
+            with open(chunk_file_path, "rb") as chunk_file:
                 combined_file.write(chunk_file.read())
 
-    size, comp, num_channels, fs, sbytes, block_align, bitrate, bytes, dtype = read_wav_info(wav_file_path)
+    (
+        size,
+        comp,
+        num_channels,
+        fs,
+        sbytes,
+        block_align,
+        bitrate,
+        bytes,
+        dtype,
+    ) = read_wav_info(wav_file_path)
     if comp == 3:
-        warning('File is IEEE format. Convert to standard WAV')
+        warning("File is IEEE format. Convert to standard WAV")
         audio = pydub.AudioSegment.from_file(wav_file_path)
-        audio.export(wav_file_path, format='wav')
+        audio.export(wav_file_path, format="wav")
 
     audio_file = _import_and_convert_audio_file(database, combined_file, max_fs)
 
     for i in range(chunk_count):
-        chunk_file_path = wav_file_path + '__' + str(i)
+        chunk_file_path = wav_file_path + "__" + str(i)
         os.remove(chunk_file_path)
 
     added_files = AudioFile.objects.filter(id=audio_file.id)
     _, rows = get_sequence_info_empty_songs(added_files)
-    return dict(origin='merge_audio_chunks', success=True, warning=None, payload=rows)
+    return dict(origin="merge_audio_chunks", success=True, warning=None, payload=rows)
 
 
 def _change_fs_without_resampling(wav_file, new_fs, new_name):
@@ -265,7 +298,17 @@ def _change_fs_without_resampling(wav_file, new_fs, new_name):
     :param new_fs: the new sample rate
     :return: the path of the faked wav file
     """
-    size, comp, num_channels, rate, sbytes, block_align, bitrate, bytes, dtype = read_wav_info(wav_file)
+    (
+        size,
+        comp,
+        num_channels,
+        rate,
+        sbytes,
+        block_align,
+        bitrate,
+        bytes,
+        dtype,
+    ) = read_wav_info(wav_file)
     ubyte_data = read_segment(wav_file, 0, None, normalised=False, retype=False)
     byte_length = ubyte_data.size
     nframes_per_channel = byte_length // block_align
@@ -286,35 +329,35 @@ def import_audio_file(request):
     :return:
     """
     user = request.user
-    f = request.FILES['file']
+    f = request.FILES["file"]
 
-    database_id = get_or_error(request.POST, 'database-id')
-    item = json.loads(get_or_error(request.POST, 'item'))
-    real_fs = int(get_or_error(request.POST, 'real-fs'))
-    max_fs = int(get_or_error(request.POST, 'browser-fs'))
-    track_id = get_or_error(request.POST, 'track-id')
+    database_id = get_or_error(request.POST, "database-id")
+    item = json.loads(get_or_error(request.POST, "item"))
+    real_fs = int(get_or_error(request.POST, "real-fs"))
+    max_fs = int(get_or_error(request.POST, "browser-fs"))
+    track_id = get_or_error(request.POST, "track-id")
 
     database = get_or_error(Database, dict(id=database_id))
     track = get_or_error(AudioTrack, dict(id=track_id))
     assert_permission(user, database, DatabasePermission.ADD_FILES)
 
-    start = item['start']
-    end = item['end']
-    song_id = item['id']
+    start = item["start"]
+    end = item["end"]
+    song_id = item["id"]
 
     file = File(file=f)
 
     audio_file = None
-    if not isinstance(song_id, str) or not song_id.startswith('new:'):
+    if not isinstance(song_id, str) or not song_id.startswith("new:"):
         audio_file = AudioFile.objects.filter(database=database, id=song_id).first()
 
     audio_file = _import_and_convert_audio_file(database, file, max_fs, real_fs, audio_file, track, start, end)
 
-    quality = item.get('quality', None)
-    individual_name = item.get('individual', None)
-    note = item.get('note', None)
-    type = item.get('type', None)
-    sex = item.get('sex', None)
+    quality = item.get("quality", None)
+    individual_name = item.get("individual", None)
+    note = item.get("note", None)
+    type = item.get("type", None)
+    sex = item.get("sex", None)
 
     if individual_name is not None:
         individual = Individual.objects.filter(name=individual_name).first()
@@ -339,13 +382,18 @@ def import_audio_file(request):
         extra_attr_value = ExtraAttrValue.objects.create(user=user, owner_id=audio_file.id, attr=audio_file_attrs.type)
         extra_attr_value.value = type
 
-    return dict(origin='import_audio_file', success=True, warning=None, payload=dict(id=audio_file.id, name=audio_file.name))
+    return dict(
+        origin="import_audio_file",
+        success=True,
+        warning=None,
+        payload=dict(id=audio_file.id, name=audio_file.name),
+    )
 
 
 def get_audio_file_url(request):
     user = request.user
 
-    file_id = get_or_error(request.POST, 'file-id')
+    file_id = get_or_error(request.POST, "file-id")
     audio_file = get_or_error(AudioFile, dict(id=file_id))
     assert_permission(user, audio_file.database, DatabasePermission.VIEW)
 
@@ -363,21 +411,21 @@ def get_audio_file_url(request):
     #     real_fs = audio_file.fs
 
     retval = {
-        'url': audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True),
-        'real-fs': real_fs,
-        'length': audio_file.length
+        "url": audio_path(audio_file, settings.AUDIO_COMPRESSED_FORMAT, for_url=True),
+        "real-fs": real_fs,
+        "length": audio_file.length,
     }
-    return dict(origin='get_audio_file_url', success=True, warning=None, payload=retval)
+    return dict(origin="get_audio_file_url", success=True, warning=None, payload=retval)
 
 
 def get_audio_files_urls(request):
     user = request.user
 
-    file_ids = get_or_error(request.POST, 'file-ids')
+    file_ids = get_or_error(request.POST, "file-ids")
     file_ids = json.loads(file_ids)
-    format = request.POST.get('format', settings.AUDIO_COMPRESSED_FORMAT)
+    format = request.POST.get("format", settings.AUDIO_COMPRESSED_FORMAT)
     audio_files = AudioFile.objects.filter(id__in=file_ids)
-    database_ids = audio_files.values_list('database', flat=True).distinct()
+    database_ids = audio_files.values_list("database", flat=True).distinct()
     databases = Database.objects.filter(id__in=database_ids)
     for database in databases:
         assert_permission(user, database, DatabasePermission.VIEW)
@@ -387,4 +435,4 @@ def get_audio_files_urls(request):
         file_path = audio_path(audio_file, format, for_url=True)
         file_paths.append(file_path)
 
-    return dict(origin='get_audio_files_urls', success=True, warning=None, payload=file_paths)
+    return dict(origin="get_audio_files_urls", success=True, warning=None, payload=file_paths)

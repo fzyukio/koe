@@ -1,14 +1,16 @@
 import pickle
 from collections import OrderedDict
 
-import numpy as np
-import scipy.signal
 from django.core.management.base import BaseCommand
 from django.db.models import F
+
+import numpy as np
+import scipy.signal
 from progress.bar import Bar
 from scipy.io import savemat
 
-from koe.models import Segment, Database
+from koe.models import Database, Segment
+
 
 GLOBAL_F0_MIN = 475.57
 GLOBAL_F0_MAX = 5456.10
@@ -16,7 +18,7 @@ GLOBAL_F0_MEAN = (GLOBAL_F0_MIN + GLOBAL_F0_MAX) / 2
 
 
 def gererate_f0_profile(time_arr, t1f, t2, t2f, method, centre=0.5):
-    if method == 'quadratic':
+    if method == "quadratic":
         middle_idx = int(len(time_arr) * centre)
         time_arr -= time_arr[middle_idx]
     return time_arr, t1f, t2, t2f, method
@@ -37,25 +39,29 @@ def generate_amp_profile(length, fadein=False, fadeout=False):
 
 
 f0_profiles = {
-    'pipe': lambda t: gererate_f0_profile(t, GLOBAL_F0_MEAN, t[-1], GLOBAL_F0_MEAN, 'linear'),
+    "pipe": lambda t: gererate_f0_profile(t, GLOBAL_F0_MEAN, t[-1], GLOBAL_F0_MEAN, "linear"),
     # 'pipe-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'linear'),
     # 'pipe-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'linear'),
-    'squeak-up': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'logarithmic'),
-    'squeak-down': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'logarithmic'),
-    'squeak-convex': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic'),
-    'squeak-convex-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic',
-                                                        centre=1 / 3),
-    'squeak-convex-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, 'quadratic',
-                                                         centre=2 / 3),
-    'squeak-concave': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic'),
-    'squeak-concave-left': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic',
-                                                         centre=1 / 3),
-    'squeak-concave-right': lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, 'quadratic',
-                                                          centre=2 / 3),
+    "squeak-up": lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, "logarithmic"),
+    "squeak-down": lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, "logarithmic"),
+    "squeak-convex": lambda t: gererate_f0_profile(t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, "quadratic"),
+    "squeak-convex-left": lambda t: gererate_f0_profile(
+        t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, "quadratic", centre=1 / 3
+    ),
+    "squeak-convex-right": lambda t: gererate_f0_profile(
+        t, GLOBAL_F0_MAX, t[-1], GLOBAL_F0_MIN, "quadratic", centre=2 / 3
+    ),
+    "squeak-concave": lambda t: gererate_f0_profile(t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, "quadratic"),
+    "squeak-concave-left": lambda t: gererate_f0_profile(
+        t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, "quadratic", centre=1 / 3
+    ),
+    "squeak-concave-right": lambda t: gererate_f0_profile(
+        t, GLOBAL_F0_MIN, t[-1], GLOBAL_F0_MAX, "quadratic", centre=2 / 3
+    ),
 }
 
 amp_profiles = {
-    'constant': lambda length: generate_amp_profile(length, fadein=False, fadeout=False),
+    "constant": lambda length: generate_amp_profile(length, fadein=False, fadeout=False),
     # 'fade-in': lambda length: generate_amp_profile(length, fadein=True, fadeout=False),
     # 'fade-out': lambda length: generate_amp_profile(length, fadein=False, fadeout=True),
     # 'fade-in-out': lambda length: generate_amp_profile(length, fadein=True, fadeout=True),
@@ -96,14 +102,13 @@ def generate_chirp(f0_profile, amp_profile, nsamples):
     time_arr, t1f, t2, t2f, method = f0_profiles[f0_profile](time_arr)
     amp = amp_profiles[amp_profile](len(time_arr))
 
-    signal = scipy.signal.chirp(
-        time_arr, t1f, t2, t2f, method=method).astype(np.float32)
+    signal = scipy.signal.chirp(time_arr, t1f, t2, t2f, method=method).astype(np.float32)
     signal *= amp
 
     return signal
 
 
-def generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat'):
+def generate_all_chirps(duration, fs, matfile="/tmp/chirps.mat"):
     mat = {}
     chirps = []
 
@@ -115,9 +120,8 @@ def generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat'):
             chirp = generate_chirp(name, amp_profile_name, duration, fs)
 
             if matfile:
-                mat['chirp_{}_{}'.format(
-                    matlab_f0_idx, matlab_amp_idx)] = chirp
-                mat['fs_{}_{}'.format(matlab_f0_idx, matlab_amp_idx)] = fs
+                mat["chirp_{}_{}".format(matlab_f0_idx, matlab_amp_idx)] = chirp
+                mat["fs_{}_{}".format(matlab_f0_idx, matlab_amp_idx)] = fs
 
             chirps.append(chirp)
 
@@ -127,8 +131,8 @@ def generate_all_chirps(duration, fs, matfile='/tmp/chirps.mat'):
             # stream.stop_stream()
             # stream.close()
             # p.terminate()
-    mat['f0_profiles_count'] = len(f0_profile_names)
-    mat['amp_profiles_count'] = len(amp_profile_names)
+    mat["f0_profiles_count"] = len(f0_profile_names)
+    mat["amp_profiles_count"] = len(amp_profile_names)
 
     if matfile:
         savemat(matfile, mdict=mat)
@@ -142,50 +146,54 @@ def generate_chirp_dictionary(pklfile, database):
     :param pklfile: path to the pickle file to be saved
     :return: None
     """
-    durations = list(set(Segment.objects.filter(audio_file__database=database)
-                         .annotate(duration=F('end_time_ms') - F('start_time_ms'))
-                         .values_list('duration', flat=True)))
+    durations = list(
+        set(
+            Segment.objects.filter(audio_file__database=database)
+            .annotate(duration=F("end_time_ms") - F("start_time_ms"))
+            .values_list("duration", flat=True)
+        )
+    )
 
-    fss = list(set(Segment.objects.filter(audio_file__database=database)
-                   .values_list('audio_file__fs', flat=True)))
+    fss = list(set(Segment.objects.filter(audio_file__database=database).values_list("audio_file__fs", flat=True)))
 
     chirp_dict = OrderedDict()
     fs = fss[0]
 
-    bar = Bar('Creating chirps', max=len(durations) * len(f0_profile_names) * len(amp_profile_names))
+    bar = Bar(
+        "Creating chirps",
+        max=len(durations) * len(f0_profile_names) * len(amp_profile_names),
+    )
     for duration in durations:
         _amp = {}
         for amp_profile_name in amp_profile_names:
             _f0 = {}
             for f0_profile_name in f0_profile_names:
-                chirp = generate_chirp(
-                    f0_profile_name, amp_profile_name, duration, fs)
+                chirp = generate_chirp(f0_profile_name, amp_profile_name, duration, fs)
                 _f0[f0_profile_name] = chirp
                 bar.next()
             _amp[amp_profile_name] = _f0
         chirp_dict[duration] = _amp
     bar.finish()
 
-    with open(pklfile, 'wb') as f:
+    with open(pklfile, "wb") as f:
         pickle.dump(chirp_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            '--database-name',
-            action='store',
-            dest='database_name',
+            "--database-name",
+            action="store",
+            dest="database_name",
             required=True,
             type=str,
-            help='E.g Bellbird, Whale, ...',
+            help="E.g Bellbird, Whale, ...",
         )
 
     def handle(self, database_name, *args, **options):
         database, _ = Database.objects.get_or_create(name=database_name)
 
-        generate_chirp_dictionary(
-            'chirps-{}.pkl'.format(database_name), database)
+        generate_chirp_dictionary("chirps-{}.pkl".format(database_name), database)
 
         # chirp = generate_chirp('pipe', 'constant', 182 / 1000, 48000)
         #

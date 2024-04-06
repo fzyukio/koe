@@ -1,22 +1,31 @@
+from django.test import TestCase
+
 import h5py
 import numpy as np
-from django.test import TestCase
 from memoize import memoize
 from scipy.stats import zscore
 
 from koe import wavfile
-from koe.utils import wav_2_mono
-from koe.utils import split_segments, split_classwise, divide_conquer, one_hot, get_closest_neighbours
+from koe.utils import (
+    divide_conquer,
+    get_closest_neighbours,
+    one_hot,
+    split_classwise,
+    split_segments,
+    wav_2_mono,
+)
 
 
 @memoize(timeout=60)
 def _cached_foo(arg1, arg2, args):
-    key = '{}-{}-{}'.format(arg1, arg2, '-'.join('{}={}'.format(x, y) for x, y in args.items()))
+    key = "{}-{}-{}".format(
+        arg1, arg2, "-".join("{}={}".format(x, y) for x, y in args.items())
+    )
     if key in _cached_foo.cached:
         _cached_foo.cached[key] += 1
     else:
         _cached_foo.cached[key] = 1
-    return '#{}:{}'.format(_cached_foo.cached[key], key)
+    return "#{}:{}".format(_cached_foo.cached[key], key)
 
 
 _cached_foo.cached = {}
@@ -44,7 +53,7 @@ class KoeUtilsTest(TestCase):
         self.assertTrue((segs == correct_segs).all())
 
     def test_read_segment(self):
-        filepath = 'tests/example 1.wav'
+        filepath = "tests/example 1.wav"
 
         fs, sig = wav_2_mono(filepath, normalised=True)
         full_siglen = len(sig)
@@ -57,32 +66,39 @@ class KoeUtilsTest(TestCase):
         # Test reading segments of different length from different starting points.
         # The returned segment must have the prescribed length
         for beg_ms in [0, 1, 2, 20, 30, 100]:
-            for length_ms in [1, 100, 150, 153, 200, max_end_ms-beg_ms]:
+            for length_ms in [1, 100, 150, 153, 200, max_end_ms - beg_ms]:
                 end_ms = beg_ms + length_ms
-                segment1 = wavfile.read_segment(filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True)
+                segment1 = wavfile.read_segment(
+                    filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True
+                )
                 segment1_len_ms = np.round(len(segment1) * 1000 / fs)
                 self.assertEqual(segment1_len_ms, length_ms)
 
         framelength = 256
 
         for beg_ms in [0, 1, 2, 20, 30, 100]:
-            for length_ms in [1, 100, 150, 153, 200, max_end_ms-beg_ms]:
+            for length_ms in [1, 100, 150, 153, 200, max_end_ms - beg_ms]:
                 correct_length = int(length_ms * fs / 1000)
                 if correct_length % framelength != 0:
                     correct_length = np.ceil(correct_length / framelength) * framelength
 
                 end_ms = beg_ms + length_ms
-                segment1 = wavfile.read_segment(filepath, beg_ms=beg_ms, end_ms=end_ms, mono=True,
-                                                winlen=framelength)
+                segment1 = wavfile.read_segment(
+                    filepath,
+                    beg_ms=beg_ms,
+                    end_ms=end_ms,
+                    mono=True,
+                    winlen=framelength,
+                )
 
                 self.assertEqual(correct_length, len(segment1))
 
     def test_zscore(self):
-        with h5py.File('tests/zscore.h5', 'r') as hf:
-            x = hf['x'].value.ravel()
-            self.z = hf['z'].value.ravel()
-            xx = hf['xx'].value.T
-            self.zz = hf['zz'].value.T
+        with h5py.File("tests/zscore.h5", "r") as hf:
+            x = hf["x"].value.ravel()
+            self.z = hf["z"].value.ravel()
+            xx = hf["xx"].value.T
+            self.zz = hf["zz"].value.T
 
             z = zscore(x)
             self.assertTrue(np.allclose(z, self.z))
@@ -92,19 +108,19 @@ class KoeUtilsTest(TestCase):
 
     def test_memorise(self):
         cached1 = _cached_foo(1, 2, dict(x=1, y=2))
-        self.assertEqual('#1:1-2-x=1-y=2', cached1)
+        self.assertEqual("#1:1-2-x=1-y=2", cached1)
 
         cached2 = _cached_foo(2, 2, dict(x=1, y=2))
         cached2 = _cached_foo(2, 2, dict(x=1, y=2))
         cached2 = _cached_foo(2, 2, dict(x=1, y=2))
         cached2 = _cached_foo(2, 2, dict(x=1, y=2))
-        self.assertEqual('#1:2-2-x=1-y=2', cached2)
+        self.assertEqual("#1:2-2-x=1-y=2", cached2)
 
         cached3 = _cached_foo(1, 2, dict(x=1, y=2))
-        self.assertEqual('#1:1-2-x=1-y=2', cached3)
+        self.assertEqual("#1:1-2-x=1-y=2", cached3)
 
         cached4 = _cached_foo(2, 2, dict(x=1, y=2, z=1))
-        self.assertEqual('#1:2-2-x=1-y=2-z=1', cached4)
+        self.assertEqual("#1:2-2-x=1-y=2-z=1", cached4)
 
     def test_split_kfold_classwise(self):
         nclasses = 10
@@ -130,11 +146,11 @@ class KoeUtilsTest(TestCase):
             fold1 = folds_iter1[i]
             fold2 = folds_iter2[i]
 
-            test1 = fold1['test']
-            train1 = fold1['train']
+            test1 = fold1["test"]
+            train1 = fold1["train"]
 
-            test2 = fold2['test']
-            train2 = fold2['train']
+            test2 = fold2["test"]
+            train2 = fold2["train"]
 
             all1 = np.concatenate((test1, train1))
             all1.sort()
@@ -176,17 +192,17 @@ class KoeUtilsTest(TestCase):
             self.assertTrue(np.allclose(divs[i], divs_[i]))
 
     def test_one_hot(self):
-        labels = ['A', 'BC', 'D', 'BC']
+        labels = ["A", "BC", "D", "BC"]
         correct = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 0]]
 
         encoded_labels, _ = one_hot(labels)
         self.assertTrue(np.allclose(correct, encoded_labels))
 
     def test_get_closest_neighbours(self):
-        distmat = np.array([
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-        ]) / 10.
+        distmat = (
+            np.array([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]])
+            / 10.0
+        )
 
-        labels = np.array(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'])
+        labels = np.array(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
         get_closest_neighbours(distmat, labels)

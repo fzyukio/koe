@@ -1,13 +1,15 @@
-import numpy as np
-from ced import pyed
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
+
+import numpy as np
+from ced import pyed
 from progress.bar import Bar
+from pymlfunc import normxcorr2
 from scipy.cluster.hierarchy import linkage
 
 from koe.model_utils import natural_order
 from koe.models import Coordinate, Database
-from pymlfunc import normxcorr2
+
 from .ftxtract import extract_funcs
 
 
@@ -31,7 +33,7 @@ def calc_gap(feature_arrays):
     if len(feature_array_shape) == 1:
         return np.array([0])
 
-    gap = np.zeros((feature_array_shape[1], ), dtype=np.float)
+    gap = np.zeros((feature_array_shape[1],), dtype=np.float)
     return gap
 
 
@@ -63,80 +65,91 @@ def euclid(seg_one_f0, seg_two_f0, *args, **kwargs):
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            '--features',
-            action='store',
-            dest='features',
+            "--features",
+            action="store",
+            dest="features",
             required=True,
-            help='List of features you want to use to represent syllables and acoustic patterns',
+            help="List of features you want to use to represent syllables and acoustic patterns",
         )
 
         parser.add_argument(
-            '--dists',
-            action='store',
-            dest='dists',
+            "--dists",
+            action="store",
+            dest="dists",
             required=True,
-            help='List of distance measure algorithm [euclid, euclid_square, manhattan]',
+            help="List of distance measure algorithm [euclid, euclid_square, manhattan]",
         )
 
         parser.add_argument(
-            '--metrics',
-            action='store',
-            dest='metrics',
+            "--metrics",
+            action="store",
+            dest="metrics",
             required=True,
-            help='List of edit distance algorithms [dtw, edr, erp, lcss, xcorr2]',
+            help="List of edit distance algorithms [dtw, edr, erp, lcss, xcorr2]",
         )
 
         parser.add_argument(
-            '--norms',
-            action='store',
-            dest='norms',
-            default='none',
-            help='List of normalisation algorithm [none, max]',
+            "--norms",
+            action="store",
+            dest="norms",
+            default="none",
+            help="List of normalisation algorithm [none, max]",
         )
 
         parser.add_argument(
-            '--database-name',
-            action='store',
-            dest='database_name',
+            "--database-name",
+            action="store",
+            dest="database_name",
             required=True,
             type=str,
-            help='E.g Bellbird, Whale, ...',
+            help="E.g Bellbird, Whale, ...",
         )
 
         parser.add_argument(
-            '--algorithm-name',
-            action='store',
-            dest='algorithm_name',
+            "--algorithm-name",
+            action="store",
+            dest="algorithm_name",
             default=None,
             type=str,
-            help='E.g Bellbird, Whale, ...',
+            help="E.g Bellbird, Whale, ...",
         )
 
-    def handle(self, features, dists, metrics, norms, database_name, algorithm_name, *args, **options):
+    def handle(
+        self,
+        features,
+        dists,
+        metrics,
+        norms,
+        database_name,
+        algorithm_name,
+        *args,
+        **options,
+    ):
         from koe.models import Segment
+
         # DistanceMatrix.objects.all().delete()
         database, _ = Database.objects.get_or_create(name=database_name)
         segments = Segment.objects.filter(audio_file__database=database)
 
-        unsorted_ids = np.array(segments.values_list('id', flat=True))
+        unsorted_ids = np.array(segments.values_list("id", flat=True))
         sorted_idx = np.argsort(unsorted_ids)
         segments_ids = unsorted_ids[sorted_idx]
 
         nsegs = len(segments_ids)
 
-        for feature in features.split(','):
-            _split = feature.split(':')
+        for feature in features.split(","):
+            _split = feature.split(":")
             configs = _split[1] if len(_split) > 1 else []
             config = {}
-            config_str = ''
+            config_str = ""
             if configs:
-                for c in configs.split(';'):
-                    param, value = c.split('=')
+                for c in configs.split(";"):
+                    param, value = c.split("=")
                     config[param] = value
                 for k, v in config.items():
-                    config_str += '{}={}-'.format(k, v)
+                    config_str += "{}={}-".format(k, v)
             else:
-                config_str = '-'
+                config_str = "-"
 
             feature_name = _split[0]
             bulk_extract_func = None
@@ -144,11 +157,10 @@ class Command(BaseCommand):
             chirps_feature_array = None
             nchirps = 0
 
-            for dist_name in dists.split(','):
-                for metric_name in metrics.split(','):
-                    for norm in norms.split(','):
-                        test_name = '{}-{}{}-{}-{}'.format(
-                            feature_name, config_str, dist_name, metric_name, norm)
+            for dist_name in dists.split(","):
+                for metric_name in metrics.split(","):
+                    for norm in norms.split(","):
+                        test_name = "{}-{}{}-{}-{}".format(feature_name, config_str, dist_name, metric_name, norm)
                         if bulk_extract_func is None or segment_feature_array is None:
                             bulk_extract_func = extract_funcs[feature_name]
                             segment_feature_array = bulk_extract_func(segments, config, False)
@@ -159,29 +171,31 @@ class Command(BaseCommand):
 
                             nchirps = len(chirps_feature_array[0])
 
-                        bar = Bar('Find coordinates of the segments ({})'.format(test_name), max=nsegs,
-                                  suffix='%(index)d/%(max)d %(elapsed)ds/%(eta)ds')
-                        coordinates = np.zeros(
-                            (nsegs, nchirps), dtype=np.float64)
+                        bar = Bar(
+                            "Find coordinates of the segments ({})".format(test_name),
+                            max=nsegs,
+                            suffix="%(index)d/%(max)d %(elapsed)ds/%(eta)ds",
+                        )
+                        coordinates = np.zeros((nsegs, nchirps), dtype=np.float64)
 
-                        if metric_name == 'edr':
+                        if metric_name == "edr":
                             sigmas = calc_sigma(segment_feature_array)
                             metric_func = pyed.Edr
-                            args = {'sigmas': sigmas}
-                        elif metric_name == 'erp':
+                            args = {"sigmas": sigmas}
+                        elif metric_name == "erp":
                             gap = calc_gap(segment_feature_array)
                             metric_func = pyed.Erp
-                            args = {'gap': gap}
-                        elif metric_name == 'lcss':
+                            args = {"gap": gap}
+                        elif metric_name == "lcss":
                             sigmas = calc_sigma(segment_feature_array)
                             metric_func = pyed.Lcss
-                            args = {'sigmas': sigmas}
-                        elif metric_name == 'dtw':
+                            args = {"sigmas": sigmas}
+                        elif metric_name == "dtw":
                             metric_func = pyed.Dtw
                             args = {}
-                        elif metric_name == 'xcorrs':
+                        elif metric_name == "xcorrs":
                             metric_func = xcorrs
-                            args = dict(boundary='symm', mode='same')
+                            args = dict(boundary="symm", mode="same")
                         else:
                             metric_func = euclid
 
@@ -193,13 +207,12 @@ class Command(BaseCommand):
 
                             for j in range(nchirps):
                                 seg_two_f0 = seg_one_chirps[j]
-                                distance = metric_func(
-                                    seg_one_f0, seg_two_f0, args, settings)
+                                distance = metric_func(seg_one_f0, seg_two_f0, args, settings)
                                 coordinates[i, j] = distance.get_dist()
                             bar.next()
                         bar.finish()
 
-                        tree = linkage(coordinates, method='average')
+                        tree = linkage(coordinates, method="average")
                         order = natural_order(tree)
                         sorted_order = np.argsort(order)
 
@@ -232,5 +245,5 @@ class Command(BaseCommand):
                                 break
                             except IntegrityError:
                                 i += 1
-                                algorithm_name = '{} #{}'.format(test_name, i)
+                                algorithm_name = "{} #{}".format(test_name, i)
                                 c.algorithm = algorithm_name

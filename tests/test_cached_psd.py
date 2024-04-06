@@ -1,11 +1,16 @@
-import numpy as np
-
 from django.test import TestCase
+
+import numpy as np
 from librosa import feature as rosaft
 from librosa.core.spectrum import _spectrogram
 
-from koe.features.freq_domain import spectral_flatness, spectral_bandwidth, spectral_centroid, spectral_contrast,\
-    spectral_rolloff
+from koe.features.freq_domain import (
+    spectral_bandwidth,
+    spectral_centroid,
+    spectral_contrast,
+    spectral_flatness,
+    spectral_rolloff,
+)
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_psd, stft_from_sig
 from koe.utils import wav_2_mono
@@ -20,16 +25,25 @@ tol = 1e-4
 
 class Test(TestCase):
     def setUp(self):
-        filepath = 'tests/example 1.wav'
+        filepath = "tests/example 1.wav"
         self.fs, self.sig = wav_2_mono(filepath, normalised=True)
         self.sig = np.ascontiguousarray(self.sig)
 
-        self.args = dict(nfft=nfft, noverlap=noverlap, win_length=win_length, fs=self.fs, wav_file_path=None, start=0,
-                         end=None, sig=self.sig, center=True)
+        self.args = dict(
+            nfft=nfft,
+            noverlap=noverlap,
+            win_length=win_length,
+            fs=self.fs,
+            wav_file_path=None,
+            start=0,
+            end=None,
+            sig=self.sig,
+            center=True,
+        )
 
     def test_stft_from_sig(self):
         psd1, _ = _spectrogram(y=self.sig, S=None, n_fft=nfft, hop_length=stepsize)
-        psd2 = np.abs(stft_from_sig(self.sig, nfft, noverlap, win_length, 'hann', True))
+        psd2 = np.abs(stft_from_sig(self.sig, nfft, noverlap, win_length, "hann", True))
 
         self.assertTrue(np.allclose(psd1, psd2))
 

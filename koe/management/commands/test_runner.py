@@ -17,7 +17,7 @@ from koe.task import ConsoleTaskRunner
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        runner = ConsoleTaskRunner(prefix='Testing')
+        runner = ConsoleTaskRunner(prefix="Testing")
         limit = 100
         runner.start(limit=limit)
         per = 2

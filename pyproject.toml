@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "koe"
+version = "0.1.0"
+description = ""
+authors = ["Sébastien Eustace <sebastien@eustace.io>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+Django = "2.0.4"
+numpy = "^1.26.4"
+scipy = "^1.13.0"
+dotmap = "^1.3.30"
+whitenoise = "3.3.0"
+celery = "4.3.1"
+django-bulk-update = "2.2.0"
+django-tz-detect = "0.2.10"
+django-js-reverse = "0.8.2"
+nltk = "^3.8.1"
+pycspade = "^0.6.6"
+pydub = "^0.25.1"
+scikit-learn = "^1.4.1.post1"
+scikit-image = "^0.22.0"
+dj-database-url = "0.4.2"
+pymlfunc = "^0.0.3"
+librosa = "^0.10.1"
+sortedcontainers = "^2.4.0"
+raven = "6.10.0"
+progress = "^1.6"
+django-memoize = { git = "https://github.com/fzyukio/django-memoize", rev = "342a812ff0c864f3480c7e0c14b92ae1cf85d6b2" }
+spectrum = { git = "https://github.com/fzyukio/spectrum", rev = "51fdb7b8c8ce47fde4102c24b336193e16cbbad7" }
+pyyaml = "^6.0.1"
+colorama = "^0.4.6"
+django-webpack-loader = "0.6.0"
+django-widget-tweaks = "1.4.1"
+django-extensions = "2.1.6"
+pymysql = {extras = ["rsa"], version = "^1.1.0"}
+django-redis = "4.10.0"
+django-log-request-id = "1.3.2"
+django-cors-headers = "2.5.3"
+
+[tool.poetry.dev-dependencies]
+mypy = "1.9.0"
+ruff = "0.3.5"
+
+
+[tool.poetry.group.dev.dependencies]
+networkx = "^3.2.1"
+types-pyyaml = "^6.0.12.20240311"
+types-colorama = "^0.4.15.20240311"
+pytest = "^8.1.1"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+exclude = [
+    "migrations",
+    "koe/management/commands",
+    "koe/management/abstract_commands",
+    "tests",
+    "neuralnet_models.py",
+    "rnn_train.py",
+    "koe/ml/",
+    "jupyter_notebook_config.py",
+    "koe/management/utils/matplotlib_utils.py",
+    "poetry-install.py",
+    "neuralnet_models.py",
+]
+disable_error_code = [
+    "import-untyped",
+    "var-annotated"
+]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

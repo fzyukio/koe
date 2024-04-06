@@ -7,8 +7,10 @@ from django.conf import settings
 from django.db import migrations
 
 
-SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}.png')
-SPECT_FFT_BAK_TEMPLATE = os.path.join(settings.MEDIA_URL, 'spect', 'syllable', '{}-bak.png')
+SPECT_FFT_TEMPLATE = os.path.join(settings.MEDIA_URL, "spect", "syllable", "{}.png")
+SPECT_FFT_BAK_TEMPLATE = os.path.join(
+    settings.MEDIA_URL, "spect", "syllable", "{}-bak.png"
+)
 
 
 def change_spectrogram_to_use_tid(apps, schema_editor):
@@ -20,17 +22,16 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
     This migration remove all identical copies of the original syllable
     """
     db_alias = schema_editor.connection.alias
-    model = apps.get_model('koe', 'Segment')
+    model = apps.get_model("koe", "Segment")
 
-    vl = model.objects.using(db_alias).all().values_list('id', 'tid')
-    tids = model.objects.using(db_alias).all().values_list('tid', flat=True)
+    vl = model.objects.using(db_alias).all().values_list("id", "tid")
+    tids = model.objects.using(db_alias).all().values_list("tid", flat=True)
     tid2ids = {x: [] for x in tids}
     to_delete = []
 
     for id, tid in vl:
         tid2ids[tid].append(id)
     for tid, ids in tid2ids.items():
-
         # The original syllable is always the one with smallest ID
         min_id = min(ids)
         for id in ids:
@@ -40,7 +41,7 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
                 if os.path.isfile(sid_path):
                     copyfile(sid_path, tid_path_bak)
                 else:
-                    warning('File {} is missing'.format(sid_path))
+                    warning("File {} is missing".format(sid_path))
             else:
                 if os.path.isfile(sid_path):
                     to_delete.append(sid_path)
@@ -60,9 +61,11 @@ def change_spectrogram_to_use_tid(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('koe', '0013_auto_20181015_0335'),
+        ("koe", "0013_auto_20181015_0335"),
     ]
 
     operations = [
-        migrations.RunPython(change_spectrogram_to_use_tid, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            change_spectrogram_to_use_tid, reverse_code=migrations.RunPython.noop
+        ),
     ]

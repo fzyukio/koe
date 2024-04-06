@@ -2,48 +2,50 @@
 Import syllables (not elements) from luscinia (after songs have been imported)
 """
 
-import psycopg2.extras
-from openpyxl import load_workbook
 import argparse
 
-COLUMN_NAMES = ['Individual name', 'Corrected to']
+import psycopg2.extras
+from openpyxl import load_workbook
 
-parser = argparse.ArgumentParser(description='Process some integers.')
+
+COLUMN_NAMES = ["Individual name", "Corrected to"]
+
+parser = argparse.ArgumentParser(description="Process some integers.")
 
 parser.add_argument(
-    '--db',
-    action='store',
-    dest='db',
+    "--db",
+    action="store",
+    dest="db",
     required=True,
     type=str,
-    help='Database name',
+    help="Database name",
 )
 
 parser.add_argument(
-    '--port',
-    action='store',
-    dest='port',
+    "--port",
+    action="store",
+    dest="port",
     required=True,
     type=str,
-    help='Port',
+    help="Port",
 )
 
 parser.add_argument(
-    '--host',
-    action='store',
-    dest='host',
+    "--host",
+    action="store",
+    dest="host",
     required=True,
     type=str,
-    help='Host',
+    help="Host",
 )
 
 parser.add_argument(
-    '--xls',
-    action='store',
-    dest='xls',
+    "--xls",
+    action="store",
+    dest="xls",
     required=True,
     type=str,
-    help='Full path to the xls/xlsx/xlsm... file',
+    help="Full path to the xls/xlsx/xlsm... file",
 )
 
 args = parser.parse_args()
@@ -55,16 +57,15 @@ xls = args.xls
 conn = None
 
 wb = load_workbook(filename=xls, read_only=True, data_only=True)
-ws = wb['Labels']
+ws = wb["Labels"]
 
 try:
     port = int(port)
-    conn = psycopg2.connect(
-        "dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
-    conn.set_client_encoding('LATIN1')
+    conn = psycopg2.connect("dbname={} user=sa password='sa' host={} port={}".format(db, host, port))
+    conn.set_client_encoding("LATIN1")
 
     cur = conn.cursor()
-    cur.execute('select id, name from individual')
+    cur.execute("select id, name from individual")
     songs = cur.fetchall()
     song_id_to_name = {}
     song_name_to_id = {}
@@ -118,8 +119,7 @@ try:
         if corrected_name:
             try:
                 id = song_name_to_id[original_name]
-                cur.execute('update individual set name=\'%s\' where id=%i' % (
-                    corrected_name, id))
+                cur.execute("update individual set name='%s' where id=%i" % (corrected_name, id))
                 conn.commit()
             except KeyError:
                 pass

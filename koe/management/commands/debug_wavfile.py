@@ -1,11 +1,13 @@
 import os
 
 from django.core.management.base import BaseCommand
+
 from progress.bar import Bar
 
 from koe.models import AudioFile, Segment
 from koe.utils import wav_path
 from koe.wavfile import read_segment
+
 
 already_tested = 0
 
@@ -44,7 +46,7 @@ class Command(BaseCommand):
         num_segments = Segment.objects.all().count()
         num_tested = 0
 
-        bar = Bar('Testing...', max=num_segments)
+        bar = Bar("Testing...", max=num_segments)
         for audio_file in audio_files:
             segments = Segment.objects.filter(audio_file=audio_file)
             num_segments = segments.count()
@@ -58,7 +60,13 @@ class Command(BaseCommand):
                 begin_ms = segment.start_time_ms
                 end_ms = segment.end_time_ms
                 if os.path.isfile(audio_file_path):
-                    read_segment(audio_file_path, beg_ms=begin_ms, end_ms=end_ms, mono=True, normalised=True)
+                    read_segment(
+                        audio_file_path,
+                        beg_ms=begin_ms,
+                        end_ms=end_ms,
+                        mono=True,
+                        normalised=True,
+                    )
                 bar.next()
                 num_tested += 1
 

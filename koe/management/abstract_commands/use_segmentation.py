@@ -2,30 +2,57 @@
 Convert audio file to spectrogram. Then use the trained segmentation encoder to detect syllables.
 Then display the segmentation on a webpage
 """
+
 import os
 import pickle
+import time
 from abc import abstractmethod
 
-import numpy as np
-import time
-from PIL import Image
 from django.core.management.base import BaseCommand
+
+import numpy as np
+from PIL import Image
 from progress.bar import Bar
 
 from koe.management.commands.run_segmentation_rnn import extract_psd, good_audio_file_ids
 from koe.model_utils import get_or_error
-from koe.models import Database, AudioFile, Segment
+from koe.models import AudioFile, Database, Segment
 from koe.spect_utils import extractors, psd2img
 from root.utils import mkdirp
 
-bad_groundtruth = [14413, 14358, 14408, 19398, 14480, 14463, 14531, 20067, 14484, 14529, 14530, 14017, 20033, 14478,
-                   14486, 14016, 14511, 14372, 14438, 14118, 14528, 14019, 14116]
+
+bad_groundtruth = [
+    14413,
+    14358,
+    14408,
+    19398,
+    14480,
+    14463,
+    14531,
+    20067,
+    14484,
+    14529,
+    14530,
+    14017,
+    20033,
+    14478,
+    14486,
+    14016,
+    14511,
+    14372,
+    14438,
+    14118,
+    14528,
+    14019,
+    14116,
+]
 
 
 def generate_html(segmentation_results):
     segmentation_results_sorted = sorted(segmentation_results.items(), key=lambda item: (-item[1][-1], -item[1][1]))
 
-    html_lines = ['''
+    html_lines = [
+        """
 <tr>
     <th>ID</th>
     <th>MAP</th>
@@ -34,10 +61,11 @@ def generate_html(segmentation_results):
     <th>Recall</th>
     <th>Spect</th>
 </tr>
-    ''']
+    """
+    ]
     for sid, (img_path, map, f1score, precision, recall) in segmentation_results_sorted:
         html_lines.append(
-            '''
+            """
             <tr>
                 <td>{}</td>
                 <td>{}</td>
@@ -46,14 +74,14 @@ def generate_html(segmentation_results):
                 <td>{}</td>
                 <td><img src="{}"/></td>
             </tr>
-            '''.format(sid, map, f1score, precision, recall, img_path)
+            """.format(sid, map, f1score, precision, recall, img_path)
         )
 
-    html = '''
+    html = """
 <table style="width:100%">
 {}
 </table>
-    '''.format(''.join(html_lines))
+    """.format("".join(html_lines))
     return html
 
 
@@ -98,6 +126,7 @@ def match(lst, ratio, ground):
                 count_map: record how many proposals is each ground truth matched by
                 index_map: index_list of each video for ground truth
     """
+
     def overlap(prop, ground):
         l_p, s_p, e_p = prop
         l_g, s_g, e_g = ground
@@ -186,18 +215,18 @@ def ap(lst, ratio, ground):
 
 
 def showcase_segmentation(variables, segmenter):
-    tmp_dir = variables['tmp_dir']
-    extractor = variables['extractor']
-    is_log_psd = variables['is_log_psd']
-    database_name = variables['database_name']
-    normalise = variables['normalise']
+    tmp_dir = variables["tmp_dir"]
+    extractor = variables["extractor"]
+    is_log_psd = variables["is_log_psd"]
+    database_name = variables["database_name"]
+    normalise = variables["normalise"]
 
     database = get_or_error(Database, dict(name__iexact=database_name))
     audio_files = AudioFile.objects.filter(database=database)
 
     segmentation_results = {}
     segmentation_extra = {}
-    bar = Bar('Extracting spectrogram and show segmentation...', max=len(audio_files))
+    bar = Bar("Extracting spectrogram and show segmentation...", max=len(audio_files))
     for audio_file in audio_files:
         af_id = audio_file.id
         if af_id in bad_groundtruth or af_id in good_audio_file_ids:
@@ -207,7 +236,7 @@ def showcase_segmentation(variables, segmenter):
 
         af_duration_ms = int(audio_file.length / audio_file.fs * 1000)
 
-        correct_segments = Segment.objects.filter(audio_file=audio_file).values_list('start_time_ms', 'end_time_ms')
+        correct_segments = Segment.objects.filter(audio_file=audio_file).values_list("start_time_ms", "end_time_ms")
         correct_segments = np.array(list(correct_segments)) / af_duration_ms * duration_frames
         correct_segments = correct_segments.astype(np.int32)
 
@@ -227,23 +256,37 @@ def showcase_segmentation(variables, segmenter):
         score_mAP = ap(auto_segments, theta, correct_segments)
         score_f1, precision, recall = f1(auto_segments, theta, correct_segments)
 
-        img_filename = '{}.png'.format(af_id)
+        img_filename = "{}.png".format(af_id)
         img_path = os.path.join(tmp_dir, img_filename)
 
         img = Image.fromarray(af_spect)
-        img.save(img_path, format='PNG')
+        img.save(img_path, format="PNG")
 
-        segmentation_results[af_id] = (img_filename, score_mAP, score_f1, precision, recall)
-        segmentation_extra[af_id] = (img_filename, score_mAP, score_f1, precision, recall, correct_segments,
-                                     auto_segments, end - start)
+        segmentation_results[af_id] = (
+            img_filename,
+            score_mAP,
+            score_f1,
+            precision,
+            recall,
+        )
+        segmentation_extra[af_id] = (
+            img_filename,
+            score_mAP,
+            score_f1,
+            precision,
+            recall,
+            correct_segments,
+            auto_segments,
+            end - start,
+        )
         bar.next()
 
     html = generate_html(segmentation_results)
-    with open(os.path.join(tmp_dir, 'index.html'), 'w') as f:
+    with open(os.path.join(tmp_dir, "index.html"), "w") as f:
         f.write(html)
-    with open(os.path.join(tmp_dir, 'results.pkl'), 'wb') as f:
+    with open(os.path.join(tmp_dir, "results.pkl"), "wb") as f:
         pickle.dump(segmentation_results, f)
-    with open(os.path.join(tmp_dir, 'extra_results.pkl'), 'wb') as f:
+    with open(os.path.join(tmp_dir, "extra_results.pkl"), "wb") as f:
         pickle.dump(segmentation_extra, f)
     bar.finish()
 
@@ -262,8 +305,14 @@ class Segmenter(object):
 
 class UseSegmenter(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--database-name', action='store', dest='database_name', required=True, type=str)
-        parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
+        parser.add_argument(
+            "--database-name",
+            action="store",
+            dest="database_name",
+            required=True,
+            type=str,
+        )
+        parser.add_argument("--tmp-dir", action="store", dest="tmp_dir", default="/tmp", type=str)
 
     @abstractmethod
     def create_segmenter(self, variables) -> Segmenter:
@@ -278,21 +327,21 @@ class UseSegmenter(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        database_name = options['database_name']
-        tmp_dir = options['tmp_dir']
+        database_name = options["database_name"]
+        tmp_dir = options["tmp_dir"]
 
         variables = self.create_variables(options)
 
-        format = variables['format']
+        format = variables["format"]
         extractor = extractors[format]
 
         if not os.path.isdir(tmp_dir):
             mkdirp(tmp_dir)
 
-        variables['tmp_dir'] = tmp_dir
-        variables['extractor'] = extractor
-        variables['is_log_psd'] = format.startswith('log_')
-        variables['database_name'] = database_name
+        variables["tmp_dir"] = tmp_dir
+        variables["extractor"] = extractor
+        variables["is_log_psd"] = format.startswith("log_")
+        variables["database_name"] = database_name
 
         segmenter = self.create_segmenter(variables)
 

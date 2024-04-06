@@ -1,7 +1,7 @@
 # Use an official Python runtime as a base image
-FROM python:3.6 as koeapp
+FROM python:3.9.19 as base
 
-MAINTAINER Yukio Fukuzawa
+LABEL Author="Yukio Fukuzawa"
 
 ENV PYTHONUNBUFFERED 1
 
@@ -14,25 +14,30 @@ ENV https_proxy=''
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
-# backports needed to install ffmpeg
-# RUN echo 'deb http://httpredir.debian.org/debian jessie-backports main non-free \n\
-# deb-src http://httpredir.debian.org/debian jessie-backports main non-free' >> /etc/apt/sources.list
-
 # Install extra packages.
-RUN apt-get update && apt-get install -y --no-install-recommends vim mariadb-client ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt-get install -y --no-install-recommends vim mariadb-client ffmpeg libxml2-dev libxmlsec1-dev gfortran #&& rm -rf /var/lib/apt/lists/*
+RUN apt install -y build-essential
+RUN rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /
+COPY pyproject.toml /
 
 ## Install any needed packages specified in requirements.txt
-RUN pip uninstall -y numpy scipy
-RUN pip install Cython numpy==1.19.5 scipy==1.2.1
-RUN pip install -r requirements.txt --no-cache-dir
+RUN python3 -m pip install --upgrade pip
+RUN pip3 uninstall -y numpy scipy
 
-COPY requirements-basic.txt /
-RUN pip install -r requirements-basic.txt --no-cache-dir
+
+# Install Poetry
+COPY poetry-install.py /
+RUN python3 poetry-install.py
+ENV PATH="/root/.local/bin:${PATH}"
+
+COPY pyproject.toml poetry.lock /
+
+# Install dependencies using Poetry
+RUN poetry config virtualenvs.create false && poetry install --without dev
 
 COPY requirements-production.txt /
-RUN pip install -r requirements-production.txt --no-cache-dir
+RUN pip3 install -r requirements-production.txt --no-cache-dir
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

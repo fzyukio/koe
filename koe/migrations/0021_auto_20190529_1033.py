@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0020_auto_20190509_0141'),
+        ("koe", "0020_auto_20190509_0141"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datamatrix',
-            name='aggregations_hash',
+            model_name="datamatrix",
+            name="aggregations_hash",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

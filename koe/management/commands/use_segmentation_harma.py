@@ -2,9 +2,10 @@
 Convert audio file to spectrogram. Then use the trained segmentation encoder to detect syllables.
 Then display the segmentation on a webpage
 """
+
 import numpy as np
 
-from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
+from koe.management.abstract_commands.use_segmentation import Segmenter, UseSegmenter
 
 
 class HarmaSegmenter(Segmenter):
@@ -44,7 +45,7 @@ class HarmaSegmenter(Segmenter):
                     if peak_over_time[right_idx] <= max_val - dropout_thresh:
                         break
 
-                peak_over_time[left_idx:min(nframes, right_idx + 1)] = - np.inf
+                peak_over_time[left_idx : min(nframes, right_idx + 1)] = -np.inf
                 syllable_count += 1
                 x0s.append(left_idx)
                 x1s.append(right_idx)
@@ -69,5 +70,5 @@ class Command(UseSegmenter):
         return HarmaSegmenter()
 
     def create_variables(self, options) -> dict:
-        variables = {'format': 'log_spect', 'normalise': True}
+        variables = {"format": "log_spect", "normalise": True}
         return variables

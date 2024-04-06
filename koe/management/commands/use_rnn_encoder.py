@@ -4,37 +4,37 @@ Train an auto encoder with it
 Then display a pair of original - reconstructed syllable
 Make it playable too
 """
+
 import json
 import os
 from collections import OrderedDict
 
-import numpy as np
 from django.core.management.base import BaseCommand
-from django.db.models import Case
-from django.db.models import F
-from django.db.models import When
+from django.db.models import Case, F, When
+
+import numpy as np
+from ml.s2senc_utils import encode_syllables, read_variables, spect_from_seg
 
 from koe.features.feature_extract import feature_map
 from koe.ml.nd_vl_s2s_autoencoder import NDS2SAEFactory
 from koe.model_utils import get_or_error
-from koe.models import Segment, Database, DataMatrix, AudioFile
-from koe.spect_utils import extractors, psd2img, load_global_min_max
+from koe.models import AudioFile, Database, DataMatrix, Segment
+from koe.spect_utils import extractors, load_global_min_max, psd2img
 from koe.ts_utils import ndarray_to_bytes
-from ml.s2senc_utils import read_variables, spect_from_seg, encode_syllables
 from root.utils import mkdirp
 
 
 def reconstruct_syllables(variables, encoder, session, segs):
-    tmp_dir = variables['tmp_dir']
-    extractor = variables['extractor']
-    denormalised = variables['denormalised']
-    global_max = variables.get('global_max', None)
-    global_min = variables.get('global_min', None)
+    tmp_dir = variables["tmp_dir"]
+    extractor = variables["extractor"]
+    denormalised = variables["denormalised"]
+    global_max = variables.get("global_max", None)
+    global_min = variables.get("global_min", None)
     global_range = global_max - global_min
     num_segs = len(segs)
     batch_size = 200
 
-    is_log_psd = variables['is_log_psd']
+    is_log_psd = variables["is_log_psd"]
 
     num_batches = num_segs // batch_size
     if num_segs / batch_size > num_batches:
@@ -47,7 +47,7 @@ def reconstruct_syllables(variables, encoder, session, segs):
         if batch_idx == num_batches - 1:
             batch_size = num_segs - (batch_size * batch_idx)
 
-        print('Batch #{}/#{} batch size {}'.format(batch_idx, num_batches, batch_size))
+        print("Batch #{}/#{} batch size {}".format(batch_idx, num_batches, batch_size))
 
         lengths = []
         batch_segs = []
@@ -75,18 +75,21 @@ def reconstruct_syllables(variables, encoder, session, segs):
                 recon = recon * global_range + global_min
                 spect = spect * global_range + global_min
 
-            origi_path = os.path.join(tmp_dir, '{}-origi.png'.format(sid))
-            recon_path = os.path.join(tmp_dir, '{}-recon.png'.format(sid))
+            origi_path = os.path.join(tmp_dir, "{}-origi.png".format(sid))
+            recon_path = os.path.join(tmp_dir, "{}-recon.png".format(sid))
             psd2img(spect, origi_path, is_log_psd)
             psd2img(recon, recon_path, is_log_psd)
 
-            reconstruction_result[sid] = ('{}-origi.png'.format(sid), '{}-recon.png'.format(sid))
+            reconstruction_result[sid] = (
+                "{}-origi.png".format(sid),
+                "{}-recon.png".format(sid),
+            )
     return reconstruction_result
 
 
 def encode_into_datamatrix(variables, encoder, session, database_name, kernel_only):
-    with_duration = variables['with_duration']
-    dm_name = variables['dm_name']
+    with_duration = variables["with_duration"]
+    dm_name = variables["dm_name"]
     ndims = encoder.latent_dims
 
     database = get_or_error(Database, dict(name__iexact=database_name))
@@ -103,15 +106,16 @@ def encode_into_datamatrix(variables, encoder, session, database_name, kernel_on
 
     preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(sids)])
     segments = segments.order_by(preserved)
-    tids = segments.values_list('tid', flat=True)
+    tids = segments.values_list("tid", flat=True)
 
-    features = [feature_map['s2s_autoencoded']]
-    col_inds = {'s2s_autoencoded': [0, ndims]}
+    features = [feature_map["s2s_autoencoded"]]
+    col_inds = {"s2s_autoencoded": [0, ndims]}
     if with_duration:
-        features.append(feature_map['duration'])
-        col_inds['duration'] = [ndims, ndims + 1]
-        durations = list(segments.annotate(duration=F('end_time_ms') - F('start_time_ms'))
-                         .values_list('duration', flat=True))
+        features.append(feature_map["duration"])
+        col_inds["duration"] = [ndims, ndims + 1]
+        durations = list(
+            segments.annotate(duration=F("end_time_ms") - F("start_time_ms")).values_list("duration", flat=True)
+        )
         durations = np.array(durations)
         assert len(durations) == len(sids)
         features_value = np.concatenate((features_value, durations.reshape(-1, 1)), axis=1)
@@ -121,8 +125,8 @@ def encode_into_datamatrix(variables, encoder, session, database_name, kernel_on
     dm = DataMatrix(database=database)
     dm.name = dm_name
     dm.ndims = ndims
-    dm.features_hash = '-'.join([str(x.id) for x in features])
-    dm.aggregations_hash = ''
+    dm.features_hash = "-".join([str(x.id) for x in features])
+    dm.aggregations_hash = ""
     dm.save()
 
     full_sids_path = dm.get_sids_path()
@@ -134,41 +138,43 @@ def encode_into_datamatrix(variables, encoder, session, database_name, kernel_on
     ndarray_to_bytes(np.array(sids, dtype=np.int32), full_sids_path)
     ndarray_to_bytes(np.array(tids, dtype=np.int32), full_tids_path)
 
-    with open(full_cols_path, 'w', encoding='utf-8') as f:
+    with open(full_cols_path, "w", encoding="utf-8") as f:
         json.dump(col_inds, f)
 
 
 def reconstruction_html(reconstruction_result):
-    html_lines = ['''
+    html_lines = [
+        """
 <tr>
     <th>ID</th>
     <th>Original</th>
     <th>Reconstructed</th>
 </tr>
-    ''']
+    """
+    ]
     for sid, (origi_path, recon_path) in reconstruction_result.items():
         html_lines.append(
-            '''
+            """
             <tr>
                 <td>{}</td>
                 <td><img src="{}"/></td>
                 <td><img src="{}"/></td>
             </tr>
-            '''.format(sid, origi_path, recon_path)
+            """.format(sid, origi_path, recon_path)
         )
 
-    html = '''
+    html = """
 <table style="width:100%">
 {}
 </table>
-    '''.format(''.join(html_lines))
+    """.format("".join(html_lines))
     return html
 
 
 def showcase_reconstruct(variables, encoder, session, database_name=None, database_only=False):
-    tmp_dir = variables['tmp_dir']
-    sids_for_training = variables['sids_for_training']
-    sids_for_testing = variables['sids_for_testing']
+    tmp_dir = variables["tmp_dir"]
+    sids_for_training = variables["sids_for_training"]
+    sids_for_testing = variables["sids_for_testing"]
     segments_for_training = Segment.objects.filter(id__in=sids_for_training)
     segments_for_testing = Segment.objects.filter(id__in=sids_for_testing)
 
@@ -179,16 +185,16 @@ def showcase_reconstruct(variables, encoder, session, database_name=None, databa
         segments = Segment.objects.filter(audio_file__database=database)
 
         if database_only:
-            constructions['Syllables in database {}'.format(database_name)] = segments
+            constructions["Syllables in database {}".format(database_name)] = segments
         else:
-            constructions['Syllables used to train'] = segments_for_training
-            constructions['Syllables used to test'] = segments_for_testing
+            constructions["Syllables used to train"] = segments_for_training
+            constructions["Syllables used to test"] = segments_for_testing
 
             other_segments = segments.exclude(id__in=sids_for_training + sids_for_testing)
-            constructions['Other syllables in database {}'.format(database_name)] = other_segments
+            constructions["Other syllables in database {}".format(database_name)] = other_segments
     else:
-        constructions['Syllables used to train'] = segments_for_training
-        constructions['Syllables used to test'] = segments_for_testing
+        constructions["Syllables used to train"] = segments_for_training
+        constructions["Syllables used to test"] = segments_for_testing
 
     htmls = {}
     for name, sids in constructions.items():
@@ -196,80 +202,86 @@ def showcase_reconstruct(variables, encoder, session, database_name=None, databa
         html = reconstruction_html(reconstruction_result)
         htmls[name] = html
 
-    with open(os.path.join(tmp_dir, 'reconstruction_result.html'), 'w') as f:
+    with open(os.path.join(tmp_dir, "reconstruction_result.html"), "w") as f:
         for name, html in htmls.items():
-            f.write('<h1>Reconstruction of: {}</h1>'.format(name))
+            f.write("<h1>Reconstruction of: {}</h1>".format(name))
             f.write(html)
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--mode', action='store', dest='mode', default='showcase', type=str)
-        parser.add_argument('--load-from', action='store', dest='load_from', required=True, type=str)
+        parser.add_argument("--mode", action="store", dest="mode", default="showcase", type=str)
+        parser.add_argument("--load-from", action="store", dest="load_from", required=True, type=str)
 
-        parser.add_argument('--database-name', action='store', dest='database_name', required=False, type=str)
-        parser.add_argument('--database-only', action='store_true', dest='database_only', default=False)
-        parser.add_argument('--kernel-only', action='store_true', dest='kernel_only', default=False)
-        parser.add_argument('--tmp-dir', action='store', dest='tmp_dir', default='/tmp', type=str)
-        parser.add_argument('--dm-name', action='store', dest='dm_name', required=False, type=str)
-        parser.add_argument('--format', action='store', dest='format', default='spect', type=str)
-        parser.add_argument('--with-duration', action='store_true', dest='with_duration', default=False)
-        parser.add_argument('--denormalised', action='store_true', dest='denormalised', default=False)
-        parser.add_argument('--min-max-loc', action='store', dest='min_max_loc', default=False)
+        parser.add_argument(
+            "--database-name",
+            action="store",
+            dest="database_name",
+            required=False,
+            type=str,
+        )
+        parser.add_argument("--database-only", action="store_true", dest="database_only", default=False)
+        parser.add_argument("--kernel-only", action="store_true", dest="kernel_only", default=False)
+        parser.add_argument("--tmp-dir", action="store", dest="tmp_dir", default="/tmp", type=str)
+        parser.add_argument("--dm-name", action="store", dest="dm_name", required=False, type=str)
+        parser.add_argument("--format", action="store", dest="format", default="spect", type=str)
+        parser.add_argument("--with-duration", action="store_true", dest="with_duration", default=False)
+        parser.add_argument("--denormalised", action="store_true", dest="denormalised", default=False)
+        parser.add_argument("--min-max-loc", action="store", dest="min_max_loc", default=False)
 
     def handle(self, *args, **options):
-        mode = options['mode']
-        database_name = options['database_name']
-        database_only = options['database_only']
-        kernel_only = options['kernel_only']
-        load_from = options['load_from']
-        tmp_dir = options['tmp_dir']
-        dm_name = options['dm_name']
-        format = options['format']
-        with_duration = options['with_duration']
-        min_max_loc = options['min_max_loc']
-        denormalised = options['denormalised']
+        mode = options["mode"]
+        database_name = options["database_name"]
+        database_only = options["database_only"]
+        kernel_only = options["kernel_only"]
+        load_from = options["load_from"]
+        tmp_dir = options["tmp_dir"]
+        dm_name = options["dm_name"]
+        format = options["format"]
+        with_duration = options["with_duration"]
+        min_max_loc = options["min_max_loc"]
+        denormalised = options["denormalised"]
 
         extractor = extractors[format]
 
         if database_name is None and database_only:
-            raise Exception('only_database must be True when database_name is provided')
+            raise Exception("only_database must be True when database_name is provided")
 
         if denormalised and min_max_loc is None:
-            raise Exception('If data is denomalised, --min-max-loc must be provided')
+            raise Exception("If data is denomalised, --min-max-loc must be provided")
 
-        if mode not in ['showcase', 'dm']:
+        if mode not in ["showcase", "dm"]:
             raise Exception('--mode can only be "showcase" or "dm"')
 
-        if mode == 'showcase':
+        if mode == "showcase":
             if dm_name is not None:
-                raise Exception('Can\'t accept --dm-name argument in showcase mode')
+                raise Exception("Can't accept --dm-name argument in showcase mode")
 
         else:
             if dm_name is None:
-                raise Exception('Must provide --dm-name argument in dm mode')
+                raise Exception("Must provide --dm-name argument in dm mode")
             if database_name is None:
-                raise Exception('database-name is required in dm mode')
+                raise Exception("database-name is required in dm mode")
 
-        if not load_from.lower().endswith('.zip'):
-            load_from += '.zip'
+        if not load_from.lower().endswith(".zip"):
+            load_from += ".zip"
 
         if not os.path.isdir(tmp_dir):
             mkdirp(tmp_dir)
 
         variables = read_variables(load_from)
-        variables['tmp_dir'] = tmp_dir
-        variables['dm_name'] = dm_name
-        variables['extractor'] = extractor
-        variables['with_duration'] = with_duration
-        variables['denormalised'] = denormalised
+        variables["tmp_dir"] = tmp_dir
+        variables["dm_name"] = dm_name
+        variables["extractor"] = extractor
+        variables["with_duration"] = with_duration
+        variables["denormalised"] = denormalised
 
         if denormalised:
             global_min, global_max = load_global_min_max(min_max_loc)
-            variables['global_min'] = global_min
-            variables['global_max'] = global_max
+            variables["global_min"] = global_min
+            variables["global_max"] = global_max
 
-        variables['is_log_psd'] = format.startswith('log_')
+        variables["is_log_psd"] = format.startswith("log_")
 
         factory = NDS2SAEFactory()
         factory.set_output(load_from)
@@ -278,7 +290,7 @@ class Command(BaseCommand):
         encoder = factory.build()
         session = encoder.recreate_session()
 
-        if mode == 'showcase':
+        if mode == "showcase":
             showcase_reconstruct(variables, encoder, session, database_name, database_only)
         else:
             encode_into_datamatrix(variables, encoder, session, database_name, kernel_only)

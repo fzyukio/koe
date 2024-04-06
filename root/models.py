@@ -1,30 +1,44 @@
 import datetime
 import string
 
-import six
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.db import utils
-from django.db.models import Case
-from django.db.models import When
+from django.db import models, utils
+from django.db.models import Case, When
 from django.db.models.base import ModelBase
 from django.db.models.query import QuerySet
+
+import six
 from django_bulk_update.helper import bulk_update
 
-__all__ = ['enum', 'MagicChoices', 'ValueTypes', 'ExtraAttr', "ExtraAttrValue", 'AutoSetterGetterMixin',
-           'ColumnActionValue', 'User', 'SimpleModel', 'SimpleModel', 'SimpleModel',
-           'value_setter', 'value_getter', 'get_bulk_id', 'has_field']
+
+__all__ = [
+    "enum",
+    "MagicChoices",
+    "ValueTypes",
+    "ExtraAttr",
+    "ExtraAttrValue",
+    "AutoSetterGetterMixin",
+    "ColumnActionValue",
+    "User",
+    "SimpleModel",
+    "SimpleModel",
+    "SimpleModel",
+    "value_setter",
+    "value_getter",
+    "get_bulk_id",
+    "has_field",
+]
 
 
 def enum(*sequential, **named):
     original_enums = dict(zip(sequential, range(len(sequential))), **named)
     enums = dict((key, value) for key, value in original_enums.items())
     reverse = dict((value, key) for key, value in original_enums.items())
-    enums['reverse'] = reverse
-    enums['values'] = [value for key, value in original_enums.items()]
-    enums['keys'] = [key for key, value in original_enums.items()]
-    return type('Enum', (), enums)
+    enums["reverse"] = reverse
+    enums["values"] = [value for key, value in original_enums.items()]
+    enums["keys"] = [key for key, value in original_enums.items()]
+    return type("Enum", (), enums)
 
 
 class MagicChoices(object):
@@ -39,13 +53,13 @@ class MagicChoices(object):
     @classmethod
     def get_name(cls, value):
         for k, v in cls.__dict__.items():
-            if not k.startswith('_') and v == value:
+            if not k.startswith("_") and v == value:
                 return cls.convert_enum_string(k)
-        raise KeyError('no matching key for value: ' + value)
+        raise KeyError("no matching key for value: " + value)
 
     @classmethod
     def get_associated_value(cls, value, association):
-        association_name = '_{}'.format(association.upper())
+        association_name = "_{}".format(association.upper())
         associated_values = getattr(cls, association_name, None)
         if associated_values:
             return associated_values[value]
@@ -54,39 +68,34 @@ class MagicChoices(object):
 
     @classmethod
     def get_key_val_pairs(cls):
-        return {k: v for k, v in cls.__dict__.items() if not k.startswith('_')}
+        return {k: v for k, v in cls.__dict__.items() if not k.startswith("_")}
 
     @classmethod
     def get_aliases(cls):
-        return getattr(cls, '_ALIASES', None)
+        return getattr(cls, "_ALIASES", None)
 
     @staticmethod
     def convert_enum_string(s):
-        return string.capwords(s.replace('_', ' '), ' ')
+        return string.capwords(s.replace("_", " "), " ")
 
     @classmethod
     def reverse_items(cls):
-        return {v: k for k, v in cls.__dict__.items()
-                if not k.startswith('_')}
+        return {v: k for k, v in cls.__dict__.items() if not k.startswith("_")}
 
     @classmethod
     def as_choices(cls):
-        if hasattr(cls, '_ORDER'):
+        if hasattr(cls, "_ORDER"):
             _reverse = cls.reverse_items()
             _items = [(_reverse[v], v) for v in cls._ORDER]
         else:
             iteritems = six.iteritems(cls.__dict__)
-            real_choices = [(k, v) for k, v in iteritems if not k.startswith('_')]
+            real_choices = [(k, v) for k, v in iteritems if not k.startswith("_")]
             _items = sorted(real_choices, key=lambda x: x[1])
 
-        if hasattr(cls, '_STRINGS'):
-            return tuple(
-                (v, cls._STRINGS[v]) for k, v in _items
-                if not k.startswith('_'))
+        if hasattr(cls, "_STRINGS"):
+            return tuple((v, cls._STRINGS[v]) for k, v in _items if not k.startswith("_"))
         else:
-            return tuple(
-                (v, cls.convert_enum_string(k)) for k, v in _items
-                if not k.startswith('_'))
+            return tuple((v, cls.convert_enum_string(k)) for k, v in _items if not k.startswith("_"))
 
 
 class ValueTypes(MagicChoices):
@@ -103,42 +112,42 @@ class ValueTypes(MagicChoices):
     IMAGE = 11
 
     _EDITOR = {
-        SHORT_TEXT: 'Text',
-        LONG_TEXT: 'LongText',
-        DATE: 'Date',
-        INTEGER: 'Integer',
-        FLOAT: 'Float',
-        BOOLEAN: 'Checkbox',
-        BASE64_PNG: 'Base64PNG',
-        IMAGE: 'Image',
-        URL: 'Url',
-        SEQUENCE: 'Sequence',
+        SHORT_TEXT: "Text",
+        LONG_TEXT: "LongText",
+        DATE: "Date",
+        INTEGER: "Integer",
+        FLOAT: "Float",
+        BOOLEAN: "Checkbox",
+        BASE64_PNG: "Base64PNG",
+        IMAGE: "Image",
+        URL: "Url",
+        SEQUENCE: "Sequence",
     }
 
     _FORMATTER = {
-        SHORT_TEXT: 'Text',
-        LONG_TEXT: 'Text',
-        DATE: 'Date',
-        INTEGER: 'Integer',
-        FLOAT: 'DecimalPoint',
-        BOOLEAN: 'Checkmark',
-        BASE64_PNG: 'Base64PNG',
-        IMAGE: 'Image',
-        URL: 'Url',
-        SEQUENCE: 'Sequence',
+        SHORT_TEXT: "Text",
+        LONG_TEXT: "Text",
+        DATE: "Date",
+        INTEGER: "Integer",
+        FLOAT: "DecimalPoint",
+        BOOLEAN: "Checkmark",
+        BASE64_PNG: "Base64PNG",
+        IMAGE: "Image",
+        URL: "Url",
+        SEQUENCE: "Sequence",
     }
 
     _FILTER_TYPE = {
-        SHORT_TEXT: 'String',
-        LONG_TEXT: 'String',
-        DATE: 'Date',
-        INTEGER: 'Number',
-        FLOAT: 'Number',
-        BOOLEAN: 'Boolean',
+        SHORT_TEXT: "String",
+        LONG_TEXT: "String",
+        DATE: "Date",
+        INTEGER: "Number",
+        FLOAT: "Number",
+        BOOLEAN: "Boolean",
         BASE64_PNG: None,
         IMAGE: None,
-        URL: 'String',
-        SEQUENCE: 'String',
+        URL: "String",
+        SEQUENCE: "String",
     }
 
     _SORTABLE = {
@@ -205,7 +214,7 @@ class ValueTypes(MagicChoices):
         FLOAT: [INTEGER, FLOAT],
         BOOLEAN: [BOOLEAN, INTEGER, FLOAT],
         DATE: [DATE],
-        SEQUENCE: [SEQUENCE]
+        SEQUENCE: [SEQUENCE],
     }
 
     @classmethod
@@ -219,7 +228,7 @@ value_getter = {
     ValueTypes.INTEGER: lambda s: int(s),
     ValueTypes.FLOAT: lambda s: float(s),
     ValueTypes.BOOLEAN: lambda s: bool(s),
-    ValueTypes.DATE: lambda s: datetime.datetime.utcfromtimestamp(int(s)).strftime(settings.DATE_INPUT_FORMAT)
+    ValueTypes.DATE: lambda s: datetime.datetime.utcfromtimestamp(int(s)).strftime(settings.DATE_INPUT_FORMAT),
 }
 
 value_setter = {
@@ -247,10 +256,10 @@ class ExtraAttr(models.Model):
         One class can't have two properties with the same name
         """
 
-        unique_together = ('klass', 'name')
+        unique_together = ("klass", "name")
 
     def __str__(self):
-        return '{}\'s {} type {}'.format(self.klass, self.name, self.get_type_display())
+        return "{}'s {} type {}".format(self.klass, self.name, self.get_type_display())
 
 
 class ExtraAttrValue(models.Model):
@@ -258,7 +267,7 @@ class ExtraAttrValue(models.Model):
     This model stores the value of the aforementioned ExtraAttr model.
     """
 
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
     owner_id = models.IntegerField()
     attr = models.ForeignKey(ExtraAttr, on_delete=models.CASCADE)
     value = models.TextField()
@@ -268,13 +277,13 @@ class ExtraAttrValue(models.Model):
         One user can't set two different value to the same attribute of the same object
         """
 
-        unique_together = ('user', 'owner_id', 'attr')
+        unique_together = ("user", "owner_id", "attr")
         indexes = [
-            models.Index(fields=['owner_id']),
+            models.Index(fields=["owner_id"]),
         ]
 
     def __str__(self):
-        return '{}\'s {} = {}'.format(self.owner_id, self.attr.name, self.value)
+        return "{}'s {} = {}".format(self.owner_id, self.attr.name, self.value)
 
 
 def get_bulk_attrs(objs, attr):
@@ -285,7 +294,7 @@ def get_bulk_attrs(objs, attr):
     :return: A dict of format {id -> value}
     """
     if isinstance(objs, QuerySet):
-        id_2_attr = objs.values_list('id', attr)
+        id_2_attr = objs.values_list("id", attr)
         return {x: y for x, y in id_2_attr}
     return {obj.id: getattr(obj, attr) for obj in objs}
 
@@ -297,7 +306,7 @@ def get_bulk_id(objs):
     :return: an array of IDs in the same order
     """
     if isinstance(objs, QuerySet):
-        return objs.values_list('id', flat=True)
+        return objs.values_list("id", flat=True)
     return [obj.id for obj in objs]
 
 
@@ -349,7 +358,7 @@ class AutoSetterGetterMixin:
         user = extras.user
 
         if isinstance(objs, QuerySet):
-            objids = list(objs.values_list('id', flat=True))
+            objids = list(objs.values_list("id", flat=True))
         else:
             objids = {obj.id: None for obj in objs}
 
@@ -358,8 +367,9 @@ class AutoSetterGetterMixin:
         extra_attr = ExtraAttr.objects.get(klass=cls.__name__, name=attr)
         str2val = value_getter[extra_attr.type]
 
-        values = ExtraAttrValue.objects\
-            .filter(user=user, owner_id__in=objids, attr__name=attr).values_list('owner_id', 'value')
+        values = ExtraAttrValue.objects.filter(user=user, owner_id__in=objids, attr__name=attr).values_list(
+            "owner_id", "value"
+        )
 
         for owner_id, value in values:
             retval[owner_id] = str2val(value)
@@ -378,7 +388,7 @@ class AutoSetterGetterMixin:
         user = extras.user
 
         if isinstance(objs, QuerySet):
-            ids = frozenset(objs.values_list('id', flat=True))
+            ids = frozenset(objs.values_list("id", flat=True))
         else:
             ids = frozenset([obj.id for obj in objs])
 
@@ -387,12 +397,13 @@ class AutoSetterGetterMixin:
         value = val2str(value)
 
         existings = ExtraAttrValue.objects.filter(user=user, owner_id__in=ids, attr=extra_attr)
-        existings_owner_ids = frozenset(existings.values_list('owner_id', flat=True))
+        existings_owner_ids = frozenset(existings.values_list("owner_id", flat=True))
         nonexistings_owner_ids = frozenset([x for x in ids if x not in existings_owner_ids])
 
         existings.update(value=value)
-        newly_created = [ExtraAttrValue(user=user, owner_id=id, attr=extra_attr, value=value)
-                         for id in nonexistings_owner_ids]
+        newly_created = [
+            ExtraAttrValue(user=user, owner_id=id, attr=extra_attr, value=value) for id in nonexistings_owner_ids
+        ]
 
         ExtraAttrValue.objects.bulk_create(newly_created)
 
@@ -436,7 +447,7 @@ class AutoSetterGetterMixin:
 class ValidateOnUpdateQuerySet(QuerySet):
     def update(self, **kwargs):
         model = self.model
-        validator = getattr(model, 'validate', None)
+        validator = getattr(model, "validate", None)
         if validator is not None:
             validator(kwargs)
         super(ValidateOnUpdateQuerySet, self).update(**kwargs)
@@ -477,8 +488,9 @@ class ColumnActionValue(SimpleModel):
     value = models.TextField()
 
     def __str__(self):
-        return '{} {} of column "{}" on table "{}" to {}' \
-            .format(self.user, self.action, self.column, self.table, self.value)
+        return '{} {} of column "{}" on table "{}" to {}'.format(
+            self.user, self.action, self.column, self.table, self.value
+        )
 
 
 def has_field(klass, field):

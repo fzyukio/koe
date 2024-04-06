@@ -1,18 +1,19 @@
 import datetime
+import errno
 import os
 import random
 import string
 import threading
 import time
 
-import errno
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
 from django.urls import reverse
 
+
 from_email = settings.FROM_EMAIL
-sender_name = 'Koe <{}>'.format(from_email)
+sender_name = "Koe <{}>".format(from_email)
 siteurl = settings.SITE_URL_BARE
 
 
@@ -23,7 +24,7 @@ def datetime2timestamp(date, format=None):
 
 
 def password_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+    return "".join(random.choice(chars) for _ in range(size))
 
 
 class SendEmailThread(threading.Thread):
@@ -38,29 +39,36 @@ class SendEmailThread(threading.Thread):
         super(SendEmailThread, self).__init__(**kwargs)
 
     def run(self):
-        html = get_template('emails/' + self.template + '.html')
-        plain = get_template('emails/' + self.template + '.txt')
+        html = get_template("emails/" + self.template + ".html")
+        plain = get_template("emails/" + self.template + ".txt")
 
         html_content = html.render(self.context)
         plain_content = plain.render(self.context)
 
-        email = EmailMultiAlternatives(self.subject, plain_content, from_email, self.to,
-                                       headers={'From': sender_name}, cc=self.cc, reply_to=self.reply_to)
-        email.attach_alternative(html_content, 'text/html')
+        email = EmailMultiAlternatives(
+            self.subject,
+            plain_content,
+            from_email,
+            self.to,
+            headers={"From": sender_name},
+            cc=self.cc,
+            reply_to=self.reply_to,
+        )
+        email.attach_alternative(html_content, "text/html")
         email.send()
 
 
 def forget_password_handler(user):
-    subject = 'Reset your password'
-    template = 'forget-password'
-    reset_link = "{}{}".format(siteurl, reverse('reset-password'))
+    subject = "Reset your password"
+    template = "forget-password"
+    reset_link = "{}{}".format(siteurl, reverse("reset-password"))
 
     password = password_generator(8)
 
     user.set_password(password)
     user.save()
 
-    context = {'user': user, 'password': password, 'resetlink': reset_link}
+    context = {"user": user, "password": password, "resetlink": reset_link}
     send_email_thread = SendEmailThread(subject, template, [user.email], context)
     send_email_thread.start()
 
@@ -107,10 +115,10 @@ def mkdirp(dir):
 
 
 def get_referrer_pathname(request):
-    full_url = request.META.get('HTTP_REFERER', None)
+    full_url = request.META.get("HTTP_REFERER", None)
     if full_url is None:
-        return '/'
-    http_host = request.META.get('HTTP_HOST')
+        return "/"
+    http_host = request.META.get("HTTP_HOST")
     referer_url_starts = full_url.find(http_host) + len(http_host)
     referer_url = full_url[referer_url_starts:]
     return referer_url

@@ -1,10 +1,10 @@
 import pickle
 
+from django.core.management import BaseCommand
+from django.db.models import Case, When
+
 import matplotlib.pyplot as plt
 import numpy as np
-from django.core.management import BaseCommand
-from django.db.models import Case
-from django.db.models import When
 from matplotlib.backends.backend_pdf import PdfPages
 
 from koe.models import AudioFile
@@ -13,16 +13,15 @@ from koe.models import AudioFile
 class Command(BaseCommand):
     def handle(self, *args, **options):
         pkls = {
-            '2': '/tmp/showcase-rnn-w2/',
-            '3': '/tmp/showcase-rnn-w3/',
-            '4': '/tmp/showcase-rnn-w4/',
-            '5': '/tmp/showcase-rnn-w5/',
-            '6': '/tmp/showcase-rnn-w6/',
-            '7': '/tmp/showcase-rnn-w7/',
-            '8': '/tmp/showcase-rnn-w8/',
-            '9': '/tmp/showcase-rnn-w9/',
-            '10': '/tmp/showcase/',
-
+            "2": "/tmp/showcase-rnn-w2/",
+            "3": "/tmp/showcase-rnn-w3/",
+            "4": "/tmp/showcase-rnn-w4/",
+            "5": "/tmp/showcase-rnn-w5/",
+            "6": "/tmp/showcase-rnn-w6/",
+            "7": "/tmp/showcase-rnn-w7/",
+            "8": "/tmp/showcase-rnn-w8/",
+            "9": "/tmp/showcase-rnn-w9/",
+            "10": "/tmp/showcase/",
             # '2': '/tmp/showcase-mlp-w2/',
             # '3': '/tmp/showcase-mlp-w3/',
             # '4': '/tmp/showcase-mlp-w4/',
@@ -32,7 +31,6 @@ class Command(BaseCommand):
             # '8': '/tmp/showcase-mlp-w8/',
             # '9': '/tmp/showcase-mlp-w9/',
             # '10': '/tmp/showcase-mlp/',
-
             # 'mlp': '/tmp/showcase-mlp/',
             # 'rnn': '/tmp/showcase/',
             # 'hma': '/tmp/showcase-harma/',
@@ -40,39 +38,56 @@ class Command(BaseCommand):
             # 'l+h': '/tmp/showcase-lasseck-harma/'
         }
 
-        columns = ['MAP', 'F1', 'Precision', 'Recall', 'Elapsed', 'Correct segs', 'Auto segs', 'Duration']
+        columns = [
+            "MAP",
+            "F1",
+            "Precision",
+            "Recall",
+            "Elapsed",
+            "Correct segs",
+            "Auto segs",
+            "Duration",
+        ]
         # columns_to_use = ['F1', 'Precision', 'Recall']
 
         result_by_type = {c: {t: [] for t in pkls.keys()} for c in columns}
-        result_by_type['Song duration'] = {t: [] for t in pkls.keys()}
+        result_by_type["Song duration"] = {t: [] for t in pkls.keys()}
 
         for name, tmpdir in pkls.items():
-            result_file = tmpdir + 'extra_results.pkl'
-            with open(result_file, 'rb') as f:
+            result_file = tmpdir + "extra_results.pkl"
+            with open(result_file, "rb") as f:
                 result = pickle.load(f)
                 af_ids = []
-                for af_id, (img_filename, score_mAP, score_f1, precision, recall, correct_segments, auto_segments,
-                            elapsed) in result.items():
+                for af_id, (
+                    img_filename,
+                    score_mAP,
+                    score_f1,
+                    precision,
+                    recall,
+                    correct_segments,
+                    auto_segments,
+                    elapsed,
+                ) in result.items():
                     af_ids.append(af_id)
-                    result_by_type['MAP'][name].append(score_mAP)
-                    result_by_type['F1'][name].append(score_f1)
-                    result_by_type['Precision'][name].append(precision)
-                    result_by_type['Recall'][name].append(recall)
-                    result_by_type['Elapsed'][name].append(elapsed)
+                    result_by_type["MAP"][name].append(score_mAP)
+                    result_by_type["F1"][name].append(score_f1)
+                    result_by_type["Precision"][name].append(precision)
+                    result_by_type["Recall"][name].append(recall)
+                    result_by_type["Elapsed"][name].append(elapsed)
 
                 preserved = Case(*[When(id=id, then=pos) for pos, id in enumerate(af_ids)])
-                af_vl = AudioFile.objects.filter(id__in=af_ids).order_by(preserved).values_list('length', 'fs')
-                result_by_type['Duration'][name] = [x / y for x, y in af_vl]
+                af_vl = AudioFile.objects.filter(id__in=af_ids).order_by(preserved).values_list("length", "fs")
+                result_by_type["Duration"][name] = [x / y for x, y in af_vl]
 
         def ps_to_sigs(ps):
             retval = []
             for p in ps:
                 if np.isnan(p):
-                    retval.append('-')
+                    retval.append("-")
                 elif p < 0.05:
-                    retval.append('*')
+                    retval.append("*")
                 else:
-                    retval.append(' ')
+                    retval.append(" ")
             return retval
 
         # for t, result in result_by_type.items():
@@ -125,15 +140,16 @@ class Command(BaseCommand):
         #     plt.close()
         #     pdf.close()
 
-        elapsed_data = result_by_type['Elapsed']
-        duration_data = result_by_type['Duration']
+        elapsed_data = result_by_type["Elapsed"]
+        duration_data = result_by_type["Duration"]
 
         pdf = PdfPages(
-            '/Users/yfukuzaw/workspace/latexprojects/mythesis/figures/segmentation_result_plot_rnn_elapsed.pdf')
+            "/Users/yfukuzaw/workspace/latexprojects/mythesis/figures/segmentation_result_plot_rnn_elapsed.pdf"
+        )
         time_elapsed = np.array(list(elapsed_data.values())).transpose()
         song_durations = np.array(list(duration_data.values())).transpose()
         columns = list(elapsed_data.keys())
-        mean_elapsed = (time_elapsed * 1000 / song_durations)
+        mean_elapsed = time_elapsed * 1000 / song_durations
         mean_elapsed[np.where(np.isinf(mean_elapsed))] = 0
         mean_elapsed = mean_elapsed.mean(axis=0)
 
@@ -144,20 +160,20 @@ class Command(BaseCommand):
 
         fig = plt.figure(figsize=(4, 4), frameon=False)
         y_pos = np.arange(len(columns))
-        plt.bar(y_pos, mean_elapsed, align='center', alpha=1, color='k')
+        plt.bar(y_pos, mean_elapsed, align="center", alpha=1, color="k")
         plt.xticks(y_pos, columns)
         plt.subplots_adjust(left=0.15, right=1, top=0.95, bottom=0.1)
 
         ax = plt.gca()
 
         for i, v in enumerate(mean_elapsed):
-            ax.text(i - 0.5, v + 2, '{:.1f}'.format(v), color='k')
+            ax.text(i - 0.5, v + 2, "{:.1f}".format(v), color="k")
 
         # ax.set_ylabel('Speed (elapsed seconds per audio file second)')
-        ax.set_xlabel('Method')
+        ax.set_xlabel("Method")
 
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
         # ax.set_xlabel('t-test(mlp, rnn) = {}'.format(p))
 
         pdf.savefig(fig)
@@ -165,7 +181,7 @@ class Command(BaseCommand):
         plt.close()
         pdf.close()
 
-        print('Done')
+        print("Done")
 
         # x = "day"
         # y = "total_bill"

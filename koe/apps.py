@@ -2,6 +2,7 @@ import os
 
 from django.apps import AppConfig
 from django.conf import settings
+
 from dotmap import DotMap
 
 
@@ -11,36 +12,45 @@ def get_builtin_attrs():
 
     :return: None
     """
-    from root.models import ExtraAttr, ValueTypes, User
-    from koe.models import AudioFile, Segment, Database
+    from koe.models import AudioFile, Database, Segment
+    from root.models import ExtraAttr, User, ValueTypes
 
     goc = ExtraAttr.objects.get_or_create
 
-    current_database_attr, _ = goc(klass=User.__name__, name='current-database', type=ValueTypes.SHORT_TEXT)
-    hold_ids_attr, _ = goc(klass=User.__name__, name='hold-ids', type=ValueTypes.SHORT_TEXT)
-    database_sim_attr, _ = goc(klass=User.__name__, name='database-similarity', type=ValueTypes.SHORT_TEXT)
-    tmpdb_sim_attr, _ = goc(klass=User.__name__, name='tmpdb-similarity', type=ValueTypes.SHORT_TEXT)
+    current_database_attr, _ = goc(klass=User.__name__, name="current-database", type=ValueTypes.SHORT_TEXT)
+    hold_ids_attr, _ = goc(klass=User.__name__, name="hold-ids", type=ValueTypes.SHORT_TEXT)
+    database_sim_attr, _ = goc(klass=User.__name__, name="database-similarity", type=ValueTypes.SHORT_TEXT)
+    tmpdb_sim_attr, _ = goc(klass=User.__name__, name="tmpdb-similarity", type=ValueTypes.SHORT_TEXT)
 
-    song_note_attr, _ = goc(klass=AudioFile.__name__, name='note', type=ValueTypes.LONG_TEXT)
-    type_attr, _ = goc(klass=AudioFile.__name__, name='type', type=ValueTypes.SHORT_TEXT)
-    label_attr, _ = goc(klass=Segment.__name__, name='label', type=ValueTypes.SHORT_TEXT)
-    family_attr, _ = goc(klass=Segment.__name__, name='label_family', type=ValueTypes.SHORT_TEXT)
-    subfamily_attr, _ = goc(klass=Segment.__name__, name='label_subfamily', type=ValueTypes.SHORT_TEXT)
-    seg_note_attr, _ = goc(klass=Segment.__name__, name='note', type=ValueTypes.SHORT_TEXT)
-    db_cm_attr, _ = goc(klass=Database.__name__, name='cm', type=ValueTypes.SHORT_TEXT)
-    db_zoom_attr, _ = goc(klass=Database.__name__, name='zoom', type=ValueTypes.SHORT_TEXT)
+    song_note_attr, _ = goc(klass=AudioFile.__name__, name="note", type=ValueTypes.LONG_TEXT)
+    type_attr, _ = goc(klass=AudioFile.__name__, name="type", type=ValueTypes.SHORT_TEXT)
+    label_attr, _ = goc(klass=Segment.__name__, name="label", type=ValueTypes.SHORT_TEXT)
+    family_attr, _ = goc(klass=Segment.__name__, name="label_family", type=ValueTypes.SHORT_TEXT)
+    subfamily_attr, _ = goc(klass=Segment.__name__, name="label_subfamily", type=ValueTypes.SHORT_TEXT)
+    seg_note_attr, _ = goc(klass=Segment.__name__, name="note", type=ValueTypes.SHORT_TEXT)
+    db_cm_attr, _ = goc(klass=Database.__name__, name="cm", type=ValueTypes.SHORT_TEXT)
+    db_zoom_attr, _ = goc(klass=Database.__name__, name="zoom", type=ValueTypes.SHORT_TEXT)
 
     settings.ATTRS = DotMap(
-        user=DotMap(current_database=current_database_attr, database_sim_attr=database_sim_attr,
-                    tmpdb_sim_attr=tmpdb_sim_attr, hold_ids_attr=hold_ids_attr),
+        user=DotMap(
+            current_database=current_database_attr,
+            database_sim_attr=database_sim_attr,
+            tmpdb_sim_attr=tmpdb_sim_attr,
+            hold_ids_attr=hold_ids_attr,
+        ),
         database=DotMap(cm=db_cm_attr, zoom=db_zoom_attr),
         audio_file=DotMap(note=song_note_attr, type=type_attr),
-        segment=DotMap(note=seg_note_attr, label=label_attr, family=family_attr, subfamily=subfamily_attr),
+        segment=DotMap(
+            note=seg_note_attr,
+            label=label_attr,
+            family=family_attr,
+            subfamily=subfamily_attr,
+        ),
     )
 
 
 class KoeConfig(AppConfig):
-    name = 'koe'
+    name = "koe"
 
     def ready(self):
         """
@@ -56,36 +66,36 @@ class KoeConfig(AppConfig):
 
         :return: None
         """
-        run_main = os.environ.get('RUN_MAIN', None) == 'true'
-        run_command = os.environ.get('RUN_COMMAND', None) == 'true'
-        run_celery = getattr(settings, 'IS_CELERY', False)
+        run_main = os.environ.get("RUN_MAIN", None) == "true"
+        run_command = os.environ.get("RUN_COMMAND", None) == "true"
+        run_celery = getattr(settings, "IS_CELERY", False)
 
         in_production = not settings.DEBUG
         if in_production or run_main or run_command or run_celery:
-            is_importing_fixture = os.getenv('IMPORTING_FIXTURE', 'false') == 'true'
+            is_importing_fixture = os.getenv("IMPORTING_FIXTURE", "false") == "true"
 
             if not is_importing_fixture:
-                from root.models import User
-                from root.views import register_app_modules, init_tables
                 from koe.aggregator import init as init_aggregators
                 from koe.features.feature_extract import init as init_features
+                from root.models import User
+                from root.views import init_tables, register_app_modules
 
                 try:
                     is_database_empty = User.objects.all().count() == 0
-                except:
+                except Exception:
                     is_database_empty = True
 
                 if not is_database_empty:
-                    register_app_modules(self.name, 'request_handlers.history')
-                    register_app_modules(self.name, 'request_handlers.audio')
-                    register_app_modules(self.name, 'request_handlers.database')
-                    register_app_modules(self.name, 'request_handlers.tensorviz')
-                    register_app_modules(self.name, 'request_handlers.preferences')
-                    register_app_modules(self.name, 'request_handlers.templates')
-                    register_app_modules(self.name, 'request_handlers.features')
-                    register_app_modules(self.name, 'models')
-                    register_app_modules('root', 'models')
-                    register_app_modules(self.name, 'grid_getters')
+                    register_app_modules(self.name, "request_handlers.history")
+                    register_app_modules(self.name, "request_handlers.audio")
+                    register_app_modules(self.name, "request_handlers.database")
+                    register_app_modules(self.name, "request_handlers.tensorviz")
+                    register_app_modules(self.name, "request_handlers.preferences")
+                    register_app_modules(self.name, "request_handlers.templates")
+                    register_app_modules(self.name, "request_handlers.features")
+                    register_app_modules(self.name, "models")
+                    register_app_modules("root", "models")
+                    register_app_modules(self.name, "grid_getters")
 
                     init_tables()
                     get_builtin_attrs()

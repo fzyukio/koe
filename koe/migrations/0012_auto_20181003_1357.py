@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0011_task_started'),
+        ("koe", "0011_task_started"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datamatrix',
-            name='name',
+            model_name="datamatrix",
+            name="name",
             field=models.CharField(max_length=255),
         ),
     ]

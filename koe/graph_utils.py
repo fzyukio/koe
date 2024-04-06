@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import networkx as nx
 import numpy as np
-from networkx.algorithms import centrality, approximation, assortativity, vitality
+from networkx.algorithms import approximation, assortativity, centrality, vitality
 from nltk.util import ngrams
 
 from koe.sequence_utils import songs_to_syl_seqs
@@ -56,17 +56,17 @@ def networkx_stats(graph, digraph, node_dict):
 def deduce_transition_type(nodes):
     for node in nodes:
         if node.in_links_count == 0 or node.out_links_count == 0:
-            node.transition_type = 'Margin'
+            node.transition_type = "Margin"
         elif node.in_links_count == 1:
             if node.out_links_count == 1:
-                node.transition_type = 'One-way'
+                node.transition_type = "One-way"
             else:
-                node.transition_type = 'Branch'
+                node.transition_type = "Branch"
         else:
             if node.out_links_count == 1:
-                node.transition_type = 'Bottleneck'
+                node.transition_type = "Bottleneck"
             else:
-                node.transition_type = 'Hourglass'
+                node.transition_type = "Hourglass"
 
 
 def calc_average_link_distance(nodes, is_inlink=True, is_normalised=True):
@@ -155,7 +155,7 @@ class Node:
         self.lcc = 0
 
     def __repr__(self):
-        return '#{} {}'.format(self.id, self.name)
+        return "#{} {}".format(self.id, self.name)
 
 
 class Link:
@@ -166,7 +166,7 @@ class Link:
         self.normalised_distance = 0
 
     def __repr__(self):
-        return '{}-{}->{}'.format(self.source.name, self.count, self.target)
+        return "{}-{}->{}".format(self.source.name, self.count, self.target)
 
 
 def extract_graph_properties(songs, enum2label):
@@ -226,12 +226,13 @@ def extract_graph_properties(songs, enum2label):
 
     edges = []
     for link in links:
-        edges.append((
-            link.source.id, link.target.id, {
-                'distance': link.normalised_distance,
-                'weight': link.count
-            }
-        ))
+        edges.append(
+            (
+                link.source.id,
+                link.target.id,
+                {"distance": link.normalised_distance, "weight": link.count},
+            )
+        )
 
     return edges, node_dict
 
@@ -239,10 +240,10 @@ def extract_graph_properties(songs, enum2label):
 def _get_small_world_measures(graph, meas, **kwargs):
     # Compute the mean clustering coefficient and average shortest path length
     # for an equivalent random graph
-    nrand = kwargs['nrand']
-    niter = kwargs['niter']
-    C = meas['C']
-    L = meas['L']
+    nrand = kwargs["nrand"]
+    niter = kwargs["niter"]
+    C = meas["C"]
+    L = meas["L"]
 
     randMetrics = {"Cr": [], "Cl": [], "L": []}
     for _ in range(nrand):
@@ -259,8 +260,8 @@ def _get_small_world_measures(graph, meas, **kwargs):
     omega = (Lr / L) - (C / Cl)
     sigma = (C / Cr) / (L / Lr)
 
-    meas['Omega'] = omega
-    meas['Sigma'] = sigma
+    meas["Omega"] = omega
+    meas["Sigma"] = sigma
 
 
 stats_funcs = OrderedDict(mean=np.nanmean, median=np.nanmedian, std=np.nanstd, min=np.min, max=np.max)
@@ -268,20 +269,20 @@ stats_funcs = OrderedDict(mean=np.nanmean, median=np.nanmedian, std=np.nanstd, m
 
 def extract_and_store_stats(base, values, meas):
     for stat, func in stats_funcs.items():
-        meas[base + '_' + stat] = func(values)
+        meas[base + "_" + stat] = func(values)
 
 
 def make_func(name, func_desc, return_stats=True):
-    nxfunc = func_desc['func']
-    weighted = func_desc['weighted']
-    is_global = func_desc['is_global']
-    directed = func_desc['directed']
+    nxfunc = func_desc["func"]
+    weighted = func_desc["weighted"]
+    is_global = func_desc["is_global"]
+    directed = func_desc["directed"]
 
     def func(graph, digraph, meas, **kwargs):
         try:
             if directed:
                 if weighted:
-                    node_values = nxfunc(digraph, weight='weight')
+                    node_values = nxfunc(digraph, weight="weight")
                 else:
                     node_values = nxfunc(digraph)
             else:
@@ -295,22 +296,21 @@ def make_func(name, func_desc, return_stats=True):
                 else:
                     meas[name] = node_values
         except Exception as e:
-            raise Exception('Error running function {}: {}'.format(name, str(e)))
+            raise Exception("Error running function {}: {}".format(name, str(e)))
 
     return func
 
 
 meas_dependencies = {
-    'small_world_measures': ['clustering_coefficient', 'average_shortest_path_length'],
+    "small_world_measures": ["clustering_coefficient", "average_shortest_path_length"],
 }
 
 
 def make_stats_output(base):
-    return [base + '_' + x for x in stats_funcs.keys()]
+    return [base + "_" + x for x in stats_funcs.keys()]
 
 
 meas_funcs_and_outputs = {
-
     # Disable for now because it's very slow
     # 'small_world_measures': (_get_small_world_measures, ['Omega', 'Sigma']),
 }
@@ -318,54 +318,131 @@ meas_funcs_and_outputs = {
 node_funcs_and_outputs = {}
 
 func_map = {
-    'degree_centrality': dict(func=centrality.degree_centrality, weighted=False, directed=True, is_global=False),
-    'eigen_centrality': dict(func=centrality.eigenvector_centrality_numpy, weighted=True, directed=True,
-                             is_global=False),
-    'closeness_centrality': dict(func=centrality.closeness_centrality, weighted=False, directed=True, is_global=False),
-    'out_degree_centrality': dict(func=centrality.out_degree_centrality, weighted=False, directed=True,
-                                  is_global=False),
-    'in_degree_centrality': dict(func=centrality.in_degree_centrality, weighted=False, directed=True, is_global=False),
-    'katz_centrality': dict(func=centrality.katz_centrality_numpy, weighted=True, directed=True, is_global=False),
-    'current_flow_closeness_centrality': dict(func=centrality.current_flow_closeness_centrality, weighted=False,
-                                              directed=False, is_global=False),
-    'information_centrality': dict(func=centrality.information_centrality, weighted=False, directed=False,
-                                   is_global=False),
-    'betweenness_centrality': dict(func=centrality.betweenness_centrality, weighted=True, directed=True,
-                                   is_global=False),
-    'current_flow_betweenness_centrality': dict(func=centrality.current_flow_betweenness_centrality, weighted=False,
-                                                directed=False, is_global=False),
-    'approximate_current_flow_betweenness_centrality': dict(
-        func=centrality.approximate_current_flow_betweenness_centrality, weighted=False, directed=False,
-        is_global=False),
-    'communicability_betweenness_centrality': dict(func=centrality.communicability_betweenness_centrality,
-                                                   weighted=True, directed=False, is_global=False),
-    'load_centrality': dict(func=centrality.load_centrality, weighted=True, directed=True, is_global=False),
-    'harmonic_centrality': dict(func=centrality.harmonic_centrality, weighted=False, directed=True, is_global=False),
-    'square_clustering': dict(func=nx.square_clustering, weighted=False, directed=True, is_global=False),
-    'clustering': dict(func=nx.clustering, weighted=True, directed=True, is_global=False),
-    'average_neighbor_degree': dict(func=assortativity.average_neighbor_degree, weighted=True, directed=True,
-                                    is_global=False),
+    "degree_centrality": dict(
+        func=centrality.degree_centrality,
+        weighted=False,
+        directed=True,
+        is_global=False,
+    ),
+    "eigen_centrality": dict(
+        func=centrality.eigenvector_centrality_numpy,
+        weighted=True,
+        directed=True,
+        is_global=False,
+    ),
+    "closeness_centrality": dict(
+        func=centrality.closeness_centrality,
+        weighted=False,
+        directed=True,
+        is_global=False,
+    ),
+    "out_degree_centrality": dict(
+        func=centrality.out_degree_centrality,
+        weighted=False,
+        directed=True,
+        is_global=False,
+    ),
+    "in_degree_centrality": dict(
+        func=centrality.in_degree_centrality,
+        weighted=False,
+        directed=True,
+        is_global=False,
+    ),
+    "katz_centrality": dict(
+        func=centrality.katz_centrality_numpy,
+        weighted=True,
+        directed=True,
+        is_global=False,
+    ),
+    "current_flow_closeness_centrality": dict(
+        func=centrality.current_flow_closeness_centrality,
+        weighted=False,
+        directed=False,
+        is_global=False,
+    ),
+    "information_centrality": dict(
+        func=centrality.information_centrality,
+        weighted=False,
+        directed=False,
+        is_global=False,
+    ),
+    "betweenness_centrality": dict(
+        func=centrality.betweenness_centrality,
+        weighted=True,
+        directed=True,
+        is_global=False,
+    ),
+    "current_flow_betweenness_centrality": dict(
+        func=centrality.current_flow_betweenness_centrality,
+        weighted=False,
+        directed=False,
+        is_global=False,
+    ),
+    "approximate_current_flow_betweenness_centrality": dict(
+        func=centrality.approximate_current_flow_betweenness_centrality,
+        weighted=False,
+        directed=False,
+        is_global=False,
+    ),
+    "communicability_betweenness_centrality": dict(
+        func=centrality.communicability_betweenness_centrality,
+        weighted=True,
+        directed=False,
+        is_global=False,
+    ),
+    "load_centrality": dict(func=centrality.load_centrality, weighted=True, directed=True, is_global=False),
+    "harmonic_centrality": dict(
+        func=centrality.harmonic_centrality,
+        weighted=False,
+        directed=True,
+        is_global=False,
+    ),
+    "square_clustering": dict(func=nx.square_clustering, weighted=False, directed=True, is_global=False),
+    "clustering": dict(func=nx.clustering, weighted=True, directed=True, is_global=False),
+    "average_neighbor_degree": dict(
+        func=assortativity.average_neighbor_degree,
+        weighted=True,
+        directed=True,
+        is_global=False,
+    ),
     # 'average_degree_connectivity': dict(func=assortativity.average_degree_connectivity, weighted=True, directed=True,
     #                                     is_global=False),
-
     # Must be strongly connected
     # 'eccentricity': dict(func=distance_measures.eccentricity, weighted=False, directed=False, is_global=False),
-    'closeness_vitality': dict(func=vitality.closeness_vitality, weighted=True, directed=True, is_global=False),
-
+    "closeness_vitality": dict(func=vitality.closeness_vitality, weighted=True, directed=True, is_global=False),
     # Global function
-
-    'transitivity': dict(func=nx.transitivity, weighted=False, directed=True, is_global=True),
-    'average_clustering': dict(func=nx.average_clustering, weighted=False, directed=True, is_global=True),
-    'approx_average_clustering': dict(func=approximation.average_clustering, weighted=False, directed=False,
-                                      is_global=True),
-    'average_shortest_path_length': dict(func=nx.average_shortest_path_length, weighted=False, directed=True,
-                                         is_global=True),
-    'global_reaching_centrality': dict(func=centrality.global_reaching_centrality, weighted=False, directed=True,
-                                       is_global=True),
-    'node_connectivity': dict(func=approximation.node_connectivity, weighted=False, directed=True, is_global=True),
-    'degree_assortativity_coefficient': dict(func=assortativity.degree_assortativity_coefficient, weighted=False,
-                                             directed=True, is_global=True),
-
+    "transitivity": dict(func=nx.transitivity, weighted=False, directed=True, is_global=True),
+    "average_clustering": dict(func=nx.average_clustering, weighted=False, directed=True, is_global=True),
+    "approx_average_clustering": dict(
+        func=approximation.average_clustering,
+        weighted=False,
+        directed=False,
+        is_global=True,
+    ),
+    "average_shortest_path_length": dict(
+        func=nx.average_shortest_path_length,
+        weighted=False,
+        directed=True,
+        is_global=True,
+    ),
+    "global_reaching_centrality": dict(
+        func=centrality.global_reaching_centrality,
+        weighted=False,
+        directed=True,
+        is_global=True,
+    ),
+    "node_connectivity": dict(
+        func=approximation.node_connectivity,
+        weighted=False,
+        directed=True,
+        is_global=True,
+    ),
+    "degree_assortativity_coefficient": dict(
+        func=assortativity.degree_assortativity_coefficient,
+        weighted=False,
+        directed=True,
+        is_global=True,
+    ),
     # Must be strongly connected
     # 'diameter': dict(func=distance_measures.diameter, weighted=False, directed=True, is_global=True),
     # 'radius': dict(func=distance_measures.radius, weighted=False, directed=True, is_global=True),
@@ -373,7 +450,7 @@ func_map = {
 
 for func_name, func_desc in func_map.items():
     func = make_func(func_name, func_desc)
-    if func_desc['is_global']:
+    if func_desc["is_global"]:
         output = [func_name]
     else:
         output = make_stats_output(func_name)
@@ -381,7 +458,7 @@ for func_name, func_desc in func_map.items():
 
 
 for func_name, func_desc in func_map.items():
-    if not func_desc['is_global']:
+    if not func_desc["is_global"]:
         func = make_func(func_name, func_desc, return_stats=False)
         output = [func_name]
         node_funcs_and_outputs[func_name] = (func, output)
@@ -389,20 +466,20 @@ for func_name, func_desc in func_map.items():
 
 def resolve_meas(measurements_str):
     funcs_and_outputs = meas_funcs_and_outputs
-    if measurements_str == 'all':
-        measurements_str = ','.join(list(func_map.keys()))
-    if measurements_str == 'node-meas':
-        funcs = [x for x, y in func_map.items() if not y['is_global']]
-        measurements_str = ','.join(funcs)
+    if measurements_str == "all":
+        measurements_str = ",".join(list(func_map.keys()))
+    if measurements_str == "node-meas":
+        funcs = [x for x, y in func_map.items() if not y["is_global"]]
+        measurements_str = ",".join(funcs)
         funcs_and_outputs = node_funcs_and_outputs
 
-    measurements_names = measurements_str.split(',')
+    measurements_names = measurements_str.split(",")
     measurements_order = OrderedDict()
     measurements_outputs = []
 
     def resolve_one(name):
         if name not in funcs_and_outputs:
-            raise CustomAssertionError('Unknown measurement {}'.format(name))
+            raise CustomAssertionError("Unknown measurement {}".format(name))
         dependencies = meas_dependencies.get(name, [])
         output_names = funcs_and_outputs[name][1]
         func = funcs_and_outputs[name][0]

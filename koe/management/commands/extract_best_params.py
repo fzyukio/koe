@@ -2,23 +2,25 @@ import os
 import pickle
 from ast import literal_eval
 
+from django.core.management.base import BaseCommand
+
+import colorlover as cl
 import numpy as np
 import plotly
 import plotly.graph_objs as go
-import plotly.plotly as py
 import plotly.io as pio
-from django.core.management.base import BaseCommand
+import plotly.plotly as py
 from scipy import stats
-import colorlover as cl
 
-plotly.tools.set_credentials_file(username='wBIr68ns', api_key='LAK0vePuQsXlQQFYaKJv')
 
-excluded_feature_groups = ['mfc', 'mfcc+', 'mfcc_delta_only', 'lpcoefs']
+plotly.tools.set_credentials_file(username="wBIr68ns", api_key="LAK0vePuQsXlQQFYaKJv")
+
+excluded_feature_groups = ["mfc", "mfcc+", "mfcc_delta_only", "lpcoefs"]
 
 
 class TestSuit:
     def __init__(self):
-        self.feature_group = ''
+        self.feature_group = ""
         self.params = {}
         self.accuracies = []
         self.ndims = 0
@@ -33,25 +35,25 @@ class ClassiferTestSuits:
 
 def read_csv(filepath, classifier, dimensionality):
     classifier_test_suits = ClassiferTestSuits(classifier, dimensionality)
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         line = f.readline()
-        while line != '':
-            parts = line.strip().split('\t')
-            if parts[0] == 'id':
+        while line != "":
+            parts = line.strip().split("\t")
+            if parts[0] == "id":
                 suit = TestSuit()
                 while True:
                     line = f.readline()
-                    parts = line.strip().split('\t')
-                    if parts[0] == 'accuracy':
+                    parts = line.strip().split("\t")
+                    if parts[0] == "accuracy":
                         suit.accuracies = np.array(list(map(float, parts[1:])))
                     else:
                         if len(suit.accuracies) == 0:
                             param_name = parts[0]
                             suit.params[param_name] = parts[1:]
                         else:
-                            if parts[0] == 'Feature group':
+                            if parts[0] == "Feature group":
                                 line = f.readline()
-                                parts = line.strip().split('\t')
+                                parts = line.strip().split("\t")
                                 suit.feature_group = parts[0]
                                 suit.ndims = int(parts[1])
                                 classifier_test_suits.suits.append(suit)
@@ -60,27 +62,22 @@ def read_csv(filepath, classifier, dimensionality):
     return classifier_test_suits
 
 
-plotlyMarkerSymbols = ['circle', 'cross', 'square', 'diamond', 'triangle-up', 'star']
+plotlyMarkerSymbols = ["circle", "cross", "square", "diamond", "triangle-up", "star"]
 nCategoricalColours = 11
 # categoricalColourScale = list(cl.scales['11']['div']['Spectral'])
 # nCategoricalColours = len(categoricalColourScale)
 
 
 converters = {
-    'svm_rbf': {
-        'C': lambda x: np.log10(float(x)),
-        'gamma': lambda x: float(x)
+    "svm_rbf": {"C": lambda x: np.log10(float(x)), "gamma": lambda x: float(x)},
+    "svm_linear": {
+        "C": lambda x: np.log10(float(x)),
     },
-    'svm_linear': {
-        'C': lambda x: np.log10(float(x)),
-    },
-    'nnet': {
-        'hidden_layer_sizes': lambda x: literal_eval(x)[0]
-    },
-    'rf': {
-        'n_estimators': lambda x: int(np.round(float(x))),
-        'min_samples_split': lambda x: int(np.round(float(x))),
-        'min_samples_leaf': lambda x: int(np.round(float(x))),
+    "nnet": {"hidden_layer_sizes": lambda x: literal_eval(x)[0]},
+    "rf": {
+        "n_estimators": lambda x: int(np.round(float(x))),
+        "min_samples_split": lambda x: int(np.round(float(x))),
+        "min_samples_leaf": lambda x: int(np.round(float(x))),
     },
 }
 
@@ -99,33 +96,33 @@ def analyse(classifier_test_suitss):
                 markers={},
                 colours={},
                 marker_idx=0,
-                colour_idx=0
+                colour_idx=0,
             )
-        params = retval[classifier]['params']
-        accuracies = retval[classifier]['accuracies']
-        groups = retval[classifier]['groups']
-        markers = retval[classifier]['markers']
-        colours = retval[classifier]['colours']
-        marker_idx = retval[classifier]['marker_idx']
-        colour_idx = retval[classifier]['colour_idx']
+        params = retval[classifier]["params"]
+        accuracies = retval[classifier]["accuracies"]
+        groups = retval[classifier]["groups"]
+        markers = retval[classifier]["markers"]
+        colours = retval[classifier]["colours"]
+        marker_idx = retval[classifier]["marker_idx"]
+        colour_idx = retval[classifier]["colour_idx"]
 
         dimensionality = classifier_test_suits.dimensionality
-        if dimensionality == 'pca':
+        if dimensionality == "pca":
             continue
 
         suits = [x for x in classifier_test_suits.suits if x.feature_group not in excluded_feature_groups]
 
         nClasses = len(suits)
         if nClasses <= nCategoricalColours:
-            colour = cl.scales[str(nClasses)]['div']['Spectral']
+            colour = cl.scales[str(nClasses)]["div"]["Spectral"]
         else:
-            colour = cl.to_rgb(cl.interp(cl.scales[str(nCategoricalColours)]['div']['Spectral'], nClasses))
+            colour = cl.to_rgb(cl.interp(cl.scales[str(nCategoricalColours)]["div"]["Spectral"], nClasses))
 
         param_names = list(suits[0].params.keys())
 
         for suit in suits:
             feature_group = suit.feature_group
-            group_name = '{}-{}'.format(feature_group, dimensionality)
+            group_name = "{}-{}".format(feature_group, dimensionality)
 
             for param_name in param_names:
                 converter = converters[classifier][param_name]
@@ -149,14 +146,14 @@ def analyse(classifier_test_suitss):
                     colour_idx += 1
                 colours[group_name] = colours[feature_group]
 
-        retval[classifier]['marker_idx'] = marker_idx
-        retval[classifier]['colour_idx'] = colour_idx
+        retval[classifier]["marker_idx"] = marker_idx
+        retval[classifier]["colour_idx"] = colour_idx
 
     for classifier in retval:
-        retval[classifier]['accuracies'] = np.array(retval[classifier]['accuracies'])
-        retval[classifier]['groups'] = np.array(retval[classifier]['groups'])
+        retval[classifier]["accuracies"] = np.array(retval[classifier]["accuracies"])
+        retval[classifier]["groups"] = np.array(retval[classifier]["groups"])
 
-    with open('/tmp/hyperopt.pkl', 'wb') as f:
+    with open("/tmp/hyperopt.pkl", "wb") as f:
         pickle.dump(retval, f)
 
     return retval
@@ -164,11 +161,11 @@ def analyse(classifier_test_suitss):
 
 def visualise(datum):
     for classifier, data in datum.items():
-        accuracies = data['accuracies']
-        groups = data['groups']
-        params = data['params']
-        markers = data['markers']
-        colours = data['colours']
+        accuracies = data["accuracies"]
+        groups = data["groups"]
+        params = data["params"]
+        markers = data["markers"]
+        colours = data["colours"]
 
         scatterClass = go.Scatter
 
@@ -189,22 +186,20 @@ def visualise(datum):
 
                 trace = scatterClass(
                     name=group.strip(),
-                    mode='markers',
+                    mode="markers",
                     marker=dict(
                         symbol=thisSymbol,
                         size=5,
                         color=thisColour,
-                        line=dict(
-                            width=0.5
-                        ),
-                        opacity=1
+                        line=dict(width=0.5),
+                        opacity=1,
                     ),
                     x=x,
-                    y=y
+                    y=y,
                 )
                 trace1 = scatterClass(
                     name=group.strip(),
-                    mode='lines',
+                    mode="lines",
                     marker=dict(
                         #     symbol=thisSymbol,
                         #     size=10,
@@ -215,56 +210,51 @@ def visualise(datum):
                         #     opacity=1
                     ),
                     x=x,
-                    y=line
+                    y=line,
                 )
                 traces.append(trace)
                 traces.append(trace1)
 
             layout = go.Layout(
-                hovermode='closest',
-                title='Best {} value of {}'.format(param_name, classifier),
-                margin=dict(
-                    l=50,
-                    r=50,
-                    b=50,
-                    t=50
-                ),
+                hovermode="closest",
+                title="Best {} value of {}".format(param_name, classifier),
+                margin=dict(l=50, r=50, b=50, t=50),
                 yaxis=dict(
-                    title='Accuracy',
+                    title="Accuracy",
                 ),
                 xaxis=dict(
                     title=param_name,
-                )
+                ),
             )
             fig = go.Figure(data=traces, layout=layout)
-            plot = py.iplot(fig, filename='Best {} value of {}'.format(param_name, classifier))
-            print('{}'.format(plot.resource))
-            pio.write_image(fig, '{}-{}.pdf'.format(classifier, param_name))
+            plot = py.iplot(fig, filename="Best {} value of {}".format(param_name, classifier))
+            print("{}".format(plot.resource))
+            pio.write_image(fig, "{}-{}.pdf".format(classifier, param_name))
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
-        parser.add_argument('--csv-dir', action='store', dest='csv_dir', required=True, type=str)
+        parser.add_argument("--csv-dir", action="store", dest="csv_dir", required=True, type=str)
 
     def handle(self, *args, **options):
-        csv_dir = options['csv_dir']
-        classifiers = ['nnet', 'svm_linear', 'rf', 'svm_rbf']
-        dimensionalities = ['full', 'pca']
-        num_classes = ['30']
-        prefix = 'hyperopt_tmi_'
+        csv_dir = options["csv_dir"]
+        classifiers = ["nnet", "svm_linear", "rf", "svm_rbf"]
+        dimensionalities = ["full", "pca"]
+        num_classes = ["30"]
+        prefix = "hyperopt_tmi_"
 
         # pattern = options['pattern']
         # pattern = re.compile(pattern)
 
         if not os.path.isdir(csv_dir):
-            raise Exception('{} is not a folder'.format(csv_dir))
+            raise Exception("{} is not a folder".format(csv_dir))
 
         classifier_test_suitss = []
 
         for classifier in classifiers:
             for dimensionality in dimensionalities:
                 for num_class in num_classes:
-                    filename = '{}{}_{}.{}.tsv'.format(prefix, classifier, dimensionality, num_class)
+                    filename = "{}{}_{}.{}.tsv".format(prefix, classifier, dimensionality, num_class)
                     filepath = os.path.join(csv_dir, filename)
                     classifier_test_suits = read_csv(filepath, classifier, dimensionality)
                     classifier_test_suitss.append(classifier_test_suits)

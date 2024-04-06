@@ -4,8 +4,9 @@ args:
     --features=wes-f0,yin-f0,mfcc13,mfcc39 (comma separated)
 """
 
-import numpy as np
 from django.core.management.base import BaseCommand
+
+import numpy as np
 from progress.bar import Bar
 
 from .ftxtract import extract_funcs
@@ -46,74 +47,73 @@ def calc_gap(feature_arrays):
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
-            '--features',
-            action='store',
-            dest='features',
+            "--features",
+            action="store",
+            dest="features",
             required=True,
-            help='List of features you want to run edit distance on',
+            help="List of features you want to run edit distance on",
         )
 
         parser.add_argument(
-            '--dists',
-            action='store',
-            dest='dists',
+            "--dists",
+            action="store",
+            dest="dists",
             required=True,
-            help='List of distance measure algorithm [euclid, euclid_square, manhattan]',
+            help="List of distance measure algorithm [euclid, euclid_square, manhattan]",
         )
 
         parser.add_argument(
-            '--metrics',
-            action='store',
-            dest='metrics',
+            "--metrics",
+            action="store",
+            dest="metrics",
             required=True,
-            help='List of edit distance algorithms [dtw, edr, erp, lcss]',
+            help="List of edit distance algorithms [dtw, edr, erp, lcss]",
         )
 
         parser.add_argument(
-            '--norms',
-            action='store',
-            dest='norms',
-            default='min',
-            help='List of normalisation algorithm [none, min, avg, max]',
+            "--norms",
+            action="store",
+            dest="norms",
+            default="min",
+            help="List of normalisation algorithm [none, min, avg, max]",
         )
 
     def handle(self, features, dists, metrics, norms, *args, **options):
-        from koe.models import Segment, DistanceMatrix
+        from koe.models import DistanceMatrix, Segment
+
         DistanceMatrix.objects.all().delete()
-        segments_ids = np.array(
-            list(Segment.objects.all().order_by('id').values_list('id', flat=True)))
+        segments_ids = np.array(list(Segment.objects.all().order_by("id").values_list("id", flat=True)))
 
         nsegs = len(segments_ids)
         ndistances = int(nsegs * (nsegs - 1) / 2)
 
-        for feature in features.split(','):
-            _split = feature.split(':')
+        for feature in features.split(","):
+            _split = feature.split(":")
             configs = _split[1] if len(_split) > 1 else []
             config = {}
-            config_str = ''
+            config_str = ""
             if configs:
-                for c in configs.split(';'):
-                    param, value = c.split('=')
+                for c in configs.split(";"):
+                    param, value = c.split("=")
                     config[param] = value
                 for k, v in config.items():
-                    config_str += '{}={}-'.format(k, v)
+                    config_str += "{}={}-".format(k, v)
             else:
-                config_str = '-'
+                config_str = "-"
 
             feature_name = _split[0]
             extract_func = None
             feature_array = None
 
-            for dist_name in dists.split(','):
-                for metric_name in metrics.split(','):
-                    for norm in norms.split(','):
-                        test_name = '{}-{}{}-{}-{}'.format(
-                            feature_name, config_str, dist_name, metric_name, norm)
+            for dist_name in dists.split(","):
+                for metric_name in metrics.split(","):
+                    for norm in norms.split(","):
+                        test_name = "{}-{}{}-{}-{}".format(feature_name, config_str, dist_name, metric_name, norm)
                         if extract_func is None or feature_array is None:
                             extract_func = extract_funcs[feature_name]
                             feature_array = extract_func(segments_ids, config)
 
-                        bar = Bar('Calc distance ({})'.format(test_name), max=nsegs)
+                        bar = Bar("Calc distance ({})".format(test_name), max=nsegs)
 
                         triu = np.random.rand(ndistances).astype(np.float16)
 

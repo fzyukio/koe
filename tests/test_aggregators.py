@@ -1,12 +1,12 @@
-import numpy as np
+import django
 from django.test import TestCase
+
+import numpy as np
 from librosa import feature as rosaft
 
 from koe import wavfile
-
-import django
-
 from koe.utils import wav_2_mono
+
 
 django.setup()
 
@@ -19,7 +19,7 @@ tol = 1e-4
 
 class Test(TestCase):
     def setUp(self):
-        filepath = 'tests/example 1.wav'
+        filepath = "tests/example 1.wav"
         self.fs, _ = wav_2_mono(filepath, normalised=False)
         long_segment = wavfile.read_segment(filepath, beg_ms=100, end_ms=300, mono=True)
         self.long_segment = np.ascontiguousarray(long_segment)
@@ -29,6 +29,7 @@ class Test(TestCase):
 
     def test_divcon_long(self):
         from koe.aggregator import DivideConquer
+
         ndivs = 5
         method = np.mean
         arr = rosaft.mfcc(y=self.long_segment, sr=self.fs, n_fft=nfft, hop_length=stepsize)

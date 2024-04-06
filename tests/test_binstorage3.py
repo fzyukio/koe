@@ -1,13 +1,15 @@
-import os
 import copy
+import os
+import shutil
 import uuid
 
-import numpy as np
-import shutil
 from django.test import TestCase
+
+import numpy as np
 from pymlfunc import tictoc
 
 import koe.binstorage3 as bs
+
 
 NUM_POINTS = 10000
 
@@ -57,7 +59,7 @@ class BinStorageTest(TestCase):
         self.sorted_ids = np.array(self.ids)[ids_sorted_order]
         self.sorted_arrs = np.array(self.arrs)[ids_sorted_order]
 
-        path = '/tmp'
+        path = "/tmp"
         name = uuid.uuid4().hex
         self.loc = os.path.join(path, name)
         self.index_file = os.path.join(self.loc, bs.INDEX_PREFIX)
@@ -67,8 +69,18 @@ class BinStorageTest(TestCase):
         try:
             self._test_store()
 
-            nselecteds = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
-            nupdates = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
+            nselecteds = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
+            nupdates = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
 
             for nselected in nselecteds:
                 self._test_retrieve(nselected)
@@ -87,7 +99,7 @@ class BinStorageTest(TestCase):
             shutil.rmtree(self.loc)
 
     def _test_store(self):
-        with tictoc('Test storing'):
+        with tictoc("Test storing"):
             bs.store(self.ids, self.arrs, self.loc)
 
         index_arr = []
@@ -96,14 +108,14 @@ class BinStorageTest(TestCase):
         index_files = [x for x in os.listdir(self.loc) if x.startswith(bs.INDEX_PREFIX)]
         batches = {}
         for index_file in index_files:
-            batch_begin, batch_end = list(map(int, index_file[len(bs.INDEX_PREFIX):].split('-')))
+            batch_begin, batch_end = list(map(int, index_file[len(bs.INDEX_PREFIX) :].split("-")))
             batches[batch_begin] = (batch_begin, batch_end, index_file)
 
         batch_begins = sorted(list(batches.keys()))
         for batch_begin in batch_begins:
             batch_begin, batch_end, index_file = batches[batch_begin]
 
-            batch_part = index_file[len(bs.INDEX_PREFIX):]
+            batch_part = index_file[len(bs.INDEX_PREFIX) :]
             index_file_path = os.path.join(self.loc, index_file)
             value_file_path = os.path.join(self.loc, bs.VALUE_PREFIX + batch_part)
 
@@ -155,7 +167,7 @@ class BinStorageTest(TestCase):
 
         self.arrs = [id2arr[i] for i in self.ids]
 
-        with tictoc('Test update {} items'.format(nupdate)):
+        with tictoc("Test update {} items".format(nupdate)):
             bs.store(ids_for_update, arrs_for_update, self.loc)
 
         retrieved_arrs = bs.retrieve(self.ids, self.loc)
@@ -171,7 +183,7 @@ class BinStorageTest(TestCase):
         selected_ids_inds = [np.where(self.ids == x)[0][0] for x in selected_ids]
         selected_arrs = [self.arrs[i] for i in selected_ids_inds]
 
-        with tictoc('Test retrieving {} items shuffle={}'.format(nselected, shuffle)):
+        with tictoc("Test retrieving {} items shuffle={}".format(nselected, shuffle)):
             retrieved_arrs = bs.retrieve(selected_ids, self.loc)
 
         self.assertEqual(len(selected_ids), len(retrieved_arrs))
@@ -185,7 +197,7 @@ class BinStorageTest(TestCase):
                 pass
 
     def _test_retrieve_ids(self, limit=None):
-        with tictoc('Test retrieving IDs limit={}'.format(limit)):
+        with tictoc("Test retrieving IDs limit={}".format(limit)):
             ids = bs.retrieve_ids(self.loc, limit)
 
         if limit:

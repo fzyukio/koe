@@ -17,17 +17,18 @@ Given a matrix of class-level acoustic measurements (by averaging constituent sy
       + if not:
          + return
 """
+
 import json
 import os
 from abc import abstractmethod
 
-import numpy as np
 from django.conf import settings
 from django.core.management import BaseCommand
-from scipy.cluster.hierarchy import cut_tree
-from scipy.cluster.hierarchy import linkage
+
+import numpy as np
+from scipy.cluster.hierarchy import cut_tree, linkage
 from scipy.spatial.distance import pdist
-from scipy.stats import zscore, ttest_1samp
+from scipy.stats import ttest_1samp, zscore
 
 from koe.feature_utils import pca_optimal
 
@@ -93,7 +94,7 @@ def are_rankings_structural(measures, dist_triu, permuter, significance, ntrials
 
     p_value = np.sum(mean_random_deviations > observed_deviation) / ntrials
     if measures.shape[0] <= 20:
-        print('p_value is {}'.format(p_value))
+        print("p_value is {}".format(p_value))
     return p_value < significance
 
 
@@ -121,13 +122,13 @@ def is_variance_structural(measures, dist_triu, permuter, significance, ntrials)
 
     # p_value = np.sum(mean_random_deviations > observed_deviation) / ntrials
     # if measures.shape[0] <= 20:
-    print('p_value = {}, t_value={}'.format(p_value, t_value))
+    print("p_value = {}, t_value={}".format(p_value, t_value))
     return p_value < significance
 
 
 structure_checkers = {
-    'rankings': are_rankings_structural,
-    'variance': is_variance_structural
+    "rankings": are_rankings_structural,
+    "variance": is_variance_structural,
 }
 
 
@@ -141,36 +142,52 @@ def cut_tree_get_leaves(tree, height):
     return leaves
 
 
-def recursive_simprof(global_measures, permuter, global_cls_inds, clusters, min_cluster_size=3, max_deviation=0.05,
-                      ntrials=100, is_structural=are_rankings_structural):
-    print('Considering {} classes'.format(len(global_cls_inds)))
+def recursive_simprof(
+    global_measures,
+    permuter,
+    global_cls_inds,
+    clusters,
+    min_cluster_size=3,
+    max_deviation=0.05,
+    ntrials=100,
+    is_structural=are_rankings_structural,
+):
+    print("Considering {} classes".format(len(global_cls_inds)))
     if global_cls_inds.shape[0] < min_cluster_size:
         clusters.append(global_cls_inds)
         return
 
     local_measures = global_measures[global_cls_inds, :]
-    local_to_global_inds = {l: g for l, g in enumerate(global_cls_inds)}
+    local_to_global_inds = {x: y for x, y in enumerate(global_cls_inds)}
 
     dist_triu = pdist(local_measures)
-    local_tree = linkage(dist_triu, method='complete')
+    local_tree = linkage(dist_triu, method="complete")
     cutoff = local_tree[:, 2].max()
 
     if is_structural(local_measures, dist_triu, permuter, max_deviation, ntrials):
         leaves = cut_tree_get_leaves(local_tree, cutoff)
         for leaf_class_inds in leaves:
             leaf_class_global_inds = np.array([local_to_global_inds[i] for i in leaf_class_inds])
-            recursive_simprof(global_measures, permuter, leaf_class_global_inds, clusters, min_cluster_size,
-                              max_deviation, ntrials, is_structural)
+            recursive_simprof(
+                global_measures,
+                permuter,
+                leaf_class_global_inds,
+                clusters,
+                min_cluster_size,
+                max_deviation,
+                ntrials,
+                is_structural,
+            )
     else:
         clusters.append(global_cls_inds)
 
 
 def get_permuter(nfeatures, feature_grouper, dm) -> Permuter:
-    if feature_grouper == 'pca':
+    if feature_grouper == "pca":
         permuter = PcaPermuter(nfeatures)
     else:
         feature_cols = os.path.join(settings.BASE_DIR, dm.get_cols_path())
-        with open(feature_cols, 'r', encoding='utf-8') as f:
+        with open(feature_cols, "r", encoding="utf-8") as f:
             col_inds = json.load(f)
         permuter = FeatureGroupPermuter(col_inds)
     return permuter
@@ -191,11 +208,11 @@ class SymprofCommand(BaseCommand):
 
     @abstractmethod
     def post_init(self, options):
-        self.feature_grouper = options['feature_grouper']
-        self.pca_explained = options['pca_explained']
-        self.pca_dimension = options['pca_dimension']
-        self.max_deviation = options['max_deviation']
-        structure_type = options['structure_type']
+        self.feature_grouper = options["feature_grouper"]
+        self.pca_explained = options["pca_explained"]
+        self.pca_dimension = options["pca_dimension"]
+        self.max_deviation = options["max_deviation"]
+        structure_type = options["structure_type"]
         self.structural_checker = structure_checkers[structure_type]
 
     @abstractmethod
@@ -203,11 +220,15 @@ class SymprofCommand(BaseCommand):
         pass
 
     def process_class_measures(self, original_measures):
-        if self.feature_grouper == 'pca':
-            explained, pcaed_measures = pca_optimal(original_measures, self.pca_dimension * 2, self.pca_explained,
-                                                    self.pca_dimension)
+        if self.feature_grouper == "pca":
+            explained, pcaed_measures = pca_optimal(
+                original_measures,
+                self.pca_dimension * 2,
+                self.pca_explained,
+                self.pca_dimension,
+            )
             pcaed_measures = zscore(pcaed_measures)
-            print('explained = {}, data.shape= {}'.format(explained, pcaed_measures.shape))
+            print("explained = {}, data.shape= {}".format(explained, pcaed_measures.shape))
             dist_triu = pdist(pcaed_measures)
             return dist_triu, pcaed_measures
         else:
@@ -220,16 +241,52 @@ class SymprofCommand(BaseCommand):
 
     def add_arguments(self, parser):
         super(SymprofCommand, self).add_arguments(parser)
-        parser.add_argument('--feature-grouper', action='store', dest='feature_grouper', default='pca', type=str)
-        parser.add_argument('--pca-explained', action='store', dest='pca_explained', default=0.95, type=float)
-        parser.add_argument('--pca-dimension', action='store', dest='pca_dimension', default=30, type=int)
-        parser.add_argument('--max-deviation', action='store', dest='max_deviation', default=0.05, type=float)
-        parser.add_argument('--structure-type', action='store', dest='structure_type', default='rankings', type=str)
+        parser.add_argument(
+            "--feature-grouper",
+            action="store",
+            dest="feature_grouper",
+            default="pca",
+            type=str,
+        )
+        parser.add_argument(
+            "--pca-explained",
+            action="store",
+            dest="pca_explained",
+            default=0.95,
+            type=float,
+        )
+        parser.add_argument(
+            "--pca-dimension",
+            action="store",
+            dest="pca_dimension",
+            default=30,
+            type=int,
+        )
+        parser.add_argument(
+            "--max-deviation",
+            action="store",
+            dest="max_deviation",
+            default=0.05,
+            type=float,
+        )
+        parser.add_argument(
+            "--structure-type",
+            action="store",
+            dest="structure_type",
+            default="rankings",
+            type=str,
+        )
 
     def handle(self, *args, **options):
         self.post_init(options)
 
-        class_measures, classes_info, nlabels, cls_labels, syl_labels = self.get_class_measures_info(options)
+        (
+            class_measures,
+            classes_info,
+            nlabels,
+            cls_labels,
+            syl_labels,
+        ) = self.get_class_measures_info(options)
         dist_triu, processed_measures = self.process_class_measures(class_measures)
 
         nclasses, nfeatures = processed_measures.shape

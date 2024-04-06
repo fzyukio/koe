@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0010_temporarydatabase__databases'),
+        ("koe", "0010_temporarydatabase__databases"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='task',
-            name='started',
+            model_name="task",
+            name="started",
             field=models.DateTimeField(blank=True, default=None, null=True),
         ),
     ]

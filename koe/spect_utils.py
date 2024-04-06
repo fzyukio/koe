@@ -4,10 +4,11 @@ import pickle
 import numpy as np
 from PIL import Image
 
-from koe.colourmap import default_cm, colour_map
 from koe import wavfile
+from koe.colourmap import colour_map, default_cm
 from koe.features.scaled_freq_features import mfcc
 from koe.features.utils import get_spectrogram
+
 
 # nfft = 512
 # noverlap = nfft // 2
@@ -16,11 +17,19 @@ from koe.features.utils import get_spectrogram
 
 
 def extract_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
-    value = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
-                            center=False)
+    value = get_spectrogram(
+        wav_file_path,
+        fs=fs,
+        start=start,
+        end=end,
+        nfft=nfft,
+        noverlap=noverlap,
+        win_length=nfft,
+        center=False,
+    )
 
     if filepath:
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             pickle.dump(value, f)
     else:
         return value
@@ -28,20 +37,37 @@ def extract_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
 
 def extract_mfcc(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
     sig = wavfile.read_segment(wav_file_path, beg_ms=start, end_ms=end, mono=True)
-    args = dict(nfft=nfft, noverlap=noverlap, win_length=nfft, fs=fs, wav_file_path=None, start=0, end=None,
-                sig=sig, center=True)
+    args = dict(
+        nfft=nfft,
+        noverlap=noverlap,
+        win_length=nfft,
+        fs=fs,
+        wav_file_path=None,
+        start=0,
+        end=None,
+        sig=sig,
+        center=True,
+    )
     value = mfcc(args)
 
     if filepath:
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             pickle.dump(value, f)
     else:
         return value
 
 
 def extract_log_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=None):
-    psd = get_spectrogram(wav_file_path, fs=fs, start=start, end=end, nfft=nfft, noverlap=noverlap, win_length=nfft,
-                          center=False)
+    psd = get_spectrogram(
+        wav_file_path,
+        fs=fs,
+        start=start,
+        end=end,
+        nfft=nfft,
+        noverlap=noverlap,
+        win_length=nfft,
+        center=False,
+    )
     eps = 1e-3
     # find maximum
     psd_abs = abs(psd)
@@ -50,10 +76,11 @@ def extract_log_spect(wav_file_path, fs, start, end, nfft, noverlap, filepath=No
     value = 20.0 * np.log10(psd_abs / psd_max + eps)
 
     if filepath:
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             pickle.dump(value, f)
     else:
         return value
+
 
 eps = 1e-3
 
@@ -85,11 +112,11 @@ def psd2img(psd, imgpath=None, islog=False, cm=None):
     spect_pixel_range = max_spect_pixel - min_spect_pixel
     interval64 = spect_pixel_range / 63
 
-    psd = ((psd - min_spect_pixel) / interval64)
+    psd = (psd - min_spect_pixel) / interval64
     psd[np.isinf(psd)] = 0
-    psd = psd.astype(np.int)
+    psd = psd.astype(int)
 
-    psd = psd.reshape((width * height,), order='C')
+    psd = psd.reshape((width * height,), order="C")
     psd[psd >= 64] = 63
     # psd[psd < 64] = 0
     psd_rgb = np.empty((height, width, 3), dtype=np.uint8)
@@ -99,20 +126,20 @@ def psd2img(psd, imgpath=None, islog=False, cm=None):
 
     if imgpath:
         img = Image.fromarray(psd_rgb)
-        img.save(imgpath, format='PNG')
+        img.save(imgpath, format="PNG")
         return None
     else:
         return psd_rgb
 
 
 def extract_global_min_max(folder, format):
-    ext = '.{}'.format(format)
+    ext = ".{}".format(format)
     mins = []
     maxs = []
     for filename in os.listdir(folder):
         if filename.lower().endswith(ext):
             file_path = os.path.join(folder, filename)
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 spect = pickle.load(f)
                 mins.append(np.min(spect, axis=1))
                 maxs.append(np.max(spect, axis=1))
@@ -123,43 +150,43 @@ def extract_global_min_max(folder, format):
 
 
 def save_global_min_max(norm_folder, global_min, global_max):
-    global_min_file_path = os.path.join(norm_folder, 'global_min')
-    with open(global_min_file_path, 'wb') as f:
+    global_min_file_path = os.path.join(norm_folder, "global_min")
+    with open(global_min_file_path, "wb") as f:
         pickle.dump(global_min, f)
 
-    global_max_file_path = os.path.join(norm_folder, 'global_max')
-    with open(global_max_file_path, 'wb') as f:
+    global_max_file_path = os.path.join(norm_folder, "global_max")
+    with open(global_max_file_path, "wb") as f:
         pickle.dump(global_max, f)
 
 
 def load_global_min_max(min_max_loc):
-    global_min_file_path = os.path.join(min_max_loc, 'global_min')
-    with open(global_min_file_path, 'rb') as f:
+    global_min_file_path = os.path.join(min_max_loc, "global_min")
+    with open(global_min_file_path, "rb") as f:
         global_min = pickle.load(f)
 
-    global_max_file_path = os.path.join(min_max_loc, 'global_max')
-    with open(global_max_file_path, 'rb') as f:
+    global_max_file_path = os.path.join(min_max_loc, "global_max")
+    with open(global_max_file_path, "rb") as f:
         global_max = pickle.load(f)
 
     return global_min, global_max
 
 
 def normalise_all(folder, norm_folder, format, global_min, global_max):
-    ext = '.{}'.format(format)
+    ext = ".{}".format(format)
     global_range = global_max - global_min
     for filename in os.listdir(folder):
         if filename.lower().endswith(ext):
             file_path = os.path.join(folder, filename)
             file_norm_path = os.path.join(norm_folder, filename)
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 spect = pickle.load(f)
             spect = (spect - global_min) / global_range
-            with open(file_norm_path, 'wb') as f:
+            with open(file_norm_path, "wb") as f:
                 pickle.dump(spect, f)
 
 
 extractors = {
-    'spect': extract_spect,
-    'mfcc': extract_mfcc,
-    'log_spect': extract_log_spect
+    "spect": extract_spect,
+    "mfcc": extract_mfcc,
+    "log_spect": extract_log_spect,
 }

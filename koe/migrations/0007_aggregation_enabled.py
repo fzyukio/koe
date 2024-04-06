@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0006_auto_20180903_0833'),
+        ("koe", "0006_auto_20180903_0833"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='aggregation',
-            name='enabled',
+            model_name="aggregation",
+            name="enabled",
             field=models.BooleanField(default=True),
         ),
     ]

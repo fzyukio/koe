@@ -4,18 +4,19 @@ import numpy as np
 from nltk import ngrams
 from scipy.spatial import distance
 
-from koe.models import Segment, AudioFile
+from koe.models import AudioFile, Segment
 from koe.utils import triu2mat
 from root.models import ExtraAttr, ExtraAttrValue
 
 
 def get_sequences(segs, granularity, viewas):
-    values = segs.values_list('id', 'audio_file__id')
-    seg_ids = segs.values_list('id', flat=True)
+    values = segs.values_list("id", "audio_file__id")
+    seg_ids = segs.values_list("id", flat=True)
 
     label_attr = ExtraAttr.objects.get(klass=Segment.__name__, name=granularity)
-    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=viewas)\
-        .values_list('owner_id', 'value')
+    labels = ExtraAttrValue.objects.filter(attr=label_attr, owner_id__in=seg_ids, user__username=viewas).values_list(
+        "owner_id", "value"
+    )
 
     seg_id_to_label = {x: y for x, y in labels}
     label_set = set(seg_id_to_label.values())
@@ -23,8 +24,8 @@ def get_sequences(segs, granularity, viewas):
 
     enums2labels = {x: y for y, x in labels2enums.items()}
     pseudo_end_id = len(label_set) + 1
-    enums2labels[pseudo_end_id] = '__PSEUDO_END__'
-    enums2labels[0] = '__PSEUDO_START__'
+    enums2labels[pseudo_end_id] = "__PSEUDO_END__"
+    enums2labels[0] = "__PSEUDO_START__"
 
     seg_id_to_label_enum = {x: labels2enums[y] for x, y in seg_id_to_label.items()}
 
@@ -61,16 +62,16 @@ def songs_to_syl_seqs(songs, sid2label, enums2labels, use_pseudo=True):
     :param sid2label:
     :return:
     """
-    segs = Segment.objects.filter(audio_file__in=songs).order_by('audio_file__name', 'start_time_ms')
-    values = segs.values_list('id', 'audio_file__id')
+    segs = Segment.objects.filter(audio_file__in=songs).order_by("audio_file__name", "start_time_ms")
+    values = segs.values_list("id", "audio_file__id")
 
     label_set = set(sid2label.values())
 
     if use_pseudo:
         pseudo_end_id = len(label_set) + 1
         pseudo_start_id = 0
-        enums2labels[pseudo_end_id] = '__PSEUDO_END__'
-        enums2labels[pseudo_start_id] = '__PSEUDO_START__'
+        enums2labels[pseudo_end_id] = "__PSEUDO_END__"
+        enums2labels[pseudo_start_id] = "__PSEUDO_START__"
 
     # Bagging song syllables by song name
     song_sequences = {}
@@ -100,9 +101,15 @@ def songs_to_syl_seqs(songs, sid2label, enums2labels, use_pseudo=True):
     return song_sequences
 
 
-def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, count_style='symmetric',
-                        self_count='ignore'):
-    assert count_style in ['symmetric', 'forward', 'separate', 'backward']
+def calc_class_ajacency(
+    database,
+    syl_label_enum_arr,
+    enum2label,
+    id2enumlabel,
+    count_style="symmetric",
+    self_count="ignore",
+):
+    assert count_style in ["symmetric", "forward", "separate", "backward"]
     nlabels = len(enum2label)
     classes_info = [[] for _ in range(nlabels)]
     for sidx, enum_label in enumerate(syl_label_enum_arr):
@@ -120,19 +127,19 @@ def calc_class_ajacency(database, syl_label_enum_arr, enum2label, id2enumlabel, 
     diagonal_indices = np.diag_indices(nlabels)
     diagonal_values = adjacency_mat[diagonal_indices]
 
-    if self_count != 'keep':
+    if self_count != "keep":
         adjacency_mat[diagonal_indices] = 0
 
-    if count_style == 'forward':
+    if count_style == "forward":
         returned_mat = adjacency_mat
-    elif count_style == 'backward':
+    elif count_style == "backward":
         returned_mat = adjacency_mat.T
-    elif count_style == 'symmetric':
+    elif count_style == "symmetric":
         returned_mat = adjacency_mat + adjacency_mat.T
     else:
         returned_mat = np.concatenate((adjacency_mat, adjacency_mat.T), axis=1)
 
-    if self_count == 'append':
+    if self_count == "append":
         returned_mat = np.concatenate((returned_mat, diagonal_values.reshape(nlabels, 1)), axis=1)
 
     return returned_mat, classes_info
@@ -158,7 +165,7 @@ def calc_class_dist_by_syl_features(syl_label_enum_arr, nlabels, ftvalues, metho
     return class_dist, classes_info
 
 
-def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False, metric='euclidean'):
+def calc_class_dist_by_adjacency(adjacency_mat, syl_label_enum_arr, return_triu=False, metric="euclidean"):
     """
     Currently this distmat contains reversed distance, e.g a pair (A,B) has high "distance" if they're found adjacent
     to each other often -- so we need to reverse this.

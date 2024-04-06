@@ -2,36 +2,36 @@ import copy
 from abc import ABC, abstractmethod
 
 import numpy as np
+from pymlfunc import normxcorr2
 
 from koe.features.feature_extract import feature_extractors
 from koe.management.commands.chirp_generator import generate_chirp
-from pymlfunc import normxcorr2
-
 from koe.models import Aggregation
 from koe.utils import divide_conquer
 
 
 # @memoize(timeout=300)
 def _cached_get_chirp(chirp_type, nsamples):
-    return generate_chirp(chirp_type, 'constant', nsamples)
+    return generate_chirp(chirp_type, "constant", nsamples)
 
 
 # @memoize(timeout=300)
 def _cached_get_chirp_feature(feature_name, args):
     args = copy.deepcopy(args)
-    nsamples = args['nsamples']
-    chirp_type = args['chirp_type']
+    nsamples = args["nsamples"]
+    chirp_type = args["chirp_type"]
 
     chirp = _cached_get_chirp(chirp_type, nsamples)
 
-    args['sig'] = chirp
+    args["sig"] = chirp
     extractor = feature_extractors[feature_name]
     feature_value = extractor(args)
     return feature_value
 
 
 def dtw_chirp(feature, seg_feature_value, args):
-    from ced import pyed
+    from ced import pyed  # type: ignore[import-not-found]
+
     if seg_feature_value.ndim == 2:
         dim0 = seg_feature_value.shape[0]
     else:
@@ -46,7 +46,7 @@ def dtw_chirp(feature, seg_feature_value, args):
         if seg_feature_value.ndim == 1:
             seg_feature_value = seg_feature_value.reshape(1, (max(seg_feature_value.shape)))
 
-    settings = pyed.Settings(dist='euclid_squared', norm='max', compute_path=False)
+    settings = pyed.Settings(dist="euclid_squared", norm="max", compute_path=False)
 
     # if chirp_feature_value.shape != seg_feature_value.shape:
     #     chirp_feature_value = _cached_get_chirp_feature(feature.name, args)
@@ -117,15 +117,15 @@ class StatsAggregator(Aggregator):
 class ChirpDtw(Aggregator):
     def __init__(self, chirp_type):
         self.chirp_type = chirp_type
-        self.name = 'chirp_{}'.format(chirp_type)
+        self.name = "chirp_{}".format(chirp_type)
 
     def get_name(self):
         return self.name
 
     def process(self, input, **kwargs):
-        feature = kwargs['feature']
-        args = kwargs['args']
-        args['chirp_type'] = self.chirp_type
+        feature = kwargs["feature"]
+        args = kwargs["args"]
+        args["chirp_type"] = self.chirp_type
         return dtw_chirp(feature, input, args)
 
     def is_chirpy(self):
@@ -135,15 +135,15 @@ class ChirpDtw(Aggregator):
 class ChirpXcorr(Aggregator):
     def __init__(self, chirp_type):
         self.chirp_type = chirp_type
-        self.name = 'xcorr_{}'.format(chirp_type)
+        self.name = "xcorr_{}".format(chirp_type)
 
     def get_name(self):
         return self.name
 
     def process(self, input, **kwargs):
-        feature = kwargs['feature']
-        args = kwargs['args']
-        args['chirp_type'] = self.chirp_type
+        feature = kwargs["feature"]
+        args = kwargs["args"]
+        args["chirp_type"] = self.chirp_type
         return xcorr_chirp(feature, input, args)
 
     def is_chirpy(self):
@@ -154,7 +154,7 @@ class DivideConquer(Aggregator):
     def __init__(self, method, ndivs):
         self.method = method
         self.ndivs = ndivs
-        self.name = 'divcon_{}_{}'.format(ndivs, method.__name__)
+        self.name = "divcon_{}_{}".format(ndivs, method.__name__)
 
     def get_name(self):
         return self.name
@@ -206,49 +206,48 @@ def get_last(arr, axis):
     return np.take(arr, indices=-1, axis=axis)
 
 
-
 enabled_aggregators = {
-    'stats': [
+    "stats": [
         StatsAggregator(np.mean),
         StatsAggregator(np.median),
         StatsAggregator(np.std),
-        StatsAggregator(np.min, 'min'),
-        StatsAggregator(np.max, 'max'),
-        StatsAggregator(np.var, 'variance'),
-        StatsAggregator(get_first, 'begin'),
-        StatsAggregator(get_last, 'end'),
+        StatsAggregator(np.min, "min"),
+        StatsAggregator(np.max, "max"),
+        StatsAggregator(np.var, "variance"),
+        StatsAggregator(get_first, "begin"),
+        StatsAggregator(get_last, "end"),
     ],
-    'divcon-3': [
+    "divcon-3": [
         DivideConquer(np.mean, 3),
         DivideConquer(np.median, 3),
-        DivideConquer(np.std, 3)
+        DivideConquer(np.std, 3),
     ],
-    'divcon-5': [
+    "divcon-5": [
         DivideConquer(np.mean, 5),
         DivideConquer(np.median, 5),
-        DivideConquer(np.std, 5)
+        DivideConquer(np.std, 5),
     ],
-    'divcon-7': [
+    "divcon-7": [
         DivideConquer(np.mean, 7),
         DivideConquer(np.median, 7),
-        DivideConquer(np.std, 7)
-    ]
+        DivideConquer(np.std, 7),
+    ],
 }
 
 _disabled_aggregators = {
-    'dtw': [
-        ChirpDtw('pipe'),
-        ChirpDtw('squeak-up'),
-        ChirpDtw('squeak-down'),
-        ChirpDtw('squeak-convex'),
-        ChirpDtw('squeak-concave'),
+    "dtw": [
+        ChirpDtw("pipe"),
+        ChirpDtw("squeak-up"),
+        ChirpDtw("squeak-down"),
+        ChirpDtw("squeak-convex"),
+        ChirpDtw("squeak-concave"),
     ],
-    'xcorr': [
-        ChirpXcorr('pipe'),
-        ChirpXcorr('squeak-up'),
-        ChirpXcorr('squeak-down'),
-        ChirpXcorr('squeak-convex'),
-        ChirpXcorr('squeak-concave'),
+    "xcorr": [
+        ChirpXcorr("pipe"),
+        ChirpXcorr("squeak-up"),
+        ChirpXcorr("squeak-down"),
+        ChirpXcorr("squeak-convex"),
+        ChirpXcorr("squeak-concave"),
     ],
 }
 
@@ -257,7 +256,10 @@ aggregator_map = {}
 
 
 def init():
-    for aggregators_by_type, enabled in [(enabled_aggregators, True), (_disabled_aggregators, False)]:
+    for aggregators_by_type, enabled in [
+        (enabled_aggregators, True),
+        (_disabled_aggregators, False),
+    ]:
         for group in aggregators_by_type.values():
             for aggregator in group:
                 aggregator_name = aggregator.get_name()

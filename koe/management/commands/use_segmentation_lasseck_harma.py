@@ -2,14 +2,13 @@
 Convert audio file to spectrogram. Then use the trained segmentation encoder to detect syllables.
 Then display the segmentation on a webpage
 """
-from scipy import ndimage
-from skimage import morphology
-from skimage.measure import regionprops
-from scipy import signal
 
 import numpy as np
+from scipy import ndimage, signal
+from skimage import morphology
+from skimage.measure import regionprops
 
-from koe.management.abstract_commands.use_segmentation import UseSegmenter, Segmenter
+from koe.management.abstract_commands.use_segmentation import Segmenter, UseSegmenter
 from koe.management.commands.use_segmentation_lasseck import get_median_clipping_mask
 
 
@@ -77,7 +76,7 @@ class LasseckHarmaSegmenter(Segmenter):
                     if peak_over_time[right_idx] <= max_val - dropout_thresh:
                         break
 
-                peak_over_time[left_idx:min(nframes, right_idx + 1)] = - np.inf
+                peak_over_time[left_idx : min(nframes, right_idx + 1)] = -np.inf
                 syllable_count += 1
                 x0s.append(left_idx)
                 x1s.append(right_idx)
@@ -126,5 +125,5 @@ class Command(UseSegmenter):
         return LasseckHarmaSegmenter()
 
     def create_variables(self, options) -> dict:
-        variables = {'format': 'spect', 'normalise': False}
+        variables = {"format": "spect", "normalise": False}
         return variables

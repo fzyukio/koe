@@ -1,8 +1,8 @@
 import numpy as np
+import spectrum
 from scipy.signal import freqz
 
-import spectrum
-from koe.features.utils import get_sig, unroll_args, _cached_get_window
+from koe.features.utils import _cached_get_window, get_sig, unroll_args
 from koe.utils import split_segments
 
 
@@ -16,9 +16,9 @@ def lpc_spectrum_frame(sig, order, nfft):
 
 def lpc_spectrum(args):
     sig = get_sig(args)
-    nfft, fs, noverlap, win_length, order = unroll_args(args, ['nfft', 'fs', 'noverlap', 'win_length', 'order'])
-    hann_window = _cached_get_window('hanning', nfft)
-    window = unroll_args(args, [('window', hann_window)])
+    nfft, fs, noverlap, win_length, order = unroll_args(args, ["nfft", "fs", "noverlap", "win_length", "order"])
+    hann_window = _cached_get_window("hanning", nfft)
+    window = unroll_args(args, [("window", hann_window)])
 
     siglen = len(sig)
     nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
@@ -53,9 +53,9 @@ def lpc_cepstrum_frame(sig, order=None):
 
 def lpc_cepstrum(args):
     sig = get_sig(args)
-    nfft, fs, noverlap, win_length, order = unroll_args(args, ['nfft', 'fs', 'noverlap', 'win_length', 'order'])
-    hann_window = _cached_get_window('hanning', nfft)
-    window = unroll_args(args, [('window', hann_window)])
+    nfft, fs, noverlap, win_length, order = unroll_args(args, ["nfft", "fs", "noverlap", "win_length", "order"])
+    hann_window = _cached_get_window("hanning", nfft)
+    window = unroll_args(args, [("window", hann_window)])
 
     siglen = len(sig)
     nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)
@@ -77,9 +77,9 @@ def lp_coefficients_frame(sig, order):
 
 def lp_coefficients(args):
     sig = get_sig(args)
-    nfft, fs, noverlap, win_length, order = unroll_args(args, ['nfft', 'fs', 'noverlap', 'win_length', 'order'])
-    hann_window = _cached_get_window('hanning', nfft)
-    window = unroll_args(args, [('window', hann_window)])
+    nfft, fs, noverlap, win_length, order = unroll_args(args, ["nfft", "fs", "noverlap", "win_length", "order"])
+    hann_window = _cached_get_window("hanning", nfft)
+    window = unroll_args(args, [("window", hann_window)])
 
     siglen = len(sig)
     nsegs, segs = split_segments(siglen, win_length, noverlap, incltail=False)

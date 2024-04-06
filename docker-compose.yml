@@ -2,7 +2,7 @@ version: '2.3'
 services:
   db:
     container_name: ${CONTAINER_DATABASE_NAME}
-    image: mysql:5.7.23
+    image: mysql:8.0
     ports:
       - $DB_PORT
     volumes:
@@ -31,7 +31,7 @@ services:
       - VIRTUAL_HOST=${DOMAIN}
       - VIRTUAL_PROTO=uwsgi
 #     Uncomment below to DELETE and re-create the database from fixtures
-      - RESET_DB=true
+      # - RESET_DB=true
     restart: unless-stopped
     depends_on:
       - db
@@ -41,11 +41,27 @@ services:
       - ./backups:/code/backups
       - ./notebooks:/code/notebooks
       - ./settings:/code/settings
+
   cache:
     image: redis
     container_name: ${CONTAINER_CACHE_NAME}
     restart: unless-stopped
+    ports:
+      - $CACHE_PORT
+
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: jwilder/nginx-proxy:alpine
+    ports:
+      - "9080:80"
+      - "8443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - web
+
+
 networks:
   web:
-    external:
-      name: ${EXTERNAL_NETWORK}
+    driver: bridge

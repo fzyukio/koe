@@ -13,7 +13,7 @@ sudo sysctl vm.vfs_cache_pressure=50
 echo 'vm.vfs_cache_pressure=50' | sudo tee -a /etc/sysctl.conf
 
 # Install ag, sqlite, ffmpeg
-sudo apt-get install silversearcher-ag sqlite3 ffmpeg python-psycopg2 libxml2-dev libxmlsec1-dev
+sudo apt-get install silversearcher-ag sqlite3 ffmpeg libxml2-dev libxmlsec1-dev
 
 # Install npm
 curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -

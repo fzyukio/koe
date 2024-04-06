@@ -5,20 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('koe', '0021_auto_20190529_1033'),
+        ("koe", "0021_auto_20190529_1033"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='temporarydatabase',
-            name='name',
+            model_name="temporarydatabase",
+            name="name",
             field=models.CharField(max_length=255),
         ),
         migrations.AlterUniqueTogether(
-            name='temporarydatabase',
-            unique_together={('chksum', 'user'), ('user', 'name')},
+            name="temporarydatabase",
+            unique_together={("chksum", "user"), ("user", "name")},
         ),
     ]

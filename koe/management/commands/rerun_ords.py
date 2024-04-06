@@ -16,43 +16,43 @@ class Command(RecreateIdsPersistentObjects):
             if need_reconstruct:
                 dead = True
                 try:
-                    print('==============================================')
-                    runner = ConsoleTaskRunner(prefix='Reconstruct ordination {}'.format(ord))
+                    print("==============================================")
+                    runner = ConsoleTaskRunner(prefix="Reconstruct ordination {}".format(ord))
                     _construct_ordination(ord, runner)
                     runner.complete()
                     dead = False
                 except AssertionError as e:
                     errmsg = str(e)
-                    if errmsg.startswith('Unknown method mds'):
-                        warning('Unrecoverable error: ' + errmsg)
+                    if errmsg.startswith("Unknown method mds"):
+                        warning("Unrecoverable error: " + errmsg)
                     else:
                         raise
                 except ValueError as e:
                     errmsg = str(e)
-                    if 'must be between 0 and min' in errmsg:
-                        warning('Unrecoverable error: ' + errmsg)
+                    if "must be between 0 and min" in errmsg:
+                        warning("Unrecoverable error: " + errmsg)
                     else:
                         raise
                 except:
                     dead = False
                     raise
                 finally:
-                    print('==============================================')
+                    print("==============================================")
                     if dead and remove_dead:
                         ord_sids_path = ord.get_sids_path()
                         ord_bytes_path = ord.get_bytes_path()
 
-                        print('Remove binary file {}'.format(ord_sids_path))
+                        print("Remove binary file {}".format(ord_sids_path))
                         try:
                             os.remove(ord_sids_path)
                         except FileNotFoundError:
                             pass
 
-                        print('Remove binary file {}'.format(ord_bytes_path))
+                        print("Remove binary file {}".format(ord_bytes_path))
                         try:
                             os.remove(ord_bytes_path)
                         except FileNotFoundError:
                             pass
 
-                        print('Remove object')
+                        print("Remove object")
                         ord.delete()

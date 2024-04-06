@@ -7,65 +7,107 @@ import root.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('koe', '0004_aggregation'),
+        ("koe", "0004_aggregation"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DerivedTensorData',
+            name="DerivedTensorData",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('features_hash', models.CharField(max_length=255)),
-                ('aggregations_hash', models.CharField(max_length=255)),
-                ('dimreduce', models.CharField(max_length=255)),
-                ('ndims', models.IntegerField(blank=True, null=True)),
-                ('annotator', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='annotator', to=settings.AUTH_USER_MODEL)),
-                ('creator', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='creator', to=settings.AUTH_USER_MODEL)),
-                ('database', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("features_hash", models.CharField(max_length=255)),
+                ("aggregations_hash", models.CharField(max_length=255)),
+                ("dimreduce", models.CharField(max_length=255)),
+                ("ndims", models.IntegerField(blank=True, null=True)),
+                (
+                    "annotator",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="annotator",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "creator",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="creator",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "database",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
         migrations.CreateModel(
-            name='FullTensorData',
+            name="FullTensorData",
             fields=[
-                ('id', models.AutoField(auto_created=True, editable=False, max_length=255, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255, unique=True)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('features_hash', models.CharField(max_length=255)),
-                ('aggregations_hash', models.CharField(max_length=255)),
-                ('database', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Database')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        editable=False,
+                        max_length=255,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, unique=True)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("features_hash", models.CharField(max_length=255)),
+                ("aggregations_hash", models.CharField(max_length=255)),
+                (
+                    "database",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="koe.Database"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
             bases=(models.Model, root.models.AutoSetterGetterMixin),
         ),
-        migrations.AlterUniqueTogether(
-            name='segmentfeature',
-            unique_together=set(),
+        migrations.RemoveField(
+            model_name="segmentfeature",
+            name="feature",
         ),
         migrations.RemoveField(
-            model_name='segmentfeature',
-            name='feature',
-        ),
-        migrations.RemoveField(
-            model_name='segmentfeature',
-            name='segment',
+            model_name="segmentfeature",
+            name="segment",
         ),
         migrations.DeleteModel(
-            name='SegmentFeature',
+            name="SegmentFeature",
         ),
         migrations.AddField(
-            model_name='derivedtensordata',
-            name='full_tensor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='koe.FullTensorData'),
+            model_name="derivedtensordata",
+            name="full_tensor",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="koe.FullTensorData",
+            ),
         ),
     ]

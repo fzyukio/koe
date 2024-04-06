@@ -9,15 +9,21 @@ from progress.bar import Bar
 
 
 def add_individual_and_track(apps, schema_editor):
-    """
-    """
+    """ """
     db_alias = schema_editor.connection.alias
-    AudioFile = apps.get_model('koe', 'AudioFile')
-    Individual = apps.get_model('koe', 'Individual')
-    AudioTrack = apps.get_model('koe', 'AudioTrack')
+    AudioFile = apps.get_model("koe", "AudioFile")
+    Individual = apps.get_model("koe", "Individual")
+    AudioTrack = apps.get_model("koe", "AudioTrack")
 
-    afs = AudioFile.objects.using(db_alias).filter(original=None).filter(Q(individual=None) | Q(track=None))
-    bar = Bar('Setting placeholder for original AudioFile\'s individual and track', max=len(afs))
+    afs = (
+        AudioFile.objects.using(db_alias)
+        .filter(original=None)
+        .filter(Q(individual=None) | Q(track=None))
+    )
+    bar = Bar(
+        "Setting placeholder for original AudioFile's individual and track",
+        max=len(afs),
+    )
 
     with transaction.atomic():
         for af in afs:
@@ -33,8 +39,14 @@ def add_individual_and_track(apps, schema_editor):
             bar.next()
         bar.finish()
 
-    afs = AudioFile.objects.using(db_alias).exclude(original=None).filter(Q(individual=None) | Q(track=None))
-    bar = Bar('Setting placeholder for copied AudioFile\'s individual and track', max=len(afs))
+    afs = (
+        AudioFile.objects.using(db_alias)
+        .exclude(original=None)
+        .filter(Q(individual=None) | Q(track=None))
+    )
+    bar = Bar(
+        "Setting placeholder for copied AudioFile's individual and track", max=len(afs)
+    )
 
     with transaction.atomic():
         for af in afs:
@@ -50,21 +62,26 @@ def add_individual_and_track(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('koe', '0031_rearrange_spectrograms_by_page'),
+        ("koe", "0031_rearrange_spectrograms_by_page"),
     ]
 
     operations = [
-        migrations.RunPython(add_individual_and_track, reverse_code=migrations.RunPython.noop),
-        migrations.AlterField(
-            model_name='audiofile',
-            name='individual',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.Individual'),
+        migrations.RunPython(
+            add_individual_and_track, reverse_code=migrations.RunPython.noop
         ),
         migrations.AlterField(
-            model_name='audiofile',
-            name='track',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='koe.AudioTrack'),
+            model_name="audiofile",
+            name="individual",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="koe.Individual"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="audiofile",
+            name="track",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="koe.AudioTrack"
+            ),
         ),
     ]

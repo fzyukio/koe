@@ -1,12 +1,14 @@
-import os
 import copy
+import os
 import uuid
 
-import numpy as np
 from django.test import TestCase
+
+import numpy as np
 from pymlfunc import tictoc
 
 import koe.binstorage as bs
+
 
 NUM_POINTS = 100000
 
@@ -52,17 +54,27 @@ def create_random_id_based_dataset(npoints=NUM_POINTS, max_len=100):
 class BinStorageTest(TestCase):
     def setUp(self):
         self.ids, self.arrs = create_random_id_based_dataset()
-        path = '/tmp'
+        path = "/tmp"
         name = uuid.uuid4().hex
-        self.index_filename = os.path.join(path, '{}.idx'.format(name))
-        self.value_filename = os.path.join(path, '{}.val'.format(name))
+        self.index_filename = os.path.join(path, "{}.idx".format(name))
+        self.value_filename = os.path.join(path, "{}.val".format(name))
 
     def test(self):
         try:
             self._test_store()
 
-            nselecteds = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
-            nupdates = np.logspace(np.log10(NUM_POINTS // 1000), np.log10(len(self.ids) // 5), 10, dtype=np.int32)
+            nselecteds = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
+            nupdates = np.logspace(
+                np.log10(NUM_POINTS // 1000),
+                np.log10(len(self.ids) // 5),
+                10,
+                dtype=np.int32,
+            )
 
             for nselected in nselecteds:
                 self._test_retrieve(nselected)
@@ -77,7 +89,7 @@ class BinStorageTest(TestCase):
             os.remove(self.value_filename)
 
     def _test_store(self):
-        with tictoc('Test storing'):
+        with tictoc("Test storing"):
             bs.store(self.ids, self.arrs, self.index_filename, self.value_filename)
         index_filesize = os.path.getsize(self.index_filename)
         index_memory_usage = len(self.ids) * bs.INDEX_FILE_NCOLS * 4
@@ -88,7 +100,7 @@ class BinStorageTest(TestCase):
         self.assertEqual(index_filesize, index_memory_usage)
         self.assertEqual(value_filesize, value_memory_usage)
 
-        with open(self.index_filename, 'rb') as f:
+        with open(self.index_filename, "rb") as f:
             index_arr = np.fromfile(f, dtype=np.int32)
             nids = len(index_arr) // bs.INDEX_FILE_NCOLS
 
@@ -108,7 +120,7 @@ class BinStorageTest(TestCase):
                 self.assertEqual(dim1, arr.shape[1] if arr.ndim == 2 else 0)
                 self.assertEqual(max(1, dim0) * max(dim1, 1), arr_size)
 
-        with open(self.value_filename, 'rb') as f:
+        with open(self.value_filename, "rb") as f:
             value_arr = np.fromfile(f, dtype=np.float32)
             self.assertEqual(len(value_arr), sum([np.size(arr) for arr in self.arrs]))
 
@@ -138,7 +150,7 @@ class BinStorageTest(TestCase):
 
         self.arrs = [id2arr[i] for i in self.ids]
 
-        with tictoc('Test update {} items'.format(nupdate)):
+        with tictoc("Test update {} items".format(nupdate)):
             bs.store(new_ids, new_arrs, self.index_filename, self.value_filename)
 
         retrieved_arrs = bs.retrieve(self.ids, self.index_filename, self.value_filename)
@@ -153,7 +165,7 @@ class BinStorageTest(TestCase):
         selected_ids_inds = [np.where(self.ids == x)[0][0] for x in selected_ids]
         selected_arrs = [self.arrs[i] for i in selected_ids_inds]
 
-        with tictoc('Test retrieving {} items'.format(nselected)):
+        with tictoc("Test retrieving {} items".format(nselected)):
             retrieved_arrs = bs.retrieve(selected_ids, self.index_filename, self.value_filename)
 
         self.assertEqual(len(selected_ids), len(retrieved_arrs))

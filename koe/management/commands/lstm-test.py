@@ -1,8 +1,10 @@
 r"""
 Train a LSTM on audio segments.
 """
-import numpy as np
+
 from django.core.management.base import BaseCommand
+
+import numpy as np
 from numpy import random
 
 from koe.rnn_models import OneHotSequenceProvider
@@ -29,16 +31,16 @@ def generate_sequences(n_samples=1000, max_seq_len=20, min_seq_len=3, max_value=
         length = random.randint(min_seq_len, max_seq_len)
         # Add a random or linear int sequence (50% prob)
         s = []
-        if random.random() < .5:
+        if random.random() < 0.5:
             # Generate a linear sequence
-            label = 'linear'
+            label = "linear"
             for i in range(shape1):
                 rand_start = random.randint(0, max_value - length)
                 s_ = np.arange(rand_start, rand_start + length).reshape((length, 1))
                 s.append(s_)
         else:
             # Generate a random sequence
-            label = 'random'
+            label = "random"
             for i in range(shape1):
                 s_ = random.randint(0, max_value, size=length).reshape((length, 1))
                 s.append(s_)
@@ -51,4 +53,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         data, labels = generate_sequences(n_samples=1500, max_seq_len=212, min_seq_len=4, max_value=1000, shape1=1)
         data_provider = OneHotSequenceProvider(data, labels)
-        train(data_provider, nfolds=10, name='toy1')
+        train(data_provider, nfolds=10, name="toy1")

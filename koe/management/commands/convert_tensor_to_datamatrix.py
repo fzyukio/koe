@@ -1,18 +1,17 @@
 import os
 import shutil
 
-import numpy as np
 from django.core.management.base import BaseCommand
 
+import numpy as np
+
 from koe.models import DataMatrix, DerivedTensorData, FullTensorData, Ordination
-from koe.ts_utils import bytes_to_ndarray
-from koe.ts_utils import get_rawdata_from_binary
+from koe.ts_utils import bytes_to_ndarray, get_rawdata_from_binary
 from root.utils import ensure_parent_folder_exists
 
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-
         tensor_to_dm = {}
         for tensor in FullTensorData.objects.all():
             sids_path = tensor.get_sids_path()
@@ -29,7 +28,7 @@ class Command(BaseCommand):
                     name=tensor.name,
                     features_hash=tensor.features_hash,
                     aggregations_hash=tensor.aggregations_hash,
-                    ndims=data.shape[1]
+                    ndims=data.shape[1],
                 )
 
             dm_sids_path = dm.get_sids_path()
@@ -44,7 +43,7 @@ class Command(BaseCommand):
 
             tensor_to_dm[tensor] = dm
 
-        for tensor in DerivedTensorData.objects.exclude(dimreduce='none'):
+        for tensor in DerivedTensorData.objects.exclude(dimreduce="none"):
             dm = tensor_to_dm[tensor.full_tensor]
             sids_path = tensor.full_tensor.get_sids_path()
             bytes_path = tensor.get_bytes_path()
@@ -54,9 +53,9 @@ class Command(BaseCommand):
 
             method = tensor.dimreduce
             ndims = tensor.ndims
-            if method.startswith('tsne'):
+            if method.startswith("tsne"):
                 ndims = int(method[4:])
-                method = 'tsne'
+                method = "tsne"
 
             ord = Ordination.objects.filter(dm=dm, method=method, ndims=ndims).first()
             if ord is None:
