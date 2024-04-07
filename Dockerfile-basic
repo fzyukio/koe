@@ -26,9 +26,11 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 # Install extra packages.
-RUN apt update && apt-get install -y --no-install-recommends vim mariadb-client ffmpeg libxml2-dev libxmlsec1-dev gfortran #&& rm -rf /var/lib/apt/lists/*
-RUN apt install -y build-essential
-RUN rm -rf /var/lib/apt/lists/*
+RUN apt update && \
+    apt-get install -y \
+    --no-install-recommends \
+    build-essential vim mariadb-client ffmpeg libxml2-dev libxmlsec1-dev libpcre3-dev gfortran \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml /
 
