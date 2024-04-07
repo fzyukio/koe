@@ -21,6 +21,7 @@ import argparse
 import dj_database_url
 from colorama import Fore, Style
 from colorama import init as colorama_init
+from logging import getLogger
 
 
 fixture_list = [
@@ -44,6 +45,7 @@ fixture_list = [
 
 
 CONF = {}
+logger = getLogger(__file__)
 
 
 def get_config():
@@ -54,22 +56,22 @@ def get_config():
     :return: the config dictionary
     """
 
+    if len(CONF) > 0:
+        return CONF
+
     DEBUG_ENV = str(os.getenv("DEBUG", "")).lower()
     DEBUG = DEBUG_ENV == "true"
 
     setting_file = "settings-dev.yaml" if DEBUG else "settings.yaml"
-
     talk_to_user(f"Using settings: {setting_file}")
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(base_dir, "settings", setting_file)
     default_filename = os.path.join(base_dir, "settings", "settings.default.yaml")
-
     if not os.path.isfile(filename):
-        raise Exception("File {} not found, please make a copy of {}".format(filename, default_filename))
+        filename = default_filename
 
-    if len(CONF) > 0:
-        return CONF
+    talk_to_user(f"Using settings: {filename}")
 
     with open(filename, "r", encoding="utf-8") as f:
         conf = yaml.safe_load(f)
@@ -78,15 +80,11 @@ def get_config():
         import random
         import string
 
-        with open(filename, "a", encoding="utf-8") as f:
-            # Generate a random key
-            secret = "".join(
-                [random.SystemRandom().choice("{}{}".format(string.ascii_letters, string.digits)) for _ in range(50)]
-            )
-            f.write("secret_key: r'{}'".format(secret))
-
-    with open(filename, "r", encoding="utf-8") as f:
-        conf = yaml.safe_load(f)
+        # Generate a random key
+        secret = "".join(
+            [random.SystemRandom().choice("{}{}".format(string.ascii_letters, string.digits)) for _ in range(50)]
+        )
+        conf["secret_key"] = secret
 
     conf["base_dir"] = base_dir
     conf["debug"] = DEBUG

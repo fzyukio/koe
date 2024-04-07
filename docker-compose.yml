@@ -17,10 +17,12 @@ services:
   app:
     container_name: ${CONTAINER_APP_NAME}
     runtime: ${runtime}
-    build:
-      dockerfile: $DOCKER_FILE
-      context: .
-      network: host
+    image: sha256:31ad9c5198acccfb3f2613964323976d0e2287032673e7849574330be139fda3
+    
+    # build:
+    #   dockerfile: $DOCKER_FILE
+    #   context: .
+    #   network: host
     #    image: crazyfffan/koe
     networks:
       - default

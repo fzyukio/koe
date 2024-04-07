@@ -1,16 +1,14 @@
-FROM node:10-buster-slim as frontend
+FROM --platform=linux/amd64 node:10-buster-slim as frontend
 LABEL Author="Yukio Fukuzawa"
 
 WORKDIR /code
-COPY package.json package.json 
-COPY package-lock.json package-lock.json 
-RUN apt-get update && apt-get install -y libvips-dev --no-install-recommends
-RUN apt-get install -y git
+COPY package.json package-lock.json /code/ 
+RUN apt-get update && apt-get install -y libvips-dev git ca-certificates --no-install-recommends
 RUN npm install
-COPY assets .babelrc webpack.base.config.js webpack.prod.config.js build.js server.js /code/
+COPY .babelrc webpack.base.config.js webpack.prod.config.js build.js server.js .bootstraprc /code/
 COPY assets /code/assets
-RUN rm -rf /code/assets/bundles
-RUN npm run-script build-prod
+# RUN rm -rf /code/assets/bundles
+RUN rm -rf /code/assets/bundles && npm run-script build-prod
 
 FROM python:3.9.19 as backend
 LABEL Author="Yukio Fukuzawa"
@@ -32,24 +30,23 @@ RUN apt update && \
     build-essential vim mariadb-client ffmpeg libxml2-dev libxmlsec1-dev libpcre3-dev gfortran \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml /
+COPY pyproject.toml poetry.lock poetry-install.py requirements-production.txt /
 
-## Install any needed packages specified in requirements.txt
-RUN python3 -m pip install --upgrade pip
-RUN pip3 uninstall -y numpy scipy
-
+# ## Install any needed packages specified in requirements.txt
+# RUN python3 -m pip install --upgrade pip
+# RUN pip3 uninstall -y numpy scipy
 
 # Install Poetry
-COPY poetry-install.py /
+# COPY poetry-install.py /
 RUN python3 poetry-install.py
 ENV PATH="/root/.local/bin:${PATH}"
 
-COPY pyproject.toml poetry.lock /
+# COPY pyproject.toml poetry.lock /
 
 # Install dependencies using Poetry
 RUN poetry config virtualenvs.create false && poetry install --without dev
 
-COPY requirements-production.txt /
+# COPY requirements-production.txt /
 RUN pip3 install -r requirements-production.txt --no-cache-dir
 
 # Make port 8000 available to the world outside this container
@@ -60,9 +57,9 @@ WORKDIR /code
 COPY . .
 
 RUN rm -rf assets/bundles static
-COPY --from=frontend /code/assets/bundles /code/assets/bundles 
-COPY --from=frontend /code/jquery-webpack-stats.json /code/jquery-webpack-stats.json 
-COPY --from=frontend /code/webpack-stats.json /code/webpack-stats.json 
+COPY --from=frontend /code/assets/bundles /code/assets/bundles
+COPY --from=frontend /code/jquery-webpack-stats.json /code/webpack-stats.json  /code/
+# COPY --from=frontend /code/webpack-stats.json /code/webpack-stats.json 
 COPY --from=frontend /code/node_modules /code/node_modules 
 
 ENV DEBUG=False

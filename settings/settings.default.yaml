@@ -2,7 +2,7 @@ database_url: 'mysql://koe:koe@localhost:3306/koe'
 
 language_code: 'en-nz'
 timezone: 'UTC'
-debug: True
+debug: False
 allowed_hosts:
     - 'localhost'
     - '0.0.0.0'
