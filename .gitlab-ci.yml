@@ -63,10 +63,11 @@ build:
       docker build \
       --target frontend \
       --cache-from $FE_TAG \
-      --tag $IMAGE_TAG \
+      --tag $FE_TAG \
       --build-arg BUILDKIT_INLINE_CACHE=1 \
       -f Dockerfile-basic \
       "."
+    - docker push $FE_TAG
     - |
       docker build \
       --target backend \
@@ -75,5 +76,4 @@ build:
       --build-arg BUILDKIT_INLINE_CACHE=1 \
       -f Dockerfile-basic \
       "."
-    - docker push $FE_TAG
     - docker push $IMAGE_TAG
