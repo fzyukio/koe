@@ -1,0 +1,53 @@
+{% load static %}
+
+
+{% comment %} <div class="chat-bar-open" id="chat-open"> {% endcomment %}
+<button id="chat-open-button" type="button" class="dismiss btn btn-primary">
+    <i class="fa fa-2x fa-comment"></i>
+</button>
+{% comment %} </div> {% endcomment %}
+
+{% include "partials/chat-modal.html"%}
+
+{% comment %} <!-- chat close -->
+<div class="chat-bar-close" id="chat-close">
+    <button id="chat-close-button" type="button" class="collapsible dismiss">
+        <i class="fa fa-times"></i>
+    </button>
+</div>
+
+<!-- chat-window 1 -->
+<div class="chat-window" id="chat-window1">
+    <div class="hi-there">
+        <p class="p1">Hi There</p>
+        <br />
+        <p class="p2">Click the "New conversation" button below to start chatting.</p>
+    </div>
+    <div class="start-conversation">
+        <button class="new-conversation" type="button">
+            <span>New Conversation</span><i class="material-icons-outlined"> send </i>
+        </button>
+    </div>
+</div>
+
+<!-- chat chat-window 2 -->
+<div class="chat-window2" id="chat-window2">
+    <div class="message-box" id="messageBox">
+        <div class="second-chat">
+            <div class="circle"></div>
+            <p>Hi there, what can I help you today?</p>
+            <div class="arrow"></div>
+        </div>
+    </div>
+    <div class="input-box">
+        <div class="write-reply">
+            <input class="inputText" type="text" id="textInput" placeholder="Write a reply..." />
+        </div>
+        <div class="send-button">
+            <button type="submit" class="send-message" id="send">
+                <i class="fa fa-chevron-right"> send </i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endcomment %}

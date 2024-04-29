@@ -13,6 +13,7 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseNotFound,
     HttpResponseServerError,
+    StreamingHttpResponse,
 )
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -611,7 +612,7 @@ def send_request(request, *args, **kwargs):
 
         if function:
             response = exception_handler(function, request)
-            if isinstance(response, HttpResponse):
+            if isinstance(response, (HttpResponse, StreamingHttpResponse)):
                 return response
             if isinstance(response, dict):
                 return HttpResponse(json.dumps(response))

@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y libvips-dev git ca-certificates --no-in
 RUN npm install
 COPY .babelrc webpack.base.config.js webpack.prod.config.js build.js server.js .bootstraprc /code/
 COPY assets /code/assets
-# RUN rm -rf /code/assets/bundles
 RUN rm -rf /code/assets/bundles && npm run-script build-prod
 
 FROM python:3.9.19 as backend
@@ -32,16 +31,8 @@ RUN apt update && \
 
 COPY pyproject.toml poetry.lock poetry-install.py requirements-production.txt /
 
-# ## Install any needed packages specified in requirements.txt
-# RUN python3 -m pip install --upgrade pip
-# RUN pip3 uninstall -y numpy scipy
-
-# Install Poetry
-# COPY poetry-install.py /
 RUN python3 poetry-install.py
 ENV PATH="/root/.local/bin:${PATH}"
-
-# COPY pyproject.toml poetry.lock /
 
 # Install dependencies using Poetry
 RUN poetry config virtualenvs.create false && poetry install --without dev
@@ -59,7 +50,6 @@ COPY . .
 RUN rm -rf assets/bundles static
 COPY --from=frontend /code/assets/bundles /code/assets/bundles
 COPY --from=frontend /code/jquery-webpack-stats.json /code/webpack-stats.json  /code/
-# COPY --from=frontend /code/webpack-stats.json /code/webpack-stats.json 
 COPY --from=frontend /code/node_modules /code/node_modules 
 
 ENV DEBUG=False

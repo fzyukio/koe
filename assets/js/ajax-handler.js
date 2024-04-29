@@ -270,3 +270,16 @@ const ajaxRequest = function ({
 
     $.ajax(ajaxArgs);
 };
+
+
+export const ajaxStream = function({url, requestSlug}) {
+    url = url ? url : getUrl('send-request', requestSlug);
+
+    
+    var client = new XMLHttpRequest();
+    client.open('post', url);
+    client.send();
+    client.onprogress = function(){
+        console.log(this.responseText);              
+    }
+}

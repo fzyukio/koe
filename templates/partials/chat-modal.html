@@ -1,0 +1,127 @@
+{% load static %}
+
+<div class="modal fade in" id="chat-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" data-backdrop="static" aria-hidden="true" style="display: none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          Conversation with KoeAI.
+          <span type="button" class="close" data-dismiss="modal" role="button"><span aria-hidden="true" class="fa fa-times"></span></span>
+        </h3>
+      </div>
+      <div class="modal-body">
+        <div class="message-box" id="message-box">
+            <div class="message">
+                <div class="message-name">Koe:</div>
+                <div class="message-body">Hi there, what can I help you today?</div>
+            </div>
+            <div class="message">
+                <div class="message-name">You:</div>
+                <div class="message-body">What's the weather today?</div>
+            </div>
+            
+            {% comment %} <div class="message koe">
+                <div class="icon"></div>
+                <div class="text">
+                    <p>Hi there, what can I help you today?</p>
+                </div>
+            </div>
+            <div class="message user">
+                <div class="icon"></div>
+                <div class="text">
+                    <p>What's the weather today?</p>
+                </div>
+            </div> {% endcomment %}
+
+            {% comment %} <div class="chat-history">
+                <ul class="m-b-0">
+                    <li class="clearfix">
+                        <div class="message-data text-right">
+                            <span class="message-data-time">10:10 AM, Today</span>
+                            <img src="https://bootdey.com/img/Content/avatar/avatar7.png" alt="avatar">
+                        </div>
+                        <div class="message other-message float-right"> Hi Aiden, how are you? How is the project coming along? </div>
+                    </li>
+                    <li class="clearfix">
+                        <div class="message-data">
+                            <span class="message-data-time">10:12 AM, Today</span>
+                        </div>
+                        <div class="message my-message">Are we meeting today?</div>                                    
+                    </li>                               
+                    <li class="clearfix">
+                        <div class="message-data">
+                            <span class="message-data-time">10:15 AM, Today</span>
+                        </div>
+                        <div class="message my-message">Project has been already finished and I have results to show you.</div>
+                    </li>
+                </ul>
+            </div> {% endcomment %}
+
+            {% comment %} <ul class="chat">
+                <li class="left clearfix"><span class="chat-img pull-left">
+                    <img src="http://placehold.it/50/55C1E7/fff&amp;text=U" alt="User Avatar" class="img-circle">
+                </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <strong class="primary-font">Jack Sparrow</strong> <small class="pull-right text-muted">
+                                <span class="glyphicon glyphicon-time"></span>12 mins ago</small>
+                        </div>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare
+                            dolor, quis ullamcorper ligula sodales.
+                        </p>
+                    </div>
+                </li>
+                <li class="right clearfix"><span class="chat-img pull-right">
+                    <img src="http://placehold.it/50/FA6F57/fff&amp;text=ME" alt="User Avatar" class="img-circle">
+                </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <small class=" text-muted"><span class="glyphicon glyphicon-time"></span>13 mins ago</small>
+                            <strong class="pull-right primary-font">Bhaumik Patel</strong>
+                        </div>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare
+                            dolor, quis ullamcorper ligula sodales.
+                        </p>
+                    </div>
+                </li>
+                <li class="left clearfix"><span class="chat-img pull-left">
+                    <img src="http://placehold.it/50/55C1E7/fff&amp;text=U" alt="User Avatar" class="img-circle">
+                </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <strong class="primary-font">Jack Sparrow</strong> <small class="pull-right text-muted">
+                                <span class="glyphicon glyphicon-time"></span>14 mins ago</small>
+                        </div>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare
+                            dolor, quis ullamcorper ligula sodales.
+                        </p>
+                    </div>
+                </li>
+                <li class="right clearfix"><span class="chat-img pull-right">
+                    <img src="http://placehold.it/50/FA6F57/fff&amp;text=ME" alt="User Avatar" class="img-circle">
+                </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <small class=" text-muted"><span class="glyphicon glyphicon-time"></span>15 mins ago</small>
+                            <strong class="pull-right primary-font">Bhaumik Patel</strong>
+                        </div>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur bibendum ornare
+                            dolor, quis ullamcorper ligula sodales.
+                        </p>
+                    </div>
+                </li>
+            </ul> {% endcomment %}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="send-message"><i class="fa fa-arrow-up"></i></button>
+        <textarea name="chat-message" id="chat-message"></textarea>
+      </div>
+    </div>
+  </div>
+</div>

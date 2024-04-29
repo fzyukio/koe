@@ -10,7 +10,7 @@
         "build": "node build.js",
         "build-prod": "node build.js production",
         "build-prod-posix": "NODE_ENV=production && webpack -p --progress --colors --config webpack.prod.config.js --bail",
-        "lint": "flake8 && eslint assets"
+        "lint": "eslint assets"
     },
     "dependencies": {
         "animate.css": "^3.5.2",

@@ -20,6 +20,7 @@ window.Promise = Promise;
 import {isNull, createCsv, downloadBlob, getUrl, getGetParams, getCache, logError, uuid4, toJSONLocal} from './utils';
 import {queryAndPlayAudio} from './audio-handler';
 import {initSidebar} from './sidebar';
+import {initChat} from './chat';
 require('no-going-back');
 
 let page;
@@ -368,6 +369,7 @@ const _postRun = function () {
         pageViewportHandler = page.viewPortChangeHandler;
     }
     initSidebar(pageViewportHandler);
+    initChat();
 
     $('.btn[url]').on('click', function (e) {
         e.preventDefault();

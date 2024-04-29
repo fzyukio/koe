@@ -146,6 +146,26 @@
                             <span>Contact us</span>
                         </a>
                     </div>
+
+                    <div class="menu-item" page="segmentation">
+                        <a href="#" 
+                            data-toggle="modal" 
+                            data-target="#chat-modal"
+                            data-username="{{ user.username }}"
+                            data-email="{{ user.email }}"
+                            data-koe-avatar="{% static "images/favicon/android-icon-48x48.png" %}"
+                        >
+                            <span>Ask KoeAI <i class="fa fa-comment chat-open-icon"></i></span>
+                        </a>
+                    </div>
+
+                    {% comment %} <div class="menu-item" 
+                        id="chat-button-wrapper" 
+                        data-username="{{ user.username }}"
+                        data-email="{{ user.email }}"
+                        data-koe-avatar="{% static "images/favicon/android-icon-48x48.png" %}"
+                    ></div> {% endcomment %}
+
                 </li>
             </ul>
         </div>
@@ -169,3 +189,4 @@
 </nav>
 
 {% include 'partials/go-to-songs-modal.html' %}
+{% include "partials/chat-modal.html"%}

@@ -19,35 +19,6 @@ import {
 import {LinkContainer} from 'react-router-bootstrap'
 
 import $ from 'jquery';
-//
-//
-// class Slider extends React.Component {
-//     componentDidMount() {
-//         var $this = $(ReactDOM.findDOMNode(this));
-//         console.log($this);
-//         $this.find("input").slider();
-//     }
-//
-//     render() {
-//         return (
-//             <div className="control-item slider-group row no-margin">
-//                 <div className="col-xs-2 no-padding slider-label">FFT Window</div>
-//                 <div className="col-xs-10 no-padding-left">
-//                     <input id="slider" type="text"
-//                            data-provide="slider"
-//                            data-slider-ticks="[1, 2, 3, 4]"
-//                            data-slider-ticks-labels='["128", "256", "512", "1024"]'
-//                            data-slider-min="1"
-//                            data-slider-max="3"
-//                            data-slider-step="1"
-//                            data-slider-value="3"
-//                            data-slider-tooltip="hide"/>
-//                 </div>
-//             </div>
-//         );
-//     }
-// }
-
 
 class NewDatabaseForm extends React.Component {
     toggleSelected(selectedItem, itemKey, selectedKey) {
