@@ -5,13 +5,17 @@ No built-in (selected, editable, highlight, flashing, invalid, loading, :focus) 
 classes should alter those!
 */
 
-.slick-header.ui-state-default, .slick-headerrow.ui-state-default, .slick-footerrow.ui-state-default {
+.slick-header.ui-state-default,
+.slick-headerrow.ui-state-default,
+.slick-footerrow.ui-state-default {
   width: 100%;
   overflow: hidden;
   border-left: 0px !important;
 }
 
-.slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {
+.slick-header-columns,
+.slick-headerrow-columns,
+.slick-footerrow-columns {
   position: relative;
   white-space: nowrap;
   cursor: default;
@@ -32,7 +36,8 @@ classes should alter those!
   float: left;
 }
 
-.slick-headerrow-column.ui-state-default, .slick-footerrow-column.ui-state-default {
+.slick-headerrow-column.ui-state-default,
+.slick-footerrow-column.ui-state-default {
   padding: 4px;
 }
 
@@ -77,13 +82,16 @@ classes should alter those!
   outline: 0;
 }
 
-.slick-row.ui-widget-content, .slick-row.ui-state-active {
+.slick-row.ui-widget-content,
+.slick-row.ui-state-active {
   position: absolute;
   border: 0px;
   width: 100%;
 }
 
-.slick-cell, .slick-headerrow-column, .slick-footerrow-column {
+.slick-cell,
+.slick-headerrow-column,
+.slick-footerrow-column {
   position: absolute;
   border: 1px solid transparent;
   border-right: 1px dotted silver;
@@ -99,7 +107,8 @@ classes should alter those!
   cursor: default;
 }
 
-.slick-cell, .slick-headerrow-column {
+.slick-cell,
+.slick-headerrow-column {
   border-bottom-color: silver;
   line-height: 20px;
 }
@@ -131,19 +140,17 @@ classes should alter those!
 .slick-row:not(.non-editable),
 .slick-row.edited {
   .slick-cell > .slick-inner-cell.editable {
-
     z-index: 2;
     overflow: visible;
 
     &::before {
-      content: '\f040';
+      content: "\f040";
       line-height: 20px;
       font-family: FontAwesome;
       padding-right: 5px;
     }
   }
 }
-
 
 .slick-cell.dnd {
   justify-content: center;
@@ -159,7 +166,7 @@ classes should alter those!
     overflow-x: hidden;
 
     &:hover {
-      overflow-x:auto;
+      overflow-x: auto;
     }
 
     .btn {
@@ -175,7 +182,9 @@ classes should alter those!
       border-radius: 11px;
       height: 22px;
       border: solid 2px #666666;
-      &.end, &.start, &.sub {
+      &.end,
+      &.start,
+      &.sub {
         background-color: transparent;
         border: none;
         padding: 2px;
@@ -198,11 +207,12 @@ classes should alter those!
       height: 22px;
       font-size: 0.7em;
 
-      &::before, &::after {
-        content: '';
+      &::before,
+      &::after {
+        content: "";
         flex-grow: 1;
         height: 2px;
-        background: #570F5C;
+        background: #570f5c;
         min-width: 5px;
         display: inline-block;
         vertical-align: middle;
@@ -212,7 +222,6 @@ classes should alter those!
       }
     }
   }
-
 }
 
 .slick-row.even.edited {
@@ -250,7 +259,6 @@ classes should alter those!
   position: absolute;
   border: 2px dashed black;
 }
-
 
 /* Menu button */
 .slick-header-menubutton {
@@ -290,7 +298,6 @@ classes should alter those!
   cursor: default;
 }
 
-
 /* Menu items */
 .slick-header-menuitem {
   list-style: none;
@@ -311,7 +318,6 @@ classes should alter those!
   display: inline-block;
   vertical-align: middle;
 }
-
 
 /* Disabled */
 .slick-header-menuitem-disabled {

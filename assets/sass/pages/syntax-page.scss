@@ -1,7 +1,10 @@
 @import "../variables";
 
 #plotly-plot {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top - #{$controller-wrapper-height} - #{$panel-border} * 4});
+  height: calc(
+    #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top -
+      #{$controller-wrapper-height} - #{$panel-border} * 4}
+  );
 
   .svg-container {
     float: right;
@@ -14,11 +17,24 @@
 }
 
 #syntax-grid {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 2);
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} *
+          6
+      ) / 2
+  );
 }
 
-#class-1-syl-spects, #class-2-syl-spects {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 4);
+#class-1-syl-spects,
+#class-2-syl-spects {
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} *
+          6
+      ) / 4
+  );
   overflow: hidden;
   .panel-leftheading {
     position: absolute;
@@ -53,7 +69,13 @@
   .panel-rightbody {
     overflow: auto;
     margin-left: 50px;
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 6) / 4);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} *
+            6
+        ) / 4
+    );
   }
 
   .mainTitle {
@@ -161,99 +183,98 @@
   }
 }
 
-
 @-webkit-keyframes glowing-red {
   0% {
-    -webkit-box-shadow: 0 0 3px #B20000;
+    -webkit-box-shadow: 0 0 3px #b20000;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #FF0000;
+    -webkit-box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #B20000;
+    -webkit-box-shadow: 0 0 3px #b20000;
   }
 }
 
 @-moz-keyframes glowing-red {
   0% {
-    -moz-box-shadow: 0 0 3px #B20000;
+    -moz-box-shadow: 0 0 3px #b20000;
   }
   50% {
-    -moz-box-shadow: 0 0 40px #FF0000;
+    -moz-box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    -moz-box-shadow: 0 0 3px #B20000;
+    -moz-box-shadow: 0 0 3px #b20000;
   }
 }
 
 @-o-keyframes glowing-red {
   0% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
   50% {
-    box-shadow: 0 0 40px #FF0000;
+    box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
 }
 
 @keyframes glowing-red {
   0% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
   50% {
-    box-shadow: 0 0 40px #FF0000;
+    box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
 }
 
 @-webkit-keyframes glowing-blue {
   0% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #0000FF;
+    -webkit-box-shadow: 0 0 40px #0000ff;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
 }
 
 @-moz-keyframes glowing-blue {
   0% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #0000FF;
+    -webkit-box-shadow: 0 0 40px #0000ff;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
 }
 
 @-o-keyframes glowing-blue {
   0% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #0000FF;
+    -webkit-box-shadow: 0 0 40px #0000ff;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
 }
 
 @keyframes glowing-blue {
   0% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #0000FF;
+    -webkit-box-shadow: 0 0 40px #0000ff;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #0000B2;
+    -webkit-box-shadow: 0 0 3px #0000b2;
   }
 }

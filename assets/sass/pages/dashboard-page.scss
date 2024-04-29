@@ -1,28 +1,59 @@
 @import "../variables";
 
 // In mobile mode, all four grids are full screen
-#database-grid, #collection-grid, #database-assignment-grid, #concise-syllables-grid, #version-grid {
-  height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);
+#database-grid,
+#collection-grid,
+#database-assignment-grid,
+#concise-syllables-grid,
+#version-grid {
+  height: calc(
+    #{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} -
+      #{$panel-border} * 3
+  );
 }
 
 // In medium (small screen or big tablet) mode, they're organised in a 2x2 + 1x1 settings
 @media (min-width: 576px) {
-  #database-grid, #collection-grid, #database-assignment-grid, #version-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 6) / 2);
+  #database-grid,
+  #collection-grid,
+  #database-assignment-grid,
+  #version-grid {
+    height: calc(
+      (
+          #{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} *
+            2 - #{$panel-border} * 6
+        ) / 2
+    );
   }
 
   #concise-syllables-grid {
-    height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 3);
+    height: calc(
+      #{$max-screen-height} - #{$controller-wrapper-height} - #{$grid-button-height} -
+        #{$panel-border} * 3
+    );
   }
 }
 
 // Large devices (desktops, 1200px and up), they are 4x1 + 1x1
 @media (min-width: 1200px) {
-  #database-grid, #collection-grid, #database-assignment-grid, #version-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 2 / 5);
+  #database-grid,
+  #collection-grid,
+  #database-assignment-grid,
+  #version-grid {
+    height: calc(
+      (
+          #{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} *
+            2 - #{$panel-border} * 8
+        ) * 2 / 5
+    );
   }
 
   #concise-syllables-grid {
-    height: calc((#{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} * 2 - #{$panel-border} * 8) * 3 / 5);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$controller-wrapper-height} * 2 - #{$grid-button-height} *
+            2 - #{$panel-border} * 8
+        ) * 3 / 5
+    );
   }
 }

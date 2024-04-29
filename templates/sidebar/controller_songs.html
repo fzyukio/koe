@@ -11,23 +11,23 @@
 
 
 {% if db_assignment.can_copy_files %}
-<div class="sidebar-controllers">
-    {% if db_assignment.can_add_files %}
-        <button type="button" id="upload-songs-btn" class="btn btn-xs btn-default btn-block">Upload songs</button>
-    {% endif %}
+    <div class="sidebar-controllers">
+        {% if db_assignment.can_add_files %}
+            <button type="button" id="upload-songs-btn" class="btn btn-xs btn-default btn-block">Upload songs</button>
+        {% endif %}
 
-    {% if db_assignment.can_download_files %}
-        <button type="button" id="download-songs-btn" class="btn btn-xs btn-default btn-block">Download songs</button>
-    {% endif %}
+        {% if db_assignment.can_download_files %}
+            <button type="button" id="download-songs-btn" class="btn btn-xs btn-default btn-block">Download songs</button>
+        {% endif %}
 
-    {% if db_assignment.can_copy_files %}
-        <button type="button" disabled id="copy-songs-btn" class="btn btn-xs btn-default btn-block">Copy to another database</button>
-    {% endif %}
+        {% if db_assignment.can_copy_files %}
+            <button type="button" disabled id="copy-songs-btn" class="btn btn-xs btn-default btn-block">Copy to another database</button>
+        {% endif %}
 
-    {% if db_assignment.can_delete_files %}
-        <button type="button" disabled id="delete-songs-btn" class="btn btn-xs btn-default btn-block">Delete selected songs</button>
-    {% endif %}
-</div>
+        {% if db_assignment.can_delete_files %}
+            <button type="button" disabled id="delete-songs-btn" class="btn btn-xs btn-default btn-block">Delete selected songs</button>
+        {% endif %}
+    </div>
 {% endif %}
 
 <div class="sidebar-controllers last">

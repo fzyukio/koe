@@ -29,8 +29,8 @@
     </div>
 
     <div class="has-grid" id="exemplars-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"
-        {% if current_database is not None %}
-            {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+         {% if current_database is not None %}
+             {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
          {% endif %}>
     </div>
 

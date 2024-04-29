@@ -12,7 +12,7 @@ repos:
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.56.0
     hooks:
-    -   id: eslint
+      - id: eslint
         description: Checks for correct linting on all staged frontend files
         stages: [commit]
         types: [file]
@@ -25,7 +25,6 @@ repos:
           - "@babel/plugin-proposal-private-property-in-object"
           - eslint-plugin-simple-import-sort@8.0.0
           - eslint-plugin-unused-imports@2.0.0
-          - eslint-plugin-prettier@4.1.0
           - eslint-plugin-json-format@2.0.1
         args: ["--fix"]
 
@@ -35,7 +34,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: ["--allow-multiple-documents", '--unsafe']
+        args: ["--allow-multiple-documents", "--unsafe"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.9.0
@@ -48,8 +47,8 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff
-        types_or: [ python, pyi, jupyter ]
-        args: [ --fix ]
+        types_or: [python, pyi, jupyter]
+        args: [--fix]
       # Run the formatter.
       - id: ruff-format
-        types_or: [ python, pyi, jupyter ]
+        types_or: [python, pyi, jupyter]

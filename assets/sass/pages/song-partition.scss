@@ -13,12 +13,24 @@ $selectize-input-margin-bottom: 10px;
   overflow-x: visible;
 
   #oscillogram {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} - #{$gap-between-svgs}) * 1 / 14);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} -
+            #{$gap-between-svgs}
+        ) * 1 / 14
+    );
     overflow-y: hidden;
   }
 
   #spectrogram {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} - #{$gap-between-svgs}) * 3 / 14 + #{$axis-height});
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height} -
+            #{$gap-between-svgs}
+        ) * 3 / 14 + #{$axis-height}
+    );
     overflow-y: hidden;
 
     .brush-handle {
@@ -31,7 +43,8 @@ $selectize-input-margin-bottom: 10px;
       stroke-dasharray: 1, 1;
       fill: black;
       fill-opacity: 0.2;
-      &:hover, &.highlight {
+      &:hover,
+      &.highlight {
         stroke: rgb(255, 101, 4);
         stroke-width: 2px;
         fill: transparent;
@@ -42,7 +55,7 @@ $selectize-input-margin-bottom: 10px;
 
     .brush .selection {
       stroke: #000;
-      fill-opacity: .125;
+      fill-opacity: 0.125;
       shape-rendering: crispEdges;
     }
   }
@@ -56,7 +69,13 @@ $selectize-input-margin-bottom: 10px;
 }
 
 #song-partition-grid {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 10 / 14 - #{$selectize-input-height} - #{$selectize-input-margin-top} - #{$selectize-input-margin-bottom});
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}
+      ) * 10 / 14 - #{$selectize-input-height} - #{$selectize-input-margin-top} -
+      #{$selectize-input-margin-bottom}
+  );
 }
 
 .slider-group {
@@ -71,7 +90,8 @@ $selectize-input-margin-bottom: 10px;
   width: 100%;
 }
 
-#song-name-pattern .selectize-control, #track-info {
+#song-name-pattern .selectize-control,
+#track-info {
   label {
     margin-bottom: 0;
   }
@@ -128,7 +148,7 @@ $selectize-input-margin-bottom: 10px;
         padding: 4px 6px;
 
         &.is-var {
-          background-image: linear-gradient(#e72510, #D9230F 6%, #cb210e);
+          background-image: linear-gradient(#e72510, #d9230f 6%, #cb210e);
           color: white;
         }
       }

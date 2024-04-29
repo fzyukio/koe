@@ -1,5 +1,8 @@
 @import "../variables";
 
 #version-grid {
-  height: calc(#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(
+    #{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} -
+      #{$main-content-padding-top} - #{$bottom-height}
+  );
 }

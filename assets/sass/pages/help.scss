@@ -3,7 +3,10 @@
 $padding-bottom: 10px;
 
 #help-content-wrapper {
-  max-height: calc(#{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  max-height: calc(
+    #{$max-screen-height} - #{$navbar-height} - #{$main-content-padding-bottom} -
+      #{$main-content-padding-top} - #{$bottom-height}
+  );
 
   form {
     height: 100%;
@@ -17,7 +20,10 @@ $padding-bottom: 10px;
 
 #help-content-wrapper-offset-holder {
   display: none;
-  height: calc(100000px - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$bottom-height});
+  height: calc(
+    100000px - #{$navbar-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+      #{$bottom-height}
+  );
 }
 
 .content-center {

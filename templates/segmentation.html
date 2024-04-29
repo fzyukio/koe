@@ -22,18 +22,18 @@
         <div class="col-xs-6 col-sm-4 col-md-3 no-padding-left">
             <table class="table table-hover table-condensed table-striped" id="song-info">
                 <thead>
-                <tr>
-                    <th class="col-md-4">Attribute</th>
-                    <th class="col-md-8">Value</th>
-                </tr>
+                    <tr>
+                        <th class="col-md-4">Attribute</th>
+                        <th class="col-md-8">Value</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {% for attr, value in song_info.items %}
-                    <tr>
-                        <td>{{ attr }}</td>
-                        <td>{{ value }}</td>
-                    </tr>
-                {% endfor %}
+                    {% for attr, value in song_info.items %}
+                        <tr>
+                            <td>{{ attr }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

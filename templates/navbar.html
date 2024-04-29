@@ -28,7 +28,7 @@
                 {% if user.is_authenticated %}
                     {% cache 300 navbar-user-authenticated request.user.username %}
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <span class="glyphicon glyphicon-user"></span> 
+                            <span class="glyphicon glyphicon-user"></span>
                             <strong>{{ user.username }}</strong>
                             <span class="caret"></span>
                         </a>
@@ -59,7 +59,7 @@
                 {% else %}
                     {% cache None navbar-user-notauthenticated %}
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <span class="glyphicon glyphicon-user"></span> 
+                            <span class="glyphicon glyphicon-user"></span>
                             <strong>Guest</strong>
                             <span class="caret"></span>
                         </a>

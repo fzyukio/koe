@@ -50,8 +50,8 @@ build:
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
-    DOCKER_BUILDKIT: '1'
-    DOCKER_TLS_CERTDIR: ''
+    DOCKER_BUILDKIT: "1"
+    DOCKER_TLS_CERTDIR: ""
     IMAGE_TAG: ${CI_REGISTRY_IMAGE}:$CI_COMMIT_REF_SLUG
     FE_TAG: ${CI_REGISTRY_IMAGE}:$CI_COMMIT_REF_SLUG-fe
   before_script:

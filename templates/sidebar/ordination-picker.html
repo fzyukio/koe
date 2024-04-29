@@ -10,10 +10,10 @@
             {% for ordination in ordinations %}
                 <li class="{% if current_ordination.id == ordination.id %}active{% else %}not-active{% endif %}">
                     {% with ordination.get_name as fullname %}
-                    <a href="#" class="change-arg" key="ordination" replace="tmpdb" value="{{ ordination.id }}"
-                       data-toggle="tooltip" data-placement="top" title="{{ fullname }} {% if ordination.params %} | {{ ordination.params }} {% endif %}">
-                        {{ fullname | truncatechars:15 }}{% if ordination.params %} | {{ ordination.params | truncatechars:10 }} {% endif %}
-                    </a>
+                        <a href="#" class="change-arg" key="ordination" replace="tmpdb" value="{{ ordination.id }}"
+                           data-toggle="tooltip" data-placement="top" title="{{ fullname }} {% if ordination.params %} | {{ ordination.params }} {% endif %}">
+                            {{ fullname | truncatechars:15 }}{% if ordination.params %} | {{ ordination.params | truncatechars:10 }} {% endif %}
+                        </a>
                     {% endwith %}
                 </li>
             {% endfor %}

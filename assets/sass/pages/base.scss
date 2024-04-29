@@ -1,10 +1,11 @@
 @import "../variables";
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   margin: 0;
-  font-family: 'Oxygen', sans-serif;
+  font-family: "Oxygen", sans-serif;
   display: flex;
   font-weight: 500;
   background-color: white;
@@ -30,7 +31,8 @@ a {
 }
 
 .main-content {
-  padding: $main-content-padding-top $main-content-padding $main-content-padding-bottom;
+  padding: $main-content-padding-top $main-content-padding
+    $main-content-padding-bottom;
   display: flex;
   margin: auto;
   width: 100%;
@@ -87,7 +89,8 @@ input::-webkit-input-placeholder {
   text-align: center;
 }
 
-.form-control, .dropdown-menu {
+.form-control,
+.dropdown-menu {
   font-size: inherit;
   line-height: inherit;
 
@@ -185,9 +188,10 @@ body.loading #loading-spinner-modal {
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
-  background: #D9230F linear-gradient(#e72510, #D9230F 6%, #cb210e) no-repeat;
+  background: #d9230f linear-gradient(#e72510, #d9230f 6%, #cb210e) no-repeat;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff1da7ee', endColorstr='#ff178ee9', GradientType=0);
-  -webkit-box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
+  -webkit-box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px rgba(255, 255, 255, 0.03);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), inset 0 1px rgba(255, 255, 255, 0.03);
 }
 
@@ -216,7 +220,8 @@ body.loading #loading-spinner-modal {
 }
 
 @-webkit-keyframes border-blink {
-  from, to {
+  from,
+  to {
     stroke-dasharray: 2 4 4 2 0;
   }
   25% {
@@ -231,10 +236,19 @@ body.loading #loading-spinner-modal {
 }
 
 @keyframes border-blink {
-  10%, 30%, 50%, 70%, 90% {
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     stroke-dasharray: 3 6 3 0;
   }
-  from, 20%, 40%, 60%, 80%, to {
+  from,
+  20%,
+  40%,
+  60%,
+  80%,
+  to {
     stroke-dasharray: 0 3 6 3;
   }
 }
@@ -270,7 +284,9 @@ body.loading #loading-spinner-modal {
     display: inline-block;
   }
   .grid-controller {
-    width: calc(100% - #{$grid-status-width} - #{$menu-opener-width} - #{$menu-opener-padding-left});
+    width: calc(
+      100% - #{$grid-status-width} - #{$menu-opener-width} - #{$menu-opener-padding-left}
+    );
     padding-left: 20px;
     &.no-status {
       width: calc(100% - #{$menu-opener-width} - #{$menu-opener-padding-left});
@@ -317,7 +333,6 @@ body.loading #loading-spinner-modal {
     &.right {
       padding: 0 0 0 10px;
     }
-
   }
 
   #grid-status {
@@ -469,7 +484,8 @@ body.loading #loading-spinner-modal {
   }
 }
 
-#help-content, #contact-us-content {
+#help-content,
+#contact-us-content {
   margin: auto;
   min-width: 335px;
 
@@ -481,7 +497,7 @@ body.loading #loading-spinner-modal {
 .contain-panel {
   .panel {
     border-radius: 0;
-    border: 1px solid rgba(0, 0, 0, .125);
+    border: 1px solid rgba(0, 0, 0, 0.125);
     margin-bottom: $panel-margin-bottom;
 
     .slick-header-columns {
@@ -500,38 +516,39 @@ body.loading #loading-spinner-modal {
   text-align: right;
 }
 
-.checkboxsel, .slick-column-name {
+.checkboxsel,
+.slick-column-name {
   label {
     margin: 0;
     height: 20px;
   }
-  input[type=checkbox], input[type=radio] {
+  input[type="checkbox"],
+  input[type="radio"] {
     display: none;
   }
 
-  input[type=checkbox] + label:before {
+  input[type="checkbox"] + label:before {
     content: "\f096";
   }
 
-  input[type=radio] + label:before {
+  input[type="radio"] + label:before {
     content: "\f1db";
   }
 
-  input[type=checkbox] + label:before,
-  input[type=radio] + label:before {
+  input[type="checkbox"] + label:before,
+  input[type="radio"] + label:before {
     font-family: FontAwesome;
     display: inline-block;
     font-size: 20px;
   }
 
-  input[type=checkbox]:checked + label:before {
+  input[type="checkbox"]:checked + label:before {
     content: "\f14a";
   }
 
-  input[type=radio]:checked + label:before {
+  input[type="radio"]:checked + label:before {
     content: "\f05d";
   }
-
 }
 
 #upload-csv-modal {
@@ -548,10 +565,10 @@ body.loading #loading-spinner-modal {
     .table-wrapper {
       overflow: auto;
       height: 400px;
-      table th, table td {
+      table th,
+      table td {
         white-space: nowrap;
       }
-
     }
   }
 }

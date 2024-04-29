@@ -1,4 +1,5 @@
 import json
+import os
 from os.path import splitext
 
 from django import template
@@ -75,7 +76,7 @@ def get_server_constants():
             url = reverse(name, kwargs={"type": "arg"})
         urls[name] = url
 
-    return json.dumps({"literals": literals, "aliases": aliases, "urls": urls})
+    return json.dumps({"literals": literals, "aliases": aliases, "urls": urls, "consts": settings.CONSTS})
 
 
 @register.simple_tag

@@ -13,47 +13,47 @@
                cls="{{ current_database_owner_class }}" current-attr="current-database">Database</a>
             <ul class="dropdown-menu">
                 {% if databases %}
-                {% for database in databases %}
-                <li class="{% if current_database.id == database.id %}active{% else %}not-active{% endif %}">
-                    <a href="#" class="select-database" database="{{ database.id }}">
-                        {{ database.name }}
-                    </a>
-                </li>
-                {% endfor %}
-                <li class="divider"></li>
+                    {% for database in databases %}
+                        <li class="{% if current_database.id == database.id %}active{% else %}not-active{% endif %}">
+                            <a href="#" class="select-database" database="{{ database.id }}">
+                                {{ database.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                    <li class="divider"></li>
                 {% endif %}
                 {% if inaccessible_databases %}
-                <li class="dropdown-submenu">
-                    <a href="#">Request access</a>
-                    <ul class="dropdown-menu">
-                        {% for database in inaccessible_databases %}
-                            <li>
-                                <a href="#" class="request-database" database="{{ database.id }}">
-                                    {{ database.name }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </li>
+                    <li class="dropdown-submenu">
+                        <a href="#">Request access</a>
+                        <ul class="dropdown-menu">
+                            {% for database in inaccessible_databases %}
+                                <li>
+                                    <a href="#" class="request-database" database="{{ database.id }}">
+                                        {{ database.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
                     <li class="divider"></li>
                 {% endif %}
 
                 {% if pending_requests %}
-                <li class="dropdown-submenu">
-                    <a href="#">Approve Request</a>
-                    <ul class="dropdown-menu">
-                        {% for request in pending_requests %}
-                            <li>
-                                <a href="#" class="approve-request" request="{{ request.id }}">
-                                    <strong>{{ request.user.username }}</strong> requested permission to
-                                    <strong>{{ request.get_permission_display | lower }} </strong>
-                                    database <strong>{{ request.database.name }}</strong>. Click to approve.
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </li>
-                <li class="divider"></li>
+                    <li class="dropdown-submenu">
+                        <a href="#">Approve Request</a>
+                        <ul class="dropdown-menu">
+                            {% for request in pending_requests %}
+                                <li>
+                                    <a href="#" class="approve-request" request="{{ request.id }}">
+                                        <strong>{{ request.user.username }}</strong> requested permission to
+                                        <strong>{{ request.get_permission_display | lower }} </strong>
+                                        database <strong>{{ request.database.name }}</strong>. Click to approve.
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="divider"></li>
                 {% endif %}
 
                 <li><a href="#" id="create-database-btn">Create new database</a></li>
@@ -61,20 +61,20 @@
         </li>
         {% if similarities %}
             <li class="dropdown-submenu">
-            <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.id }}"
-               cls="{{ current_similarity_owner_class }}" current-attr="current-similarity"
-               owner-id="{{ current_database_owner_id }}">Sort algorithm</a>
-            <ul class="dropdown-menu">
-                {% for similarity in similarities %}
-                    <li class="{% if current_similarity == similarity %}active{% else %}not-active{% endif %}">
-                        <a class="select-similarity" href="#" similarity="{{ similarity.id }}">
-                            {{ similarity.algorithm }}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
+                <a id="similarity-sort-combo" data-toggle="dropdown" similarity="{{ current_similarity.id }}"
+                   cls="{{ current_similarity_owner_class }}" current-attr="current-similarity"
+                   owner-id="{{ current_database_owner_id }}">Sort algorithm</a>
+                <ul class="dropdown-menu">
+                    {% for similarity in similarities %}
+                        <li class="{% if current_similarity == similarity %}active{% else %}not-active{% endif %}">
+                            <a class="select-similarity" href="#" similarity="{{ similarity.id }}">
+                                {{ similarity.algorithm }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
 
-        </li>
+            </li>
         {% endif %}
     </ul>
 </span>

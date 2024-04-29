@@ -1,8 +1,10 @@
 @import "../variables";
 
-
 #exemplars-grid {
-  height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
+  height: calc(
+    #{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} -
+      #{$main-content-padding-top}
+  );
 }
 
 #exemplars-grid-filter {
@@ -24,7 +26,7 @@
   padding: 10px;
   background-color: #efefef;
   border-radius: 10px;
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 3;
   display: block;

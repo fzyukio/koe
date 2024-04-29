@@ -49,29 +49,33 @@
 }
 
 #content-wrapper #sidebar-wrapper {
-  -webkit-transition: all .3s ease;
-  -moz-transition: all .3s ease;
-  -ms-transition: all .3s ease;
-  -o-transition: all .3s ease;
-  transition: all .3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 #sidebar-wrapper {
-  #sidebar-brand > a, .menu-item-expandable > a:after, #sidebar-menu .menu-item-expandable .menu-submenu li a:before, ul li a i {
-    -webkit-transition: all .3s ease;
-    -moz-transition: all .3s ease;
-    -ms-transition: all .3s ease;
-    -o-transition: all .3s ease;
-    transition: all .3s ease;
+  #sidebar-brand > a,
+  .menu-item-expandable > a:after,
+  #sidebar-menu .menu-item-expandable .menu-submenu li a:before,
+  ul li a i {
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    transition: all 0.3s ease;
   }
 }
 
-#content-wrapper .main-content.has-sidebar, #sidebar-wrapper #sidebar-menu ul li a {
-  -webkit-transition: all .3s ease;
-  -moz-transition: all .3s ease;
-  -ms-transition: all .3s ease;
-  -o-transition: all .3s ease;
-  transition: all .3s ease;
+#content-wrapper .main-content.has-sidebar,
+#sidebar-wrapper #sidebar-menu ul li a {
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 /*----------------content-wrapper----------------*/
@@ -94,7 +98,6 @@
 }
 
 /*----------------toggeled sidebar----------------*/
-
 
 #content-wrapper.toggled .main-content.has-sidebar {
   padding-left: 270px;
@@ -166,7 +169,8 @@
   .sidebar-controllers {
     padding: 10px 20px;
     border-bottom: 1px solid #2b2b2b;
-    label, .slider-label {
+    label,
+    .slider-label {
       color: #bdbdbd;
       text-align: left;
     }
@@ -180,7 +184,7 @@
       color: #bdbdbd;
     }
 
-    input[type=checkbox] {
+    input[type="checkbox"] {
       margin-top: 6px;
     }
   }
@@ -239,7 +243,7 @@
       }
       &:hover > i::before {
         display: inline-block;
-        animation: swing ease-in-out .5s 1 alternate;
+        animation: swing ease-in-out 0.5s 1 alternate;
       }
     }
     .menu-item-expandable {
@@ -264,7 +268,7 @@
         li {
           padding-left: 25px;
           font-size: 13px;
-            &.active a span {
+          &.active a span {
             font-weight: bolder;
             color: #e72510;
           }
@@ -272,14 +276,16 @@
       }
     }
     ul li a span {
-      &.label, &.badge {
+      &.label,
+      &.badge {
         float: right;
         margin-top: 8px;
         margin-left: 5px;
       }
     }
     .menu-item-expandable .menu-submenu li a {
-      .badge, .label {
+      .badge,
+      .label {
         float: right;
         margin-top: 0px;
       }
@@ -293,7 +299,7 @@
     }
 
     .chat-open-icon {
-      background-color: #e72510;;
+      background-color: #e72510;
     }
   }
 }
@@ -336,7 +342,7 @@
   position: absolute;
   top: 0;
   &:after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -353,10 +359,13 @@
 
 #sidebar-wrapper {
   background: black;
-  #sidebar-header, #sidebar-menu {
+  #sidebar-header,
+  #sidebar-menu {
     border-top: 1px solid #2b2b2b;
   }
-  #sidebar-header #user-info #user-role, #sidebar-brand > a, #sidebar-menu ul li a {
+  #sidebar-header #user-info #user-role,
+  #sidebar-brand > a,
+  #sidebar-menu ul li a {
     color: #bdbdbd;
   }
 }
@@ -366,7 +375,8 @@
 }
 
 #sidebar-wrapper #sidebar-menu {
-  ul li:hover > a, .menu-item-expandable.active > a {
+  ul li:hover > a,
+  .menu-item-expandable.active > a {
     color: #ffffff;
   }
 }
@@ -379,14 +389,16 @@
   #sidebar-header #user-info {
     color: #bdbdbd;
   }
-  ul li:hover a i, .menu-item-expandable .menu-submenu li a:hover:before {
+  ul li:hover a i,
+  .menu-item-expandable .menu-submenu li a:hover:before {
     color: #ffffff;
   }
   #sidebar-menu {
     .menu-item-expandable.active a i {
       color: #ffffff;
     }
-    ul li a i, .menu-item-expandable div {
+    ul li a i,
+    .menu-item-expandable div {
       background: #2b2b2b;
     }
     .menu-section > span {

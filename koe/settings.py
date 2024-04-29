@@ -22,6 +22,8 @@ def base_dir_join(*args):
 
 DEBUG = envconf["debug"]
 
+CONSTS = envconf["consts"]
+
 ALLOWED_HOSTS = envconf["allowed_hosts"]
 
 ADMINS = (("Admin", "foo@example.com"),)

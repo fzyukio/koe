@@ -1,36 +1,36 @@
-database_url: 'mysql://koe:koe@localhost:3306/koe'
+database_url: "mysql://koe:koe@localhost:3306/koe"
 
-language_code: 'en-nz'
-timezone: 'UTC'
+language_code: "en-nz"
+timezone: "UTC"
 debug: False
 allowed_hosts:
-    - 'localhost'
-    - '0.0.0.0'
-    - '127.0.0.1'
+  - "localhost"
+  - "0.0.0.0"
+  - "127.0.0.1"
 
-site_url: 'http://127.0.0.1:8000/'
-email_config: 'console'
+site_url: "http://127.0.0.1:8000/"
+email_config: "console"
 csrf_trusted_origin:
-    - '127.0.0.1'
+  - "127.0.0.1"
 
 session_cookie_secure: True
 
 cache:
-    backend: 'django_redis.cache.RedisCache'
-    location: 'redis://localhost:6379/0'
-    options:
-        CLIENT_CLASS: 'django_redis.client.DefaultClient'
-        COMPRESSOR: 'django_redis.compressors.zlib.ZlibCompressor'
-        IGNORE_EXCEPTIONS: True
-        PASSWORD: 'abc123'
+  backend: "django_redis.cache.RedisCache"
+  location: "redis://localhost:6379/0"
+  options:
+    CLIENT_CLASS: "django_redis.client.DefaultClient"
+    COMPRESSOR: "django_redis.compressors.zlib.ZlibCompressor"
+    IGNORE_EXCEPTIONS: True
+    PASSWORD: "abc123"
 
 environment_variables:
-    WEBPACK_SERVER_PORT: 9876
+  WEBPACK_SERVER_PORT: 9876
 
 broker:
-    location: 'redis://koe_docker_cache:6379/1'
+  location: "redis://koe_docker_cache:6379/1"
 
 jupyter:
-    password: sha1:32666b16d662:f3327260b56c45effdc64acc6c331ec6305f137d
-    ip: '0.0.0.0'
-    port: 8002
+  password: sha1:32666b16d662:f3327260b56c45effdc64acc6c331ec6305f137d
+  ip: "0.0.0.0"
+  port: 8002

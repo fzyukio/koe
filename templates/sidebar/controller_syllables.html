@@ -8,14 +8,14 @@
 </div>
 
 {% if db_assignment.can_modify_segments or current_database.is_real %}
-<div class="sidebar-controllers">
-    {% if db_assignment.can_modify_segments %}
-        <button type="button" disabled id="delete-segments-btn" class="btn btn-xs btn-default btn-block">Delete selected units</button>
-    {% endif %}
-    {% if current_database.is_real %}
-    <button type="button" disabled id="make-temp-db-btn" class="btn btn-xs btn-default btn-block">Make a Collection <br>from selected units</button>
-    {% endif %}
-</div>
+    <div class="sidebar-controllers">
+        {% if db_assignment.can_modify_segments %}
+            <button type="button" disabled id="delete-segments-btn" class="btn btn-xs btn-default btn-block">Delete selected units</button>
+        {% endif %}
+        {% if current_database.is_real %}
+            <button type="button" disabled id="make-temp-db-btn" class="btn btn-xs btn-default btn-block">Make a Collection <br>from selected units</button>
+        {% endif %}
+    </div>
 {% endif %}
 
 <div class="sidebar-controllers last">

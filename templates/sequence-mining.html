@@ -28,9 +28,9 @@
                 </div>
             </div>
             <div class="has-grid" id="sequence-mining-grid" granularity="{{ granularity }}" viewas="{{ viewas.username }}"
-                {% if current_database is not None %}
-                    {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
-                {% endif %}>
+                 {% if current_database is not None %}
+                     {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                 {% endif %}>
             </div>
         </div>
 

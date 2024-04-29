@@ -16,7 +16,7 @@ div.has-error span.error-label {
 }
 
 ul.errorlist {
-  list-style-type: none
+  list-style-type: none;
 }
 
 .errorlist {
@@ -24,6 +24,6 @@ ul.errorlist {
 
   li {
     color: #cf0000;
-    font-size: .8em;
+    font-size: 0.8em;
   }
 }

@@ -1,9 +1,12 @@
 @import "../variables";
 
-#sequence-mining-grid, #graph {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$main-content-padding-bottom});
+#sequence-mining-grid,
+#graph {
+  height: calc(
+    #{$max-screen-height} - #{$main-content-padding-top} - #{$controller-wrapper-height} -
+      #{$main-content-padding-bottom}
+  );
 }
-
 
 #sequence-mining-filter-controller {
   height: $controller-wrapper-height;
@@ -61,7 +64,7 @@
   padding: 10px;
   background-color: #efefef;
   border-radius: 10px;
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 3;
   display: block;
@@ -72,7 +75,9 @@
 }
 
 #graph {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-top} - #{$main-content-padding-bottom});
+  height: calc(
+    #{$max-screen-height} - #{$main-content-padding-top} - #{$main-content-padding-bottom}
+  );
 
   svg {
     width: 100%;

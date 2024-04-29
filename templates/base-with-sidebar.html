@@ -3,15 +3,15 @@
 
 
 {% block content-wrapper %}
-<div id="content-wrapper" class="toggled">
-    {% include "sidebar/sidebar.html"%}
+    <div id="content-wrapper" class="toggled">
+        {% include "sidebar/sidebar.html"%}
 
-    {% block main-content %}
-        <div class="main-content has-sidebar {% block main-content-classes %}{% endblock %}">
-            <div class="content-center">
-                {% block content-center %}{% endblock %}
+        {% block main-content %}
+            <div class="main-content has-sidebar {% block main-content-classes %}{% endblock %}">
+                <div class="content-center">
+                    {% block content-center %}{% endblock %}
+                </div>
             </div>
-        </div>
-    {% endblock %}
-</div>
+        {% endblock %}
+    </div>
 {% endblock %}

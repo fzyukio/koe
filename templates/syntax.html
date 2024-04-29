@@ -26,9 +26,9 @@
                     </div>
                     <div class="has-grid" id="syntax-grid" granularity="{{ granularity }}"
                          viewas="{{ viewas.username }}"
-                            {% if current_database is not None %}
-                         {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
-                            {% endif %}>
+                         {% if current_database is not None %}
+                             {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                         {% endif %}>
                     </div>
                 </h3>
             </div>
@@ -106,9 +106,9 @@
             </div>
 
             <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
-                    {% if current_database is not None %}
-                 {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
-                    {% endif %}>
+                 {% if current_database is not None %}
+                     {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                 {% endif %}>
             </div>
         </div>
 

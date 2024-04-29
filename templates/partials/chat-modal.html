@@ -1,25 +1,25 @@
 {% load static %}
 
 <div class="modal fade in" id="chat-modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" data-backdrop="static" aria-hidden="true" style="display: none;">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">
-          Conversation with KoeAI.
-          <span type="button" class="close" data-dismiss="modal" role="button"><span aria-hidden="true" class="fa fa-times"></span></span>
-        </h3>
-      </div>
-      <div class="modal-body">
-        <div class="message-box" id="message-box">
-            <div class="message">
-                <div class="message-name">Koe:</div>
-                <div class="message-body">Hi there, what can I help you today?</div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    Conversation with KoeAI.
+                    <span type="button" class="close" data-dismiss="modal" role="button"><span aria-hidden="true" class="fa fa-times"></span></span>
+                </h3>
             </div>
-            <div class="message">
-                <div class="message-name">You:</div>
-                <div class="message-body">What's the weather today?</div>
-            </div>
-            
+            <div class="modal-body">
+                <div class="message-box" id="message-box">
+                    <div class="message">
+                        <div class="message-name">Koe:</div>
+                        <div class="message-body">Hi there, what can I help you today?</div>
+                    </div>
+                    <div class="message">
+                        <div class="message-name">You:</div>
+                        <div class="message-body">What's the weather today?</div>
+                    </div>
+
             {% comment %} <div class="message koe">
                 <div class="icon"></div>
                 <div class="text">
@@ -115,13 +115,13 @@
                     </div>
                 </li>
             </ul> {% endcomment %}
-        </div>
-      </div>
+                </div>
+            </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="send-message"><i class="fa fa-arrow-up"></i></button>
-        <textarea name="chat-message" id="chat-message"></textarea>
-      </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="send-message"><i class="fa fa-arrow-up"></i></button>
+                <textarea name="chat-message" id="chat-message"></textarea>
+            </div>
+        </div>
     </div>
-  </div>
 </div>

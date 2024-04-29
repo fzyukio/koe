@@ -1,7 +1,10 @@
 @import "../variables";
 
 #songs-grid {
-  height: calc(#{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top});
+  height: calc(
+    #{$max-screen-height} - #{$controller-wrapper-height} - #{$main-content-padding-bottom} -
+      #{$main-content-padding-top}
+  );
 }
 
 #songs-grid-filter {
@@ -23,7 +26,7 @@
   padding: 10px;
   background-color: #efefef;
   border-radius: 10px;
-  box-shadow: 4px 4px 10px rgba(0, 0, 0, .4);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 3;
   display: block;
@@ -40,8 +43,7 @@
   min-height: unset;
 }
 
-
 #previews .file-row.dz-success .progress {
-    opacity: 0;
-    transition: opacity 0.3s linear;
+  opacity: 0;
+  transition: opacity 0.3s linear;
 }

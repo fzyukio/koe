@@ -29,7 +29,9 @@
   }
 
   .dropdown-menu > li > a {
-    &:hover, &:focus, &.active {
+    &:hover,
+    &:focus,
+    &.active {
       color: #ffffff;
     }
   }
@@ -48,7 +50,8 @@
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
 
-    &.collapse.in, &.collapsing {
+    &.collapse.in,
+    &.collapsing {
       float: right;
       max-width: 300px;
     }
@@ -62,7 +65,8 @@
     height: $navbar-height;
     padding-left: 0px;
 
-    a, span {
+    a,
+    span {
       color: white;
       font-variant: normal;
       font-size: 0.8em;
@@ -138,8 +142,12 @@
         font-weight: bold;
       }
 
-      h1, h2, h3, h4, h5 {
-        font-family: 'Oxygen', sans-serif;
+      h1,
+      h2,
+      h3,
+      h4,
+      h5 {
+        font-family: "Oxygen", sans-serif;
         color: inherit;
       }
 
@@ -225,7 +233,7 @@
           border-radius: 5px;
           line-height: 0;
           font-size: 1.2em;
-          box-shadow: 0 0 50px 0 rgba(25, 70, 97, .15);
+          box-shadow: 0 0 50px 0 rgba(25, 70, 97, 0.15);
 
           i {
             top: 3px;
@@ -246,8 +254,12 @@
       font-weight: bold;
     }
 
-    h1, h2, h3, h4, h5 {
-      font-family: 'Oxygen', sans-serif;
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+      font-family: "Oxygen", sans-serif;
       color: inherit;
     }
 
@@ -289,7 +301,7 @@
     align-items: center;
     -ms-flex-pack: center;
     justify-content: center;
-    background-color: rgba(39, 47, 65, .85);
+    background-color: rgba(39, 47, 65, 0.85);
 
     .video-popup {
       position: relative;
@@ -304,14 +316,14 @@
           border-radius: 5px;
           padding: 11px;
           line-height: 0;
-          box-shadow: 0 0 50px 0 rgba(25, 70, 97, .15);
+          box-shadow: 0 0 50px 0 rgba(25, 70, 97, 0.15);
         }
       }
 
       .popup-content {
         overflow: hidden;
         border-radius: 10px;
-        box-shadow: 0 0 50px 0 rgba(25, 70, 97, .15);
+        box-shadow: 0 0 50px 0 rgba(25, 70, 97, 0.15);
       }
     }
   }
@@ -344,7 +356,8 @@
   }
 }
 
-#section-1, #section-3 {
+#section-1,
+#section-3 {
   margin-bottom: 50px !important;
 }
 
@@ -370,7 +383,11 @@ $navbar-height: 0px;
     float: none;
     clear: both;
     padding-bottom: 0;
-    h1, h2, h3, h4, h5 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
       color: white;
     }
   }
@@ -469,13 +486,13 @@ $navbar-height: 0px;
   padding-bottom: 30px;
 
   h1 {
-    font-family: 'Oxygen', sans-serif;
+    font-family: "Oxygen", sans-serif;
     font-weight: bold;
     color: inherit;
   }
 
   h3 {
-    font-family: 'Oxygen', sans-serif;
+    font-family: "Oxygen", sans-serif;
     color: inherit;
   }
 
@@ -521,16 +538,21 @@ $navbar-height: 0px;
 
   h2 {
     margin-top: 0;
-    font-family: 'Oxygen', sans-serif;
+    font-family: "Oxygen", sans-serif;
     color: inherit;
     font-size: 1.8em;
     font-weight: 700;
     border-radius: 1em 0 1em 0;
-    background-image: linear-gradient(-101deg, rgba(247, 198, 2, .05), #ff00003b 95%, rgba(247, 198, 2, 0));
+    background-image: linear-gradient(
+      -101deg,
+      rgba(247, 198, 2, 0.05),
+      #ff00003b 95%,
+      rgba(247, 198, 2, 0)
+    );
   }
 
   ul li {
-    font-family: 'Oxygen', sans-serif;
+    font-family: "Oxygen", sans-serif;
     color: inherit;
     font-size: 1.2em;
     padding-bottom: 10px;

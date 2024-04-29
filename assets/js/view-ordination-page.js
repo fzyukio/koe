@@ -1,26 +1,36 @@
 /* global Plotly, d3 */
-require('bootstrap-slider/dist/bootstrap-slider.js');
-require('jquery.scrollintoview/jquery.scrollintoview.js');
+require("bootstrap-slider/dist/bootstrap-slider.js");
+require("jquery.scrollintoview/jquery.scrollintoview.js");
 
-import {queryAndPlayAudio, changePlaybackSpeed} from './audio-handler';
-import {getUrl, getCache, setCache, isEmpty, logError, PAGE_CAPACITY} from './utils';
-import {downloadRequest, postRequest, createSpinner} from './ajax-handler';
-import {constructSelectizeOptionsForLabellings, initSelectize} from './selectize-formatter';
+import { queryAndPlayAudio, changePlaybackSpeed } from "./audio-handler";
+import {
+  getUrl,
+  getCache,
+  setCache,
+  isEmpty,
+  logError,
+  PAGE_CAPACITY,
+} from "./utils";
+import { downloadRequest, postRequest, createSpinner } from "./ajax-handler";
+import {
+  constructSelectizeOptionsForLabellings,
+  initSelectize,
+} from "./selectize-formatter";
 
-const speedSlider = $('#speed-slider');
-const plotId = 'plotly-plot';
+const speedSlider = $("#speed-slider");
+const plotId = "plotly-plot";
 const plotDiv = $(`#${plotId}`);
-const metaPath = plotDiv.attr('metadata');
-const bytesPath = plotDiv.attr('bytes');
-const databaseId = plotDiv.attr('database');
-const tmpDbId = plotDiv.attr('tmpdb');
-const sylSpects = $('#syl-spects');
-const labelTyleSelectEl = $('#label-type');
+const metaPath = plotDiv.attr("metadata");
+const bytesPath = plotDiv.attr("bytes");
+const databaseId = plotDiv.attr("database");
+const tmpDbId = plotDiv.attr("tmpdb");
+const sylSpects = $("#syl-spects");
+const labelTyleSelectEl = $("#label-type");
 
-let rightContainer = plotDiv.parents('.contain-panel');
-let rightPanel = plotDiv.parents('.panel');
-let leftContainer = sylSpects.parents('.contain-panel');
-let leftPanel = sylSpects.parents('.panel');
+let rightContainer = plotDiv.parents(".contain-panel");
+let rightPanel = plotDiv.parents(".panel");
+let leftContainer = sylSpects.parents(".contain-panel");
+let leftPanel = sylSpects.parents(".panel");
 
 let minLeftWidth;
 
@@ -36,50 +46,77 @@ let plotObj;
 let spinner;
 
 const saveSvgOption = {
-    name: 'Save SVG',
-    icon: Plotly.Icons.camera,
-    click (gd) {
-        Plotly.downloadImage(gd, {format: 'svg'})
-    }
+  name: "Save SVG",
+  icon: Plotly.Icons.camera,
+  click(gd) {
+    Plotly.downloadImage(gd, { format: "svg" });
+  },
 };
 
 const savePngOption = {
-    name: 'Save PNG',
-    icon: Plotly.Icons.camera,
-    click (gd) {
-        Plotly.downloadImage(gd, {format: 'png'})
-    }
+  name: "Save PNG",
+  icon: Plotly.Icons.camera,
+  click(gd) {
+    Plotly.downloadImage(gd, { format: "png" });
+  },
 };
 
 const plotlyOptions = {
-    modeBarButtonsToRemove: [
-        'toImage', 'pan2d', 'select2d', 'zoomIn2d', 'zoomOut2d', 'resetScale2d', 'hoverClosestCartesian',
-        'hoverCompareCartesian', 'zoom3d', 'pan3d', 'orbitRotation',
-        'tableRotation', 'resetCameraDefault3d', 'resetCameraLastSave3d', 'hoverClosest3d', 'zoomInGeo',
-        'zoomOutGeo', 'resetGeo', 'hoverClosestGeo', 'hoverClosestGl2d', 'hoverClosestPie', 'toggleHover',
-        'resetViews', 'toggleSpikelines', 'resetViewMapbox'
-    ],
-    modeBarButtonsToAdd: []
+  modeBarButtonsToRemove: [
+    "toImage",
+    "pan2d",
+    "select2d",
+    "zoomIn2d",
+    "zoomOut2d",
+    "resetScale2d",
+    "hoverClosestCartesian",
+    "hoverCompareCartesian",
+    "zoom3d",
+    "pan3d",
+    "orbitRotation",
+    "tableRotation",
+    "resetCameraDefault3d",
+    "resetCameraLastSave3d",
+    "hoverClosest3d",
+    "zoomInGeo",
+    "zoomOutGeo",
+    "resetGeo",
+    "hoverClosestGeo",
+    "hoverClosestGl2d",
+    "hoverClosestPie",
+    "toggleHover",
+    "resetViews",
+    "toggleSpikelines",
+    "resetViewMapbox",
+  ],
+  modeBarButtonsToAdd: [],
 };
 
-const plotlyMarkerSymbols = ['circle', 'square', 'diamond', 'cross', 'triangle-up', 'star'];
+const plotlyMarkerSymbols = [
+  "circle",
+  "square",
+  "diamond",
+  "cross",
+  "triangle-up",
+  "star",
+];
 
 const categoricalColourScale = d3.schemeCategory10;
 const interpolativeColourScale = d3.interpolateRainbow;
 const nCategoricalColours = categoricalColourScale.length;
-const renderAsSvg = $('#render-as-svg');
+const renderAsSvg = $("#render-as-svg");
 
 const initSlider = function () {
-    speedSlider.slider();
+  speedSlider.slider();
 
-    speedSlider.on('slide', function (slideEvt) {
-        changePlaybackSpeed(slideEvt.value);
-    });
+  speedSlider.on("slide", function (slideEvt) {
+    changePlaybackSpeed(slideEvt.value);
+  });
 
-    $('.slider').on('click', function () {
-        let newvalue = $('.tooltip-inner').text();
-        changePlaybackSpeed(parseInt(newvalue));
-    });
+  $(".slider").on("click", function () {
+    let newvalue = $(".tooltip-inner").text();
+    changePlaybackSpeed(parseInt(newvalue));
+  });
 };
 
 /**
@@ -87,27 +124,25 @@ const initSlider = function () {
  * @returns {*}
  */
 function getRenderOptions() {
-    let ndims = dataMatrix[0].length;
-    let renderClass;
-    let renderOptions = plotlyOptions;
+  let ndims = dataMatrix[0].length;
+  let renderClass;
+  let renderOptions = plotlyOptions;
 
-    if (ndims === 2) {
-        if (renderAsSvg[0].checked) {
-            renderClass = 'scatter';
-            plotlyOptions.modeBarButtonsToAdd = [saveSvgOption];
-        }
-        else {
-            renderClass = 'scattergl';
-            plotlyOptions.modeBarButtonsToAdd = [savePngOption];
-        }
+  if (ndims === 2) {
+    if (renderAsSvg[0].checked) {
+      renderClass = "scatter";
+      plotlyOptions.modeBarButtonsToAdd = [saveSvgOption];
+    } else {
+      renderClass = "scattergl";
+      plotlyOptions.modeBarButtonsToAdd = [savePngOption];
     }
-    else {
-        renderAsSvg.prop('disabled', true);
-        renderClass = 'scatter3d';
-        plotlyOptions.modeBarButtonsToAdd = [savePngOption];
-    }
+  } else {
+    renderAsSvg.prop("disabled", true);
+    renderClass = "scatter3d";
+    plotlyOptions.modeBarButtonsToAdd = [savePngOption];
+  }
 
-    return {renderClass, renderOptions};
+  return { renderClass, renderOptions };
 }
 
 /**
@@ -116,63 +151,62 @@ function getRenderOptions() {
  * @param mode true for "on" or false for "off" mode
  */
 function setLassoSelectionMode(mode) {
-    inLassoSelectionMode = mode;
-    $('.enable-on-lasso').prop('disabled', !mode);
-    $('.disable-on-lasso').prop('disabled', mode);
+  inLassoSelectionMode = mode;
+  $(".enable-on-lasso").prop("disabled", !mode);
+  $(".disable-on-lasso").prop("disabled", mode);
 }
 
 /**
  * Remove all highlighted syllables from the list
  */
 function clearHighlighted() {
-    $.each(highlighted, function (id, el) {
-        el.remove();
-    });
-    highlighted = {};
-    highlightedInfo = {};
+  $.each(highlighted, function (id, el) {
+    el.remove();
+  });
+  highlighted = {};
+  highlightedInfo = {};
 }
 
 /**
  * Attach click event handlers to the three buttons and the panel-body in highlighted panel
  */
 function initClickHandlers() {
-    $('#clear-highlighted-btn').click(clearHighlighted);
-    $('#show-highlighted-btn').click(function () {
-        let url = this.getAttribute('syllables-view-url');
-        let redirectUrl = `${url}?_holdout=true`;
+  $("#clear-highlighted-btn").click(clearHighlighted);
+  $("#show-highlighted-btn").click(function () {
+    let url = this.getAttribute("syllables-view-url");
+    let redirectUrl = `${url}?_holdout=true`;
 
-        postRequest({
-            requestSlug: 'koe/hold-ids',
-            data: {ids: Object.keys(highlighted).join()},
-            onSuccess() {
-                // openNewWindow(redirectUrl);
-                window.open(redirectUrl);
-            }
-        });
+    postRequest({
+      requestSlug: "koe/hold-ids",
+      data: { ids: Object.keys(highlighted).join() },
+      onSuccess() {
+        // openNewWindow(redirectUrl);
+        window.open(redirectUrl);
+      },
     });
+  });
 
-    $('.change-label').click(function () {
-        let granularity = this.getAttribute('label-type');
-        setLabel(granularity);
-    });
+  $(".change-label").click(function () {
+    let granularity = this.getAttribute("label-type");
+    setLabel(granularity);
+  });
 
-    sylSpects.click(function (e) {
-        let target = $(e.target);
-        let isSpectrogram;
-        if (target.hasClass('syl-spect')) {
-            isSpectrogram = target;
-        }
-        else {
-            isSpectrogram = target.parents('.syl-spect');
-        }
-        if (isSpectrogram.length) {
-            let spectrogram = isSpectrogram[0];
-            let sylId = spectrogram.getAttribute('id');
-            highlightSyl(highlighted[sylId]);
-            playSyl(sylId);
-        }
-    });
-    renderAsSvg.click(plot);
+  sylSpects.click(function (e) {
+    let target = $(e.target);
+    let isSpectrogram;
+    if (target.hasClass("syl-spect")) {
+      isSpectrogram = target;
+    } else {
+      isSpectrogram = target.parents(".syl-spect");
+    }
+    if (isSpectrogram.length) {
+      let spectrogram = isSpectrogram[0];
+      let sylId = spectrogram.getAttribute("id");
+      highlightSyl(highlighted[sylId]);
+      playSyl(sylId);
+    }
+  });
+  renderAsSvg.click(plot);
 }
 
 /**
@@ -183,40 +217,42 @@ function initClickHandlers() {
  * @returns {Array}
  */
 function generateMarkers(nClasses) {
-    let nColours;
-    let nSymbols;
-    let colour;
+  let nColours;
+  let nSymbols;
+  let colour;
 
-    /* Try to use categorical colours (max = 12) if there are less than 12 * nSymbols classes */
-    if (nClasses <= (plotlyMarkerSymbols.length * nCategoricalColours)) {
-        nColours = nCategoricalColours;
-        nSymbols = Math.ceil(nClasses / nColours);
-        colour = d3.scaleOrdinal(categoricalColourScale);
-    }
-    else {
-        nSymbols = Math.min(Math.ceil(Math.sqrt(nClasses)), plotlyMarkerSymbols.length);
-        nColours = Math.ceil(nClasses / nSymbols);
-        colour = d3.scaleSequential(interpolativeColourScale).domain([0, nColours]);
-    }
+  /* Try to use categorical colours (max = 12) if there are less than 12 * nSymbols classes */
+  if (nClasses <= plotlyMarkerSymbols.length * nCategoricalColours) {
+    nColours = nCategoricalColours;
+    nSymbols = Math.ceil(nClasses / nColours);
+    colour = d3.scaleOrdinal(categoricalColourScale);
+  } else {
+    nSymbols = Math.min(
+      Math.ceil(Math.sqrt(nClasses)),
+      plotlyMarkerSymbols.length
+    );
+    nColours = Math.ceil(nClasses / nSymbols);
+    colour = d3.scaleSequential(interpolativeColourScale).domain([0, nColours]);
+  }
 
-    let markers = [];
-    for (let i = 0; i < nColours; i++) {
-        let thisColour = colour(i);
-        for (let j = 0; j < nSymbols; j++) {
-            let thisSymbol = plotlyMarkerSymbols[j];
+  let markers = [];
+  for (let i = 0; i < nColours; i++) {
+    let thisColour = colour(i);
+    for (let j = 0; j < nSymbols; j++) {
+      let thisSymbol = plotlyMarkerSymbols[j];
 
-            markers.push({
-                symbol: thisSymbol,
-                size: 10,
-                color: thisColour,
-                opacity: 0.8,
-                line: {
-                    width: 0.5
-                },
-            });
-        }
+      markers.push({
+        symbol: thisSymbol,
+        size: 10,
+        color: thisColour,
+        opacity: 0.8,
+        line: {
+          width: 0.5,
+        },
+      });
     }
-    return markers;
+  }
+  return markers;
 }
 
 /**
@@ -224,30 +260,30 @@ function generateMarkers(nClasses) {
  * @returns {{l: number, r: number, b: number, t: number}}
  */
 function calcLayout() {
-    let windowWidth = $('.main-content').width();
-    let plotHeight = plotDiv.height();
-    let lW = leftPanel.innerWidth();
+  let windowWidth = $(".main-content").width();
+  let plotHeight = plotDiv.height();
+  let lW = leftPanel.innerWidth();
 
-    let legend = plotDiv.find('.legend')[0];
-    let r = legend ? legend.getBoundingClientRect().width : 200;
-    let b = 0;
-    let t = 0;
-    let l = 0;
+  let legend = plotDiv.find(".legend")[0];
+  let r = legend ? legend.getBoundingClientRect().width : 200;
+  let b = 0;
+  let t = 0;
+  let l = 0;
 
-    let h = plotHeight - t - b;
-    let plotWidth = h + r + l;
+  let h = plotHeight - t - b;
+  let plotWidth = h + r + l;
 
-    let offset = windowWidth - (plotWidth + lW);
-    rightPanel.width(plotWidth);
+  let offset = windowWidth - (plotWidth + lW);
+  rightPanel.width(plotWidth);
 
-    let newLW = Math.max(minLeftWidth, lW + offset);
-    offset = newLW - lW;
+  let newLW = Math.max(minLeftWidth, lW + offset);
+  offset = newLW - lW;
 
-    leftPanel.innerWidth(leftPanel.innerWidth() + offset - 2);
-    leftContainer.innerWidth(leftContainer.innerWidth() + offset - 2);
-    rightContainer.innerWidth(rightContainer.innerWidth() - offset);
+  leftPanel.innerWidth(leftPanel.innerWidth() + offset - 2);
+  leftContainer.innerWidth(leftContainer.innerWidth() + offset - 2);
+  rightContainer.innerWidth(rightContainer.innerWidth() - offset);
 
-    return {l, r, t, b, plotWidth, plotHeight}
+  return { l, r, t, b, plotWidth, plotHeight };
 }
 
 /**
@@ -255,32 +291,32 @@ function calcLayout() {
  * E.g. when the user changes the window's size
  */
 function relayout() {
-    let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
-    let plotDivLayout = $('#' + plotId)[0].layout;
+  let { l, r, t, b, plotWidth, plotHeight } = calcLayout();
+  let plotDivLayout = $("#" + plotId)[0].layout;
 
-    let layout = {
-        width: plotWidth,
-        height: plotHeight,
-        margin: {l, r, b, t},
+  let layout = {
+    width: plotWidth,
+    height: plotHeight,
+    margin: { l, r, b, t },
+  };
+
+  let xaxis = plotDivLayout.xaxis;
+  if (xaxis) {
+    let xaxisRange = plotDivLayout.xaxis.range;
+    let yaxisRange = plotDivLayout.yaxis.range;
+
+    layout.xaxis = {
+      range: xaxisRange,
+      autorange: false,
     };
 
-    let xaxis = plotDivLayout.xaxis;
-    if (xaxis) {
-        let xaxisRange = plotDivLayout.xaxis.range;
-        let yaxisRange = plotDivLayout.yaxis.range;
+    layout.yaxis = {
+      range: yaxisRange,
+      autorange: false,
+    };
+  }
 
-        layout.xaxis = {
-            range: xaxisRange,
-            autorange: false,
-        };
-
-        layout.yaxis = {
-            range: yaxisRange,
-            autorange: false,
-        };
-    }
-
-    Plotly.relayout(plotId, layout);
+  Plotly.relayout(plotId, layout);
 }
 
 /**
@@ -288,173 +324,179 @@ function relayout() {
  * We display these symbols in the panel of selected syllables
  */
 function extractLegends() {
-    $('.legend text.legendtext').each(function (idx, textEl) {
-        let layer = $(textEl).parent().find('g.layers').clone();
-        layer = layer.attr('transform', 'translate(-13, 7)');
-        let layerStr = $('<div>').append(layer).html();
-        let text = textEl.innerHTML;
-        legendSymbols[text] = layerStr;
-    });
+  $(".legend text.legendtext").each(function (idx, textEl) {
+    let layer = $(textEl).parent().find("g.layers").clone();
+    layer = layer.attr("transform", "translate(-13, 7)");
+    let layerStr = $("<div>").append(layer).html();
+    let text = textEl.innerHTML;
+    legendSymbols[text] = layerStr;
+  });
 }
 
 const plot = function () {
-    let classType = labelTyleSelectEl.parent().find('#selected-label-type').html();
-    let traces = [];
-    let class2RowIdx = labelDatum[classType];
-    let nClasses = Object.keys(class2RowIdx).length;
-    let ncols = dataMatrix[0].length;
-    let {renderClass, renderOptions} = getRenderOptions();
+  let classType = labelTyleSelectEl
+    .parent()
+    .find("#selected-label-type")
+    .html();
+  let traces = [];
+  let class2RowIdx = labelDatum[classType];
+  let nClasses = Object.keys(class2RowIdx).length;
+  let ncols = dataMatrix[0].length;
+  let { renderClass, renderOptions } = getRenderOptions();
 
-    let {l, r, t, b, plotWidth, plotHeight} = calcLayout();
+  let { l, r, t, b, plotWidth, plotHeight } = calcLayout();
 
-    let classNames = Object.keys(class2RowIdx);
-    let allX = [];
-    let allY = [];
-    let allZ = [];
+  let classNames = Object.keys(class2RowIdx);
+  let allX = [];
+  let allY = [];
+  let allZ = [];
 
-    let markers = generateMarkers(nClasses);
+  let markers = generateMarkers(nClasses);
 
-    $.each(classNames, function (classNo, className) {
-        let ids = class2RowIdx[className];
-        let xs = [];
-        let ys = [];
-        let zs = [];
-        let x, y, z;
-        let rowsText = [];
+  $.each(classNames, function (classNo, className) {
+    let ids = class2RowIdx[className];
+    let xs = [];
+    let ys = [];
+    let zs = [];
+    let x, y, z;
+    let rowsText = [];
 
-        let groupMetadata = [];
-        $.each(ids, function (idx, rowIdx) {
-            let row = dataMatrix[rowIdx];
-            let metadata = rowsMetadata[rowIdx];
-            groupMetadata.push(metadata);
-            let rowText = makeText(metadata);
-            rowsText.push(rowText);
-            x = row[0];
-            y = row[1];
-            xs.push(x);
-            ys.push(y);
-            allX.push(x);
-            allY.push(y);
-            if (ncols > 2) {
-                z = row[2];
-                zs.push(z);
-                allZ.push(z);
-            }
-        });
-
-        let trace = {
-            x: xs,
-            y: ys,
-
-            // plotly does not allow custom field here so we have no choice but to use 'text' to store metadata
-            text: groupMetadata,
-            hovertext: rowsText,
-            hoverinfo: 'text',
-            name: className,
-            mode: 'markers',
-            marker: markers[classNo],
-            type: renderClass
-        };
-
-        if (ncols > 2) {
-            trace.z = zs;
-        }
-
-        traces.push(trace);
+    let groupMetadata = [];
+    $.each(ids, function (idx, rowIdx) {
+      let row = dataMatrix[rowIdx];
+      let metadata = rowsMetadata[rowIdx];
+      groupMetadata.push(metadata);
+      let rowText = makeText(metadata);
+      rowsText.push(rowText);
+      x = row[0];
+      y = row[1];
+      xs.push(x);
+      ys.push(y);
+      allX.push(x);
+      allY.push(y);
+      if (ncols > 2) {
+        z = row[2];
+        zs.push(z);
+        allZ.push(z);
+      }
     });
 
-    let layout;
-    if (plotObj === undefined) {
-        layout = {
-            hovermode: 'closest',
-            width: plotWidth,
-            height: plotHeight,
-            margin: {l, r, b, t},
-        };
-    }
-    else {
-        layout = plotObj._result.layout;
+    let trace = {
+      x: xs,
+      y: ys,
+
+      // plotly does not allow custom field here so we have no choice but to use 'text' to store metadata
+      text: groupMetadata,
+      hovertext: rowsText,
+      hoverinfo: "text",
+      name: className,
+      mode: "markers",
+      marker: markers[classNo],
+      type: renderClass,
+    };
+
+    if (ncols > 2) {
+      trace.z = zs;
     }
 
-    plotObj = Plotly.newPlot(plotId, traces, layout, renderOptions);
-    plotDiv.find('.modebar').css('position', 'relative');
-    relayout();
-    extractLegends();
+    traces.push(trace);
+  });
+
+  let layout;
+  if (plotObj === undefined) {
+    layout = {
+      hovermode: "closest",
+      width: plotWidth,
+      height: plotHeight,
+      margin: { l, r, b, t },
+    };
+  } else {
+    layout = plotObj._result.layout;
+  }
+
+  plotObj = Plotly.newPlot(plotId, traces, layout, renderOptions);
+  plotDiv.find(".modebar").css("position", "relative");
+  relayout();
+  extractLegends();
 };
-
 
 /**
  * Listen to some events on the plotly chart
  */
 function registerPlotlyEvents() {
-    plotDiv[0].
-        on('plotly_click', handleClick).
-        on('plotly_hover', handleHover).
-        on('plotly_selected', handleSelected).
-        on('plotly_afterplot', function () {
-            if (spinner) {
-                spinner.clear();
-            }
-        });
-
-    plotDiv.find('.modebar-btn[data-title="Lasso Select"]').click(function () {
-        setLassoSelectionMode(true);
+  plotDiv[0]
+    .on("plotly_click", handleClick)
+    .on("plotly_hover", handleHover)
+    .on("plotly_selected", handleSelected)
+    .on("plotly_afterplot", function () {
+      if (spinner) {
+        spinner.clear();
+      }
     });
 
-    plotDiv.find('.modebar-btn[data-title="Zoom"]').click(function () {
-        setLassoSelectionMode(false);
-    });
+  plotDiv.find('.modebar-btn[data-title="Lasso Select"]').click(function () {
+    setLassoSelectionMode(true);
+  });
 
-    let lassoBtn = plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0];
-    if (lassoBtn) {
-        lassoBtn.click();
-    }
+  plotDiv.find('.modebar-btn[data-title="Zoom"]').click(function () {
+    setLassoSelectionMode(false);
+  });
+
+  let lassoBtn = plotDiv.find('.modebar-btn[data-title="Lasso Select"]')[0];
+  if (lassoBtn) {
+    lassoBtn.click();
+  }
 }
 
-
 const initCategorySelection = function () {
-    $.each(labelDatum, function (labelType) {
-        if (labelType !== 'id' && labelType !== 'tid') {
-            let option = `<li class="not-active"><a href="#" value="${labelType}">${labelType}</a></li>`;
-            labelTyleSelectEl.append(option);
-        }
-    });
-
-    /**
-     * Change the granularity and replot
-     * @param labelType
-     */
-    function setValue(labelType) {
-        let locationOrigin = window.location.origin;
-        let localtionPath = window.location.pathname;
-        let currentSearch = window.location.search.substr(1);
-        let labelTypeStart = currentSearch.indexOf('label-type');
-        if (labelTypeStart > -1) {
-            let labelTypeEnd = currentSearch.substr(labelTypeStart).indexOf('&');
-            if (labelTypeEnd == -1) {
-                labelTypeEnd = currentSearch.substr(labelTypeStart).length - 1;
-            }
-            labelTypeEnd += labelTypeStart + 1;
-            currentSearch = currentSearch.substr(0, labelTypeStart) + currentSearch.substr(labelTypeEnd);
-        }
-        let newUrl = `${locationOrigin}${localtionPath}?label-type=${labelType}&${currentSearch}`;
-        window.history.pushState('', '', newUrl);
-
-        labelTyleSelectEl.parent().find('#selected-label-type').html(labelType);
-        labelTyleSelectEl.find('li').removeClass('active').addClass('non-active');
-        labelTyleSelectEl.find(`a[value="${labelType}"]`).parent().removeClass('non-active').addClass('active');
-        plot();
-        registerPlotlyEvents();
+  $.each(labelDatum, function (labelType) {
+    if (labelType !== "id" && labelType !== "tid") {
+      let option = `<li class="not-active"><a href="#" value="${labelType}">${labelType}</a></li>`;
+      labelTyleSelectEl.append(option);
     }
+  });
 
-    labelTyleSelectEl.find('li a').click(function () {
-        setValue($(this).attr('value'));
-    });
+  /**
+   * Change the granularity and replot
+   * @param labelType
+   */
+  function setValue(labelType) {
+    let locationOrigin = window.location.origin;
+    let localtionPath = window.location.pathname;
+    let currentSearch = window.location.search.substr(1);
+    let labelTypeStart = currentSearch.indexOf("label-type");
+    if (labelTypeStart > -1) {
+      let labelTypeEnd = currentSearch.substr(labelTypeStart).indexOf("&");
+      if (labelTypeEnd == -1) {
+        labelTypeEnd = currentSearch.substr(labelTypeStart).length - 1;
+      }
+      labelTypeEnd += labelTypeStart + 1;
+      currentSearch =
+        currentSearch.substr(0, labelTypeStart) +
+        currentSearch.substr(labelTypeEnd);
+    }
+    let newUrl = `${locationOrigin}${localtionPath}?label-type=${labelType}&${currentSearch}`;
+    window.history.pushState("", "", newUrl);
 
-    minLeftWidth = leftContainer.innerWidth();
+    labelTyleSelectEl.parent().find("#selected-label-type").html(labelType);
+    labelTyleSelectEl.find("li").removeClass("active").addClass("non-active");
+    labelTyleSelectEl
+      .find(`a[value="${labelType}"]`)
+      .parent()
+      .removeClass("non-active")
+      .addClass("active");
+    plot();
+    registerPlotlyEvents();
+  }
 
-    let initialLabelType = ce.argDict['label-type'] || 'label';
-    setValue(initialLabelType);
+  labelTyleSelectEl.find("li a").click(function () {
+    setValue($(this).attr("value"));
+  });
+
+  minLeftWidth = leftContainer.innerWidth();
+
+  let initialLabelType = ce.argDict["label-type"] || "label";
+  setValue(initialLabelType);
 };
 
 /**
@@ -462,22 +504,21 @@ const initCategorySelection = function () {
  * @param sylId
  */
 function playSyl(sylId) {
-    let data = {'segment-id': sylId};
+  let data = { "segment-id": sylId };
 
-    let args_ = {
-        url: getUrl('send-request', 'koe/get-segment-audio-data'),
-        cacheKey: sylId,
-        postData: data
-    };
-    queryAndPlayAudio(args_);
+  let args_ = {
+    url: getUrl("send-request", "koe/get-segment-audio-data"),
+    cacheKey: sylId,
+    postData: data,
+  };
+  queryAndPlayAudio(args_);
 }
 
-const handleClick = function ({points}) {
-    let metadata = points[0].text;
-    let sylId = parseInt(metadata.id);
-    playSyl(sylId);
+const handleClick = function ({ points }) {
+  let metadata = points[0].text;
+  let sylId = parseInt(metadata.id);
+  playSyl(sylId);
 };
-
 
 /**
  * Add a syllable to the highlighted list
@@ -486,18 +527,18 @@ const handleClick = function ({points}) {
  * @returns {*}
  */
 function addSylToHighlight(point, override = false) {
-    let rowMetadata = point.text;
-    let segId = rowMetadata.id;
-    let segTid = rowMetadata.tid;
+  let rowMetadata = point.text;
+  let segId = rowMetadata.id;
+  let segTid = rowMetadata.tid;
 
-    let page = Math.floor(segTid / PAGE_CAPACITY);
+  let page = Math.floor(segTid / PAGE_CAPACITY);
 
-    let element = highlighted[segId];
-    let allow = override || !inLassoSelectionMode;
-    if (element === undefined && allow) {
-        let legendSymbol = legendSymbols[point.data.name];
+  let element = highlighted[segId];
+  let allow = override || !inLassoSelectionMode;
+  if (element === undefined && allow) {
+    let legendSymbol = legendSymbols[point.data.name];
 
-        element = $(`
+    element = $(`
 <div class="syl-spect" id="${segId}">
     <img src="/user_data/spect/syllable/${page}/${segTid}.png"/>
     <div class="syl-details">
@@ -505,11 +546,11 @@ function addSylToHighlight(point, override = false) {
         <span>${segId}</span>
     </div>
 </div>`);
-        highlighted[segId] = element;
-        highlightedInfo[segId] = rowMetadata;
-        sylSpects.prepend(element);
-    }
-    return element;
+    highlighted[segId] = element;
+    highlightedInfo[segId] = rowMetadata;
+    sylSpects.prepend(element);
+  }
+  return element;
 }
 
 /**
@@ -517,17 +558,17 @@ function addSylToHighlight(point, override = false) {
  * @param element
  */
 function highlightSyl(element) {
-    $.each(highlighted, function (id, el) {
-        el.removeClass('active');
-    });
+  $.each(highlighted, function (id, el) {
+    el.removeClass("active");
+  });
 
-    if (element) {
-        element.scrollintoview({
-            duration: 'normal',
-            direction: 'vertical',
-        });
-        element.addClass('active');
-    }
+  if (element) {
+    element.scrollintoview({
+      duration: "normal",
+      direction: "vertical",
+    });
+    element.addClass("active");
+  }
 }
 
 /**
@@ -535,66 +576,64 @@ function highlightSyl(element) {
  * Then highlight its border with glowing red
  * @param points
  */
-function handleHover({points}) {
-    let point = points[0];
-    let element = addSylToHighlight(point);
-    highlightSyl(element);
+function handleHover({ points }) {
+  let point = points[0];
+  let element = addSylToHighlight(point);
+  highlightSyl(element);
 }
-
 
 /**
  * When lasso-select finishes, add ALL selected syllables to the highlighted list
  * @param eventData
  */
 function handleSelected(eventData) {
-    if (eventData) {
-        clearHighlighted();
+  if (eventData) {
+    clearHighlighted();
 
-        $.each(eventData.points, function (idx, point) {
-            addSylToHighlight(point, true);
-        });
-    }
+    $.each(eventData.points, function (idx, point) {
+      addSylToHighlight(point, true);
+    });
+  }
 }
 
-
 const showError = function (title, body) {
-    ce.dialogModalTitle.html(title);
+  ce.dialogModalTitle.html(title);
 
-    ce.dialogModalBody.children().remove();
-    ce.dialogModalBody.append(`<div>${body}</div>`);
-    ce.dialogModal.modal('show');
+  ce.dialogModalBody.children().remove();
+  ce.dialogModalBody.append(`<div>${body}</div>`);
+  ce.dialogModal.modal("show");
 
-    ce.dialogModalCancelBtn.html('Dismiss');
-    ce.dialogModalOkBtn.parent().hide();
-    ce.dialogModal.on('hidden.bs.modal', function () {
-        ce.dialogModalOkBtn.parent().show();
-        ce.dialogModalCancelBtn.html('No');
-    });
+  ce.dialogModalCancelBtn.html("Dismiss");
+  ce.dialogModalOkBtn.parent().hide();
+  ce.dialogModal.on("hidden.bs.modal", function () {
+    ce.dialogModalOkBtn.parent().show();
+    ce.dialogModalCancelBtn.html("No");
+  });
 };
-
 
 export const run = function (commonElements) {
-    ce = commonElements;
-    initSlider();
+  ce = commonElements;
+  initSlider();
 
-    if (isEmpty(metaPath) || isEmpty(bytesPath)) {
-        showError('This database has no ordination', 'You need to extract an ordination first');
-    }
-    else {
-        spinner = createSpinner();
-        spinner.start();
-        downloadTensorData().
-            then(initCategorySelection).
-            catch(function (e) {
-                spinner.clear();
-                logError(e);
-                showError('Error loading ordination', e);
-            });
-        initClickHandlers();
-    }
-    return Promise.resolve();
+  if (isEmpty(metaPath) || isEmpty(bytesPath)) {
+    showError(
+      "This database has no ordination",
+      "You need to extract an ordination first"
+    );
+  } else {
+    spinner = createSpinner();
+    spinner.start();
+    downloadTensorData()
+      .then(initCategorySelection)
+      .catch(function (e) {
+        spinner.clear();
+        logError(e);
+        showError("Error loading ordination", e);
+      });
+    initClickHandlers();
+  }
+  return Promise.resolve();
 };
-
 
 const columnsMap = {};
 const id2idx = {};
@@ -605,11 +644,11 @@ const id2idx = {};
  * @returns {string}
  */
 function makeText(rowMetadata) {
-    let retval = [];
-    $.each(rowMetadata, function (colName, colVal) {
-        retval.push(`${colName}: ${colVal}`);
-    });
-    return retval.join('<br>');
+  let retval = [];
+  $.each(rowMetadata, function (colName, colVal) {
+    retval.push(`${colName}: ${colVal}`);
+  });
+  return retval.join("<br>");
 }
 
 /**
@@ -619,170 +658,169 @@ function makeText(rowMetadata) {
  * @returns {*}
  */
 function makeMetadata(columnNames, row) {
-    let nCols = columnNames.length;
-    if (row.length !== nCols) {
-        return {error: 'Can\'t render text due to number of columns and row length are different'};
-    }
-    let retval = {};
-    for (let i = 0; i < nCols; i++) {
-        retval[columnNames[i]] = row[i];
-    }
-    return retval;
+  let nCols = columnNames.length;
+  if (row.length !== nCols) {
+    return {
+      error:
+        "Can't render text due to number of columns and row length are different",
+    };
+  }
+  let retval = {};
+  for (let i = 0; i < nCols; i++) {
+    retval[columnNames[i]] = row[i];
+  }
+  return retval;
 }
 
-
 const downloadTensorData = function () {
-    let downloadMeta = downloadRequest(metaPath, null);
-    let downloadBytes = downloadRequest(bytesPath, Float32Array);
+  let downloadMeta = downloadRequest(metaPath, null);
+  let downloadBytes = downloadRequest(bytesPath, Float32Array);
 
-    return Promise.all([downloadMeta, downloadBytes]).then(function (values) {
-        let meta = values[0];
-        let bytes = values[1];
+  return Promise.all([downloadMeta, downloadBytes]).then(function (values) {
+    let meta = values[0];
+    let bytes = values[1];
 
-        let metaRows = meta.split('\n');
-        let csvHeaderRow = metaRows[0];
-        let csvBodyRows = metaRows.slice(2);
+    let metaRows = meta.split("\n");
+    let csvHeaderRow = metaRows[0];
+    let csvBodyRows = metaRows.slice(2);
 
-        let columnNames = csvHeaderRow.split('\t');
+    let columnNames = csvHeaderRow.split("\t");
 
-        for (let i = 0; i < columnNames.length; i++) {
-            let columnName = columnNames[i];
-            labelDatum[columnName] = {};
-            columnsMap[columnName] = i;
+    for (let i = 0; i < columnNames.length; i++) {
+      let columnName = columnNames[i];
+      labelDatum[columnName] = {};
+      columnsMap[columnName] = i;
+    }
+
+    for (let rowIdx = 0; rowIdx < csvBodyRows.length; rowIdx++) {
+      let csvRow = csvBodyRows[rowIdx].split("\t");
+      let rowMetadata = makeMetadata(columnNames, csvRow);
+      rowsMetadata.push(rowMetadata);
+
+      id2idx[csvRow[0]] = rowIdx;
+      for (let colIdx = 1; colIdx < csvRow.length; colIdx++) {
+        let columnType = columnNames[colIdx];
+        let labelData = labelDatum[columnType];
+        let label = csvRow[colIdx];
+        if (labelData[label] === undefined) {
+          labelData[label] = [rowIdx];
+        } else {
+          labelData[label].push(rowIdx);
         }
+      }
+    }
 
-        for (let rowIdx = 0; rowIdx < csvBodyRows.length; rowIdx++) {
-            let csvRow = csvBodyRows[rowIdx].split('\t');
-            let rowMetadata = makeMetadata(columnNames, csvRow);
-            rowsMetadata.push(rowMetadata);
-
-            id2idx[csvRow[0]] = rowIdx;
-            for (let colIdx = 1; colIdx < csvRow.length; colIdx++) {
-                let columnType = columnNames[colIdx];
-                let labelData = labelDatum[columnType];
-                let label = csvRow[colIdx];
-                if (labelData[label] === undefined) {
-                    labelData[label] = [rowIdx];
-                }
-                else {
-                    labelData[label].push(rowIdx);
-                }
-            }
-        }
-
-        let ncols = bytes.length / csvBodyRows.length;
-        let byteStart = 0;
-        let byteEnd = ncols;
-        for (let i = 0; i < csvBodyRows.length; i++) {
-            dataMatrix.push(Array.from(bytes.slice(byteStart, byteEnd)));
-            byteStart += ncols;
-            byteEnd += ncols;
-        }
-    });
+    let ncols = bytes.length / csvBodyRows.length;
+    let byteStart = 0;
+    let byteEnd = ncols;
+    for (let i = 0; i < csvBodyRows.length; i++) {
+      dataMatrix.push(Array.from(bytes.slice(byteStart, byteEnd)));
+      byteStart += ncols;
+      byteEnd += ncols;
+    }
+  });
 };
-
 
 export const viewPortChangeHandler = function () {
-    relayout();
+  relayout();
 };
-
 
 export const postRun = function () {
-
-    /*
-     * Query database for all existing labels of all granularities
-     * Construct selectable options to facilitate selectize's dropdown display
-     */
-    return new Promise(function (resolve) {
-        postRequest({
-            requestSlug: 'koe/get-label-options',
-            data: {'database-id': databaseId, 'tmpdb-id': tmpDbId},
-            onSuccess(selectableOptions) {
-                setCache('selectableOptions', undefined, selectableOptions);
-                resolve();
-            },
-            spinner: null
-        });
+  /*
+   * Query database for all existing labels of all granularities
+   * Construct selectable options to facilitate selectize's dropdown display
+   */
+  return new Promise(function (resolve) {
+    postRequest({
+      requestSlug: "koe/get-label-options",
+      data: { "database-id": databaseId, "tmpdb-id": tmpDbId },
+      onSuccess(selectableOptions) {
+        setCache("selectableOptions", undefined, selectableOptions);
+        resolve();
+      },
+      spinner: null,
     });
+  });
 };
 
-
 const setLabel = function (field) {
-    let selectedSyls = Object.keys(highlighted);
-    let numRows = selectedSyls.length;
-    if (numRows > 0) {
-        ce.dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
+  let selectedSyls = Object.keys(highlighted);
+  let numRows = selectedSyls.length;
+  if (numRows > 0) {
+    ce.dialogModalTitle.html(`Set ${field} for ${numRows} rows`);
 
-        let selectableColumns = getCache('selectableOptions');
-        let selectableOptions = selectableColumns[field];
+    let selectableColumns = getCache("selectableOptions");
+    let selectableOptions = selectableColumns[field];
 
-        const isSelectize = Boolean(selectableOptions);
-        let inputEl = isSelectize ? ce.inputSelect : ce.inputText;
-        ce.dialogModalBody.children().remove();
-        ce.dialogModalBody.append(inputEl);
-        let defaultValue = inputEl.val();
+    const isSelectize = Boolean(selectableOptions);
+    let inputEl = isSelectize ? ce.inputSelect : ce.inputText;
+    ce.dialogModalBody.children().remove();
+    ce.dialogModalBody.append(inputEl);
+    let defaultValue = inputEl.val();
 
-        if (isSelectize) {
-            let control = inputEl[0].selectize;
-            if (control) control.destroy();
+    if (isSelectize) {
+      let control = inputEl[0].selectize;
+      if (control) control.destroy();
 
-            let selectizeOptions = constructSelectizeOptionsForLabellings(field, defaultValue);
-            initSelectize(inputEl, selectizeOptions);
+      let selectizeOptions = constructSelectizeOptionsForLabellings(
+        field,
+        defaultValue
+      );
+      initSelectize(inputEl, selectizeOptions);
 
-            ce.dialogModal.on('shown.bs.modal', function () {
-                inputEl[0].selectize.focus();
-            });
-        }
-        else {
-            ce.dialogModal.on('shown.bs.modal', function () {
-                inputEl.focus();
-            });
-        }
-
-        ce.dialogModal.modal('show');
-
-        ce.dialogModalOkBtn.off('click').one('click', function () {
-            let value = inputEl.val();
-            if (selectableOptions) {
-                selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
-            }
-
-            let postData = {
-                ids: JSON.stringify(selectedSyls),
-                field,
-                value,
-                'grid-type': 'segment-info'
-            };
-
-            ce.dialogModal.modal('hide');
-            postRequest({
-                requestSlug: 'set-property-bulk',
-                data: postData,
-                onSuccess() {
-                    let labelData = labelDatum[field];
-                    // let colIdx = columnsMap[field];
-                    if (labelData[value] === undefined) {
-                        labelData[value] = [];
-                    }
-                    let category = labelData[value];
-                    $.each(highlightedInfo, function (id, metadata) {
-                        let oldLabel = metadata[field];
-                        let oldCategory = labelData[oldLabel];
-                        let rowIdx = id2idx[id];
-                        let pos = oldCategory.indexOf(rowIdx);
-                        if (pos > -1) {
-                            oldCategory.splice(pos, 1);
-                            category.push(rowIdx);
-                        }
-                        rowsMetadata[rowIdx][field] = value;
-                    });
-
-                    spinner = createSpinner();
-                    spinner.start();
-                    plot();
-                    registerPlotlyEvents();
-                }
-            });
-        })
+      ce.dialogModal.on("shown.bs.modal", function () {
+        inputEl[0].selectize.focus();
+      });
+    } else {
+      ce.dialogModal.on("shown.bs.modal", function () {
+        inputEl.focus();
+      });
     }
+
+    ce.dialogModal.modal("show");
+
+    ce.dialogModalOkBtn.off("click").one("click", function () {
+      let value = inputEl.val();
+      if (selectableOptions) {
+        selectableOptions[value] = (selectableOptions[value] || 0) + numRows;
+      }
+
+      let postData = {
+        ids: JSON.stringify(selectedSyls),
+        field,
+        value,
+        "grid-type": "segment-info",
+      };
+
+      ce.dialogModal.modal("hide");
+      postRequest({
+        requestSlug: "set-property-bulk",
+        data: postData,
+        onSuccess() {
+          let labelData = labelDatum[field];
+          // let colIdx = columnsMap[field];
+          if (labelData[value] === undefined) {
+            labelData[value] = [];
+          }
+          let category = labelData[value];
+          $.each(highlightedInfo, function (id, metadata) {
+            let oldLabel = metadata[field];
+            let oldCategory = labelData[oldLabel];
+            let rowIdx = id2idx[id];
+            let pos = oldCategory.indexOf(rowIdx);
+            if (pos > -1) {
+              oldCategory.splice(pos, 1);
+              category.push(rowIdx);
+            }
+            rowsMetadata[rowIdx][field] = value;
+          });
+
+          spinner = createSpinner();
+          spinner.start();
+          plot();
+          registerPlotlyEvents();
+        },
+      });
+    });
+  }
 };

@@ -34,16 +34,16 @@
                         </a>
                     </div>
                     {% if db_assignment.can_add_files %}
-                    <div class="menu-item" page="song-partition">
-                        <a class="appendable" href="{% url 'song-partition' %}">
-                            <span>Upload & split raw recordings</span>
-                        </a>
-                    </div>
-                    <div class="menu-item" page="">
-                        <a href="{% url 'songs' %}?__action=upload">
-                            <span>Upload songs</span>
-                        </a>
-                    </div>
+                        <div class="menu-item" page="song-partition">
+                            <a class="appendable" href="{% url 'song-partition' %}">
+                                <span>Upload & split raw recordings</span>
+                            </a>
+                        </div>
+                        <div class="menu-item" page="">
+                            <a href="{% url 'songs' %}?__action=upload">
+                                <span>Upload songs</span>
+                            </a>
+                        </div>
                     {% endif %}
 
                     <div class="menu-item" page="songs">
@@ -148,12 +148,12 @@
                     </div>
 
                     <div class="menu-item" page="segmentation">
-                        <a href="#" 
-                            data-toggle="modal" 
-                            data-target="#chat-modal"
-                            data-username="{{ user.username }}"
-                            data-email="{{ user.email }}"
-                            data-koe-avatar="{% static "images/favicon/android-icon-48x48.png" %}"
+                        <a href="#"
+                           data-toggle="modal"
+                           data-target="#chat-modal"
+                           data-username="{{ user.username }}"
+                           data-email="{{ user.email }}"
+                           data-koe-avatar="{% static "images/favicon/android-icon-48x48.png" %}"
                         >
                             <span>Ask KoeAI <i class="fa fa-comment chat-open-icon"></i></span>
                         </a>

@@ -1,4 +1,4 @@
-version: '2.3'
+version: "2.3"
 services:
   db:
     container_name: ${CONTAINER_DATABASE_NAME}
@@ -18,7 +18,7 @@ services:
     container_name: ${CONTAINER_APP_NAME}
     runtime: ${runtime}
     image: sha256:31ad9c5198acccfb3f2613964323976d0e2287032673e7849574330be139fda3
-    
+
     # build:
     #   dockerfile: $DOCKER_FILE
     #   context: .
@@ -32,8 +32,8 @@ services:
     environment:
       - VIRTUAL_HOST=${DOMAIN}
       - VIRTUAL_PROTO=uwsgi
-#     Uncomment below to DELETE and re-create the database from fixtures
-      # - RESET_DB=true
+    #     Uncomment below to DELETE and re-create the database from fixtures
+    # - RESET_DB=true
     restart: unless-stopped
     depends_on:
       - db
@@ -62,7 +62,6 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
       - web
-
 
 networks:
   web:

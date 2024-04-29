@@ -18,7 +18,8 @@ $visualisation-control-height: 32px;
     stroke: #000;
     shape-rendering: crispEdges;
   }
-  .domain, .tick line {
+  .domain,
+  .tick line {
     fill: none;
     stroke: black;
   }
@@ -29,17 +30,32 @@ $visualisation-control-height: 32px;
 }
 
 #visualisation {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}) * 4 / 14 + #{$axis-height} + #{$scrollbar-height});
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$axis-height} - #{$scrollbar-height} - #{$visualisation-control-height}
+      ) * 4 / 14 + #{$axis-height} + #{$scrollbar-height}
+  );
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 1 / 14);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}
+        ) * 1 / 14
+    );
     overflow-y: hidden;
   }
 
   #spectrogram {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 3 / 14 + #{$axis-height});
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$gap-between-svgs} - #{$visualisation-control-height}
+        ) * 3 / 14 + #{$axis-height}
+    );
     overflow-y: hidden;
 
     .brush-handle {
@@ -52,7 +68,8 @@ $visualisation-control-height: 32px;
       stroke-dasharray: 1, 1;
       fill: black;
       fill-opacity: 0.2;
-      &:hover, &.highlight {
+      &:hover,
+      &.highlight {
         stroke: rgb(255, 101, 4);
         stroke-width: 2px;
         fill: transparent;
@@ -63,7 +80,7 @@ $visualisation-control-height: 32px;
 
     .brush .selection {
       stroke: #000;
-      fill-opacity: .125;
+      fill-opacity: 0.125;
       shape-rendering: crispEdges;
     }
   }
@@ -77,22 +94,41 @@ $visualisation-control-height: 32px;
 }
 
 #zoomed {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$visualisation-control-height}) * 10 / 14);
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} -
+          #{$visualisation-control-height}
+      ) * 10 / 14
+  );
   overflow-y: hidden;
   overflow-x: visible;
 
   #oscillogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 2 / 14);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} -
+            #{$gap-between-svgs} - #{$visualisation-control-height}
+        ) * 2 / 14
+    );
     width: 100%;
   }
 
   #spectrogram-zoomed {
-    height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$gap-between-svgs} - #{$visualisation-control-height}) * 8 / 14);
+    height: calc(
+      (
+          #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+            #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} -
+            #{$gap-between-svgs} - #{$visualisation-control-height}
+        ) * 8 / 14
+    );
     width: 100%;
   }
 }
 
-#oscillogram, #oscillogram-zoomed {
+#oscillogram,
+#oscillogram-zoomed {
   .line {
     fill: none;
     stroke-width: 1px;
@@ -112,7 +148,13 @@ $visualisation-control-height: 32px;
 }
 
 #segments-grid {
-  height: calc((#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} - #{$visualisation-control-height}) * 10 / 14);
+  height: calc(
+    (
+        #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+          #{$axis-height} - #{$scrollbar-height} - #{$visualisation-wrapper-padding-bottom} -
+          #{$visualisation-control-height}
+      ) * 10 / 14
+  );
 }
 
 .slider-group {

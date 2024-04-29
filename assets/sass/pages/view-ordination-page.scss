@@ -1,7 +1,10 @@
 @import "../variables";
 
 #plotly-plot {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top - #{$controller-wrapper-height} - #{$panel-border} * 4});
+  height: calc(
+    #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top -
+      #{$controller-wrapper-height} - #{$panel-border} * 4}
+  );
 
   .svg-container {
     float: right;
@@ -14,7 +17,11 @@
 }
 
 #syl-spects {
-  height: calc(#{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} - #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} * 4);
+  height: calc(
+    #{$max-screen-height} - #{$main-content-padding-bottom} - #{$main-content-padding-top} -
+      #{$controller-wrapper-height} - #{$grid-button-height} - #{$panel-border} *
+      4
+  );
   overflow: auto;
 
   .syl-spect {
@@ -46,53 +53,52 @@
       animation: glowing 1500ms infinite;
     }
   }
-
 }
 
 @-webkit-keyframes glowing {
   0% {
-    -webkit-box-shadow: 0 0 3px #B20000;
+    -webkit-box-shadow: 0 0 3px #b20000;
   }
   50% {
-    -webkit-box-shadow: 0 0 40px #FF0000;
+    -webkit-box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    -webkit-box-shadow: 0 0 3px #B20000;
+    -webkit-box-shadow: 0 0 3px #b20000;
   }
 }
 
 @-moz-keyframes glowing {
   0% {
-    -moz-box-shadow: 0 0 3px #B20000;
+    -moz-box-shadow: 0 0 3px #b20000;
   }
   50% {
-    -moz-box-shadow: 0 0 40px #FF0000;
+    -moz-box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    -moz-box-shadow: 0 0 3px #B20000;
+    -moz-box-shadow: 0 0 3px #b20000;
   }
 }
 
 @-o-keyframes glowing {
   0% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
   50% {
-    box-shadow: 0 0 40px #FF0000;
+    box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
 }
 
 @keyframes glowing {
   0% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
   50% {
-    box-shadow: 0 0 40px #FF0000;
+    box-shadow: 0 0 40px #ff0000;
   }
   100% {
-    box-shadow: 0 0 3px #B20000;
+    box-shadow: 0 0 3px #b20000;
   }
 }

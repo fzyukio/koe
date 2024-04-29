@@ -28,9 +28,9 @@
             <div class="panel-heading"><strong>New extraction</strong></div>
             <div class="panel-body">
                 <form role="form" method="post" id="feature-extraction-form" url="{% url 'feature-extraction' %}"
-                    {% if current_database is not None %}
-                        {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}
-                    {% endif %}">
+                      {% if current_database is not None %}
+                          {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}
+                                                                                           {% endif %}">
                     {% csrf_token %}
                     <div id="replaceable-on-failure">
                         {% include 'partials/feature-selection-form.html' %}

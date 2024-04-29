@@ -29,19 +29,19 @@
             <div class="panel-footer no-padding">
                 <div class="btn-group btn-group-justified" role="group" aria-label="...">
                     {% if viewas.username == user.username %}
-                    <div class="btn-group dropup" role="group">
-                        <button type="button" class="btn btn-sm btn-primary dropdown-toggle enable-on-lasso" data-toggle="dropdown"
-                                aria-haspopup="true" aria-expanded="false" disabled>
-                            Label
-                            <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            {% get_granularity as levels %}
-                            {% for level in levels %}
-                                <li><a class="change-label enable-on-lasso" disabled label-type="{{ level }}">{{ level }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                        <div class="btn-group dropup" role="group">
+                            <button type="button" class="btn btn-sm btn-primary dropdown-toggle enable-on-lasso" data-toggle="dropdown"
+                                    aria-haspopup="true" aria-expanded="false" disabled>
+                                Label
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% get_granularity as levels %}
+                                {% for level in levels %}
+                                    <li><a class="change-label enable-on-lasso" disabled label-type="{{ level }}">{{ level }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     {% endif %}
 
 
@@ -85,7 +85,7 @@
 
             <div class="panel-body no-padding" id="plotly-plot" metadata="{{ metadata_path }}" bytes="{{ bytes_path }}"
                  {% if current_database is not None %}
-                    {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
+                     {% if current_database.is_real %}database{% else %}tmpdb{% endif %}="{{ current_database.id }}"
                  {% endif %}>
             </div>
         </div>

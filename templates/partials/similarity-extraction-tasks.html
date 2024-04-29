@@ -4,7 +4,7 @@
 {% if task %}
     <div class="alert alert-success alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                aria-hidden="true">&times;</span></button>
+            aria-hidden="true">&times;</span></button>
         <strong>Success!</strong>
         Task #{{ task.id }} has been submitted and scheduled to run. You will get an email notification when it
         finishes. You do not need to leave this tab open.
@@ -24,68 +24,68 @@
 
     <table class="table table-striped">
         <thead>
-        <tr>
-            <th>Task</th>
-            <th>Username</th>
-            <th>Database</th>
-            <th>Source type</th>
-            <th>Source name</th>
-            <th>Created</th>
-            <th>Started</th>
-            <th>Progress</th>
-        </tr>
+            <tr>
+                <th>Task</th>
+                <th>Username</th>
+                <th>Database</th>
+                <th>Source type</th>
+                <th>Source name</th>
+                <th>Created</th>
+                <th>Started</th>
+                <th>Progress</th>
+            </tr>
         </thead>
         <tbody>
-        {% for sim, subtasks in all_incomplete_sims2tasks %}
-            <tr>
-                <th scope="row">{{ sim.task.id }}</th>
-                <td>{{ sim.task.user.username }}</td>
-                {% if sim.dm %}
-                    {% if sim.dm.database %}
-                        <td>{{ sim.dm.database.name }}</td>
+            {% for sim, subtasks in all_incomplete_sims2tasks %}
+                <tr>
+                    <th scope="row">{{ sim.task.id }}</th>
+                    <td>{{ sim.task.user.username }}</td>
+                    {% if sim.dm %}
+                        {% if sim.dm.database %}
+                            <td>{{ sim.dm.database.name }}</td>
+                        {% else %}
+                            <td>{{ sim.dm.tmpdb.name }}</td>
+                        {% endif %}
+                        <td>DataMatrix</td>
+                        <td>{{ sim.dm.name }}</td>
                     {% else %}
-                        <td>{{ sim.dm.tmpdb.name }}</td>
+                        {% if sim.ord.dm.database %}
+                            <td>{{ sim.ord.dm.database.name }}</td>
+                        {% else %}
+                            <td>{{ sim.ord.dm.tmpdb.name }}</td>
+                        {% endif %}
+                        <td>Ordination</td>
+                        <td>{{ sim.ord.name }}</td>
                     {% endif %}
-                    <td>DataMatrix</td>
-                    <td>{{ sim.dm.name }}</td>
-                {% else %}
-                    {% if sim.ord.dm.database %}
-                        <td>{{ sim.ord.dm.database.name }}</td>
-                    {% else %}
-                        <td>{{ sim.ord.dm.tmpdb.name }}</td>
-                    {% endif %}
-                    <td>Ordination</td>
-                    <td>{{ sim.ord.name }}</td>
-                {% endif %}
-                <td>{{ sim.task.created }}</td>
-                <td>{{ sim.task.started }}</td>
-                <td>
-                    <div class="progress">
-                        <span class="progress-value">{{ sim.task.pc_complete | floatformat }}% {{ sim.task.get_stage_display }}</span>
-                        <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
-                             aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
-                             style="width: {{ sim.task.pc_complete | floatformat }}%">
-                        </div>
-                    </div>
-                </td>
-            </tr>
-            {% for subtask in subtasks %}
-                <tr class="subtask">
-                    <td colspan="5">Subtask #{{ subtask.id }}</td>
-                    <td>{{ subtask.created }}</td>
-                    <td>{{ subtask.started }}</td>
+                    <td>{{ sim.task.created }}</td>
+                    <td>{{ sim.task.started }}</td>
                     <td>
                         <div class="progress">
-                            <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>
+                            <span class="progress-value">{{ sim.task.pc_complete | floatformat }}% {{ sim.task.get_stage_display }}</span>
                             <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
                                  aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
-                                 style="width: {{ subtask.pc_complete | floatformat }}%">
+                                 style="width: {{ sim.task.pc_complete | floatformat }}%">
                             </div>
                         </div>
                     </td>
                 </tr>
+                {% for subtask in subtasks %}
+                    <tr class="subtask">
+                        <td colspan="5">Subtask #{{ subtask.id }}</td>
+                        <td>{{ subtask.created }}</td>
+                        <td>{{ subtask.started }}</td>
+                        <td>
+                            <div class="progress">
+                                <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>
+                                <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                                     aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                                     style="width: {{ subtask.pc_complete | floatformat }}%">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
         </tbody>
     </table>
 </div>

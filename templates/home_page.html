@@ -54,166 +54,166 @@
                     <div class="textbox"><h1>Web-based software <br>for analysing animal vocalisations</h1>
                         <p>Visualising, segmenting, measuring, classifying, filtering and exporting acoustic units, and
                             analysing sequence structure (syntax).
-                        <p>
-                        <div class="btn-group" role="group">
-                            <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
-                                    data-dismiss="modal" role="button" href="https://github.com/fzyukio/koe/wiki">
-                                User Manual
-                            </button>
-                            <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
-                                    data-dismiss="modal" role="button" href="{% url "contact-us" %}">
-                                Contact us
-                            </button>
-                        </div>
+                            <p>
+                                <div class="btn-group" role="group">
+                                    <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
+                                            data-dismiss="modal" role="button" href="https://github.com/fzyukio/koe/wiki">
+                                        User Manual
+                                    </button>
+                                    <button type="button" id="dialog-modal-no-button" class="btn btn-warning"
+                                            data-dismiss="modal" role="button" href="{% url "contact-us" %}">
+                                        Contact us
+                                    </button>
+                                </div>
 
+                            </div>
+                            <div class="intro-video">
+                                <video class="u-width-full u-shadow" muted="" autoplay="" loop="false" playsinline=""
+                                       data-fallback="{% static "images/koe-intro.gif" %}"
+                                       data-fallback-class="u-width-max-full">
+                                    <source type="video/mp4" src="{% static "images/koe-intro.mp4" %}">
+                                </video>
+                                <div class="intro-video-toggle" style="display: none;">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" id="dialog-modal-yes-button"
+                                                class="btn btn-primary btn-hover-green" role="button">
+                                            Watch more
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="intro-video">
-                        <video class="u-width-full u-shadow" muted="" autoplay="" loop="false" playsinline=""
-                               data-fallback="{% static "images/koe-intro.gif" %}"
-                               data-fallback-class="u-width-max-full">
-                            <source type="video/mp4" src="{% static "images/koe-intro.mp4" %}">
-                        </video>
-                        <div class="intro-video-toggle" style="display: none;">
-                            <div class="btn-group" role="group">
-                                <button type="button" id="dialog-modal-yes-button"
-                                        class="btn btn-primary btn-hover-green" role="button">
-                                    Watch more
-                                </button>
+                    <div class="video-popup-wrapper" id="home-intro-video" style="display:none;">
+                        <div class="video-popup">
+                            <div class="popup-close">
+                                <div class="btn-group" role="group">
+                                    <button type="button" id="dialog-modal-yes-button"
+                                            class="btn btn-primary btn-hover-green btn-lg" role="button">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="popup-content">
+                                <div id="player"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="video-popup-wrapper" id="home-intro-video" style="display:none;">
-                <div class="video-popup">
-                    <div class="popup-close">
-                        <div class="btn-group" role="group">
-                            <button type="button" id="dialog-modal-yes-button"
-                                    class="btn btn-primary btn-hover-green btn-lg" role="button">
-                                Close
-                            </button>
+
+                <div id="section-2" class="row no-margin no-padding section">
+                    <div class="col-md-10 col-lg-8 col-xl-6 col-md-offset-1 col-lg-offset-2 col-xl-offset-3">
+                        <div class="carousel section-body">
+                            <div class="row no-margin">
+                                <div class="col-xs-12 col-sm-7 feature-description">
+                                    <h2>Classify units: Interactive unit tables</h2>
+                                    <ul>
+                                        <li>Unit spectrograms, audio, and metadata all together in one place.</li>
+                                        <li>Compare, select, classify and annotate units rapidly.</li>
+                                        <li>Automatically group units by acoustic similarity to facilitate
+                                            bulkclassification.
+                                        </li>
+                                        <li>Classify at multiple levels of granularity: fine, medium and broad, for
+                                            different
+                                            scales of analysis.
+                                        </li>
+                                        <li>Sort, filter and export data.</li>
+                                    </ul>
+                                </div>
+                                <div class="col-xs-12 col-sm-5 image">
+                                    <img src="{% static "images/feature-1-long.png" %}">
+                                </div>
+                            </div>
+
+                            <div class="row no-margin">
+                                <div class="col-xs-12 col-sm-5 image">
+                                    <img src="{% static "images/feature-2-long.png" %}">
+                                </div>
+
+                                <div class="col-xs-12 col-sm-7 feature-description">
+                                    <h2>Classify units: Interactive ordination plots</h2>
+                                    <ul>
+                                        <li>Visualise data structure based on extracted acoustic features.</li>
+                                        <li>Encircle groups of points on the ordination to see spectrograms, hear playback,
+                                            and
+                                            bulk-label groups of units.
+                                        </li>
+                                        <li>Toggle visibility of individual classes and zoom plot for added control.</li>
+                                        <li>View selections as a subset unit table.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="row no-margin">
+                                <div class="col-xs-12 col-sm-7 feature-description">
+                                    <h2>Catalogue unit classes</h2>
+                                    <ul>
+                                        <li>Catalogue generated dynamically as you classify units, as a useful reference
+                                        </li>
+                                        <li>Displays up to 10 randomly-selected exemplars for each class to represent
+                                            within-class variability
+                                        </li>
+                                        <li>Class counts, exemplar spectrograms and audio playback</li>
+                                        <li>Sort, filter and export class list and counts</li>
+                                    </ul>
+                                </div>
+                                <div class="col-xs-12 col-sm-5 image">
+                                    <img src="{% static "images/feature-3-long.png" %}">
+                                </div>
+                            </div>
+
+                            <div class="row no-margin">
+                                <div class="col-xs-12 col-sm-5 image">
+                                    <img src="{% static "images/feature-4-long.png" %}">
+                                </div>
+
+                                <div class="col-xs-12 col-sm-7 feature-description">
+                                    <h2>View songs as sequences</h2>
+                                    <ul>
+                                        <li>Compare songs based on audio and sequence structure</li>
+                                        <li>Sort, select, annotate and classify songs</li>
+                                        <li>Filter by sequence structure to find shared sequences</li>
+                                        <li>Export song audio and metadata</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="row no-margin">
+                                <div class="col-xs-12 col-sm-7 feature-description">
+                                    <h2>Mine sequence structure</h2>
+                                    <ul>
+                                        <li>Find the strength of syntactical association between unit classes across a group
+                                            of
+                                            songs
+                                        </li>
+                                        <li>View two-unit associations as an interactive network</li>
+                                        <li>Filter network based on association strength/prevalence</li>
+                                    </ul>
+                                </div>
+                                <div class="col-xs-12 col-sm-5 image">
+                                    <img src="{% static "images/feature-5-long.png" %}">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="popup-content">
-                        <div id="player"></div>
-                    </div>
+
                 </div>
-            </div>
-        </div>
 
-        <div id="section-2" class="row no-margin no-padding section">
-            <div class="col-md-10 col-lg-8 col-xl-6 col-md-offset-1 col-lg-offset-2 col-xl-offset-3">
-                <div class="carousel section-body">
-                    <div class="row no-margin">
-                        <div class="col-xs-12 col-sm-7 feature-description">
-                            <h2>Classify units: Interactive unit tables</h2>
-                            <ul>
-                                <li>Unit spectrograms, audio, and metadata all together in one place.</li>
-                                <li>Compare, select, classify and annotate units rapidly.</li>
-                                <li>Automatically group units by acoustic similarity to facilitate
-                                    bulkclassification.
-                                </li>
-                                <li>Classify at multiple levels of granularity: fine, medium and broad, for
-                                    different
-                                    scales of analysis.
-                                </li>
-                                <li>Sort, filter and export data.</li>
-                            </ul>
-                        </div>
-                        <div class="col-xs-12 col-sm-5 image">
-                            <img src="{% static "images/feature-1-long.png" %}">
-                        </div>
-                    </div>
-
-                    <div class="row no-margin">
-                        <div class="col-xs-12 col-sm-5 image">
-                            <img src="{% static "images/feature-2-long.png" %}">
-                        </div>
-
-                        <div class="col-xs-12 col-sm-7 feature-description">
-                            <h2>Classify units: Interactive ordination plots</h2>
-                            <ul>
-                                <li>Visualise data structure based on extracted acoustic features.</li>
-                                <li>Encircle groups of points on the ordination to see spectrograms, hear playback,
-                                    and
-                                    bulk-label groups of units.
-                                </li>
-                                <li>Toggle visibility of individual classes and zoom plot for added control.</li>
-                                <li>View selections as a subset unit table.</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="row no-margin">
-                        <div class="col-xs-12 col-sm-7 feature-description">
-                            <h2>Catalogue unit classes</h2>
-                            <ul>
-                                <li>Catalogue generated dynamically as you classify units, as a useful reference
-                                </li>
-                                <li>Displays up to 10 randomly-selected exemplars for each class to represent
-                                    within-class variability
-                                </li>
-                                <li>Class counts, exemplar spectrograms and audio playback</li>
-                                <li>Sort, filter and export class list and counts</li>
-                            </ul>
-                        </div>
-                        <div class="col-xs-12 col-sm-5 image">
-                            <img src="{% static "images/feature-3-long.png" %}">
-                        </div>
-                    </div>
-
-                    <div class="row no-margin">
-                        <div class="col-xs-12 col-sm-5 image">
-                            <img src="{% static "images/feature-4-long.png" %}">
-                        </div>
-
-                        <div class="col-xs-12 col-sm-7 feature-description">
-                            <h2>View songs as sequences</h2>
-                            <ul>
-                                <li>Compare songs based on audio and sequence structure</li>
-                                <li>Sort, select, annotate and classify songs</li>
-                                <li>Filter by sequence structure to find shared sequences</li>
-                                <li>Export song audio and metadata</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="row no-margin">
-                        <div class="col-xs-12 col-sm-7 feature-description">
-                            <h2>Mine sequence structure</h2>
-                            <ul>
-                                <li>Find the strength of syntactical association between unit classes across a group
-                                    of
-                                    songs
-                                </li>
-                                <li>View two-unit associations as an interactive network</li>
-                                <li>Filter network based on association strength/prevalence</li>
-                            </ul>
-                        </div>
-                        <div class="col-xs-12 col-sm-5 image">
-                            <img src="{% static "images/feature-5-long.png" %}">
+                <div id="section-4" class="row no-margin section"
+                     style="background-image: url('{% static "images/landing-page-section4-background.jpg" %}');">
+                    <div class="col-md-8 col-lg-6 col-md-offset-2 col-lg-offset-3">
+                        <div class="col-xs-12 section-body">
+                            <div class="copyright col-xs-12">
+                                <p>Copyright Ⓒ2017-2024 Yukio Fukuzawa1 & Wesley Webb. All rights reserved.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {% include "chat/chat.html"%}
             </div>
 
-        </div>
 
-        <div id="section-4" class="row no-margin section"
-             style="background-image: url('{% static "images/landing-page-section4-background.jpg" %}');">
-            <div class="col-md-8 col-lg-6 col-md-offset-2 col-lg-offset-3">
-                <div class="col-xs-12 section-body">
-                    <div class="copyright col-xs-12">
-                        <p>Copyright Ⓒ2017-2024 Yukio Fukuzawa1 & Wesley Webb. All rights reserved.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% include "chat/chat.html"%}
-    </div>
-
-    
 {% endblock %}
 
 {% block pre-main-scripts %}

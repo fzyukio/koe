@@ -1,4 +1,4 @@
-import {colourMaps} from './colour-map';
+import { colourMaps } from "./colour-map";
 
 export const globalMinSpectPixel = -139;
 export const globalMaxSpectPixel = 43;
@@ -12,49 +12,57 @@ export const globalMaxSpectPixel = 43;
  * @param contrast
  * @param colourMap
  */
-const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0, colourMap = 'Green') {
-    const {rPixelValues, gPixelValues, bPixelValues} = colourMaps[colourMap];
+const spectToCanvas = function (
+  spect,
+  imgData,
+  dspMin,
+  dspMax,
+  contrast = 0,
+  colourMap = "Green"
+) {
+  const { rPixelValues, gPixelValues, bPixelValues } = colourMaps[colourMap];
 
-    /*
-     * Some checking: spect and canvas must have the same size
-     */
-    let height = spect.length;
-    let width = spect[0].length;
+  /*
+   * Some checking: spect and canvas must have the same size
+   */
+  let height = spect.length;
+  let width = spect[0].length;
 
-    if (height != imgData.height || width != imgData.width) throw new Error('Spect and canvas must have the same size');
+  if (height != imgData.height || width != imgData.width)
+    throw new Error("Spect and canvas must have the same size");
 
-    const colouredInterval = 64;
-    const nIntervals = colouredInterval + contrast - 1;
+  const colouredInterval = 64;
+  const nIntervals = colouredInterval + contrast - 1;
 
-    const dspBinValue = (dspMax - dspMin) / (nIntervals - 1);
-    const round = Math.round;
+  const dspBinValue = (dspMax - dspMin) / (nIntervals - 1);
+  const round = Math.round;
 
-    const spectrumFlatened = spect.reduce(function (p, c) {
-        return p.concat(c);
-    });
+  const spectrumFlatened = spect.reduce(function (p, c) {
+    return p.concat(c);
+  });
 
-    // fill imgData with colors from array
-    let i,
-        k = 0,
-        psd, colourMapIndex;
-    for (i = 0; i < spectrumFlatened.length; i++) {
-        psd = spectrumFlatened[i];
-        if (isNaN(psd)) {
-            colourMapIndex = 0;
-        }
-        else {
-            colourMapIndex = round(Math.max(0, psd - dspMin) / dspBinValue) - contrast;
-            if (colourMapIndex < 0) colourMapIndex = 0;
-        }
-        imgData.data[k++] = rPixelValues[colourMapIndex];
-        imgData.data[k++] = gPixelValues[colourMapIndex];
-        imgData.data[k++] = bPixelValues[colourMapIndex];
-
-        // Alpha channel
-        imgData.data[k++] = 255;
+  // fill imgData with colors from array
+  let i,
+    k = 0,
+    psd,
+    colourMapIndex;
+  for (i = 0; i < spectrumFlatened.length; i++) {
+    psd = spectrumFlatened[i];
+    if (isNaN(psd)) {
+      colourMapIndex = 0;
+    } else {
+      colourMapIndex =
+        round(Math.max(0, psd - dspMin) / dspBinValue) - contrast;
+      if (colourMapIndex < 0) colourMapIndex = 0;
     }
-};
+    imgData.data[k++] = rPixelValues[colourMapIndex];
+    imgData.data[k++] = gPixelValues[colourMapIndex];
+    imgData.data[k++] = bPixelValues[colourMapIndex];
 
+    // Alpha channel
+    imgData.data[k++] = 255;
+  }
+};
 
 /**
  * Converts segment of a signal into spectrogram and displays it.
@@ -68,23 +76,32 @@ const spectToCanvas = function (spect, imgData, dspMin, dspMax, contrast = 0, co
  * @param dspMin
  * @param dspMax
  */
-export const spectToUri = function(spect, imgHeight, subImgWidth, contrast, colourMap, dspMin, dspMax) {
-    return new Promise(function (resolve) {
-        let img = new Image();
-        img.onload = function () {
-            let canvas = document.createElement('canvas');
-            let context = canvas.getContext('2d');
-            let imgData = context.createImageData(subImgWidth, imgHeight);
+export const spectToUri = function (
+  spect,
+  imgHeight,
+  subImgWidth,
+  contrast,
+  colourMap,
+  dspMin,
+  dspMax
+) {
+  return new Promise(function (resolve) {
+    let img = new Image();
+    img.onload = function () {
+      let canvas = document.createElement("canvas");
+      let context = canvas.getContext("2d");
+      let imgData = context.createImageData(subImgWidth, imgHeight);
 
-            canvas.height = imgHeight;
-            canvas.width = subImgWidth;
+      canvas.height = imgHeight;
+      canvas.width = subImgWidth;
 
-            spectToCanvas(spect, imgData, dspMin, dspMax, contrast, colourMap);
-            context.putImageData(imgData, 0, 0);
-            resolve(canvas.toDataURL('image/webp', 1));
-        };
+      spectToCanvas(spect, imgData, dspMin, dspMax, contrast, colourMap);
+      context.putImageData(imgData, 0, 0);
+      resolve(canvas.toDataURL("image/webp", 1));
+    };
 
-        // This data URI is a dummy one, use it to trigger onload()
-        img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==';
-    });
+    // This data URI is a dummy one, use it to trigger onload()
+    img.src =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==";
+  });
 };

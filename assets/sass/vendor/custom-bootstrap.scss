@@ -66,11 +66,9 @@ $color_celeste_approx: #ccc;
   .dropdown-submenu:hover > .dropdown-menu {
     display: none;
   }
-
 }
 
 .nav > li {
-
   > a {
     padding-left: 5px;
     padding-right: 5px;
@@ -81,7 +79,8 @@ $color_celeste_approx: #ccc;
   background-color: black;
   color: white;
 
-  &.disabled, &[disabled] {
+  &.disabled,
+  &[disabled] {
     color: gray;
     opacity: 1;
   }
@@ -218,7 +217,8 @@ $color_celeste_approx: #ccc;
   display: block !important;
 }
 
-.navbar-nav > li, .navbar-nav {
+.navbar-nav > li,
+.navbar-nav {
   float: left !important;
 }
 
@@ -257,7 +257,18 @@ $color_celeste_approx: #ccc;
     width: 1570px;
   }
 
-  .col-xl-1, .col-xl-2, .col-xl-3, .col-xl-4, .col-xl-5, .col-xl-6, .col-xl-7, .col-xl-8, .col-xl-9, .col-xl-10, .col-xl-11, .col-xl-12 {
+  .col-xl-1,
+  .col-xl-2,
+  .col-xl-3,
+  .col-xl-4,
+  .col-xl-5,
+  .col-xl-6,
+  .col-xl-7,
+  .col-xl-8,
+  .col-xl-9,
+  .col-xl-10,
+  .col-xl-11,
+  .col-xl-12 {
     float: left;
   }
 
@@ -477,7 +488,8 @@ $color_celeste_approx: #ccc;
     display: table-row !important;
   }
 
-  th.visible-xl, td.visible-xl {
+  th.visible-xl,
+  td.visible-xl {
     display: table-cell !important;
   }
 

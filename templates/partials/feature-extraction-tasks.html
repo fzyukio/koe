@@ -4,7 +4,7 @@
 {% if task %}
     <div class="alert alert-success alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
-                aria-hidden="true">&times;</span></button>
+            aria-hidden="true">&times;</span></button>
         <strong>Success!</strong>
         Task #{{ task.id }} has been submitted and scheduled to run. You will get an email notification when it
         finishes. You do not need to leave this tab open.
@@ -13,66 +13,66 @@
 
 <div class="panel panel-primary">
     <div class="panel-heading">
-            <div id="menu-opener">
-                <i class="fa fa-white fa-bars left siderbar-toggler" aria-hidden="true"></i>
-            </div>
-            <strong>Feature extraction queue</strong></div>
+        <div id="menu-opener">
+            <i class="fa fa-white fa-bars left siderbar-toggler" aria-hidden="true"></i>
+        </div>
+        <strong>Feature extraction queue</strong></div>
     <div class="panel-body">
         <p>Following are pending feature extraction tasks submitted by all users for all databases and collections</p>
     </div>
 
     <table class="table">
         <thead>
-        <tr>
-            <th>Task</th>
-            <th>User</th>
-            <th>Database</th>
-            <th>Name</th>
-            <th>Created</th>
-            <th>Started</th>
-            <th>Progress</th>
-        </tr>
+            <tr>
+                <th>Task</th>
+                <th>User</th>
+                <th>Database</th>
+                <th>Name</th>
+                <th>Created</th>
+                <th>Started</th>
+                <th>Progress</th>
+            </tr>
         </thead>
         <tbody>
-        {% for dm, subtasks in all_incomplete_dms2tasks %}
-            <tr>
-                <th scope="row">{{ dm.task.id }}</th>
-                <td>{{ dm.task.user.username }}</td>
-                {% if dm.database %}
-                    <td>{{ dm.database.name }}</td>
-                {% else %}
-                    <td>{{ dm.tmpdb.name }}</td>
-                {% endif %}
-                <td>{{ dm.name }}</td>
-                <td>{{ dm.task.created }}</td>
-                <td>{{ dm.task.started }}</td>
-                <td>
-                    <div class="progress">
-                        <span class="progress-value">{{ dm.task.pc_complete | floatformat }}% {{ dm.task.get_stage_display }}</span>
-                        <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
-                             aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
-                             style="width: {{ dm.task.pc_complete | floatformat }}%">
-                        </div>
-                    </div>
-                </td>
-            </tr>
-            {% for subtask in subtasks %}
-                <tr class="subtask">
-                    <td colspan="4">Subtask #{{ subtask.id }}</td>
-                    <td>{{ subtask.created }}</td>
-                    <td>{{ subtask.started }}</td>
+            {% for dm, subtasks in all_incomplete_dms2tasks %}
+                <tr>
+                    <th scope="row">{{ dm.task.id }}</th>
+                    <td>{{ dm.task.user.username }}</td>
+                    {% if dm.database %}
+                        <td>{{ dm.database.name }}</td>
+                    {% else %}
+                        <td>{{ dm.tmpdb.name }}</td>
+                    {% endif %}
+                    <td>{{ dm.name }}</td>
+                    <td>{{ dm.task.created }}</td>
+                    <td>{{ dm.task.started }}</td>
                     <td>
                         <div class="progress">
-                            <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>
+                            <span class="progress-value">{{ dm.task.pc_complete | floatformat }}% {{ dm.task.get_stage_display }}</span>
                             <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
                                  aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
-                                 style="width: {{ subtask.pc_complete | floatformat }}%">
+                                 style="width: {{ dm.task.pc_complete | floatformat }}%">
                             </div>
                         </div>
                     </td>
                 </tr>
+                {% for subtask in subtasks %}
+                    <tr class="subtask">
+                        <td colspan="4">Subtask #{{ subtask.id }}</td>
+                        <td>{{ subtask.created }}</td>
+                        <td>{{ subtask.started }}</td>
+                        <td>
+                            <div class="progress">
+                                <span class="progress-value">{{ subtask.pc_complete | floatformat }}% {{ subtask.get_stage_display }}</span>
+                                <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar"
+                                     aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"
+                                     style="width: {{ subtask.pc_complete | floatformat }}%">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
         </tbody>
     </table>
 </div>

@@ -1,7 +1,7 @@
-Koe: open-source software to visualise, segment and classify acoustic units in animal vocalisations
-===
+# Koe: open-source software to visualise, segment and classify acoustic units in animal vocalisations
 
 ## What is it?
+
 Koe is an application for classifying and analysing animal vocalisations.
 Koe offers bulk-labelling of units via interactive ordination plots, as well as visualisation and playback, segmentation, measurement, data filtering/exporting and new tools for analysing repertoire and sequence structure -- all in an integrated database.
 
@@ -24,13 +24,15 @@ I recommend using the official website at https://koe.io.ac.nz. However if you w
 [Deploy](docs/DEPLOY.md)
 
 ## Licence
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-This work is distrbuted under GPL version 3.0 licence. 
+This work is distrbuted under GPL version 3.0 licence.
 
 Read the full [LICENCE](LICENCE.md) here
 
 Contact us if you want a different licence option.
 
 ## Copyright
+
 Copyright (c) 2013-9999 Yukio Fukuzawa. All rights reserved.
